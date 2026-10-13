@@ -166,11 +166,6 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
             Lead Medical Technologist: {currentUser.name} • Certified Diagnostic Laboratory
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="teal" size="md">
-            Automated Clinical Analyzers Online
-          </Badge>
-        </div>
       </div>
 
       {/* Real-time Feedback Notification Banner */}
@@ -195,28 +190,24 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           title="Awaiting Sample"
           value={pendingCollection.length}
           subtitle="Orders requiring phlebotomy"
-          icon={<i className="fa-solid fa-vial-circle-check text-lg" />}
           colorScheme="amber"
         />
         <StatCard
           title="In Testing Pipeline"
           value={pendingAnalysis.length}
           subtitle="Specimens ready for assay"
-          icon={<i className="fa-solid fa-vials text-lg" />}
           colorScheme="blue"
         />
         <StatCard
           title="Urgent / STAT Priority"
           value={urgentOrders.length}
           subtitle="Emergency rapid turnaround"
-          icon={<i className="fa-solid fa-exclamation text-lg" />}
           colorScheme={urgentOrders.length > 0 ? 'rose' : 'slate'}
         />
         <StatCard
           title="Certified Today"
           value={completedTests.length}
           subtitle="Reports published to EMR"
-          icon={<CheckCircle className="w-5 h-5" />}
           colorScheme="teal"
         />
       </div>

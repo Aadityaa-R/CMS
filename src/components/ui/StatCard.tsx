@@ -4,7 +4,7 @@ interface StatCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   trend?: {
     value: string;
     isPositive: boolean;
@@ -35,27 +35,35 @@ export const StatCard: React.FC<StatCardProps> = ({
         <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {title}
         </span>
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconColorClasses[colorScheme]}`}>
-          {icon}
-        </div>
-      </div>
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-          {value}
-        </span>
-        {trend && (
-          <span
-            className={`text-xs font-semibold ${
-              trend.isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-            }`}
-          >
-            {trend.isPositive ? '+' : ''}
-            {trend.value}
+        {icon ? (
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconColorClasses[colorScheme]}`}>
+            {icon}
+          </div>
+        ) : (
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            {value}
           </span>
         )}
       </div>
+      {icon && (
+        <div className="mt-3 flex items-baseline gap-2">
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            {value}
+          </span>
+          {trend && (
+            <span
+              className={`text-xs font-semibold ${
+                trend.isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              }`}
+            >
+              {trend.isPositive ? '+' : ''}
+              {trend.value}
+            </span>
+          )}
+        </div>
+      )}
       {subtitle && (
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
+        <p className={`${icon ? 'mt-1' : 'mt-2'} text-xs text-slate-500 dark:text-slate-400`}>{subtitle}</p>
       )}
     </div>
   );
