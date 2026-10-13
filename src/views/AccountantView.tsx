@@ -203,12 +203,13 @@ export const AccountantView: React.FC<AccountantViewProps> = ({ activeTab: _acti
                     </td>
                     <td className="px-4 py-3 text-right">
                       {inv.status !== 'paid' ? (
-                        <button
+                        <Button
+                          size="xs"
+                          variant="primary"
                           onClick={() => handleOpenPayment(inv)}
-                          className="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded font-medium text-xs transition-colors"
                         >
                           Collect Payment
-                        </button>
+                        </Button>
                       ) : (
                         <span className="text-emerald-700 font-medium text-[11px]">
                           Settled via {inv.paymentMethod || 'Payment'}

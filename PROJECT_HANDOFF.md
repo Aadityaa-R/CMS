@@ -126,3 +126,4 @@ When continuing work in the new chat:
    - The next phase is to run `npm run dev`, test the user experience across all 8 roles, and proceed with **Pillars 6 and 7**:
      - Deepening inter-role workflows (e.g., verifying that a new prescription written by a Doctor immediately shows up in the Pharmacist's queue and Patient's portal; verifying that a new lab order shows up in the Lab Tech's worklist).
      - Refining UI polish, responsive tablet/mobile behaviors, and advanced filtering/search features.
+

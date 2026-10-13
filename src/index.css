@@ -3,20 +3,202 @@
 @tailwind utilities;
 
 @layer base {
+  *, ::before, ::after {
+    border-color: #e2e8f0;
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-800 antialiased;
+    @apply bg-slate-50 text-slate-800 antialiased font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Universal Custom UI Focus Rings - replaces native browser focus outline */
+  :focus-visible {
+    @apply outline-none ring-2 ring-teal-500 ring-offset-2 ring-offset-white;
+  }
+
+  /* Universal Selection Color */
+  ::selection {
+    @apply bg-teal-100 text-teal-900;
+  }
+
+  /* Typography Defaults */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-slate-900 tracking-tight font-semibold;
+  }
+
+  p {
+    @apply text-slate-600;
+  }
+
+  /* Universal UI Base for all Buttons - eliminate native button bevels and default styling */
+  button {
+    @apply cursor-pointer font-medium transition-colors select-none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus {
+    @apply outline-none;
+  }
+
+  /* Universal UI Base for Text Inputs - eliminate native browser borders and appearance */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"] {
+    @apply rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all;
+  }
+
+  input[type="text"]:hover,
+  input[type="email"]:hover,
+  input[type="password"]:hover,
+  input[type="number"]:hover,
+  input[type="search"]:hover,
+  input[type="tel"]:hover,
+  input[type="url"]:hover,
+  input[type="date"]:hover,
+  input[type="datetime-local"]:hover,
+  input[type="time"]:hover {
+    @apply border-slate-400;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  input[type="search"]:focus,
+  input[type="tel"]:focus,
+  input[type="url"]:focus,
+  input[type="date"]:focus,
+  input[type="datetime-local"]:focus,
+  input[type="time"]:focus {
+    @apply border-teal-500 outline-none ring-2 ring-teal-500/20 ring-offset-0;
+  }
+
+  input:disabled {
+    @apply bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed;
+  }
+
+  /* Universal UI Base for Textarea */
+  textarea {
+    @apply rounded-lg border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all resize-y;
+  }
+
+  textarea:hover {
+    @apply border-slate-400;
+  }
+
+  textarea:focus {
+    @apply border-teal-500 outline-none ring-2 ring-teal-500/20 ring-offset-0;
+  }
+
+  textarea:disabled {
+    @apply bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed;
+  }
+
+  /* Universal UI Base for Select Elements - eliminates native OS dropdown arrow across entire app */
+  select {
+    @apply rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition-all cursor-pointer appearance-none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.15em 1.15em;
+    padding-right: 2.25rem;
+  }
+
+  select:hover {
+    @apply border-slate-400;
+  }
+
+  select:focus {
+    @apply border-teal-500 outline-none ring-2 ring-teal-500/20 ring-offset-0;
+  }
+
+  select:disabled {
+    @apply bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed;
+  }
+
+  /* Universal UI Base for Checkboxes */
+  input[type="checkbox"] {
+    @apply w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 focus:ring-offset-0 transition-colors cursor-pointer;
+    accent-color: #0d9488;
+  }
+
+  /* Universal UI Base for Radio Buttons */
+  input[type="radio"] {
+    @apply w-4 h-4 border-slate-300 text-teal-600 focus:ring-teal-500 focus:ring-offset-0 transition-colors cursor-pointer;
+    accent-color: #0d9488;
+  }
+
+  /* Universal UI Base for Tables */
+  table {
+    @apply w-full border-collapse text-left text-sm text-slate-700;
+  }
+
+  thead {
+    @apply bg-slate-50/80 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  th {
+    @apply px-4 py-3 font-semibold;
+  }
+
+  td {
+    @apply px-4 py-3 border-b border-slate-100;
+  }
+
+  tbody tr {
+    @apply transition-colors hover:bg-slate-50/75;
+  }
+
+  /* Native Webkit Date & Time Picker Indicator - styled to clinical theme */
+  ::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px;
+    filter: invert(0.35) sepia(0.5) saturate(2) hue-rotate(130deg);
+    opacity: 0.75;
+    transition: opacity 0.15s ease;
+  }
+
+  ::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  /* Number input spinners */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    opacity: 0.6;
+    cursor: pointer;
   }
 }
 
-/* Custom scrollbars for clean clinical dashboard views */
+/* Custom Sleek Scrollbars across Webkit & Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f8fafc;
 }
 
 ::-webkit-scrollbar-thumb {

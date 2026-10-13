@@ -264,12 +264,13 @@ export const PharmacistView: React.FC<PharmacistViewProps> = ({ activeTab: _acti
                       </td>
                       <td className="px-4 py-3 text-slate-600">{item.location}</td>
                       <td className="px-4 py-3 text-right">
-                        <button
+                        <Button
+                          size="xs"
+                          variant="soft"
                           onClick={() => adjustInventoryStock(item.id, 50)}
-                          className="px-2.5 py-1 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded border border-teal-200/60 transition-colors"
                         >
                           +50 Units
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   );

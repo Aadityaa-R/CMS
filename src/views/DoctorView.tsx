@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
 import {
@@ -257,27 +258,29 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab })
 
                       <div className="mt-3 flex items-center gap-2">
                         {apt.status !== 'in_consultation' && apt.status !== 'completed' && (
-                          <button
+                          <Button
+                            size="xs"
+                            variant="primary"
                             onClick={(e) => {
                               e.stopPropagation();
                               updateAppointmentStatus(apt.id, 'in_consultation');
                               setSelectedAppointment(apt);
                             }}
-                            className="text-xs px-2.5 py-1 rounded bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors"
                           >
                             Call into Room
-                          </button>
+                          </Button>
                         )}
                         {apt.status === 'in_consultation' && (
-                          <button
+                          <Button
+                            size="xs"
+                            variant="secondary"
                             onClick={(e) => {
                               e.stopPropagation();
                               updateAppointmentStatus(apt.id, 'completed');
                             }}
-                            className="text-xs px-2.5 py-1 rounded bg-slate-800 text-white font-medium hover:bg-slate-900 transition-colors"
                           >
                             Finish Consultation
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -434,11 +437,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab })
                     <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
                       Doctor Clinical Notes & Observations
                     </h4>
-                    <textarea
+                    <Textarea
                       rows={3}
                       defaultValue={selectedAppointment.notes || ''}
                       placeholder="Enter clinical examination findings, auscultation, follow-up instructions..."
-                      className="mt-1.5 w-full text-xs p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
 
@@ -448,12 +450,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab })
                       <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
                         Patient Medication & Prescriptions
                       </h4>
-                      <button
+                      <Button
+                        size="xs"
+                        variant="soft"
                         onClick={() => setIsPrescriptionModalOpen(true)}
-                        className="text-xs text-teal-600 font-medium hover:text-teal-800"
                       >
                         + Add Medication
-                      </button>
+                      </Button>
                     </div>
 
                     <div className="space-y-2">
@@ -501,12 +504,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab })
                       <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
                         Diagnostic Lab Orders
                       </h4>
-                      <button
+                      <Button
+                        size="xs"
+                        variant="soft"
                         onClick={() => setIsLabOrderModalOpen(true)}
-                        className="text-xs text-teal-600 font-medium hover:text-teal-800"
                       >
                         + Order New Test
-                      </button>
+                      </Button>
                     </div>
 
                     <div className="space-y-2">
@@ -592,14 +596,15 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab })
               <span className="text-xs font-semibold text-slate-900">
                 Prescribed Medications
               </span>
-              <button
+              <Button
                 type="button"
+                size="xs"
+                variant="soft"
+                icon={<Plus className="w-3.5 h-3.5" />}
                 onClick={handleAddMedicationRow}
-                className="text-xs text-teal-600 font-semibold hover:text-teal-800 flex items-center gap-1"
               >
-                <Plus className="w-3.5 h-3.5" />
                 Add Medicine
-              </button>
+              </Button>
             </div>
 
             {prescriptionItems.map((med, idx) => (
@@ -721,3 +726,4 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab })
     </div>
   );
 };
+

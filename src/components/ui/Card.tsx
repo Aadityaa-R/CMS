@@ -56,3 +56,4 @@ export const CardContent: React.FC<{
 }> = ({ children, className = '' }) => {
   return <div className={`p-5 ${className}`}>{children}</div>;
 };
+

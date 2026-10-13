@@ -236,14 +236,15 @@ export const ClinicAdminView: React.FC<ClinicAdminViewProps> = ({ activeTab }) =
                           </td>
                           <td className="px-4 py-3 text-right">
                             {apt.status !== 'completed' && (
-                              <button
+                              <Button
+                                size="xs"
+                                variant="soft"
                                 onClick={() =>
                                   updateAppointmentStatus(apt.id, 'completed')
                                 }
-                                className="text-xs text-teal-600 hover:text-teal-800 font-medium"
                               >
                                 Mark Completed
-                              </button>
+                              </Button>
                             )}
                           </td>
                         </tr>

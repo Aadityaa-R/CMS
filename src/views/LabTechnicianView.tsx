@@ -182,23 +182,25 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab:
                     </td>
                     <td className="px-4 py-3 text-right space-x-2">
                       {test.status === 'ordered' && (
-                        <button
+                        <Button
+                          size="xs"
+                          variant="secondary"
                           onClick={() =>
                             updateLabTestStatus(test.id, 'sample_collected')
                           }
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded font-medium text-xs transition-colors"
                         >
                           Collect Sample
-                        </button>
+                        </Button>
                       )}
 
                       {test.status !== 'completed' && (
-                        <button
+                        <Button
+                          size="xs"
+                          variant="primary"
                           onClick={() => handleOpenResultModal(test)}
-                          className="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded font-medium text-xs transition-colors"
                         >
                           Enter Result
-                        </button>
+                        </Button>
                       )}
 
                       {test.status === 'completed' && (

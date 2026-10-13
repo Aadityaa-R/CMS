@@ -156,12 +156,13 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
         <Card>
           <CardHeader
             action={
-              <button
+              <Button
+                size="xs"
+                variant="soft"
                 onClick={() => setIsBookModalOpen(true)}
-                className="text-xs text-teal-600 font-semibold hover:text-teal-800"
               >
                 + Book Visit
-              </button>
+              </Button>
             }
           >
             <CardTitle>My Appointments & Visits</CardTitle>

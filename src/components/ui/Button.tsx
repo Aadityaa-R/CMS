@@ -2,7 +2,7 @@ import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'soft';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   icon?: React.ReactNode;
 }
@@ -18,9 +18,10 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none rounded-lg';
+    'inline-flex items-center justify-center font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none rounded-lg cursor-pointer select-none active:scale-[0.98]';
 
   const sizeClasses = {
+    xs: 'text-[11px] px-2 py-1 gap-1',
     sm: 'text-xs px-2.5 py-1.5 gap-1.5',
     md: 'text-sm px-3.5 py-2 gap-2',
     lg: 'text-base px-5 py-2.5 gap-2.5',
@@ -28,17 +29,17 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary:
-      'bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 shadow-sm',
+      'bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 shadow-sm border border-transparent',
     secondary:
-      'bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-700 shadow-sm',
+      'bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-700 shadow-sm border border-transparent',
     outline:
-      'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:ring-teal-500 shadow-sm',
+      'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus:ring-teal-500 shadow-sm',
     danger:
-      'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-sm',
+      'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-sm border border-transparent',
     ghost:
-      'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-400',
+      'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-400 border border-transparent',
     soft:
-      'bg-teal-50 text-teal-700 hover:bg-teal-100 focus:ring-teal-500 border border-teal-200/50',
+      'bg-teal-50 text-teal-700 hover:bg-teal-100 hover:border-teal-300 focus:ring-teal-500 border border-teal-200/60',
   };
 
   return (
@@ -52,7 +53,7 @@ export const Button: React.FC<ButtonProps> = ({
       ) : (
         icon && <span className="inline-flex shrink-0">{icon}</span>
       )}
-      <span>{children}</span>
+      {children && <span>{children}</span>}
     </button>
   );
 };

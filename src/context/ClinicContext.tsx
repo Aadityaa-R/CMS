@@ -289,3 +289,4 @@ export const useClinic = () => {
   }
   return context;
 };
+

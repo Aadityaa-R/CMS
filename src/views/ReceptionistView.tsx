@@ -249,14 +249,15 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab: _
                     </td>
                     <td className="px-4 py-3 text-right space-x-2">
                       {apt.status === 'scheduled' || apt.status === 'confirmed' ? (
-                        <button
+                        <Button
+                          size="xs"
+                          variant="primary"
                           onClick={() =>
                             updateAppointmentStatus(apt.id, 'checked_in')
                           }
-                          className="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded font-medium text-xs transition-colors"
                         >
                           Check In & Issue Token
-                        </button>
+                        </Button>
                       ) : apt.status === 'checked_in' ? (
                         <span className="text-amber-700 font-medium text-[11px]">
                           Waiting in Lounge
