@@ -12,7 +12,6 @@ import { StatCard } from '@/components/ui/StatCard';
 import {
   FlaskConical,
   CheckCircle,
-  AlertCircle,
   Search,
   Activity,
   CheckCircle2,
@@ -140,19 +139,19 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
     setTechNotes('');
   };
 
-  // Helper for Specimen Tube Color
-  const getContainerBadge = (sampleType: string) => {
+  // Helper for Specimen Tube Name
+  const getContainerName = (sampleType: string): string => {
     const s = sampleType.toLowerCase();
     if (s.includes('blood') || s.includes('edta')) {
-      return <Badge size="sm" variant="danger">Lavender EDTA Tube</Badge>;
+      return 'Lavender EDTA Tube';
     }
     if (s.includes('serum') || s.includes('lipid') || s.includes('cmp')) {
-      return <Badge size="sm" variant="amber">Gold Serum Gel Tube</Badge>;
+      return 'Gold Serum Gel Tube';
     }
     if (s.includes('urine')) {
-      return <Badge size="sm" variant="warning">Sterile Urine Cup</Badge>;
+      return 'Sterile Urine Cup';
     }
-    return <Badge size="sm" variant="neutral">{sampleType}</Badge>;
+    return sampleType;
   };
 
   return (
@@ -196,21 +195,21 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           title="Awaiting Sample"
           value={pendingCollection.length}
           subtitle="Orders requiring phlebotomy"
-          icon={<Activity className="w-5 h-5" />}
+          icon={<i className="fa-solid fa-vial-circle-check text-lg" />}
           colorScheme="amber"
         />
         <StatCard
           title="In Testing Pipeline"
           value={pendingAnalysis.length}
           subtitle="Specimens ready for assay"
-          icon={<FlaskConical className="w-5 h-5" />}
+          icon={<i className="fa-solid fa-vials text-lg" />}
           colorScheme="blue"
         />
         <StatCard
           title="Urgent / STAT Priority"
           value={urgentOrders.length}
           subtitle="Emergency rapid turnaround"
-          icon={<AlertCircle className="w-5 h-5" />}
+          icon={<i className="fa-solid fa-exclamation text-lg" />}
           colorScheme={urgentOrders.length > 0 ? 'rose' : 'slate'}
         />
         <StatCard
@@ -377,33 +376,36 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                           </td>
                           <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
                           <td className="px-4 py-3.5 align-middle">
-                            <Badge
-                              size="sm"
-                              variant={
+                            <span
+                              className={`text-xs capitalize font-medium ${
                                 test.priority === 'stat'
-                                    ? 'danger'
+                                  ? 'text-rose-600 dark:text-rose-400 font-semibold'
                                   : test.priority === 'urgent'
-                                  ? 'amber'
-                                  : 'neutral'
-                              }
+                                  ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                                  : 'text-slate-700 dark:text-slate-300'
+                              }`}
                             >
-                              {test.priority.toUpperCase()}
-                            </Badge>
+                              {test.priority === 'stat' ? 'STAT' : test.priority}
+                            </span>
                           </td>
-                          <td className="px-4 py-3.5 align-middle">{getContainerBadge(test.sampleType)}</td>
+                          <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300 font-normal">
+                            {getContainerName(test.sampleType)}
+                          </td>
                           <td className="px-4 py-3.5 align-middle">
-                            <Badge
-                              size="sm"
-                              variant={
-                                test.status === 'completed'
-                                  ? 'success'
-                                  : test.status === 'sample_collected'
-                                  ? 'info'
-                                  : 'warning'
-                              }
-                            >
-                              {test.status.replace('_', ' ')}
-                            </Badge>
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                  test.status === 'completed'
+                                    ? 'bg-emerald-500'
+                                    : test.status === 'sample_collected'
+                                    ? 'bg-sky-500'
+                                    : 'bg-amber-500'
+                                }`}
+                              />
+                              <span className="text-xs text-slate-700 dark:text-slate-300 capitalize font-medium">
+                                {test.status.replace('_', ' ')}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-4 py-3.5 align-middle">
                             {test.result ? (
@@ -504,21 +506,22 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                           <div className="font-medium text-xs text-slate-900 dark:text-slate-100">{test.testName}</div>
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">{test.category}</div>
                         </td>
-                        <td className="px-4 py-3.5 align-middle">{getContainerBadge(test.sampleType)}</td>
+                        <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300 font-normal">
+                          {getContainerName(test.sampleType)}
+                        </td>
                         <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
                         <td className="px-4 py-3.5 align-middle">
-                          <Badge
-                            size="sm"
-                            variant={
+                          <span
+                            className={`text-xs capitalize font-medium ${
                               test.priority === 'stat'
-                                ? 'danger'
+                                ? 'text-rose-600 dark:text-rose-400 font-semibold'
                                 : test.priority === 'urgent'
-                                ? 'amber'
-                                : 'neutral'
-                            }
+                                ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                                : 'text-slate-700 dark:text-slate-300'
+                            }`}
                           >
-                            {test.priority.toUpperCase()}
-                          </Badge>
+                            {test.priority === 'stat' ? 'STAT' : test.priority}
+                          </span>
                         </td>
                         <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate">
                           {test.clinicalNotes || 'Routine pre-consultation assessment'}
@@ -600,18 +603,17 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                         </td>
                         <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
                         <td className="px-4 py-3.5 align-middle">
-                          <Badge
-                            size="sm"
-                            variant={
+                          <span
+                            className={`text-xs capitalize font-medium ${
                               test.priority === 'stat'
-                                ? 'danger'
+                                ? 'text-rose-600 dark:text-rose-400 font-semibold'
                                 : test.priority === 'urgent'
-                                ? 'amber'
-                                : 'neutral'
-                            }
+                                ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                                : 'text-slate-700 dark:text-slate-300'
+                            }`}
                           >
-                            {test.priority.toUpperCase()}
-                          </Badge>
+                            {test.priority === 'stat' ? 'STAT' : test.priority}
+                          </span>
                         </td>
                         <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap">
                           {test.sampleCollectedAt
