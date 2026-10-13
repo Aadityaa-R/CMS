@@ -1,4 +1,8 @@
-__pycache__/
-*.pyc
-*.db
+node_modules/
+dist/
+dist-ssr/
+*.local
 .env
+.env.*
+.DS_Store
+*.log
