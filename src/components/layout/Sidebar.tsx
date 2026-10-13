@@ -15,7 +15,6 @@ import {
   PlusCircle,
   FilePlus,
   ShieldCheck,
-  ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 
@@ -129,72 +128,73 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar container */}
       <aside
-        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800 ${
-          isCollapsed ? 'lg:w-16' : 'lg:w-64'
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] border-r border-slate-800 overflow-hidden shrink-0 ${
+          isCollapsed ? 'lg:w-16 w-16' : 'lg:w-64 w-64'
         } ${
-          isOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0'
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Brand / Role header */}
-        <div className={`border-b border-slate-800 ${isCollapsed ? 'p-3 text-center' : 'p-5'}`}>
-          {isCollapsed ? (
-            <div className="flex flex-col items-center gap-2">
+        {/* Brand / Role header & Single Arrow Toggle Control */}
+        <div className="border-b border-slate-800 p-2.5 flex flex-col items-center gap-2">
+          <div className="w-full flex items-center justify-between overflow-hidden">
+            <div className="flex items-center min-w-0">
               <div
-                className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-teal-400"
+                className="w-10 h-10 rounded-lg bg-slate-800/90 flex items-center justify-center text-teal-400 shrink-0"
                 title="Clinic Portal"
               >
                 <ShieldCheck className="w-5 h-5 text-teal-400" />
               </div>
-              {onToggleCollapse && (
-                <button
-                  type="button"
-                  onClick={onToggleCollapse}
-                  className="w-10 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                  title="Expand Side Panel"
-                  aria-label="Expand Side Panel"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ) : (
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-teal-400 font-bold text-sm tracking-wide uppercase">
-                  <ShieldCheck className="w-5 h-5 text-teal-400" />
-                  <span>Clinic Portal</span>
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap ${
+                  isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[130px] opacity-100 ml-3'
+                }`}
+              >
+                <div className="text-xs font-bold text-teal-400 tracking-wide uppercase">
+                  Clinic Portal
                 </div>
-                {onToggleCollapse && (
-                  <button
-                    type="button"
-                    onClick={onToggleCollapse}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                    title="Collapse Side Panel"
-                    aria-label="Collapse Side Panel"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <div className="mt-3 px-3 py-2 bg-slate-800/80 rounded-lg border border-slate-700/60">
-                <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                  Current Workspace
-                </div>
-                <div className="text-sm font-semibold text-white capitalize mt-0.5">
+                <div className="text-[11px] text-slate-400 font-medium capitalize truncate">
                   {currentRole.replace('_', ' ')}
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Single Arrow Mark Button that stays on the side panel */}
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className={`w-full py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center transition-all duration-300 cursor-pointer ${
+                isCollapsed ? 'justify-center px-1' : 'justify-between px-3'
+              }`}
+              title={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
+              aria-label={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
+            >
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap text-[11px] font-medium text-slate-400 ${
+                  isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[120px] opacity-100'
+                }`}
+              >
+                Collapse Menu
+              </div>
+              <ChevronRight
+                className={`w-4 h-4 text-teal-400 shrink-0 transition-transform duration-300 ease-in-out ${
+                  !isCollapsed ? 'rotate-180' : 'rotate-0'
+                }`}
+              />
+            </button>
           )}
         </div>
 
         {/* Navigation list */}
-        <nav className={`flex-1 py-4 space-y-1.5 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-3'}`}>
-          {!isCollapsed && (
-            <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-              Navigation Menu
-            </div>
-          )}
+        <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto overflow-x-hidden">
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap px-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider ${
+              isCollapsed ? 'max-w-0 opacity-0 pb-0' : 'max-w-[140px] opacity-100 pb-2'
+            }`}
+          >
+            Navigation Menu
+          </div>
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -206,20 +206,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 title={item.label}
                 aria-label={item.label}
-                className={`w-full flex items-center rounded-lg text-xs font-medium transition-all ${
-                  isCollapsed
-                    ? 'justify-center p-3'
-                    : 'gap-3 px-3 py-2.5'
+                className={`w-full flex items-center rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
+                  isCollapsed ? 'justify-center p-3' : 'px-3 py-2.5'
                 } ${
                   isActive
                     ? 'bg-teal-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'
                 }`}
               >
-                <span className={isActive ? 'text-white' : 'text-slate-400'}>
+                <span className={`shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`}>
                   {item.icon}
                 </span>
-                {!isCollapsed && <span className="truncate">{item.label}</span>}
+                <span
+                  className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap truncate ${
+                    isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[160px] opacity-100 ml-3'
+                  }`}
+                >
+                  {item.label}
+                </span>
               </button>
             );
           })}

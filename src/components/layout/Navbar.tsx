@@ -6,7 +6,6 @@ import {
   Search,
   Building2,
   CheckCircle2,
-  PanelLeft,
   User,
   Settings,
   LogOut,
@@ -23,7 +22,7 @@ interface NavbarProps {
   onToggleSidebar?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
+export const Navbar: React.FC<NavbarProps> = () => {
   const { currentUser, currentRole, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -69,15 +68,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
       <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs transition-colors">
         {/* Brand / Clinic Title */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={onToggleSidebar}
-            className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
-            aria-label="Toggle Side Navigation"
-            title="Toggle Side Navigation"
-          >
-            <PanelLeft className="w-5 h-5" />
-          </button>
-
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold shadow-sm ring-2 ring-teal-500/20">
               <Building2 className="w-5 h-5" />

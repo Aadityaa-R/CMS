@@ -15,6 +15,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const saved = localStorage.getItem('cms_theme');
       if (saved === 'dark' || saved === 'light') {
+        if (saved === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.body.classList.add('dark');
+        }
         return saved;
       }
     } catch {
@@ -61,3 +65,4 @@ export const useTheme = (): ThemeContextType => {
   }
   return context;
 };
+

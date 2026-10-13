@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
 import { LoginView } from '@/views/LoginView';
@@ -16,6 +17,7 @@ import { LabTechnicianView } from '@/views/LabTechnicianView';
 
 export const AppLayout: React.FC = () => {
   const { currentRole, isAuthenticated } = useAuth();
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
@@ -53,14 +55,8 @@ export const AppLayout: React.FC = () => {
     }
   };
 
-  const handleToggleSidebar = () => {
-    // Toggles collapsed state on desktop and open state on mobile
-    setIsSidebarCollapsed((prev) => !prev);
-    setIsSidebarOpen((prev) => !prev);
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors">
+    <div className={`min-h-screen flex flex-col font-sans antialiased transition-colors ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       <div className="flex-1 flex overflow-hidden min-h-screen">
         {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
         <Sidebar
@@ -75,7 +71,7 @@ export const AppLayout: React.FC = () => {
         {/* Content Shell */}
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
           {/* Header with profile & logout */}
-          <Navbar onToggleSidebar={handleToggleSidebar} />
+          <Navbar />
 
           {/* Main View Area */}
           <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
