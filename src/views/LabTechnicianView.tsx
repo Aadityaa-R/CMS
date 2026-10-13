@@ -349,7 +349,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     <th className="px-4 py-3.5 align-middle">Specimen Tube</th>
                     <th className="px-4 py-3.5 align-middle">Status</th>
                     <th className="px-4 py-3.5 align-middle">Reported Result</th>
-                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
+                    <th className="px-4 py-3.5 text-left align-middle">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -414,7 +414,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                               <span className="text-xs text-slate-400 dark:text-slate-500 italic">Pending assay</span>
                             )}
                           </td>
-                          <td className="px-4 py-3.5 text-right align-middle whitespace-nowrap space-x-2">
+                          <td className="px-4 py-3.5 text-left align-middle whitespace-nowrap space-x-2">
                             {test.status === 'ordered' && (
                               <Button
                                 size="xs"
@@ -488,7 +488,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     <th className="px-4 py-3.5 align-middle">Ordering Doctor</th>
                     <th className="px-4 py-3.5 align-middle">Priority</th>
                     <th className="px-4 py-3.5 align-middle">Clinical Indication</th>
-                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
+                    <th className="px-4 py-3.5 text-left align-middle">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -526,7 +526,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                         <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate">
                           {test.clinicalNotes || 'Routine pre-consultation assessment'}
                         </td>
-                        <td className="px-4 py-3.5 text-right align-middle whitespace-nowrap">
+                        <td className="px-4 py-3.5 text-left align-middle whitespace-nowrap">
                           <Button
                             size="xs"
                             variant="primary"
@@ -583,7 +583,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     <th className="px-4 py-3.5 align-middle">Priority</th>
                     <th className="px-4 py-3.5 align-middle">Collected At</th>
                     <th className="px-4 py-3.5 align-middle">Clinical Indication</th>
-                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
+                    <th className="px-4 py-3.5 text-left align-middle">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -623,7 +623,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                         <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate">
                           {test.clinicalNotes || 'Diagnostic verification'}
                         </td>
-                        <td className="px-4 py-3.5 text-right align-middle whitespace-nowrap">
+                        <td className="px-4 py-3.5 text-left align-middle whitespace-nowrap">
                           <Button
                             size="xs"
                             variant="primary"

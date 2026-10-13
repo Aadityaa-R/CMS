@@ -129,49 +129,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar container */}
       <aside
-        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] border-r border-slate-800 overflow-hidden shrink-0 ${
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[width] border-r border-slate-800 overflow-hidden shrink-0 select-none ${
           isCollapsed ? 'lg:w-16 w-16' : 'lg:w-64 w-64'
         } ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Brand / Role header & Single Console Toggle Control */}
-        <div className="h-20 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
+        <div className="h-20 border-b border-slate-800 px-2.5 flex items-center justify-between shrink-0">
           <div className="flex items-center min-w-0">
             {/* Sidebar Console Toggle Icon with Arrow */}
             {onToggleCollapse ? (
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-400 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm shrink-0 group focus:outline-none focus:ring-1 focus:ring-teal-500"
+                className="w-10 h-10 flex items-center justify-center text-teal-400 hover:text-teal-300 transition-colors duration-200 cursor-pointer shrink-0 focus:outline-none"
                 title={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
                 aria-label={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
               >
                 {isCollapsed ? (
-                  <PanelLeftOpen className="w-5 h-5 text-teal-400 group-hover:text-teal-300 transition-colors" />
+                  <PanelLeftOpen className="w-7 h-7 text-teal-400 hover:text-teal-300 transition-colors" />
                 ) : (
-                  <PanelLeftClose className="w-5 h-5 text-teal-400 group-hover:text-teal-300 transition-colors" />
+                  <PanelLeftClose className="w-7 h-7 text-teal-400 hover:text-teal-300 transition-colors" />
                 )}
               </button>
             ) : (
               <div
-                className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-teal-400 shrink-0"
+                className="w-10 h-10 flex items-center justify-center text-teal-400 shrink-0"
                 title="Clinic Portal"
               >
-                <PanelLeft className="w-5 h-5 text-teal-400" />
+                <PanelLeft className="w-7 h-7 text-teal-400" />
               </div>
             )}
 
             {/* Clinic Portal Brand Details */}
             <div
               className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap ${
-                isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[140px] opacity-100 ml-3'
+                isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[170px] opacity-100 ml-2.5'
               }`}
             >
               <div className="text-xs font-bold text-teal-400 tracking-wide uppercase">
                 Clinic Portal
               </div>
-              <div className="text-[11px] text-slate-400 font-medium capitalize truncate mt-0.5">
+              <div className="text-xs font-semibold text-slate-300 capitalize truncate mt-0.5">
                 {currentRole.replace('_', ' ')}
               </div>
             </div>
@@ -182,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto overflow-x-hidden">
           <div
             className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap px-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider ${
-              isCollapsed ? 'max-w-0 opacity-0 pb-0' : 'max-w-[140px] opacity-100 pb-2'
+              isCollapsed ? 'max-w-0 opacity-0 pb-0' : 'max-w-[170px] opacity-100 pb-2'
             }`}
           >
             Navigation Menu
@@ -198,20 +198,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 title={item.label}
                 aria-label={item.label}
-                className={`w-full flex items-center rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
-                  isCollapsed ? 'justify-center p-3' : 'px-3 py-2.5'
-                } ${
+                className={`w-full flex items-center px-1.5 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
                   isActive
                     ? 'bg-teal-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'
                 }`}
               >
-                <span className={`shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`}>
+                <span className={`w-7 h-7 flex items-center justify-center shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`}>
                   {item.icon}
                 </span>
                 <span
                   className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap truncate ${
-                    isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[160px] opacity-100 ml-3'
+                    isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[170px] opacity-100 ml-2.5'
                   }`}
                 >
                   {item.label}
