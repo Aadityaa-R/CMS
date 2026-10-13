@@ -34,7 +34,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
           {title}
         </span>
         {icon ? (

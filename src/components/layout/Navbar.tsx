@@ -26,11 +26,13 @@ export const Navbar: React.FC<NavbarProps> = () => {
   const { currentUser, currentRole, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -39,14 +41,20 @@ export const Navbar: React.FC<NavbarProps> = () => {
       ) {
         setIsDropdownOpen(false);
       }
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target as Node)
+      ) {
+        setIsNotificationsOpen(false);
+      }
     };
-    if (isDropdownOpen) {
+    if (isDropdownOpen || isNotificationsOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, isNotificationsOpen]);
 
   const handleOpenProfile = () => {
     setIsDropdownOpen(false);
@@ -103,15 +111,42 @@ export const Navbar: React.FC<NavbarProps> = () => {
             </div>
           )}
 
-          {/* Notifications indicator */}
-          <div className="relative">
+          {/* Notifications indicator with interactive popover */}
+          <div className="relative" ref={notificationsRef}>
             <button
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+              type="button"
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer relative focus:outline-none"
               aria-label="Notifications"
+              aria-expanded={isNotificationsOpen}
             >
               <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full ring-2 ring-white dark:ring-slate-900" />
             </button>
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full ring-2 ring-white dark:ring-slate-900" />
+
+            {/* Notification Dropdown Popover */}
+            {isNotificationsOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-4 z-50 animate-fadeIn">
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Notifications</span>
+                    <span className="text-[10px] bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 font-semibold px-2 py-0.5 rounded-full border border-teal-200/50 dark:border-teal-800/50">
+                      0 Unread
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-teal-600 dark:text-teal-400 font-medium">All caught up</span>
+                </div>
+                <div className="py-6 text-center">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-2.5 text-slate-400 dark:text-slate-500">
+                    <Bell className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">No new notifications</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-[220px] mx-auto leading-relaxed">
+                    Clinical alerts, diagnostic order requisitions, and critical updates will appear here.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Profile Dropdown Container: only the profile icon */}

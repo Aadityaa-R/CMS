@@ -431,8 +431,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                             )}
 
                             {test.status === 'completed' && (
-                              <span className="text-emerald-700 dark:text-emerald-400 font-medium text-xs inline-flex items-center gap-1.5">
-                                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                              <span className="text-emerald-700 dark:text-emerald-400 font-medium text-xs">
                                 Certified
                               </span>
                             )}
