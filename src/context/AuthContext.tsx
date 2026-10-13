@@ -75,6 +75,7 @@ interface AuthContextType {
   login: (identifier: string, password: string) => LoginResult;
   loginAs: (role: UserRole) => void;
   switchRole: (role: UserRole) => void;
+  updateCurrentUser: (updates: Partial<User>) => void;
   logout: () => void;
 }
 
@@ -100,7 +101,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentRole, isAuthenticated]);
 
-  const currentUser = DEMO_USERS[currentRole] || DEMO_USERS.clinic_admin;
+  const [userProfiles, setUserProfiles] = useState<Record<UserRole, User>>(() => {
+    try {
+      const saved = sessionStorage.getItem('cms_user_profiles');
+      if (saved) {
+        return { ...DEMO_USERS, ...JSON.parse(saved) };
+      }
+    } catch {
+      // Fallback
+    }
+    return DEMO_USERS;
+  });
+
+  const currentUser = userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.clinic_admin;
+
+  const updateCurrentUser = (updates: Partial<User>) => {
+    setUserProfiles((prev) => {
+      const existingUser = prev[currentRole] || DEMO_USERS[currentRole];
+      const updatedUser: User = {
+        ...existingUser,
+        ...updates,
+      };
+      const nextProfiles = {
+        ...prev,
+        [currentRole]: updatedUser,
+      };
+      try {
+        sessionStorage.setItem('cms_user_profiles', JSON.stringify(nextProfiles));
+      } catch {
+        // Fallback
+      }
+      return nextProfiles;
+    });
+  };
 
   const login = (identifier: string, password: string): LoginResult => {
     const cleanId = identifier.trim().toLowerCase();
@@ -160,6 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         loginAs,
         switchRole: loginAs,
+        updateCurrentUser,
         logout,
       }}
     >

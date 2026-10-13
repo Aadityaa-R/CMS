@@ -16,18 +16,26 @@ import {
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = () => {
-  const { currentUser, currentRole, logout } = useAuth();
+  const { currentUser, currentRole, logout, updateCurrentUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileName, setProfileName] = useState('');
+  const [profileTitle, setProfileTitle] = useState('');
+  const [profileDepartment, setProfileDepartment] = useState('');
+  const [profileBadgeNumber, setProfileBadgeNumber] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileFeedback, setProfileFeedback] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +65,39 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
   const handleOpenProfile = () => {
     setIsDropdownOpen(false);
+    setIsEditingProfile(false);
+    setProfileName(currentUser.name);
+    setProfileTitle(currentUser.title || '');
+    setProfileDepartment(currentUser.department || '');
+    setProfileBadgeNumber(currentUser.badgeNumber || '');
+    setProfileEmail(currentUser.email);
+    setProfileFeedback(false);
     setIsProfileModalOpen(true);
+  };
+
+  const handleStartEdit = () => {
+    setProfileName(currentUser.name);
+    setProfileTitle(currentUser.title || '');
+    setProfileDepartment(currentUser.department || '');
+    setProfileBadgeNumber(currentUser.badgeNumber || '');
+    setProfileEmail(currentUser.email);
+    setIsEditingProfile(true);
+  };
+
+  const handleSaveProfile = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    updateCurrentUser({
+      name: profileName.trim() || currentUser.name,
+      title: profileTitle.trim() || currentUser.title,
+      department: profileDepartment.trim() || currentUser.department,
+      badgeNumber: profileBadgeNumber.trim() || currentUser.badgeNumber,
+      email: profileEmail.trim() || currentUser.email,
+    });
+    setIsEditingProfile(false);
+    setProfileFeedback(true);
+    setTimeout(() => {
+      setProfileFeedback(false);
+    }, 3500);
   };
 
   const handleOpenSettings = () => {
@@ -232,72 +272,151 @@ export const Navbar: React.FC<NavbarProps> = () => {
       <Modal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        title="Personnel Profile"
-        description="Authorized account credentials and departmental assignment."
+        title={isEditingProfile ? 'Edit Personnel Profile' : 'Personnel Profile'}
+        description={
+          isEditingProfile
+            ? 'Update your authorized clinical credentials and departmental assignment.'
+            : 'Authorized account credentials and departmental assignment.'
+        }
         maxWidth="md"
         footer={
-          <Button
-            size="sm"
-            variant="primary"
-            onClick={() => setIsProfileModalOpen(false)}
-          >
-            Close
-          </Button>
+          isEditingProfile ? (
+            <div className="flex items-center justify-end gap-2 w-full">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsEditingProfile(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={handleSaveProfile}
+              >
+                Save Changes
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <span className="text-xs text-teal-700 dark:text-teal-400 font-medium">
+                {profileFeedback ? 'Profile updated successfully.' : ''}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleStartEdit}
+                >
+                  Edit Details
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => setIsProfileModalOpen(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )
         }
       >
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-            <div className="w-12 h-12 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-sm">
-              <User className="w-6 h-6 text-white" />
+        {isEditingProfile ? (
+          <form onSubmit={handleSaveProfile} className="space-y-3.5">
+            <Input
+              label="Full Name"
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              placeholder="e.g. Dr. Lisa Wong, MLS(ASCP)"
+              required
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Professional Title / Position"
+                value={profileTitle}
+                onChange={(e) => setProfileTitle(e.target.value)}
+                placeholder="e.g. Lead Medical Technologist"
+              />
+              <Input
+                label="Badge / Terminal ID"
+                value={profileBadgeNumber}
+                onChange={(e) => setProfileBadgeNumber(e.target.value)}
+                placeholder="e.g. LAB-703"
+              />
             </div>
-            <div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                {currentUser.name}
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Department"
+                value={profileDepartment}
+                onChange={(e) => setProfileDepartment(e.target.value)}
+                placeholder="e.g. Diagnostic Pathology"
+              />
+              <Input
+                label="Email Address"
+                type="email"
+                value={profileEmail}
+                onChange={(e) => setProfileEmail(e.target.value)}
+                placeholder="e.g. lisa.wong@beaconhealth.com"
+                required
+              />
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="w-12 h-12 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-sm">
+                <User className="w-6 h-6 text-white" />
               </div>
-              <div className="text-xs text-teal-700 dark:text-teal-400 font-medium capitalize">
-                {currentRole.replace('_', ' ')}
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                {currentUser.title || 'Clinical Personnel'}
+              <div>
+                <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                  {currentUser.name}
+                </div>
+                <div className="text-xs text-teal-700 dark:text-teal-400 font-medium capitalize">
+                  {currentRole.replace('_', ' ')}
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {currentUser.title || 'Clinical Personnel'}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block flex items-center gap-1">
-                <Mail className="w-3 h-3" /> Email Address
-              </span>
-              <span className="font-medium text-slate-800 dark:text-slate-200 break-all">
-                {currentUser.email}
-              </span>
-            </div>
-            <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block flex items-center gap-1">
-                <Shield className="w-3 h-3" /> Department
-              </span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">
-                {currentUser.department || 'Outpatient Services'}
-              </span>
-            </div>
-            <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block flex items-center gap-1">
-                <BadgeCheck className="w-3 h-3" /> Badge / Terminal ID
-              </span>
-              <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
-                {currentUser.badgeNumber || 'STAFF-100'}
-              </span>
-            </div>
-            <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block">
-                Session Status
-              </span>
-              <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                Active & Verified
-              </span>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block flex items-center gap-1">
+                  <Mail className="w-3 h-3" /> Email Address
+                </span>
+                <span className="font-medium text-slate-800 dark:text-slate-200 break-all">
+                  {currentUser.email}
+                </span>
+              </div>
+              <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Department
+                </span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">
+                  {currentUser.department || 'Outpatient Services'}
+                </span>
+              </div>
+              <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block flex items-center gap-1">
+                  <BadgeCheck className="w-3 h-3" /> Badge / Terminal ID
+                </span>
+                <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
+                  {currentUser.badgeNumber || 'STAFF-100'}
+                </span>
+              </div>
+              <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block">
+                  Session Status
+                </span>
+                <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                  Active & Verified
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </Modal>
 
       {/* Terminal Settings Modal */}
@@ -318,32 +437,48 @@ export const Navbar: React.FC<NavbarProps> = () => {
         }
       >
         <div className="space-y-4 text-xs">
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2">
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2.5">
             <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
               Clinical Notification Preferences
             </div>
-            <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-300">
-              <input type="checkbox" defaultChecked className="rounded text-teal-600" />
-              <span>Audible chime on high-priority / STAT orders</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-300">
-              <input type="checkbox" defaultChecked className="rounded text-teal-600" />
-              <span>Real-time queue update banners</span>
-            </label>
+            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+              <input
+                type="checkbox"
+                defaultChecked
+                className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+              />
+              <span className="cursor-default">Audible chime on high-priority / STAT orders</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+              <input
+                type="checkbox"
+                defaultChecked
+                className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+              />
+              <span className="cursor-default">Real-time queue update banners</span>
+            </div>
           </div>
 
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2">
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2.5">
             <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
               Display & Terminal Options
             </div>
-            <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-300">
-              <input type="checkbox" defaultChecked className="rounded text-teal-600" />
-              <span>High contrast clinical table borders</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-300">
-              <input type="checkbox" defaultChecked className="rounded text-teal-600" />
-              <span>Compact table row density</span>
-            </label>
+            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+              <input
+                type="checkbox"
+                defaultChecked
+                className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+              />
+              <span className="cursor-default">High contrast clinical table borders</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+              <input
+                type="checkbox"
+                defaultChecked
+                className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+              />
+              <span className="cursor-default">Compact table row density</span>
+            </div>
           </div>
         </div>
       </Modal>
