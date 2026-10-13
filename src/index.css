@@ -53,12 +53,13 @@
 
   /* Universal UI Base for all Buttons - eliminate native button bevels and default styling */
   button {
-    @apply cursor-pointer font-medium transition-colors select-none;
+    @apply cursor-pointer font-medium transition-colors select-none outline-none;
     -webkit-tap-highlight-color: transparent;
   }
 
-  button:focus {
-    @apply outline-none;
+  button:focus, [role="button"]:focus {
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   /* Universal UI Base for Text Inputs - low specificity so utility classes (pl-11, etc.) override */

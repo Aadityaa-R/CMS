@@ -160,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="w-10 h-10 flex items-center justify-center text-teal-400 hover:text-teal-300 transition-colors duration-200 cursor-pointer shrink-0 focus:outline-none"
+                className="w-10 h-10 flex items-center justify-center text-teal-400 hover:text-teal-300 transition-colors duration-200 cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0"
                 title={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
                 aria-label={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
               >
@@ -215,7 +215,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 title={item.label}
                 aria-label={item.label}
-                className={`w-full flex items-center px-1.5 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
+                className={`w-full flex items-center px-1.5 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-0 ${
                   isActive
                     ? 'bg-teal-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'

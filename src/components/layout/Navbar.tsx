@@ -5,7 +5,6 @@ import {
   Bell,
   Search,
   Building2,
-  CheckCircle2,
   User,
   Settings,
   LogOut,
@@ -81,14 +80,10 @@ export const Navbar: React.FC<NavbarProps> = () => {
               <Building2 className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2.5">
+              <div>
                 <h1 className="font-bold text-slate-900 dark:text-slate-100 text-base sm:text-lg leading-tight tracking-tight">
                   Beacon Health Clinic
                 </h1>
-                <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800/50">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  Operational
-                </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                 Clinical Management System
@@ -116,7 +111,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
             <button
               type="button"
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer relative focus:outline-none"
+              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer relative outline-none focus:outline-none focus:ring-0"
               aria-label="Notifications"
               aria-expanded={isNotificationsOpen}
             >
@@ -154,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-10 h-10 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium shadow-sm ring-2 ring-teal-500/20 hover:ring-teal-500/40 transition-all cursor-pointer focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-0"
+              className="w-10 h-10 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium shadow-sm transition-all cursor-pointer outline-none focus:outline-none focus:ring-0"
               aria-label="User profile menu"
               aria-expanded={isDropdownOpen}
             >
@@ -181,7 +176,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 <button
                   type="button"
                   onClick={handleOpenProfile}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer outline-none focus:outline-none focus:ring-0"
                 >
                   <User className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <span>Profile</span>
@@ -191,7 +186,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 <button
                   type="button"
                   onClick={handleOpenSettings}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer outline-none focus:outline-none focus:ring-0"
                 >
                   <Settings className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <span>Settings</span>
@@ -201,7 +196,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="w-full flex items-center justify-between px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
+                  className="w-full flex items-center justify-between px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer outline-none focus:outline-none focus:ring-0"
                 >
                   <div className="flex items-center gap-2.5">
                     {theme === 'dark' ? (
@@ -222,7 +217,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 transition-colors text-left font-medium cursor-pointer"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 transition-colors text-left font-medium cursor-pointer outline-none focus:outline-none focus:ring-0"
                 >
                   <LogOut className="w-4 h-4 text-rose-500" />
                   <span>Log Out</span>

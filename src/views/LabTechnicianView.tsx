@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -10,10 +9,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
 import {
-  FlaskConical,
   CheckCircle,
   Search,
-  Activity,
   CheckCircle2,
   Filter,
   ChevronDown,
@@ -463,9 +460,9 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
         <Card>
           <CardHeader
             action={
-              <Badge variant="amber" size="md">
+              <span className="text-xs font-semibold text-slate-500">
                 {filterList(pendingCollection).length} Orders Awaiting Collection
-              </Badge>
+              </span>
             }
           >
             <CardTitle>Specimen Intake & Phlebotomy Accessioning</CardTitle>
@@ -526,8 +523,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                         <td className="px-4 py-3.5 text-left align-middle whitespace-nowrap">
                           <Button
                             size="xs"
-                            variant="primary"
-                            icon={<Activity className="w-3.5 h-3.5" />}
+                            variant="secondary"
                             onClick={() => handleCollectSample(test)}
                           >
                             Collect Sample
@@ -538,8 +534,6 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                   ) : (
                     <tr>
                       <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
-                        <span className="font-semibold text-slate-700 dark:text-slate-200 block">All Specimens Collected</span>
                         No test requisitions currently pending biological sample collection.
                       </td>
                     </tr>
@@ -558,9 +552,9 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
         <Card>
           <CardHeader
             action={
-              <Badge variant="teal" size="md">
+              <span className="text-xs font-semibold text-slate-500">
                 {filterList(pendingAnalysis).length} Samples Awaiting Certification
-              </Badge>
+              </span>
             }
           >
             <CardTitle>Diagnostic Results Entry & Certification Queue</CardTitle>
@@ -624,7 +618,6 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                           <Button
                             size="xs"
                             variant="primary"
-                            icon={<FlaskConical className="w-3.5 h-3.5" />}
                             onClick={() => handleOpenResultModal(test)}
                           >
                             Enter Result
@@ -635,8 +628,6 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                   ) : (
                     <tr>
                       <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                        <CheckCircle2 className="w-8 h-8 text-teal-600 mx-auto mb-2 opacity-80" />
-                        <span className="font-semibold text-slate-700 dark:text-slate-200 block">All Diagnostic Assays Certified</span>
                         No accessioned specimens currently waiting for result entry.
                       </td>
                     </tr>
