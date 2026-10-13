@@ -106,7 +106,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case 'lab_technician':
         return [
           { id: 'overview', label: 'Laboratory Worklist', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'samples', label: 'Sample Collection', icon: <Activity className="w-4 h-4" /> },
+          {
+            id: 'samples',
+            label: 'Sample Collection',
+            icon: (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="w-4 h-4 shrink-0"
+                aria-hidden="true"
+              >
+                <rect x="0.5" y="2" width="15" height="12" rx="1.5" stroke="currentColor" strokeWidth="1" fill="none" />
+                <rect x="2" y="4" width="3.5" height="8" rx="0.5" fill="currentColor" opacity="0.4" />
+              </svg>
+            ),
+          },
           { id: 'results', label: 'Diagnostic Results Entry', icon: <FlaskConical className="w-4 h-4" /> },
         ];
 

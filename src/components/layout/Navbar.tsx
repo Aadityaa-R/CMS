@@ -154,7 +154,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-10 h-10 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium shadow-sm ring-2 ring-teal-500/20 hover:ring-teal-500/40 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              className="w-10 h-10 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium shadow-sm ring-2 ring-teal-500/20 hover:ring-teal-500/40 transition-all cursor-pointer focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-0"
               aria-label="User profile menu"
               aria-expanded={isDropdownOpen}
             >

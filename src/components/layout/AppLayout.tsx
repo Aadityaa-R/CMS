@@ -73,9 +73,11 @@ export const AppLayout: React.FC = () => {
           {/* Header with profile & logout - pinned at top */}
           <Navbar />
 
-          {/* Main View Area - dedicated scrollable container */}
-          <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 max-w-7xl w-full mx-auto">
-            {renderActiveView()}
+          {/* Main View Area - dedicated scrollable container extending full width */}
+          <main className="flex-1 overflow-y-auto w-full">
+            <div className="max-w-7xl w-full mx-auto p-6 sm:p-8 lg:p-10">
+              {renderActiveView()}
+            </div>
           </main>
         </div>
       </div>

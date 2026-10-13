@@ -76,6 +76,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
   const urgentOrders = labTests.filter(
     (t) => t.priority === 'urgent' || t.priority === 'stat'
   );
+  const routineOrders = labTests.filter((t) => t.priority === 'routine');
 
   // Search and priority filter helper
   const filterList = (tests: LabTest[]) => {
@@ -234,7 +235,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           <button
             type="button"
             onClick={() => setIsPriorityDropdownOpen((prev) => !prev)}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors shadow-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-teal-500"
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors shadow-xs cursor-pointer focus:outline-none focus:ring-0 focus-visible:ring-1 focus-visible:ring-teal-500"
             aria-label="Filter orders by priority"
             aria-expanded={isPriorityDropdownOpen}
           >
@@ -245,7 +246,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                 ? `All (${labTests.length})`
                 : priorityFilter === 'stat_urgent'
                 ? `STAT & Urgent (${urgentOrders.length})`
-                : 'Routine'}
+                : `Routine (${routineOrders.length})`}
             </span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
           </button>
@@ -307,7 +308,9 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                 }`}
               >
                 <span>Routine Orders</span>
-                <span className="text-[11px] text-slate-400 dark:text-slate-500">Standard</span>
+                <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
+                  {routineOrders.length}
+                </span>
               </button>
             </div>
           )}

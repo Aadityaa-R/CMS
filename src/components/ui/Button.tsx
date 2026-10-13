@@ -18,7 +18,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none rounded-lg cursor-pointer select-none active:scale-[0.98]';
+    'inline-flex items-center justify-center font-medium transition-all duration-150 outline-none focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-offset-0 disabled:opacity-50 disabled:pointer-events-none rounded-lg cursor-pointer select-none active:scale-[0.98]';
 
   const sizeClasses = {
     xs: 'text-[11px] px-2 py-1 gap-1',
@@ -29,17 +29,17 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary:
-      'bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 shadow-sm border border-transparent',
+      'bg-teal-600 text-white hover:bg-teal-700 focus-visible:ring-teal-500/50 shadow-sm border border-transparent',
     secondary:
-      'bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-700 shadow-sm border border-transparent',
+      'bg-slate-800 text-white hover:bg-slate-900 focus-visible:ring-slate-700/50 shadow-sm border border-transparent',
     outline:
-      'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus:ring-teal-500 shadow-sm',
+      'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus-visible:ring-teal-500/50 shadow-sm',
     danger:
-      'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-sm border border-transparent',
+      'bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500/50 shadow-sm border border-transparent',
     ghost:
-      'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-400 border border-transparent',
+      'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-400/50 border border-transparent',
     soft:
-      'bg-teal-50 text-teal-700 hover:bg-teal-100 hover:border-teal-300 focus:ring-teal-500 border border-teal-200/60',
+      'bg-teal-50 text-teal-700 hover:bg-teal-100 hover:border-teal-300 focus-visible:ring-teal-500/50 border border-teal-200/60',
   };
 
   return (
