@@ -478,62 +478,79 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     <th className="px-4 py-3.5 align-middle">Order #</th>
                     <th className="px-4 py-3.5 align-middle">Patient</th>
                     <th className="px-4 py-3.5 align-middle">Investigation Name</th>
-                    <th className="px-4 py-3.5 align-middle">Specimen Tube</th>
                     <th className="px-4 py-3.5 align-middle">Ordering Doctor</th>
                     <th className="px-4 py-3.5 align-middle">Priority</th>
+                    <th className="px-4 py-3.5 align-middle">Specimen Tube</th>
+                    <th className="px-4 py-3.5 align-middle">Status</th>
                     <th className="px-4 py-3.5 align-middle">Clinical Indication</th>
                     <th className="px-4 py-3.5 text-left align-middle">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filterList(pendingCollection).length > 0 ? (
-                    filterList(pendingCollection).map((test) => (
-                      <tr key={test.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="px-4 py-3.5 align-middle font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                          {test.testOrderNumber}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-semibold text-xs text-slate-900 dark:text-slate-100">{test.patientName}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">ID: {test.patientId}</div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-medium text-xs text-slate-900 dark:text-slate-100">{test.testName}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">{test.category}</div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300 font-normal">
-                          {getContainerName(test.sampleType)}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <span
-                            className={`text-xs capitalize font-medium ${
-                              test.priority === 'stat'
-                                ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                                : test.priority === 'urgent'
-                                ? 'text-amber-600 dark:text-amber-400 font-semibold'
-                                : 'text-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            {test.priority === 'stat' ? 'STAT' : test.priority}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate">
-                          {test.clinicalNotes || 'Routine pre-consultation assessment'}
-                        </td>
-                        <td className="px-4 py-3.5 text-left align-middle whitespace-nowrap">
-                          <Button
-                            size="xs"
-                            variant="secondary"
-                            onClick={() => handleCollectSample(test)}
-                          >
-                            Collect Sample
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
+                    filterList(pendingCollection).map((test) => {
+                      const isStat = test.priority === 'stat';
+                      return (
+                        <tr
+                          key={test.id}
+                          className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
+                            isStat ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''
+                          }`}
+                        >
+                          <td className="px-4 py-3.5 align-middle font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                            {test.testOrderNumber}
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="font-semibold text-xs text-slate-900 dark:text-slate-100">{test.patientName}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">ID: {test.patientId}</div>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="font-medium text-xs text-slate-900 dark:text-slate-100">{test.testName}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">{test.category}</div>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <span
+                              className={`text-xs capitalize font-medium ${
+                                test.priority === 'stat'
+                                  ? 'text-rose-600 dark:text-rose-400 font-semibold'
+                                  : test.priority === 'urgent'
+                                  ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                                  : 'text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              {test.priority === 'stat' ? 'STAT' : test.priority}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300 font-normal">
+                            {getContainerName(test.sampleType)}
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-500" />
+                              <span className="text-xs text-slate-700 dark:text-slate-300 capitalize font-medium">
+                                Awaiting Specimen
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400">
+                            {test.clinicalNotes || 'Routine pre-consultation assessment'}
+                          </td>
+                          <td className="px-4 py-3.5 text-left align-middle whitespace-nowrap">
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              onClick={() => handleCollectSample(test)}
+                            >
+                              Collect Sample
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
+                      <td colSpan={9} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
                         No test requisitions currently pending biological sample collection.
                       </td>
                     </tr>
@@ -572,62 +589,79 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     <th className="px-4 py-3.5 align-middle">Investigation Name</th>
                     <th className="px-4 py-3.5 align-middle">Ordering Doctor</th>
                     <th className="px-4 py-3.5 align-middle">Priority</th>
+                    <th className="px-4 py-3.5 align-middle">Specimen Tube</th>
+                    <th className="px-4 py-3.5 align-middle">Status</th>
                     <th className="px-4 py-3.5 align-middle">Collected At</th>
-                    <th className="px-4 py-3.5 align-middle">Clinical Indication</th>
                     <th className="px-4 py-3.5 text-left align-middle">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filterList(pendingAnalysis).length > 0 ? (
-                    filterList(pendingAnalysis).map((test) => (
-                      <tr key={test.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="px-4 py-3.5 align-middle font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                          {test.testOrderNumber}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-semibold text-xs text-slate-900 dark:text-slate-100">{test.patientName}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">ID: {test.patientId}</div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-medium text-xs text-slate-900 dark:text-slate-100">{test.testName}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">{test.category}</div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <span
-                            className={`text-xs capitalize font-medium ${
-                              test.priority === 'stat'
-                                ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                                : test.priority === 'urgent'
-                                ? 'text-amber-600 dark:text-amber-400 font-semibold'
-                                : 'text-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            {test.priority === 'stat' ? 'STAT' : test.priority}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap">
-                          {test.sampleCollectedAt
-                            ? new Date(test.sampleCollectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                            : 'Specimen in Lab'}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate">
-                          {test.clinicalNotes || 'Diagnostic verification'}
-                        </td>
-                        <td className="px-4 py-3.5 text-left align-middle whitespace-nowrap">
-                          <Button
-                            size="xs"
-                            variant="primary"
-                            onClick={() => handleOpenResultModal(test)}
-                          >
-                            Enter Result
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
+                    filterList(pendingAnalysis).map((test) => {
+                      const isStat = test.priority === 'stat';
+                      return (
+                        <tr
+                          key={test.id}
+                          className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
+                            isStat ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''
+                          }`}
+                        >
+                          <td className="px-4 py-3.5 align-middle font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                            {test.testOrderNumber}
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="font-semibold text-xs text-slate-900 dark:text-slate-100">{test.patientName}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">ID: {test.patientId}</div>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="font-medium text-xs text-slate-900 dark:text-slate-100">{test.testName}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">{test.category}</div>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <span
+                              className={`text-xs capitalize font-medium ${
+                                test.priority === 'stat'
+                                  ? 'text-rose-600 dark:text-rose-400 font-semibold'
+                                  : test.priority === 'urgent'
+                                  ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                                  : 'text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              {test.priority === 'stat' ? 'STAT' : test.priority}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300 font-normal">
+                            {getContainerName(test.sampleType)}
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-sky-500" />
+                              <span className="text-xs text-slate-700 dark:text-slate-300 capitalize font-medium">
+                                In Lab Testing
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                            {test.sampleCollectedAt
+                              ? new Date(test.sampleCollectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                              : 'Specimen in Lab'}
+                          </td>
+                          <td className="px-4 py-3.5 text-left align-middle whitespace-nowrap">
+                            <Button
+                              size="xs"
+                              variant="primary"
+                              onClick={() => handleOpenResultModal(test)}
+                            >
+                              Enter Result
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
+                      <td colSpan={9} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
                         No accessioned specimens currently waiting for result entry.
                       </td>
                     </tr>
