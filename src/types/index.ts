@@ -219,3 +219,15 @@ export interface ClinicalRecord {
   vitalSigns?: VitalSigns;
 }
 
+export interface RoleCredential {
+  role: UserRole;
+  username: string;
+  email: string;
+  password: string;
+  label: string;
+  department: string;
+  fullName: string;
+  description: string;
+}
+
+

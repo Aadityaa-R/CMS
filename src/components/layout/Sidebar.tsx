@@ -15,7 +15,6 @@ import {
   PlusCircle,
   FilePlus,
   ShieldCheck,
-  LogOut,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -37,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { currentRole, currentUser, logout } = useAuth();
+  const { currentRole } = useAuth();
 
   const getNavItems = (): NavItem[] => {
     switch (currentRole) {
@@ -172,25 +171,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             );
           })}
         </nav>
-
-        {/* Footer info & quick logout */}
-        <div className="p-4 border-t border-slate-800 text-xs">
-          <div className="flex items-center justify-between mb-3 text-slate-400">
-            <div>
-              <div className="font-medium text-slate-200">{currentUser.name}</div>
-              <div className="text-[10px] text-slate-500 truncate max-w-[150px]">
-                {currentUser.email}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-800/80 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-900/60 transition-colors text-xs font-medium"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out Session</span>
-          </button>
-        </div>
       </aside>
     </>
   );

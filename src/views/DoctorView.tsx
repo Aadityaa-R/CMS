@@ -19,6 +19,7 @@ import {
   Plus,
   AlertCircle,
   FileText,
+  Search,
 } from 'lucide-react';
 import { Appointment, PrescriptionItem } from '@/types';
 
@@ -26,7 +27,7 @@ interface DoctorViewProps {
   activeTab: string;
 }
 
-export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab }) => {
+export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }) => {
   const { currentUser } = useAuth();
   const {
     appointments,
@@ -72,6 +73,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab })
   const currentPatientVitals = selectedAppointment
     ? vitals.find((v) => v.patientId === selectedAppointment.patientId)
     : null;
+
+  const [patientSearch, setPatientSearch] = useState('');
+
 
   const handleAddMedicationRow = () => {
     setPrescriptionItems((prev) => [
@@ -164,7 +168,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab })
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* Overview Sub-Module */}
+      {activeTab === 'overview' && (
+        <>
+          {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           title="Assigned Patients Today"
@@ -556,6 +563,316 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab: _activeTab })
           )}
         </div>
       </div>
+        </>
+      )}
+
+      {/* Sub-Module: My Patients */}
+      {activeTab === 'patients' && (
+        <Card>
+          <CardHeader
+            action={
+              <div className="relative w-64 flex items-center">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+                <input
+                  type="text"
+                  value={patientSearch}
+                  onChange={(e) => setPatientSearch(e.target.value)}
+                  placeholder="Search assigned patients..."
+                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-3.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white shadow-xs transition-all"
+                />
+              </div>
+            }
+          >
+            <CardTitle>My Patients Directory</CardTitle>
+            <CardDescription>
+              Clinical profiles, blood groups, allergies, and ongoing treatment plans
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Patient Name</th>
+                    <th>MRN</th>
+                    <th>Demographics</th>
+                    <th>Blood Group</th>
+                    <th>Allergies</th>
+                    <th>Chronic Conditions</th>
+                    <th className="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {patients
+                    .filter(
+                      (p) =>
+                        p.firstName.toLowerCase().includes(patientSearch.toLowerCase()) ||
+                        p.lastName.toLowerCase().includes(patientSearch.toLowerCase()) ||
+                        p.mrn.toLowerCase().includes(patientSearch.toLowerCase())
+                    )
+                    .map((p) => (
+                      <tr key={p.id}>
+                        <td className="font-semibold text-slate-900">
+                          {p.firstName} {p.lastName}
+                        </td>
+                        <td className="font-mono text-xs">{p.mrn}</td>
+                        <td className="text-xs">
+                          {p.age} yrs • {p.gender}
+                        </td>
+                        <td>
+                          <Badge size="sm" variant="neutral">
+                            {p.bloodGroup}
+                          </Badge>
+                        </td>
+                        <td>
+                          {p.allergies.length > 0 ? (
+                            <span className="text-rose-600 font-medium text-xs">
+                              {p.allergies.join(', ')}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-xs">No known allergies</span>
+                          )}
+                        </td>
+                        <td className="text-xs text-slate-600">
+                          {p.chronicConditions.join(', ') || 'None reported'}
+                        </td>
+                        <td className="text-right">
+                          <Button
+                            size="xs"
+                            variant="soft"
+                            onClick={() => {
+                              const apt = appointments.find((a) => a.patientId === p.id);
+                              if (apt) setSelectedAppointment(apt);
+                            }}
+                          >
+                            Review EMR
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sub-Module: Write & Review Prescriptions */}
+      {activeTab === 'prescriptions' && (
+        <Card>
+          <CardHeader
+            action={
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus className="w-4 h-4" />}
+                onClick={() => setIsPrescriptionModalOpen(true)}
+              >
+                Write New Prescription
+              </Button>
+            }
+          >
+            <CardTitle>Electronic Prescriptions (e-Rx)</CardTitle>
+            <CardDescription>
+              Prescription orders issued and routed to the pharmacy dispensary
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rx Number</th>
+                    <th>Patient</th>
+                    <th>Diagnosis</th>
+                    <th>Medications</th>
+                    <th>Prescribed Date</th>
+                    <th>Dispensary Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {prescriptions.map((rx) => (
+                    <tr key={rx.id}>
+                      <td className="font-mono font-semibold text-slate-900">
+                        {rx.prescriptionNumber}
+                      </td>
+                      <td className="font-medium text-slate-900">{rx.patientName}</td>
+                      <td className="text-slate-800">{rx.diagnosis}</td>
+                      <td>
+                        <div className="space-y-0.5">
+                          {rx.items.map((it) => (
+                            <div key={it.id} className="text-xs text-slate-600">
+                              • {it.medicineName} ({it.dosage}) - {it.frequency}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="text-xs text-slate-500">
+                        {new Date(rx.date).toLocaleDateString()}
+                      </td>
+                      <td>
+                        <Badge
+                          size="sm"
+                          variant={rx.status === 'dispensed' ? 'success' : 'amber'}
+                        >
+                          {rx.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sub-Module: Order Lab Tests */}
+      {activeTab === 'lab_orders' && (
+        <Card>
+          <CardHeader
+            action={
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus className="w-4 h-4" />}
+                onClick={() => setIsLabOrderModalOpen(true)}
+              >
+                Order Lab Test
+              </Button>
+            }
+          >
+            <CardTitle>Diagnostic Laboratory Orders</CardTitle>
+            <CardDescription>
+              Pathology and diagnostic orders routed to the laboratory
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Test Name</th>
+                    <th>Patient</th>
+                    <th>Priority</th>
+                    <th>Ordered Date</th>
+                    <th>Status</th>
+                    <th>Clinical Indication</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {labTests.map((lt) => (
+                    <tr key={lt.id}>
+                      <td className="font-semibold text-slate-900">{lt.testName}</td>
+                      <td>{lt.patientName}</td>
+                      <td>
+                        <Badge
+                          size="sm"
+                          variant={
+                            lt.priority === 'stat'
+                              ? 'danger'
+                              : lt.priority === 'urgent'
+                              ? 'amber'
+                              : 'neutral'
+                          }
+                        >
+                          {lt.priority.toUpperCase()}
+                        </Badge>
+                      </td>
+                      <td className="text-xs text-slate-500">
+                        {new Date(lt.orderedAt).toLocaleDateString()}
+                      </td>
+                      <td>
+                        <Badge
+                          size="sm"
+                          variant={
+                            lt.status === 'completed'
+                              ? 'success'
+                              : lt.status === 'sample_collected'
+                              ? 'info'
+                              : 'warning'
+                          }
+                        >
+                          {lt.status.replace('_', ' ')}
+                        </Badge>
+                      </td>
+                      <td className="text-xs text-slate-600">
+                        {lt.clinicalNotes || 'Routine investigation'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sub-Module: Weekly Schedule */}
+      {activeTab === 'schedule' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Weekly Clinical Consultation Schedule</CardTitle>
+            <CardDescription>
+              Duty roster, clinic hours, and booked appointment slots
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div>
+                <span className="text-xs text-slate-500 block">Duty Schedule</span>
+                <span className="text-sm font-semibold text-slate-900">Monday - Friday</span>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block">Consultation Hours</span>
+                <span className="text-sm font-semibold text-slate-900">09:00 AM - 04:30 PM</span>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block">Consultation Fee</span>
+                <span className="text-sm font-semibold text-teal-700">$150.00 / Session</span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time Slot</th>
+                    <th>Patient Name</th>
+                    <th>Type</th>
+                    <th>Reason for Visit</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.map((apt) => (
+                    <tr key={apt.id}>
+                      <td className="font-mono text-xs font-semibold">
+                        {new Date(apt.dateTime).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="font-medium text-slate-900">{apt.patientName}</td>
+                      <td>
+                        <Badge size="sm" variant="neutral">
+                          {apt.durationMinutes} min
+                        </Badge>
+                      </td>
+                      <td className="text-xs text-slate-600">{apt.reasonForVisit}</td>
+                      <td>
+                        <Badge size="sm" variant={apt.status === 'completed' ? 'success' : 'teal'}>
+                          {apt.status.replace('_', ' ')}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Prescription Modal */}
       <Modal

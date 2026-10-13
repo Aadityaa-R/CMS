@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { RoleSwitcher } from './RoleSwitcher';
 import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
 import { LoginView } from '@/views/LoginView';
@@ -19,6 +18,11 @@ export const AppLayout: React.FC = () => {
   const { currentRole, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+
+  // Whenever the active role changes upon login, reset the active module tab to overview
+  useEffect(() => {
+    setActiveTab('overview');
+  }, [currentRole]);
 
   // If user signed out, display login screen
   if (!isAuthenticated) {
@@ -50,11 +54,8 @@ export const AppLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-800">
-      {/* 1-Click Role Switcher Bar */}
-      <RoleSwitcher />
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Dynamic Role-specific Sidebar */}
+      <div className="flex-1 flex overflow-hidden min-h-screen">
+        {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -64,7 +65,7 @@ export const AppLayout: React.FC = () => {
 
         {/* Content Shell */}
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          {/* Header */}
+          {/* Header with profile & logout */}
           <Navbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
           {/* Main View Area */}
@@ -76,4 +77,3 @@ export const AppLayout: React.FC = () => {
     </div>
   );
 };
-

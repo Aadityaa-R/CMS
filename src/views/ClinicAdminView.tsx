@@ -313,14 +313,14 @@ export const ClinicAdminView: React.FC<ClinicAdminViewProps> = ({ activeTab }) =
           <CardHeader
             action={
               <div className="flex items-center gap-2">
-                <div className="relative w-56">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                <div className="relative w-64 flex items-center">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search by name, MRN, phone..."
-                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white"
+                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-3.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white shadow-xs transition-all"
                   />
                 </div>
               </div>

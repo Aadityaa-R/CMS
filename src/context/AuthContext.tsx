@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
-import { User, UserRole } from '@/types';
-import { DEMO_USERS } from '@/data/mockData';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, UserRole, RoleCredential } from '@/types';
+import { DEMO_USERS, ROLE_CREDENTIALS } from '@/data/mockData';
 
 export interface RoleMeta {
   role: UserRole;
@@ -60,36 +60,93 @@ export const ALL_ROLES: RoleMeta[] = [
   },
 ];
 
+interface LoginResult {
+  success: boolean;
+  error?: string;
+  matchedRole?: UserRole;
+}
+
 interface AuthContextType {
   currentUser: User;
   currentRole: UserRole;
-  switchRole: (role: UserRole) => void;
   availableRoles: RoleMeta[];
+  roleCredentials: RoleCredential[];
   isAuthenticated: boolean;
+  login: (identifier: string, password: string) => LoginResult;
   loginAs: (role: UserRole) => void;
+  switchRole: (role: UserRole) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentRole, setCurrentRole] = useState<UserRole>('clinic_admin');
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    const savedRole = sessionStorage.getItem('cms_auth_role') as UserRole;
+    return savedRole && DEMO_USERS[savedRole] ? savedRole : 'clinic_admin';
+  });
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('cms_authenticated') === 'true';
+  });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      sessionStorage.setItem('cms_auth_role', currentRole);
+      sessionStorage.setItem('cms_authenticated', 'true');
+    } else {
+      sessionStorage.removeItem('cms_auth_role');
+      sessionStorage.removeItem('cms_authenticated');
+    }
+  }, [currentRole, isAuthenticated]);
 
   const currentUser = DEMO_USERS[currentRole] || DEMO_USERS.clinic_admin;
 
-  const switchRole = (role: UserRole) => {
-    setCurrentRole(role);
+  const login = (identifier: string, password: string): LoginResult => {
+    const cleanId = identifier.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    // Match by username, email, or role key
+    const match = ROLE_CREDENTIALS.find((cred) => {
+      const matchUser = cred.username.toLowerCase() === cleanId;
+      const matchEmail = cred.email.toLowerCase() === cleanId;
+      const matchRole = cred.role.toLowerCase() === cleanId;
+      return matchUser || matchEmail || matchRole;
+    });
+
+    if (!match) {
+      return {
+        success: false,
+        error: 'No account found matching this username or email address.',
+      };
+    }
+
+    // Check password (supports the role's designated password or password123 as secondary fallback)
+    const isPasswordValid = match.password === cleanPass || cleanPass === 'password123';
+
+    if (!isPasswordValid) {
+      return {
+        success: false,
+        error: 'Incorrect password. Please verify your credentials and try again.',
+      };
+    }
+
+    setCurrentRole(match.role);
     setIsAuthenticated(true);
+    return { success: true, matchedRole: match.role };
   };
 
   const loginAs = (role: UserRole) => {
-    setCurrentRole(role);
-    setIsAuthenticated(true);
+    if (DEMO_USERS[role]) {
+      setCurrentRole(role);
+      setIsAuthenticated(true);
+    }
   };
 
   const logout = () => {
     setIsAuthenticated(false);
+    sessionStorage.removeItem('cms_auth_role');
+    sessionStorage.removeItem('cms_authenticated');
   };
 
   return (
@@ -97,10 +154,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         currentUser,
         currentRole,
-        switchRole,
         availableRoles: ALL_ROLES,
+        roleCredentials: ROLE_CREDENTIALS,
         isAuthenticated,
+        login,
         loginAs,
+        switchRole: loginAs,
         logout,
       }}
     >
@@ -116,4 +175,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
