@@ -36,12 +36,12 @@ export const Input: React.FC<InputProps> = ({
         )}
         <input
           id={inputId}
-          className={`w-full rounded-lg border bg-white ${
-            icon ? 'pl-11 pr-3' : 'px-3'
+          className={`w-full rounded-lg border bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 ${
+            icon ? '!pl-11 pr-3.5' : 'px-3'
           } py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors disabled:bg-slate-50 disabled:text-slate-500 ${
             error
               ? 'border-rose-300 focus:ring-rose-500'
-              : 'border-slate-300 hover:border-slate-400'
+              : 'border-slate-300 hover:border-slate-400 dark:border-slate-700'
           } ${className}`}
           {...props}
         />

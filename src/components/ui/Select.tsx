@@ -29,7 +29,7 @@ export const Select: React.FC<SelectProps> = ({
       {label && (
         <label
           htmlFor={selectId}
-          className="block text-xs font-medium text-slate-700 mb-1.5"
+          className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
         >
           {label}
         </label>
@@ -37,20 +37,20 @@ export const Select: React.FC<SelectProps> = ({
       <div className="relative">
         <select
           id={selectId}
-          className={`w-full appearance-none rounded-lg border bg-white px-3 py-2 pr-10 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors cursor-pointer disabled:bg-slate-50 disabled:text-slate-500 ${
+          className={`w-full appearance-none rounded-lg border bg-white dark:bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-900 dark:text-slate-100 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors cursor-pointer disabled:bg-slate-50 dark:disabled:bg-slate-800 disabled:text-slate-500 ${
             error
               ? 'border-rose-300 focus:ring-rose-500'
-              : 'border-slate-300 hover:border-slate-400'
+              : 'border-slate-300 hover:border-slate-400 dark:hover:border-slate-600'
           } ${className}`}
           {...props}
         >
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
+            <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
               {opt.label}
             </option>
           ))}
         </select>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 dark:text-slate-500">
           <ChevronDown className="w-4 h-4" />
         </div>
       </div>

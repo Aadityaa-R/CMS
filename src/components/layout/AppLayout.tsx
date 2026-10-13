@@ -18,6 +18,7 @@ export const AppLayout: React.FC = () => {
   const { currentRole, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
 
   // Whenever the active role changes upon login, reset the active module tab to overview
   useEffect(() => {
@@ -52,8 +53,14 @@ export const AppLayout: React.FC = () => {
     }
   };
 
+  const handleToggleSidebar = () => {
+    // Toggles collapsed state on desktop and open state on mobile
+    setIsSidebarCollapsed((prev) => !prev);
+    setIsSidebarOpen((prev) => !prev);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans antialiased text-slate-800">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors">
       <div className="flex-1 flex overflow-hidden min-h-screen">
         {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
         <Sidebar
@@ -61,12 +68,14 @@ export const AppLayout: React.FC = () => {
           onTabChange={setActiveTab}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
         />
 
         {/* Content Shell */}
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
           {/* Header with profile & logout */}
-          <Navbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+          <Navbar onToggleSidebar={handleToggleSidebar} />
 
           {/* Main View Area */}
           <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">

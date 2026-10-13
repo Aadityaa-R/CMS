@@ -15,6 +15,8 @@ import {
   PlusCircle,
   FilePlus,
   ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -22,6 +24,8 @@ interface SidebarProps {
   onTabChange: (tab: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 interface NavItem {
@@ -35,6 +39,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
   isOpen,
   onClose,
+  isCollapsed = true,
+  onToggleCollapse,
 }) => {
   const { currentRole } = useAuth();
 
@@ -123,31 +129,72 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar container */}
       <aside
-        className={`fixed lg:static top-0 bottom-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform duration-200 ease-in-out border-r border-slate-800 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800 ${
+          isCollapsed ? 'lg:w-16' : 'lg:w-64'
+        } ${
+          isOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Brand / Role header */}
-        <div className="p-5 border-b border-slate-800">
-          <div className="flex items-center gap-2 text-teal-400 font-bold text-sm tracking-wide uppercase">
-            <ShieldCheck className="w-5 h-5 text-teal-400" />
-            <span>Clinic Portal</span>
-          </div>
-          <div className="mt-3 px-3 py-2 bg-slate-800/80 rounded-lg border border-slate-700/60">
-            <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-              Current Workspace
+        <div className={`border-b border-slate-800 ${isCollapsed ? 'p-3 text-center' : 'p-5'}`}>
+          {isCollapsed ? (
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-teal-400"
+                title="Clinic Portal"
+              >
+                <ShieldCheck className="w-5 h-5 text-teal-400" />
+              </div>
+              {onToggleCollapse && (
+                <button
+                  type="button"
+                  onClick={onToggleCollapse}
+                  className="w-10 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  title="Expand Side Panel"
+                  aria-label="Expand Side Panel"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
-            <div className="text-sm font-semibold text-white capitalize mt-0.5">
-              {currentRole.replace('_', ' ')}
+          ) : (
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-teal-400 font-bold text-sm tracking-wide uppercase">
+                  <ShieldCheck className="w-5 h-5 text-teal-400" />
+                  <span>Clinic Portal</span>
+                </div>
+                {onToggleCollapse && (
+                  <button
+                    type="button"
+                    onClick={onToggleCollapse}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Collapse Side Panel"
+                    aria-label="Collapse Side Panel"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <div className="mt-3 px-3 py-2 bg-slate-800/80 rounded-lg border border-slate-700/60">
+                <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                  Current Workspace
+                </div>
+                <div className="text-sm font-semibold text-white capitalize mt-0.5">
+                  {currentRole.replace('_', ' ')}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Navigation list */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-            Navigation Menu
-          </div>
+        <nav className={`flex-1 py-4 space-y-1.5 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-3'}`}>
+          {!isCollapsed && (
+            <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+              Navigation Menu
+            </div>
+          )}
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -157,7 +204,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onTabChange(item.id);
                   onClose();
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                title={item.label}
+                aria-label={item.label}
+                className={`w-full flex items-center rounded-lg text-xs font-medium transition-all ${
+                  isCollapsed
+                    ? 'justify-center p-3'
+                    : 'gap-3 px-3 py-2.5'
+                } ${
                   isActive
                     ? 'bg-teal-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'
@@ -166,7 +219,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className={isActive ? 'text-white' : 'text-slate-400'}>
                   {item.icon}
                 </span>
-                <span>{item.label}</span>
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
               </button>
             );
           })}

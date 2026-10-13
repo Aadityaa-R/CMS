@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -17,6 +17,7 @@ import {
   Activity,
   CheckCircle2,
   Filter,
+  ChevronDown,
 } from 'lucide-react';
 import { LabTest } from '@/types';
 
@@ -31,6 +32,26 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'stat_urgent' | 'routine'>('all');
+  const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false);
+  const priorityDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close priority dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        priorityDropdownRef.current &&
+        !priorityDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsPriorityDropdownOpen(false);
+      }
+    };
+    if (isPriorityDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isPriorityDropdownOpen]);
 
   // Result Certification Modal State
   const [selectedTest, setSelectedTest] = useState<LabTest | null>(null);
@@ -139,10 +160,10 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
       {/* Workstation Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Diagnostic Pathology & Laboratory Workstation
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Lead Medical Technologist: {currentUser.name} • Certified Diagnostic Laboratory
           </p>
         </div>
@@ -155,14 +176,14 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
 
       {/* Real-time Feedback Notification Banner */}
       {notification && (
-        <div className="p-3.5 rounded-lg bg-teal-50 border border-teal-200 text-teal-900 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
+        <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
             <span className="font-medium">{notification}</span>
           </div>
           <button
             onClick={() => setNotification(null)}
-            className="text-teal-700 hover:text-teal-900 text-xs font-semibold"
+            className="text-teal-700 dark:text-teal-400 hover:text-teal-900 dark:hover:text-teal-200 text-xs font-semibold cursor-pointer"
           >
             Dismiss
           </button>
@@ -202,7 +223,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
       </div>
 
       {/* Reusable Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
         <div className="relative flex-1 max-w-md flex items-center">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
           <input
@@ -210,47 +231,92 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by order #, patient name, doctor, or investigation..."
-            className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-3.5 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white transition-all shadow-xs"
+            className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-xs"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mr-1">
-            <Filter className="w-3.5 h-3.5" />
+        {/* Priority Filter as Dropdown Selector */}
+        <div className="relative" ref={priorityDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsPriorityDropdownOpen((prev) => !prev)}
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors shadow-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-teal-500"
+            aria-label="Filter orders by priority"
+            aria-expanded={isPriorityDropdownOpen}
+          >
+            <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>Priority:</span>
-          </div>
-          <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 text-xs">
-            <button
-              onClick={() => setPriorityFilter('all')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
-                priorityFilter === 'all'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              All ({labTests.length})
-            </button>
-            <button
-              onClick={() => setPriorityFilter('stat_urgent')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
-                priorityFilter === 'stat_urgent'
-                  ? 'bg-rose-600 text-white shadow-xs'
-                  : 'text-rose-700 hover:bg-rose-50'
-              }`}
-            >
-              STAT & Urgent ({urgentOrders.length})
-            </button>
-            <button
-              onClick={() => setPriorityFilter('routine')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
-                priorityFilter === 'routine'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Routine
-            </button>
-          </div>
+            <span className="font-semibold text-teal-600 dark:text-teal-400">
+              {priorityFilter === 'all'
+                ? `All (${labTests.length})`
+                : priorityFilter === 'stat_urgent'
+                ? `STAT & Urgent (${urgentOrders.length})`
+                : 'Routine'}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+          </button>
+
+          {isPriorityDropdownOpen && (
+            <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
+              <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
+                Filter by Order Priority
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPriorityFilter('all');
+                  setIsPriorityDropdownOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
+                  priorityFilter === 'all'
+                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span>All Orders</span>
+                <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
+                  {labTests.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPriorityFilter('stat_urgent');
+                  setIsPriorityDropdownOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
+                  priorityFilter === 'stat_urgent'
+                    ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-semibold'
+                    : 'text-rose-700 dark:text-rose-400 hover:bg-rose-50/50 dark:hover:bg-rose-950/30'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                  STAT & Urgent
+                </span>
+                <span className="text-[11px] px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 font-mono font-medium">
+                  {urgentOrders.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPriorityFilter('routine');
+                  setIsPriorityDropdownOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
+                  priorityFilter === 'routine'
+                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span>Routine Orders</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500">Standard</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -274,7 +340,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
+                <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
                   <tr>
                     <th className="px-4 py-3">Order #</th>
                     <th className="px-4 py-3">Patient</th>
@@ -287,29 +353,29 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filterList(labTests).length > 0 ? (
                     filterList(labTests).map((test) => {
                       const isStat = test.priority === 'stat';
                       return (
                         <tr
                           key={test.id}
-                          className={`hover:bg-slate-50/75 transition-colors ${
-                            isStat && test.status !== 'completed' ? 'bg-rose-50/30' : ''
+                          className={`hover:bg-slate-50/75 dark:hover:bg-slate-800/60 transition-colors ${
+                            isStat && test.status !== 'completed' ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''
                           }`}
                         >
-                          <td className="px-4 py-3 font-mono font-semibold text-slate-900">
+                          <td className="px-4 py-3 font-mono font-semibold text-slate-900 dark:text-slate-100">
                             {test.testOrderNumber}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="font-semibold text-slate-900">{test.patientName}</div>
-                            <div className="text-[11px] text-slate-500">ID: {test.patientId}</div>
+                            <div className="font-semibold text-slate-900 dark:text-slate-100">{test.patientName}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">ID: {test.patientId}</div>
                           </td>
                           <td className="px-4 py-3">
-                            <div className="font-medium text-slate-900">{test.testName}</div>
-                            <div className="text-[11px] text-slate-500">{test.category}</div>
+                            <div className="font-medium text-slate-900 dark:text-slate-100">{test.testName}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">{test.category}</div>
                           </td>
-                          <td className="px-4 py-3 text-slate-700">{test.doctorName}</td>
+                          <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{test.doctorName}</td>
                           <td className="px-4 py-3">
                             <Badge
                               size="sm"
@@ -341,9 +407,9 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                           </td>
                           <td className="px-4 py-3">
                             {test.result ? (
-                              <span className="font-semibold text-teal-800">{test.result}</span>
+                              <span className="font-semibold text-teal-800 dark:text-teal-300">{test.result}</span>
                             ) : (
-                              <span className="text-slate-400 italic">Pending assay</span>
+                              <span className="text-slate-400 dark:text-slate-500 italic">Pending assay</span>
                             )}
                           </td>
                           <td className="px-4 py-3 text-right space-x-2">
@@ -368,8 +434,8 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                             )}
 
                             {test.status === 'completed' && (
-                              <span className="text-emerald-700 font-medium text-[11px] inline-flex items-center gap-1">
-                                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                              <span className="text-emerald-700 dark:text-emerald-400 font-medium text-[11px] inline-flex items-center gap-1">
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                 Certified
                               </span>
                             )}
@@ -379,7 +445,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     })
                   ) : (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-slate-400 text-xs">
+                      <td colSpan={9} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
                         No laboratory orders found matching the criteria.
                       </td>
                     </tr>
@@ -411,7 +477,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
+                <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
                   <tr>
                     <th className="px-4 py-3">Order #</th>
                     <th className="px-4 py-3">Patient Name</th>
@@ -423,22 +489,22 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     <th className="px-4 py-3 text-right">Phlebotomy Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filterList(pendingCollection).length > 0 ? (
                     filterList(pendingCollection).map((test) => (
-                      <tr key={test.id} className="hover:bg-slate-50/75 transition-colors">
-                        <td className="px-4 py-3 font-mono font-semibold text-slate-900">
+                      <tr key={test.id} className="hover:bg-slate-50/75 dark:hover:bg-slate-800/60 transition-colors">
+                        <td className="px-4 py-3 font-mono font-semibold text-slate-900 dark:text-slate-100">
                           {test.testOrderNumber}
                         </td>
-                        <td className="px-4 py-3 font-semibold text-slate-900">
+                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
                           {test.patientName}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="font-medium text-slate-900">{test.testName}</div>
-                          <div className="text-[11px] text-slate-500">{test.category}</div>
+                          <div className="font-medium text-slate-900 dark:text-slate-100">{test.testName}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">{test.category}</div>
                         </td>
                         <td className="px-4 py-3">{getContainerBadge(test.sampleType)}</td>
-                        <td className="px-4 py-3 text-slate-700">{test.doctorName}</td>
+                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{test.doctorName}</td>
                         <td className="px-4 py-3">
                           <Badge
                             size="sm"
@@ -453,7 +519,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                             {test.priority.toUpperCase()}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-slate-600 max-w-xs truncate">
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-xs truncate">
                           {test.clinicalNotes || 'Routine pre-consultation assessment'}
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -470,9 +536,9 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-4 py-10 text-center text-slate-400 text-xs">
+                      <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
                         <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
-                        <span className="font-semibold text-slate-700 block">All Specimens Collected</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 block">All Specimens Collected</span>
                         No test requisitions currently pending biological sample collection.
                       </td>
                     </tr>
@@ -504,7 +570,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
+                <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
                   <tr>
                     <th className="px-4 py-3">Order #</th>
                     <th className="px-4 py-3">Patient</th>
@@ -516,20 +582,20 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     <th className="px-4 py-3 text-right">Laboratory Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filterList(pendingAnalysis).length > 0 ? (
                     filterList(pendingAnalysis).map((test) => (
-                      <tr key={test.id} className="hover:bg-slate-50/75 transition-colors">
-                        <td className="px-4 py-3 font-mono font-semibold text-slate-900">
+                      <tr key={test.id} className="hover:bg-slate-50/75 dark:hover:bg-slate-800/60 transition-colors">
+                        <td className="px-4 py-3 font-mono font-semibold text-slate-900 dark:text-slate-100">
                           {test.testOrderNumber}
                         </td>
-                        <td className="px-4 py-3 font-semibold text-slate-900">
+                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
                           {test.patientName}
                         </td>
-                        <td className="px-4 py-3 font-medium text-slate-900">
+                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                           {test.testName}
                         </td>
-                        <td className="px-4 py-3 text-slate-700">{test.doctorName}</td>
+                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{test.doctorName}</td>
                         <td className="px-4 py-3">
                           <Badge
                             size="sm"
@@ -544,12 +610,12 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                             {test.priority.toUpperCase()}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-slate-600 font-mono text-[11px]">
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
                           {test.sampleCollectedAt
                             ? new Date(test.sampleCollectedAt).toLocaleTimeString()
                             : 'Specimen in Lab'}
                         </td>
-                        <td className="px-4 py-3 text-slate-600 max-w-xs truncate">
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-xs truncate">
                           {test.clinicalNotes || 'Diagnostic verification'}
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -566,9 +632,9 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-4 py-10 text-center text-slate-400 text-xs">
+                      <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
                         <CheckCircle2 className="w-8 h-8 text-teal-600 mx-auto mb-2 opacity-80" />
-                        <span className="font-semibold text-slate-700 block">All Diagnostic Assays Certified</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 block">All Diagnostic Assays Certified</span>
                         No accessioned specimens currently waiting for result entry.
                       </td>
                     </tr>
@@ -612,22 +678,22 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
         {selectedTest && (
           <form onSubmit={handleSaveResult} className="space-y-4">
             {/* Requisition Summary Card */}
-            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs grid grid-cols-2 gap-2">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 text-xs grid grid-cols-2 gap-2">
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-semibold">Patient</span>
-                <span className="font-semibold text-slate-900">{selectedTest.patientName}</span>
+                <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-semibold">Patient</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedTest.patientName}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-semibold">Order Reference</span>
-                <span className="font-mono text-slate-800">{selectedTest.testOrderNumber} ({selectedTest.category})</span>
+                <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-semibold">Order Reference</span>
+                <span className="font-mono text-slate-800 dark:text-slate-200">{selectedTest.testOrderNumber} ({selectedTest.category})</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-semibold">Ordering Physician</span>
-                <span className="text-slate-800">{selectedTest.doctorName}</span>
+                <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-semibold">Ordering Physician</span>
+                <span className="text-slate-800 dark:text-slate-200">{selectedTest.doctorName}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-semibold">Specimen Container</span>
-                <span className="font-medium text-teal-800">{selectedTest.sampleType}</span>
+                <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-semibold">Specimen Container</span>
+                <span className="font-medium text-teal-800 dark:text-teal-300">{selectedTest.sampleType}</span>
               </div>
             </div>
 
@@ -670,8 +736,8 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
             />
 
             {/* Certification signature notice */}
-            <div className="p-2.5 bg-teal-50/60 rounded-lg border border-teal-100 flex items-center gap-2 text-[11px] text-teal-800">
-              <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+            <div className="p-2.5 bg-teal-50/60 dark:bg-teal-950/60 rounded-lg border border-teal-100 dark:border-teal-800 flex items-center gap-2 text-[11px] text-teal-800 dark:text-teal-200">
+              <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
               <span>
                 Certifying Technologist Signature: <strong>{currentUser.name}</strong> ({currentUser.badgeNumber || 'LAB-703'})
               </span>

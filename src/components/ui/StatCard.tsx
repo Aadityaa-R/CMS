@@ -21,18 +21,18 @@ export const StatCard: React.FC<StatCardProps> = ({
   colorScheme = 'teal',
 }) => {
   const iconColorClasses = {
-    teal: 'bg-teal-50 text-teal-600 border border-teal-100',
-    blue: 'bg-sky-50 text-sky-600 border border-sky-100',
-    purple: 'bg-purple-50 text-purple-600 border border-purple-100',
-    amber: 'bg-amber-50 text-amber-600 border border-amber-100',
-    rose: 'bg-rose-50 text-rose-600 border border-rose-100',
-    slate: 'bg-slate-100 text-slate-600 border border-slate-200',
+    teal: 'bg-teal-50 text-teal-600 border border-teal-100 dark:bg-teal-950/60 dark:text-teal-400 dark:border-teal-800/60',
+    blue: 'bg-sky-50 text-sky-600 border border-sky-100 dark:bg-sky-950/60 dark:text-sky-400 dark:border-sky-800/60',
+    purple: 'bg-purple-50 text-purple-600 border border-purple-100 dark:bg-purple-950/60 dark:text-purple-400 dark:border-purple-800/60',
+    amber: 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/60',
+    rose: 'bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/60',
+    slate: 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
   };
 
   return (
-    <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm transition-all hover:border-slate-300">
+    <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           {title}
         </span>
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconColorClasses[colorScheme]}`}>
@@ -40,13 +40,13 @@ export const StatCard: React.FC<StatCardProps> = ({
         </div>
       </div>
       <div className="mt-3 flex items-baseline gap-2">
-        <span className="text-2xl font-bold tracking-tight text-slate-900">
+        <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
           {value}
         </span>
         {trend && (
           <span
             className={`text-xs font-semibold ${
-              trend.isPositive ? 'text-emerald-600' : 'text-rose-600'
+              trend.isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
             }`}
           >
             {trend.isPositive ? '+' : ''}
@@ -55,7 +55,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         )}
       </div>
       {subtitle && (
-        <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
       )}
     </div>
   );
