@@ -14,8 +14,9 @@ import {
   Clock,
   PlusCircle,
   FilePlus,
-  ShieldCheck,
-  ChevronRight,
+  PanelLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -134,56 +135,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Brand / Role header & Single Arrow Toggle Control */}
-        <div className="border-b border-slate-800 p-2.5 flex flex-col items-center gap-2">
-          <div className="w-full flex items-center justify-between overflow-hidden">
-            <div className="flex items-center min-w-0">
+        {/* Brand / Role header & Single Console Toggle Control */}
+        <div className="h-20 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center min-w-0">
+            {/* Sidebar Console Toggle Icon with Arrow */}
+            {onToggleCollapse ? (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-400 hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm shrink-0 group focus:outline-none focus:ring-1 focus:ring-teal-500"
+                title={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
+                aria-label={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
+              >
+                {isCollapsed ? (
+                  <PanelLeftOpen className="w-5 h-5 text-teal-400 group-hover:text-teal-300 transition-colors" />
+                ) : (
+                  <PanelLeftClose className="w-5 h-5 text-teal-400 group-hover:text-teal-300 transition-colors" />
+                )}
+              </button>
+            ) : (
               <div
-                className="w-10 h-10 rounded-lg bg-slate-800/90 flex items-center justify-center text-teal-400 shrink-0"
+                className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-teal-400 shrink-0"
                 title="Clinic Portal"
               >
-                <ShieldCheck className="w-5 h-5 text-teal-400" />
+                <PanelLeft className="w-5 h-5 text-teal-400" />
               </div>
-              <div
-                className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap ${
-                  isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[130px] opacity-100 ml-3'
-                }`}
-              >
-                <div className="text-xs font-bold text-teal-400 tracking-wide uppercase">
-                  Clinic Portal
-                </div>
-                <div className="text-[11px] text-slate-400 font-medium capitalize truncate">
-                  {currentRole.replace('_', ' ')}
-                </div>
+            )}
+
+            {/* Clinic Portal Brand Details */}
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap ${
+                isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[140px] opacity-100 ml-3'
+              }`}
+            >
+              <div className="text-xs font-bold text-teal-400 tracking-wide uppercase">
+                Clinic Portal
+              </div>
+              <div className="text-[11px] text-slate-400 font-medium capitalize truncate mt-0.5">
+                {currentRole.replace('_', ' ')}
               </div>
             </div>
           </div>
-
-          {/* Single Arrow Mark Button that stays on the side panel */}
-          {onToggleCollapse && (
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              className={`w-full py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center transition-all duration-300 cursor-pointer ${
-                isCollapsed ? 'justify-center px-1' : 'justify-between px-3'
-              }`}
-              title={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
-              aria-label={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
-            >
-              <div
-                className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap text-[11px] font-medium text-slate-400 ${
-                  isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[120px] opacity-100'
-                }`}
-              >
-                Collapse Menu
-              </div>
-              <ChevronRight
-                className={`w-4 h-4 text-teal-400 shrink-0 transition-transform duration-300 ease-in-out ${
-                  !isCollapsed ? 'rotate-180' : 'rotate-0'
-                }`}
-              />
-            </button>
-          )}
         </div>
 
         {/* Navigation list */}

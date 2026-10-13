@@ -340,17 +340,17 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
+                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
                   <tr>
-                    <th className="px-4 py-3">Order #</th>
-                    <th className="px-4 py-3">Patient</th>
-                    <th className="px-4 py-3">Investigation Name</th>
-                    <th className="px-4 py-3">Ordering Doctor</th>
-                    <th className="px-4 py-3">Priority</th>
-                    <th className="px-4 py-3">Specimen Tube</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Reported Result</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="px-4 py-3.5 align-middle">Order #</th>
+                    <th className="px-4 py-3.5 align-middle">Patient</th>
+                    <th className="px-4 py-3.5 align-middle">Investigation Name</th>
+                    <th className="px-4 py-3.5 align-middle">Ordering Doctor</th>
+                    <th className="px-4 py-3.5 align-middle">Priority</th>
+                    <th className="px-4 py-3.5 align-middle">Specimen Tube</th>
+                    <th className="px-4 py-3.5 align-middle">Status</th>
+                    <th className="px-4 py-3.5 align-middle">Reported Result</th>
+                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -360,28 +360,28 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                       return (
                         <tr
                           key={test.id}
-                          className={`hover:bg-slate-50/75 dark:hover:bg-slate-800/60 transition-colors ${
+                          className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
                             isStat && test.status !== 'completed' ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''
                           }`}
                         >
-                          <td className="px-4 py-3 font-mono font-semibold text-slate-900 dark:text-slate-100">
+                          <td className="px-4 py-3.5 align-middle font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                             {test.testOrderNumber}
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="font-semibold text-slate-900 dark:text-slate-100">{test.patientName}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">ID: {test.patientId}</div>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="font-semibold text-xs text-slate-900 dark:text-slate-100">{test.patientName}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">ID: {test.patientId}</div>
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-slate-900 dark:text-slate-100">{test.testName}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">{test.category}</div>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="font-medium text-xs text-slate-900 dark:text-slate-100">{test.testName}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">{test.category}</div>
                           </td>
-                          <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{test.doctorName}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
+                          <td className="px-4 py-3.5 align-middle">
                             <Badge
                               size="sm"
                               variant={
                                 test.priority === 'stat'
-                                  ? 'danger'
+                                    ? 'danger'
                                   : test.priority === 'urgent'
                                   ? 'amber'
                                   : 'neutral'
@@ -390,8 +390,8 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                               {test.priority.toUpperCase()}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3">{getContainerBadge(test.sampleType)}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3.5 align-middle">{getContainerBadge(test.sampleType)}</td>
+                          <td className="px-4 py-3.5 align-middle">
                             <Badge
                               size="sm"
                               variant={
@@ -405,14 +405,14 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                               {test.status.replace('_', ' ')}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3.5 align-middle">
                             {test.result ? (
-                              <span className="font-semibold text-teal-800 dark:text-teal-300">{test.result}</span>
+                              <span className="font-semibold text-xs text-teal-800 dark:text-teal-300">{test.result}</span>
                             ) : (
-                              <span className="text-slate-400 dark:text-slate-500 italic">Pending assay</span>
+                              <span className="text-xs text-slate-400 dark:text-slate-500 italic">Pending assay</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right space-x-2">
+                          <td className="px-4 py-3.5 text-right align-middle whitespace-nowrap space-x-2">
                             {test.status === 'ordered' && (
                               <Button
                                 size="xs"
@@ -434,7 +434,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                             )}
 
                             {test.status === 'completed' && (
-                              <span className="text-emerald-700 dark:text-emerald-400 font-medium text-[11px] inline-flex items-center gap-1">
+                              <span className="text-emerald-700 dark:text-emerald-400 font-medium text-xs inline-flex items-center gap-1.5">
                                 <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                 Certified
                               </span>
@@ -445,7 +445,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                     })
                   ) : (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                      <td colSpan={9} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
                         No laboratory orders found matching the criteria.
                       </td>
                     </tr>
@@ -477,35 +477,36 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
+                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
                   <tr>
-                    <th className="px-4 py-3">Order #</th>
-                    <th className="px-4 py-3">Patient Name</th>
-                    <th className="px-4 py-3">Required Investigation</th>
-                    <th className="px-4 py-3">Specimen Container Tube</th>
-                    <th className="px-4 py-3">Ordering Physician</th>
-                    <th className="px-4 py-3">Priority</th>
-                    <th className="px-4 py-3">Clinical Indication</th>
-                    <th className="px-4 py-3 text-right">Phlebotomy Action</th>
+                    <th className="px-4 py-3.5 align-middle">Order #</th>
+                    <th className="px-4 py-3.5 align-middle">Patient</th>
+                    <th className="px-4 py-3.5 align-middle">Investigation Name</th>
+                    <th className="px-4 py-3.5 align-middle">Specimen Tube</th>
+                    <th className="px-4 py-3.5 align-middle">Ordering Doctor</th>
+                    <th className="px-4 py-3.5 align-middle">Priority</th>
+                    <th className="px-4 py-3.5 align-middle">Clinical Indication</th>
+                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filterList(pendingCollection).length > 0 ? (
                     filterList(pendingCollection).map((test) => (
-                      <tr key={test.id} className="hover:bg-slate-50/75 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="px-4 py-3 font-mono font-semibold text-slate-900 dark:text-slate-100">
+                      <tr key={test.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                        <td className="px-4 py-3.5 align-middle font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                           {test.testOrderNumber}
                         </td>
-                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
-                          {test.patientName}
+                        <td className="px-4 py-3.5 align-middle">
+                          <div className="font-semibold text-xs text-slate-900 dark:text-slate-100">{test.patientName}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">ID: {test.patientId}</div>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-slate-900 dark:text-slate-100">{test.testName}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">{test.category}</div>
+                        <td className="px-4 py-3.5 align-middle">
+                          <div className="font-medium text-xs text-slate-900 dark:text-slate-100">{test.testName}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">{test.category}</div>
                         </td>
-                        <td className="px-4 py-3">{getContainerBadge(test.sampleType)}</td>
-                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{test.doctorName}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3.5 align-middle">{getContainerBadge(test.sampleType)}</td>
+                        <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
+                        <td className="px-4 py-3.5 align-middle">
                           <Badge
                             size="sm"
                             variant={
@@ -519,10 +520,10 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                             {test.priority.toUpperCase()}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-xs truncate">
+                        <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate">
                           {test.clinicalNotes || 'Routine pre-consultation assessment'}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3.5 text-right align-middle whitespace-nowrap">
                           <Button
                             size="xs"
                             variant="primary"
@@ -570,33 +571,35 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
+                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
                   <tr>
-                    <th className="px-4 py-3">Order #</th>
-                    <th className="px-4 py-3">Patient</th>
-                    <th className="px-4 py-3">Assay / Test Name</th>
-                    <th className="px-4 py-3">Ordering Physician</th>
-                    <th className="px-4 py-3">Priority</th>
-                    <th className="px-4 py-3">Specimen Collected At</th>
-                    <th className="px-4 py-3">Clinical Indication</th>
-                    <th className="px-4 py-3 text-right">Laboratory Action</th>
+                    <th className="px-4 py-3.5 align-middle">Order #</th>
+                    <th className="px-4 py-3.5 align-middle">Patient</th>
+                    <th className="px-4 py-3.5 align-middle">Investigation Name</th>
+                    <th className="px-4 py-3.5 align-middle">Ordering Doctor</th>
+                    <th className="px-4 py-3.5 align-middle">Priority</th>
+                    <th className="px-4 py-3.5 align-middle">Collected At</th>
+                    <th className="px-4 py-3.5 align-middle">Clinical Indication</th>
+                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filterList(pendingAnalysis).length > 0 ? (
                     filterList(pendingAnalysis).map((test) => (
-                      <tr key={test.id} className="hover:bg-slate-50/75 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="px-4 py-3 font-mono font-semibold text-slate-900 dark:text-slate-100">
+                      <tr key={test.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                        <td className="px-4 py-3.5 align-middle font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                           {test.testOrderNumber}
                         </td>
-                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">
-                          {test.patientName}
+                        <td className="px-4 py-3.5 align-middle">
+                          <div className="font-semibold text-xs text-slate-900 dark:text-slate-100">{test.patientName}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">ID: {test.patientId}</div>
                         </td>
-                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
-                          {test.testName}
+                        <td className="px-4 py-3.5 align-middle">
+                          <div className="font-medium text-xs text-slate-900 dark:text-slate-100">{test.testName}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">{test.category}</div>
                         </td>
-                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{test.doctorName}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3.5 align-middle text-xs text-slate-700 dark:text-slate-300">{test.doctorName}</td>
+                        <td className="px-4 py-3.5 align-middle">
                           <Badge
                             size="sm"
                             variant={
@@ -610,15 +613,15 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                             {test.priority.toUpperCase()}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                        <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap">
                           {test.sampleCollectedAt
-                            ? new Date(test.sampleCollectedAt).toLocaleTimeString()
+                            ? new Date(test.sampleCollectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                             : 'Specimen in Lab'}
                         </td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-xs truncate">
+                        <td className="px-4 py-3.5 align-middle text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate">
                           {test.clinicalNotes || 'Diagnostic verification'}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3.5 text-right align-middle whitespace-nowrap">
                           <Button
                             size="xs"
                             variant="primary"

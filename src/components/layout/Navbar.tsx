@@ -65,24 +65,24 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
   return (
     <>
-      <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs transition-colors">
+      <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs transition-colors">
         {/* Brand / Clinic Title */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold shadow-sm ring-2 ring-teal-500/20">
-              <Building2 className="w-5 h-5" />
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-teal-500/20">
+              <Building2 className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-tight tracking-tight">
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-bold text-slate-900 dark:text-slate-100 text-base sm:text-lg leading-tight tracking-tight">
                   Beacon Health Clinic
                 </h1>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/50">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800/50">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   Operational
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                 Clinical Management System
               </p>
             </div>
@@ -90,14 +90,14 @@ export const Navbar: React.FC<NavbarProps> = () => {
         </div>
 
         {/* Right Section: Search, Notifications, Profile Dropdown */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-4 sm:gap-5">
           {/* Search bar with ample left padding preventing icon overlap */}
-          <div className="hidden md:flex items-center relative w-64">
+          <div className="hidden md:flex items-center relative w-72 sm:w-80">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
             <input
               type="text"
               placeholder="Search records, patients..."
-              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-xs"
+              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-4 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-xs"
             />
           </div>
 
@@ -113,15 +113,15 @@ export const Navbar: React.FC<NavbarProps> = () => {
           </div>
 
           {/* Profile Dropdown Container: only the profile icon */}
-          <div className="relative pl-2 border-l border-slate-200 dark:border-slate-800" ref={dropdownRef}>
+          <div className="relative pl-3 border-l border-slate-200 dark:border-slate-800" ref={dropdownRef}>
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-9 h-9 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium shadow-sm ring-2 ring-teal-500/20 hover:ring-teal-500/40 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+              className="w-10 h-10 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium shadow-sm ring-2 ring-teal-500/20 hover:ring-teal-500/40 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
               aria-label="User profile menu"
               aria-expanded={isDropdownOpen}
             >
-              <User className="w-4 h-4 text-white" />
+              <User className="w-5 h-5 text-white" />
             </button>
 
             {/* Dropdown Menu */}
@@ -150,14 +150,14 @@ export const Navbar: React.FC<NavbarProps> = () => {
                   <span>Profile</span>
                 </button>
 
-                {/* Option 2: Setting */}
+                {/* Option 2: Settings */}
                 <button
                   type="button"
                   onClick={handleOpenSettings}
                   className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer"
                 >
                   <Settings className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-                  <span>Setting</span>
+                  <span>Settings</span>
                 </button>
 
                 {/* Option 3: Theme Switcher (Light / Dark Mode) */}
