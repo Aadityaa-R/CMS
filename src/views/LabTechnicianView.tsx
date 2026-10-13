@@ -189,25 +189,29 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
         <StatCard
           title="Awaiting Sample"
           value={pendingCollection.length}
+          unit={pendingCollection.length === 1 ? 'Order' : 'Orders'}
           subtitle="Orders requiring phlebotomy"
           colorScheme="amber"
         />
         <StatCard
           title="In Testing Pipeline"
           value={pendingAnalysis.length}
-          subtitle="Specimens ready for assay"
+          unit={pendingAnalysis.length === 1 ? 'Order' : 'Orders'}
+          subtitle="Orders ready for assay"
           colorScheme="blue"
         />
         <StatCard
           title="Urgent / STAT Priority"
           value={urgentOrders.length}
-          subtitle="Emergency rapid turnaround"
+          unit={urgentOrders.length === 1 ? 'Order' : 'Orders'}
+          subtitle="Orders requiring rapid turnaround"
           colorScheme={urgentOrders.length > 0 ? 'rose' : 'slate'}
         />
         <StatCard
           title="Certified Today"
           value={completedTests.length}
-          subtitle="Reports published to EMR"
+          unit={completedTests.length === 1 ? 'Order' : 'Orders'}
+          subtitle="Orders certified and published"
           colorScheme="teal"
         />
       </div>

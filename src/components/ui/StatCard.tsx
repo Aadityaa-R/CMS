@@ -3,6 +3,7 @@ import React from 'react';
 interface StatCardProps {
   title: string;
   value: string | number;
+  unit?: string;
   subtitle?: string;
   icon?: React.ReactNode;
   trend?: {
@@ -15,6 +16,7 @@ interface StatCardProps {
 export const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
+  unit,
   subtitle,
   icon,
   trend,
@@ -40,9 +42,16 @@ export const StatCard: React.FC<StatCardProps> = ({
             {icon}
           </div>
         ) : (
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            {value}
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              {value}
+            </span>
+            {unit && (
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {unit}
+              </span>
+            )}
+          </div>
         )}
       </div>
       {icon && (
