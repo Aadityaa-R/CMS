@@ -56,8 +56,8 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans antialiased transition-colors ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
-      <div className="flex-1 flex overflow-hidden min-h-screen">
+    <div className={`h-screen flex flex-col font-sans antialiased overflow-hidden transition-colors ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+      <div className="flex-1 flex overflow-hidden h-full">
         {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
         <Sidebar
           activeTab={activeTab}
@@ -69,12 +69,12 @@ export const AppLayout: React.FC = () => {
         />
 
         {/* Content Shell */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          {/* Header with profile & logout */}
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+          {/* Header with profile & logout - pinned at top */}
           <Navbar />
 
-          {/* Main View Area */}
-          <main className="flex-1 p-6 sm:p-8 lg:p-10 max-w-7xl w-full mx-auto">
+          {/* Main View Area - dedicated scrollable container */}
+          <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 max-w-7xl w-full mx-auto">
             {renderActiveView()}
           </main>
         </div>
