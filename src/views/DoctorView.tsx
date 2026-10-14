@@ -1,25 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
+import { Badge } from '@/components/ui/Badge';
 import {
-  Stethoscope,
-  Pill,
   FlaskConical,
-  Activity,
-  CheckCircle,
-  Clock,
-  Plus,
-  AlertCircle,
-  FileText,
   Search,
+  CheckCircle2,
+  Filter,
+  ChevronDown,
+  FilePlus,
+  Plus,
+  CheckCircle,
 } from 'lucide-react';
 import { Appointment, PrescriptionItem } from '@/types';
 
@@ -40,42 +38,90 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     updateAppointmentStatus,
   } = useClinic();
 
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(
-    appointments.find((a) => a.status === 'in_consultation') || appointments[0] || null
-  );
+  // Search & Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterMode, setFilterMode] = useState<'all' | 'active' | 'urgent'>('all');
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+    if (isFilterDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isFilterDropdownOpen]);
+
+  // Real-time Feedback Notification Banner State
+  const [notification, setNotification] = useState<string | null>(null);
+
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => {
+      setNotification(null);
+    }, 4500);
+  };
+
+  // Active consultation patient
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>(() => {
+    const active = appointments.find((a) => a.status === 'in_consultation');
+    return active ? active.id : appointments[0]?.id || '';
+  });
+
+  const activeAppointment = appointments.find((a) => a.id === selectedAppointmentId) || appointments[0];
+  const activePatient = activeAppointment ? patients.find((p) => p.id === activeAppointment.patientId) : null;
+  const activeVitals = activePatient ? vitals.find((v) => v.patientId === activePatient.id) : null;
 
   // Prescription Modal State
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
-  const [diagnosis, setDiagnosis] = useState('Hypertension Follow-Up - Stable');
+  const [prescPatientId, setPrescPatientId] = useState<string>('');
+  const [diagnosis, setDiagnosis] = useState('');
   const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItem[]>([
     {
       id: 'item-1',
-      medicineName: 'Amlodipine Besylate',
-      dosage: '5 mg',
-      frequency: 'Once daily in morning',
+      medicineName: '',
+      dosage: '',
+      frequency: 'Once daily',
       duration: '30 days',
-      instructions: 'Take with water after breakfast.',
+      instructions: 'Take after meals with water',
       dispensed: false,
     },
   ]);
 
   // Lab Order Modal State
   const [isLabOrderModalOpen, setIsLabOrderModalOpen] = useState(false);
-  const [selectedLabTest, setSelectedLabTest] = useState('Lipid Profile Assay');
+  const [labPatientId, setLabPatientId] = useState<string>('');
+  const [testName, setTestName] = useState('Comprehensive Metabolic Panel (CMP)');
+  const [testCategory, setTestCategory] = useState('Biochemistry');
+  const [sampleType, setSampleType] = useState('Venous Whole Blood');
   const [labPriority, setLabPriority] = useState<'routine' | 'urgent' | 'stat'>('routine');
-  const [labNotes, setLabNotes] = useState('Routine screening for cardiovascular risk.');
+  const [labNotes, setLabNotes] = useState('');
 
-  // Current Patient context
-  const currentPatient = selectedAppointment
-    ? patients.find((p) => p.id === selectedAppointment.patientId)
-    : null;
+  // Consultation Notes Modal State
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [clinicalNotesText, setClinicalNotesText] = useState('');
 
-  const currentPatientVitals = selectedAppointment
-    ? vitals.find((v) => v.patientId === selectedAppointment.patientId)
-    : null;
+  // Handlers
+  const handleStartConsultation = (apt: Appointment) => {
+    updateAppointmentStatus(apt.id, 'in_consultation');
+    setSelectedAppointmentId(apt.id);
+    showNotification(`Consultation started for ${apt.patientName}. Patient now at desk.`);
+  };
 
-  const [patientSearch, setPatientSearch] = useState('');
-
+  const handleConcludeConsultation = (aptId: string, patientName: string) => {
+    updateAppointmentStatus(aptId, 'completed');
+    showNotification(`Consultation concluded for ${patientName}. Visit marked completed.`);
+  };
 
   const handleAddMedicationRow = () => {
     setPrescriptionItems((prev) => [
@@ -84,7 +130,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         id: `item-${prev.length + 1}`,
         medicineName: '',
         dosage: '',
-        frequency: 'Twice daily',
+        frequency: 'Once daily',
         duration: '14 days',
         instructions: 'Take after meals',
         dispensed: false,
@@ -104,552 +150,713 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     });
   };
 
-  const handleSavePrescription = () => {
-    if (!selectedAppointment || !currentPatient) return;
+  const handleOpenPrescriptionModal = (targetPatientId?: string) => {
+    const pId = targetPatientId || activePatient?.id || patients[0]?.id || '';
+    setPrescPatientId(pId);
+    setDiagnosis('');
+    setPrescriptionItems([
+      {
+        id: 'item-1',
+        medicineName: '',
+        dosage: '',
+        frequency: 'Once daily in morning',
+        duration: '30 days',
+        instructions: 'Take after breakfast',
+        dispensed: false,
+      },
+    ]);
+    setIsPrescriptionModalOpen(true);
+  };
+
+  const handleSavePrescription = (e: React.FormEvent) => {
+    e.preventDefault();
+    const patientObj = patients.find((p) => p.id === prescPatientId);
+    if (!patientObj || !diagnosis.trim()) return;
+
     const validItems = prescriptionItems.filter((i) => i.medicineName.trim().length > 0);
     if (validItems.length === 0) return;
 
-    createPrescription({
-      patientId: currentPatient.id,
-      patientName: `${currentPatient.firstName} ${currentPatient.lastName}`,
-      doctorId: currentUser.id,
+    const newRx = createPrescription({
+      patientId: patientObj.id,
+      patientName: `${patientObj.firstName} ${patientObj.lastName}`,
+      doctorId: 'doc-1',
       doctorName: currentUser.name,
-      appointmentId: selectedAppointment.id,
+      appointmentId: activeAppointment?.id,
       diagnosis,
       items: validItems,
     });
 
+    showNotification(
+      `e-Prescription #${newRx.prescriptionNumber} written for ${newRx.patientName}. Transmitted to pharmacy repository.`
+    );
+
     setIsPrescriptionModalOpen(false);
   };
 
-  const handleSaveLabOrder = () => {
-    if (!selectedAppointment || !currentPatient) return;
+  const handleOpenLabModal = (targetPatientId?: string) => {
+    const pId = targetPatientId || activePatient?.id || patients[0]?.id || '';
+    setLabPatientId(pId);
+    setTestName('Comprehensive Metabolic Panel (CMP)');
+    setTestCategory('Biochemistry');
+    setSampleType('Serum / Venous Blood');
+    setLabPriority('routine');
+    setLabNotes('');
+    setIsLabOrderModalOpen(true);
+  };
 
-    createLabTest({
-      patientId: currentPatient.id,
-      patientName: `${currentPatient.firstName} ${currentPatient.lastName}`,
-      doctorId: currentUser.id,
+  const handleSaveLabOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    const patientObj = patients.find((p) => p.id === labPatientId);
+    if (!patientObj || !testName.trim()) return;
+
+    const newLab = createLabTest({
+      patientId: patientObj.id,
+      patientName: `${patientObj.firstName} ${patientObj.lastName}`,
+      doctorId: 'doc-1',
       doctorName: currentUser.name,
-      testName: selectedLabTest,
-      category: 'Diagnostic Pathology',
-      sampleType: 'Venous Blood / Serum',
+      testName,
+      category: testCategory,
+      sampleType,
       priority: labPriority,
-      clinicalNotes: labNotes,
+      clinicalNotes: labNotes || 'Diagnostic evaluation ordered during outpatient consultation.',
     });
+
+    showNotification(
+      `Diagnostic Order #${newLab.testOrderNumber} (${newLab.testName}) placed for ${newLab.patientName}. Accessioned into Lab Worklist.`
+    );
 
     setIsLabOrderModalOpen(false);
   };
 
-  // KPIs
-  const todayAppointments = appointments.filter(
-    (a) => a.doctorId === 'doc-1' || a.doctorName.includes('Vance')
-  );
-  const completedCount = appointments.filter((a) => a.status === 'completed').length;
-  const inQueueCount = appointments.filter(
-    (a) => a.status === 'in_consultation' || a.status === 'checked_in'
-  ).length;
+  const handleSaveConsultationNotes = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeAppointment) return;
+
+    showNotification(
+      `Consultation notes recorded for ${activeAppointment.patientName}. Appended to permanent EMR.`
+    );
+    setIsNotesModalOpen(false);
+    setClinicalNotesText('');
+  };
+
+  // Metrics
+  const totalQueue = appointments.length;
+  const inConsultation = appointments.filter((a) => a.status === 'in_consultation').length;
+  const totalPrescriptions = prescriptions.length;
+  const urgentLabOrders = labTests.filter((l) => l.priority === 'stat' || l.priority === 'urgent');
+
+  // Filter Helper
+  const query = searchTerm.toLowerCase();
+
+  const filteredAppointments = appointments.filter((a) => {
+    const matchesSearch =
+      a.patientName.toLowerCase().includes(query) ||
+      a.appointmentNumber.toLowerCase().includes(query) ||
+      a.reasonForVisit.toLowerCase().includes(query);
+
+    if (!matchesSearch) return false;
+    if (filterMode === 'active') return a.status === 'in_consultation' || a.status === 'checked_in';
+    if (filterMode === 'urgent') return a.status === 'in_consultation';
+    return true;
+  });
+
+  const filteredPatients = patients.filter((p) => {
+    const matchesSearch =
+      p.firstName.toLowerCase().includes(query) ||
+      p.lastName.toLowerCase().includes(query) ||
+      p.mrn.toLowerCase().includes(query) ||
+      p.phone.includes(query);
+
+    if (!matchesSearch) return false;
+    if (filterMode === 'active') return p.status === 'active';
+    if (filterMode === 'urgent') return p.allergies.length > 0;
+    return true;
+  });
+
+  const filteredPrescriptions = prescriptions.filter((r) => {
+    const matchesSearch =
+      r.prescriptionNumber.toLowerCase().includes(query) ||
+      r.patientName.toLowerCase().includes(query) ||
+      r.diagnosis.toLowerCase().includes(query);
+
+    if (!matchesSearch) return false;
+    if (filterMode === 'active') return r.status === 'pending';
+    if (filterMode === 'urgent') return r.status === 'pending';
+    return true;
+  });
+
+  const filteredLabTests = labTests.filter((l) => {
+    const matchesSearch =
+      l.testOrderNumber.toLowerCase().includes(query) ||
+      l.patientName.toLowerCase().includes(query) ||
+      l.testName.toLowerCase().includes(query);
+
+    if (!matchesSearch) return false;
+    if (filterMode === 'active') return l.status === 'ordered' || l.status === 'sample_collected';
+    if (filterMode === 'urgent') return l.priority === 'stat' || l.priority === 'urgent';
+    return true;
+  });
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Workstation Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-            Doctor Clinical Workstation
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            Physician Consultation Desk & Clinical Care
           </h2>
-          <p className="text-xs text-slate-500">
-            Assigned to {currentUser.name} ({currentUser.department})
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Consulting Physician: {currentUser.name} • Internal Medicine & General Practice
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="teal" size="md">
-            Consultation Room 101 Active
-          </Badge>
+        <div className="flex items-center gap-2.5">
+          <Button
+            size="sm"
+            variant="outline"
+            icon={<FlaskConical className="w-4 h-4" />}
+            onClick={() => handleOpenLabModal()}
+          >
+            Order Lab Test
+          </Button>
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<FilePlus className="w-4 h-4" />}
+            onClick={() => handleOpenPrescriptionModal()}
+          >
+            Write Prescription
+          </Button>
         </div>
       </div>
 
-      {/* Overview Sub-Module */}
-      {activeTab === 'overview' && (
-        <>
-          {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Real-time Feedback Notification Banner */}
+      {notification && (
+        <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+            <span className="font-medium">{notification}</span>
+          </div>
+          <button
+            onClick={() => setNotification(null)}
+            className="text-teal-700 dark:text-teal-400 hover:text-teal-900 dark:hover:text-teal-200 text-xs font-semibold cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* KPI Stats Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard
-          title="Assigned Patients Today"
-          value={todayAppointments.length}
-          subtitle="Consultation schedule"
-          icon={<Stethoscope className="w-5 h-5" />}
+          title="Consultation Queue"
+          value={totalQueue}
+          unit="Visits"
+          subtitle="Outpatient roster today"
+          colorScheme="slate"
+        />
+        <StatCard
+          title="Active Consultation"
+          value={inConsultation}
+          unit={inConsultation === 1 ? 'Patient' : 'Patients'}
+          subtitle="Currently at desk"
           colorScheme="teal"
         />
         <StatCard
-          title="Patients in Waiting Queue"
-          value={inQueueCount}
-          subtitle="Checked in or in room"
-          icon={<Clock className="w-5 h-5" />}
-          colorScheme="amber"
+          title="e-Prescriptions Logged"
+          value={totalPrescriptions}
+          unit="Orders"
+          subtitle="Issued clinical regimens"
+          colorScheme="slate"
         />
         <StatCard
-          title="Completed Consultations"
-          value={completedCount}
-          subtitle="Electronic records updated"
-          icon={<CheckCircle className="w-5 h-5" />}
-          colorScheme="blue"
+          title="Urgent Investigations"
+          value={urgentLabOrders.length}
+          unit="Orders"
+          subtitle="STAT priority diagnostics"
+          colorScheme={urgentLabOrders.length > 0 ? 'rose' : 'slate'}
         />
       </div>
 
-      {/* Main Clinical Two-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Waiting Queue & Scheduled Consultations */}
-        <div className="lg:col-span-5 space-y-4">
-          <Card>
-            <CardHeader
-              action={
-                <span className="text-xs font-semibold text-slate-500">
-                  {appointments.length} Consultations
-                </span>
-              }
-            >
-              <CardTitle>Today's Patient Queue</CardTitle>
-              <CardDescription>
-                Select a patient to review EMR and start consultation
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-                {appointments.map((apt) => {
-                  const isSelected = selectedAppointment?.id === apt.id;
-                  return (
-                    <div
-                      key={apt.id}
-                      onClick={() => setSelectedAppointment(apt)}
-                      className={`p-4 cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-teal-50/60 border-l-4 border-teal-600'
-                          : 'hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900">
-                            Token #{apt.tokenNumber}
-                          </span>
-                          <span className="text-xs text-slate-400">•</span>
-                          <span className="text-xs font-medium text-slate-600">
-                            {new Date(apt.dateTime).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </div>
-                        <Badge
-                          size="sm"
-                          variant={
-                            apt.status === 'in_consultation'
-                              ? 'teal'
-                              : apt.status === 'checked_in'
-                              ? 'info'
-                              : apt.status === 'completed'
-                              ? 'success'
-                              : 'neutral'
-                          }
-                        >
-                          {apt.status.replace('_', ' ')}
-                        </Badge>
-                      </div>
-
-                      <div className="font-semibold text-slate-900 text-sm">
-                        {apt.patientName}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-1">
-                        Reason: {apt.reasonForVisit}
-                      </p>
-
-                      <div className="mt-3 flex items-center gap-2">
-                        {apt.status !== 'in_consultation' && apt.status !== 'completed' && (
-                          <Button
-                            size="xs"
-                            variant="primary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateAppointmentStatus(apt.id, 'in_consultation');
-                              setSelectedAppointment(apt);
-                            }}
-                          >
-                            Call into Room
-                          </Button>
-                        )}
-                        {apt.status === 'in_consultation' && (
-                          <Button
-                            size="xs"
-                            variant="secondary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateAppointmentStatus(apt.id, 'completed');
-                            }}
-                          >
-                            Finish Consultation
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Universal Search & Scope Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
+        <div className="relative flex-1 max-w-md flex items-center">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search consultation queue, patient MRN, prescriptions, or labs..."
+            className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-xs"
+          />
         </div>
 
-        {/* Right Column: Active Consultation Desk & EMR Record */}
-        <div className="lg:col-span-7 space-y-4">
-          {selectedAppointment && currentPatient ? (
-            <>
-              {/* Patient Banner */}
-              <Card>
-                <div className="p-5 bg-gradient-to-r from-teal-800 to-slate-900 text-white rounded-t-xl">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="text-xs uppercase tracking-wider text-teal-300 font-semibold">
-                        Medical Record: {currentPatient.mrn}
-                      </div>
-                      <h3 className="text-lg font-bold mt-0.5">
-                        {currentPatient.firstName} {currentPatient.lastName}
-                      </h3>
-                      <div className="text-xs text-slate-300 mt-1 flex items-center gap-3">
-                        <span>Age: {currentPatient.age} yrs</span>
-                        <span>•</span>
-                        <span className="capitalize">{currentPatient.gender}</span>
-                        <span>•</span>
-                        <span>Blood: {currentPatient.bloodGroup}</span>
-                      </div>
-                    </div>
+        {/* Priority Filter as Dropdown Selector */}
+        <div className="relative" ref={filterDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors shadow-xs cursor-pointer focus:outline-none focus:ring-0 focus-visible:ring-1 focus-visible:ring-teal-500"
+            aria-label="Filter scope"
+            aria-expanded={isFilterDropdownOpen}
+          >
+            <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+            <span>Scope:</span>
+            <span className="font-semibold text-teal-600 dark:text-teal-400">
+              {filterMode === 'all'
+                ? 'All Items'
+                : filterMode === 'active'
+                ? 'Active / In Progress'
+                : 'Urgent Only'}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+          </button>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="soft"
-                        className="bg-teal-700/80 text-white border-teal-500 hover:bg-teal-700"
-                        icon={<Pill className="w-3.5 h-3.5" />}
-                        onClick={() => setIsPrescriptionModalOpen(true)}
-                      >
-                        Prescribe Rx
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="soft"
-                        className="bg-teal-700/80 text-white border-teal-500 hover:bg-teal-700"
-                        icon={<FlaskConical className="w-3.5 h-3.5" />}
-                        onClick={() => setIsLabOrderModalOpen(true)}
-                      >
-                        Order Lab Test
-                      </Button>
-                    </div>
-                  </div>
+          {isFilterDropdownOpen && (
+            <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
+              <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
+                Filter Consultation Desk
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterMode('all');
+                  setIsFilterDropdownOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
+                  filterMode === 'all'
+                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span>All Items</span>
+              </button>
 
-                  {/* Allergy Banner */}
-                  {currentPatient.allergies.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-slate-700/80 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                      <span className="text-xs font-semibold text-rose-300">
-                        Known Allergies:
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {currentPatient.allergies.map((allergy) => (
-                          <span
-                            key={allergy}
-                            className="text-[11px] bg-rose-950/80 text-rose-200 border border-rose-800 px-2 py-0.5 rounded font-medium"
-                          >
-                            {allergy}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterMode('active');
+                  setIsFilterDropdownOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
+                  filterMode === 'active'
+                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                  Active / In Progress
+                </span>
+              </button>
 
-                {/* Vitals Summary Card */}
-                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                      <Activity className="w-4 h-4 text-teal-600" />
-                      Vital Signs (Triage Assessment)
-                    </span>
-                    {currentPatientVitals && (
-                      <span className="text-[11px] text-slate-500">
-                        Recorded by {currentPatientVitals.recordedByName}
-                      </span>
-                    )}
-                  </div>
-
-                  {currentPatientVitals ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                      <div className="p-2.5 bg-white rounded-lg border border-slate-200">
-                        <div className="text-[11px] text-slate-500 font-medium">
-                          Blood Pressure
-                        </div>
-                        <div className="text-base font-bold text-slate-900 mt-0.5">
-                          {currentPatientVitals.systolicBp}/
-                          {currentPatientVitals.diastolicBp}
-                        </div>
-                        <div className="text-[10px] text-slate-400">mmHg</div>
-                      </div>
-
-                      <div className="p-2.5 bg-white rounded-lg border border-slate-200">
-                        <div className="text-[11px] text-slate-500 font-medium">
-                          Heart Rate
-                        </div>
-                        <div className="text-base font-bold text-slate-900 mt-0.5">
-                          {currentPatientVitals.heartRateBpm}
-                        </div>
-                        <div className="text-[10px] text-slate-400">bpm</div>
-                      </div>
-
-                      <div className="p-2.5 bg-white rounded-lg border border-slate-200">
-                        <div className="text-[11px] text-slate-500 font-medium">
-                          SpO2 Saturation
-                        </div>
-                        <div className="text-base font-bold text-slate-900 mt-0.5">
-                          {currentPatientVitals.oxygenSaturationPct}%
-                        </div>
-                        <div className="text-[10px] text-slate-400">Room Air</div>
-                      </div>
-
-                      <div className="p-2.5 bg-white rounded-lg border border-slate-200">
-                        <div className="text-[11px] text-slate-500 font-medium">
-                          Body Temp
-                        </div>
-                        <div className="text-base font-bold text-slate-900 mt-0.5">
-                          {currentPatientVitals.temperatureCelsius}°C
-                        </div>
-                        <div className="text-[10px] text-slate-400">Normothermic</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-white rounded-lg border border-slate-200 text-center text-xs text-slate-500">
-                      No vitals recorded for this visit yet. Request clinical triage station.
-                    </div>
-                  )}
-                </div>
-
-                {/* Consultation Chief Complaint & Clinical Action */}
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                      Chief Complaint / Reason for Visit
-                    </h4>
-                    <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 mt-1.5">
-                      {selectedAppointment.reasonForVisit}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                      Doctor Clinical Notes & Observations
-                    </h4>
-                    <Textarea
-                      rows={3}
-                      defaultValue={selectedAppointment.notes || ''}
-                      placeholder="Enter clinical examination findings, auscultation, follow-up instructions..."
-                    />
-                  </div>
-
-                  {/* Active Prescriptions for this Patient */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                        Patient Medication & Prescriptions
-                      </h4>
-                      <Button
-                        size="xs"
-                        variant="soft"
-                        onClick={() => setIsPrescriptionModalOpen(true)}
-                      >
-                        + Add Medication
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      {prescriptions
-                        .filter((rx) => rx.patientId === currentPatient.id)
-                        .map((rx) => (
-                          <div
-                            key={rx.id}
-                            className="p-3 bg-white rounded-lg border border-slate-200"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-slate-900">
-                                {rx.prescriptionNumber} • {rx.diagnosis}
-                              </span>
-                              <Badge
-                                size="sm"
-                                variant={rx.status === 'dispensed' ? 'success' : 'amber' as any}
-                              >
-                                {rx.status}
-                              </Badge>
-                            </div>
-                            <div className="mt-2 space-y-1">
-                              {rx.items.map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="text-xs text-slate-700 flex justify-between"
-                                >
-                                  <span>
-                                    • {item.medicineName} ({item.dosage}) - {item.frequency}
-                                  </span>
-                                  <span className="text-slate-400">
-                                    {item.dispensed ? 'Dispensed' : 'Pending Pharmacy'}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-
-                  {/* Diagnostic Tests for this Patient */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                        Diagnostic Lab Orders
-                      </h4>
-                      <Button
-                        size="xs"
-                        variant="soft"
-                        onClick={() => setIsLabOrderModalOpen(true)}
-                      >
-                        + Order New Test
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      {labTests
-                        .filter((lt) => lt.patientId === currentPatient.id)
-                        .map((lt) => (
-                          <div
-                            key={lt.id}
-                            className="p-3 bg-white rounded-lg border border-slate-200 flex items-center justify-between"
-                          >
-                            <div>
-                              <div className="text-xs font-bold text-slate-900">
-                                {lt.testName}
-                              </div>
-                              <div className="text-[11px] text-slate-500">
-                                Status: {lt.status.replace('_', ' ')} • Result:{' '}
-                                {lt.result || 'Pending Processing'}
-                              </div>
-                            </div>
-                            <Badge
-                              size="sm"
-                              variant={lt.status === 'completed' ? 'success' : 'info'}
-                            >
-                              {lt.status}
-                            </Badge>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          ) : (
-            <Card>
-              <CardContent className="p-8 text-center text-slate-500">
-                <FileText className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-sm font-medium">Select a patient from the queue</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Choose any patient in the waiting list to begin or view their consultation details.
-                </p>
-              </CardContent>
-            </Card>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterMode('urgent');
+                  setIsFilterDropdownOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
+                  filterMode === 'urgent'
+                    ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-semibold'
+                    : 'text-rose-700 dark:text-rose-400 hover:bg-rose-50/50 dark:hover:bg-rose-950/30'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                  STAT & Urgent
+                </span>
+              </button>
+            </div>
           )}
         </div>
       </div>
-        </>
+
+      {/* ========================================================================= */}
+      {/* SUB-MODULE 1: CONSULTATION DESK (`overview`)                              */}
+      {/* ========================================================================= */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Active Patient Desk (Left 2 cols) */}
+          <div className="lg:col-span-2 space-y-4">
+            {activePatient && activeAppointment ? (
+              <Card>
+                <CardHeader
+                  action={
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        icon={<FlaskConical className="w-3.5 h-3.5" />}
+                        onClick={() => handleOpenLabModal(activePatient.id)}
+                      >
+                        Order Labs
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        icon={<FilePlus className="w-3.5 h-3.5" />}
+                        onClick={() => handleOpenPrescriptionModal(activePatient.id)}
+                      >
+                        Prescribe
+                      </Button>
+                      {activeAppointment.status === 'in_consultation' ? (
+                        <Button
+                          size="xs"
+                          variant="primary"
+                          icon={<CheckCircle className="w-3.5 h-3.5" />}
+                          onClick={() => handleConcludeConsultation(activeAppointment.id, activePatient.firstName)}
+                        >
+                          Conclude Visit
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          variant="secondary"
+                          onClick={() => handleStartConsultation(activeAppointment)}
+                        >
+                          Start Consultation
+                        </Button>
+                      )}
+                    </div>
+                  }
+                >
+                  <CardTitle>
+                    Active Consultation Desk: {activePatient.firstName} {activePatient.lastName}
+                  </CardTitle>
+                  <CardDescription>
+                    {activePatient.mrn} • {activePatient.age} yrs • {activePatient.gender} • Blood Group: {activePatient.bloodGroup}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Safety Alert (Red dot only if allergy exists) */}
+                  {activePatient.allergies.length > 0 && (
+                    <div className="p-3 bg-rose-50/50 dark:bg-rose-950/30 rounded-xl border border-rose-200/60 dark:border-rose-900/40 text-xs flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                      <span className="font-semibold text-rose-700 dark:text-rose-400">Allergy Warning:</span>
+                      <span className="text-rose-800 dark:text-rose-300">{activePatient.allergies.join(', ')}</span>
+                    </div>
+                  )}
+
+                  {/* Consultation Chief Complaint */}
+                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                      Chief Complaint & Reason for Visit
+                    </span>
+                    <p className="text-slate-900 dark:text-slate-100 font-medium">
+                      {activeAppointment.reasonForVisit}
+                    </p>
+                    {activeAppointment.notes && (
+                      <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">
+                        Intake Note: {activeAppointment.notes}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Triage Vital Signs Snapshot */}
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-2">
+                      Clinical Triage Vitals
+                    </span>
+                    {activeVitals ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Blood Pressure</span>
+                          <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {activeVitals.systolicBp}/{activeVitals.diastolicBp} <span className="text-[10px] font-normal text-slate-500">mmHg</span>
+                          </span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Heart Rate</span>
+                          <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {activeVitals.heartRateBpm} <span className="text-[10px] font-normal text-slate-500">bpm</span>
+                          </span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">O2 Saturation</span>
+                          <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {activeVitals.oxygenSaturationPct}%
+                          </span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Temperature</span>
+                          <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {activeVitals.temperatureCelsius}°C
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 text-center">
+                        No triage vitals recorded for this visit yet.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Consultation Notes Action */}
+                  <div className="pt-2 flex justify-end">
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => setIsNotesModalOpen(true)}
+                    >
+                      Record Consultation Notes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+                  No active consultation selected. Choose a patient from the queue below.
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Waiting Consultations Ledger */}
+            <Card>
+              <CardHeader
+                action={
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {filteredAppointments.length} Total on Roster
+                  </span>
+                }
+              >
+                <CardTitle>Today's Patient Consultation Queue</CardTitle>
+                <CardDescription>
+                  Ordered schedule of checked-in and upcoming clinic consultations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                      <tr>
+                        <th className="px-4 py-3.5 align-middle">Token #</th>
+                        <th className="px-4 py-3.5 align-middle">Patient Name</th>
+                        <th className="px-4 py-3.5 align-middle">Scheduled Time</th>
+                        <th className="px-4 py-3.5 align-middle">Clinical Reason</th>
+                        <th className="px-4 py-3.5 align-middle">Status</th>
+                        <th className="px-4 py-3.5 text-right align-middle">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {filteredAppointments.map((apt) => {
+                        const isCurrent = apt.id === selectedAppointmentId;
+                        return (
+                          <tr
+                            key={apt.id}
+                            className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
+                              isCurrent ? 'bg-teal-50/30 dark:bg-teal-950/20' : ''
+                            }`}
+                          >
+                            <td className="px-4 py-3.5 align-middle font-mono font-bold text-teal-600 dark:text-teal-400">
+                              #{apt.tokenNumber}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle">
+                              <div className="font-semibold text-slate-900 dark:text-slate-100">
+                                {apt.patientName}
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                {apt.patientPhone}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                              {new Date(apt.dateTime).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
+                              {apt.reasonForVisit}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                    apt.status === 'in_consultation'
+                                      ? 'bg-teal-500'
+                                      : apt.status === 'checked_in'
+                                      ? 'bg-teal-500'
+                                      : 'bg-slate-400'
+                                  }`}
+                                />
+                                <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
+                                  {apt.status.replace('_', ' ')}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 text-right align-middle space-x-1.5">
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                onClick={() => setSelectedAppointmentId(apt.id)}
+                              >
+                                View File
+                              </Button>
+                              {apt.status !== 'completed' && (
+                                <Button
+                                  size="xs"
+                                  variant="secondary"
+                                  onClick={() => handleStartConsultation(apt)}
+                                >
+                                  Engage
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column: Active Doctor Schedule Card */}
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Consulting Physician Profile</CardTitle>
+                <CardDescription>Clinical credentials & schedule</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3.5 text-xs">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">
+                    Primary Physician
+                  </span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                    Dr. Marcus Vance, MD, FACP
+                  </span>
+                  <span className="text-teal-600 dark:text-teal-400 block text-[11px] mt-0.5">
+                    Lead Attending Physician • Internal Medicine
+                  </span>
+                </div>
+
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Assigned Room:</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">Consultation Desk 1</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Working Hours:</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">09:00 AM - 04:30 PM</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Duty Days:</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">Mon - Fri</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Consultation Fee:</span>
+                    <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">$120.00</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-teal-50/50 dark:bg-teal-950/40 rounded-xl border border-teal-200/70 dark:border-teal-800/60">
+                  <div className="flex items-center gap-1.5 text-teal-800 dark:text-teal-200 font-semibold mb-1">
+                    <CheckCircle className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                    <span>Clinic Staffing Scope</span>
+                  </div>
+                  <p className="text-[11px] text-teal-900 dark:text-teal-300">
+                    Solo clinical workstation. All registered appointments, e-prescriptions, and diagnostic investigations are managed directly by Dr. Marcus Vance.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
 
-      {/* Sub-Module: My Patients */}
+      {/* ========================================================================= */}
+      {/* SUB-MODULE 2: MY PATIENTS (`patients`)                                    */}
+      {/* ========================================================================= */}
       {activeTab === 'patients' && (
         <Card>
           <CardHeader
             action={
-              <div className="relative w-64 flex items-center">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-                <input
-                  type="text"
-                  value={patientSearch}
-                  onChange={(e) => setPatientSearch(e.target.value)}
-                  placeholder="Search assigned patients..."
-                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-3.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white shadow-xs transition-all"
-                />
-              </div>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {filteredPatients.length} Patients in Care
+              </span>
             }
           >
-            <CardTitle>My Patients Directory</CardTitle>
+            <CardTitle>My Outpatient Medical Directory</CardTitle>
             <CardDescription>
-              Clinical profiles, blood groups, allergies, and ongoing treatment plans
+              Electronic Health Records, allergy profiles, and consultation histories under Dr. Marcus Vance
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table>
-                <thead>
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
                   <tr>
-                    <th>Patient Name</th>
-                    <th>MRN</th>
-                    <th>Demographics</th>
-                    <th>Blood Group</th>
-                    <th>Allergies</th>
-                    <th>Chronic Conditions</th>
-                    <th className="text-right">Action</th>
+                    <th className="px-4 py-3.5 align-middle">MRN</th>
+                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
+                    <th className="px-4 py-3.5 align-middle">Demographics</th>
+                    <th className="px-4 py-3.5 align-middle">Phone</th>
+                    <th className="px-4 py-3.5 align-middle">Blood Group</th>
+                    <th className="px-4 py-3.5 align-middle">Allergies</th>
+                    <th className="px-4 py-3.5 align-middle">Chronic Conditions</th>
+                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {patients
-                    .filter(
-                      (p) =>
-                        p.firstName.toLowerCase().includes(patientSearch.toLowerCase()) ||
-                        p.lastName.toLowerCase().includes(patientSearch.toLowerCase()) ||
-                        p.mrn.toLowerCase().includes(patientSearch.toLowerCase())
-                    )
-                    .map((p) => (
-                      <tr key={p.id}>
-                        <td className="font-semibold text-slate-900">
-                          {p.firstName} {p.lastName}
-                        </td>
-                        <td className="font-mono text-xs">{p.mrn}</td>
-                        <td className="text-xs">
-                          {p.age} yrs • {p.gender}
-                        </td>
-                        <td>
-                          <Badge size="sm" variant="neutral">
-                            {p.bloodGroup}
-                          </Badge>
-                        </td>
-                        <td>
-                          {p.allergies.length > 0 ? (
-                            <span className="text-rose-600 font-medium text-xs">
-                              {p.allergies.join(', ')}
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredPatients.map((pat) => (
+                    <tr
+                      key={pat.id}
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
+                    >
+                      <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
+                        {pat.mrn}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle">
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">
+                          {pat.firstName} {pat.lastName}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {pat.email}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 capitalize">
+                        {pat.age} yrs • {pat.gender}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                        {pat.phone}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle">
+                        <Badge variant="teal">{pat.bloodGroup}</Badge>
+                      </td>
+                      <td className="px-4 py-3.5 align-middle">
+                        {pat.allergies.length > 0 ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                            <span className="text-slate-700 dark:text-slate-300 text-xs">
+                              {pat.allergies.join(', ')}
                             </span>
-                          ) : (
-                            <span className="text-slate-400 text-xs">No known allergies</span>
-                          )}
-                        </td>
-                        <td className="text-xs text-slate-600">
-                          {p.chronicConditions.join(', ') || 'None reported'}
-                        </td>
-                        <td className="text-right">
-                          <Button
-                            size="xs"
-                            variant="soft"
-                            onClick={() => {
-                              const apt = appointments.find((a) => a.patientId === p.id);
-                              if (apt) setSelectedAppointment(apt);
-                            }}
-                          >
-                            Review EMR
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500 italic">None Recorded</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400">
+                        {pat.chronicConditions.length > 0 ? pat.chronicConditions.join(', ') : 'None'}
+                      </td>
+                      <td className="px-4 py-3.5 text-right align-middle space-x-1.5">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => handleOpenPrescriptionModal(pat.id)}
+                        >
+                          Prescribe
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="secondary"
+                          onClick={() => handleOpenLabModal(pat.id)}
+                        >
+                          Order Lab
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -657,66 +864,82 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </Card>
       )}
 
-      {/* Sub-Module: Write & Review Prescriptions */}
+      {/* ========================================================================= */}
+      {/* SUB-MODULE 3: WRITE PRESCRIPTIONS (`prescriptions`)                       */}
+      {/* ========================================================================= */}
       {activeTab === 'prescriptions' && (
         <Card>
           <CardHeader
             action={
               <Button
-                size="sm"
+                size="xs"
                 variant="primary"
-                icon={<Plus className="w-4 h-4" />}
-                onClick={() => setIsPrescriptionModalOpen(true)}
+                icon={<Plus className="w-3.5 h-3.5" />}
+                onClick={() => handleOpenPrescriptionModal()}
               >
-                Write New Prescription
+                Write Prescription
               </Button>
             }
           >
-            <CardTitle>Electronic Prescriptions (e-Rx)</CardTitle>
+            <CardTitle>e-Prescription Master Ledger</CardTitle>
             <CardDescription>
-              Prescription orders issued and routed to the pharmacy dispensary
+              Electronic medication orders, therapeutic dosing, and pharmaceutical fulfillment records
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table>
-                <thead>
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
                   <tr>
-                    <th>Rx Number</th>
-                    <th>Patient</th>
-                    <th>Diagnosis</th>
-                    <th>Medications</th>
-                    <th>Prescribed Date</th>
-                    <th>Dispensary Status</th>
+                    <th className="px-4 py-3.5 align-middle">Rx #</th>
+                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
+                    <th className="px-4 py-3.5 align-middle">Issue Date</th>
+                    <th className="px-4 py-3.5 align-middle">Diagnosis</th>
+                    <th className="px-4 py-3.5 align-middle">Prescribed Regimen</th>
+                    <th className="px-4 py-3.5 align-middle">Dispense Status</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {prescriptions.map((rx) => (
-                    <tr key={rx.id}>
-                      <td className="font-mono font-semibold text-slate-900">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredPrescriptions.map((rx) => (
+                    <tr
+                      key={rx.id}
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
+                    >
+                      <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
                         {rx.prescriptionNumber}
                       </td>
-                      <td className="font-medium text-slate-900">{rx.patientName}</td>
-                      <td className="text-slate-800">{rx.diagnosis}</td>
-                      <td>
-                        <div className="space-y-0.5">
-                          {rx.items.map((it) => (
-                            <div key={it.id} className="text-xs text-slate-600">
-                              • {it.medicineName} ({it.dosage}) - {it.frequency}
+                      <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
+                        {rx.patientName}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                        {rx.date}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle text-slate-800 dark:text-slate-200 font-medium">
+                        {rx.diagnosis}
+                      </td>
+                      <td className="px-4 py-3.5 align-middle">
+                        <div className="space-y-1">
+                          {rx.items.map((item) => (
+                            <div key={item.id} className="text-slate-700 dark:text-slate-300">
+                              <span className="font-semibold text-slate-900 dark:text-slate-100">{item.medicineName}</span>{' '}
+                              <span className="text-slate-500">({item.dosage} • {item.frequency})</span>
                             </div>
                           ))}
                         </div>
                       </td>
-                      <td className="text-xs text-slate-500">
-                        {new Date(rx.date).toLocaleDateString()}
-                      </td>
-                      <td>
-                        <Badge
-                          size="sm"
-                          variant={rx.status === 'dispensed' ? 'success' : 'amber'}
-                        >
-                          {rx.status}
-                        </Badge>
+                      <td className="px-4 py-3.5 align-middle">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              rx.status === 'dispensed'
+                                ? 'bg-teal-500'
+                                : 'bg-slate-400'
+                            }`}
+                          />
+                          <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
+                            {rx.status.replace('_', ' ')}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -727,80 +950,101 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </Card>
       )}
 
-      {/* Sub-Module: Order Lab Tests */}
+      {/* ========================================================================= */}
+      {/* SUB-MODULE 4: ORDER LAB TESTS (`lab_orders`)                              */}
+      {/* ========================================================================= */}
       {activeTab === 'lab_orders' && (
         <Card>
           <CardHeader
             action={
               <Button
-                size="sm"
+                size="xs"
                 variant="primary"
-                icon={<Plus className="w-4 h-4" />}
-                onClick={() => setIsLabOrderModalOpen(true)}
+                icon={<Plus className="w-3.5 h-3.5" />}
+                onClick={() => handleOpenLabModal()}
               >
                 Order Lab Test
               </Button>
             }
           >
-            <CardTitle>Diagnostic Laboratory Orders</CardTitle>
+            <CardTitle>Diagnostic Pathology Requisitions</CardTitle>
             <CardDescription>
-              Pathology and diagnostic orders routed to the laboratory
+              Clinical laboratory orders requested by Dr. Marcus Vance with real-time assay progress
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table>
-                <thead>
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
                   <tr>
-                    <th>Test Name</th>
-                    <th>Patient</th>
-                    <th>Priority</th>
-                    <th>Ordered Date</th>
-                    <th>Status</th>
-                    <th>Clinical Indication</th>
+                    <th className="px-4 py-3.5 align-middle">Order #</th>
+                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
+                    <th className="px-4 py-3.5 align-middle">Investigation Name</th>
+                    <th className="px-4 py-3.5 align-middle">Priority</th>
+                    <th className="px-4 py-3.5 align-middle">Specimen Status</th>
+                    <th className="px-4 py-3.5 align-middle">Reported Findings</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {labTests.map((lt) => (
-                    <tr key={lt.id}>
-                      <td className="font-semibold text-slate-900">{lt.testName}</td>
-                      <td>{lt.patientName}</td>
-                      <td>
-                        <Badge
-                          size="sm"
-                          variant={
-                            lt.priority === 'stat'
-                              ? 'danger'
-                              : lt.priority === 'urgent'
-                              ? 'amber'
-                              : 'neutral'
-                          }
-                        >
-                          {lt.priority.toUpperCase()}
-                        </Badge>
-                      </td>
-                      <td className="text-xs text-slate-500">
-                        {new Date(lt.orderedAt).toLocaleDateString()}
-                      </td>
-                      <td>
-                        <Badge
-                          size="sm"
-                          variant={
-                            lt.status === 'completed'
-                              ? 'success'
-                              : lt.status === 'sample_collected'
-                              ? 'info'
-                              : 'warning'
-                          }
-                        >
-                          {lt.status.replace('_', ' ')}
-                        </Badge>
-                      </td>
-                      <td className="text-xs text-slate-600">
-                        {lt.clinicalNotes || 'Routine investigation'}
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredLabTests.map((lab) => {
+                    const isStat = lab.priority === 'stat' || lab.priority === 'urgent';
+                    return (
+                      <tr
+                        key={lab.id}
+                        className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
+                          isStat && lab.status !== 'completed' ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''
+                        }`}
+                      >
+                        <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
+                          {lab.testOrderNumber}
+                        </td>
+                        <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
+                          {lab.patientName}
+                        </td>
+                        <td className="px-4 py-3.5 align-middle">
+                          <div className="font-medium text-slate-900 dark:text-slate-100">{lab.testName}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">{lab.category}</div>
+                        </td>
+                        <td className="px-4 py-3.5 align-middle">
+                          {isStat ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                              <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase">
+                                {lab.priority}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-600 dark:text-slate-400 capitalize">
+                              {lab.priority}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3.5 align-middle">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                lab.status === 'completed'
+                                  ? 'bg-teal-500'
+                                  : 'bg-slate-400'
+                              }`}
+                            />
+                            <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
+                              {lab.status.replace('_', ' ')}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 align-middle">
+                          {lab.result ? (
+                            <span className="font-semibold text-xs text-teal-800 dark:text-teal-300">
+                              {lab.result}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500 italic">In Laboratory</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -808,78 +1052,56 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </Card>
       )}
 
-      {/* Sub-Module: Weekly Schedule */}
+      {/* ========================================================================= */}
+      {/* SUB-MODULE 5: WEEKLY SCHEDULE (`schedule`)                                */}
+      {/* ========================================================================= */}
       {activeTab === 'schedule' && (
         <Card>
           <CardHeader>
-            <CardTitle>Weekly Clinical Consultation Schedule</CardTitle>
+            <CardTitle>Consulting Desk Roster & Clinic Calendar</CardTitle>
             <CardDescription>
-              Duty roster, clinic hours, and booked appointment slots
+              Operational schedule for Dr. Marcus Vance across weekly outpatient blocks
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <div>
-                <span className="text-xs text-slate-500 block">Duty Schedule</span>
-                <span className="text-sm font-semibold text-slate-900">Monday - Friday</span>
-              </div>
-              <div>
-                <span className="text-xs text-slate-500 block">Consultation Hours</span>
-                <span className="text-sm font-semibold text-slate-900">09:00 AM - 04:30 PM</span>
-              </div>
-              <div>
-                <span className="text-xs text-slate-500 block">Consultation Fee</span>
-                <span className="text-sm font-semibold text-teal-700">$150.00 / Session</span>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                <div
+                  key={day}
+                  className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-slate-900 dark:text-slate-100">{day}</span>
+                    <span className="w-2 h-2 rounded-full bg-teal-500" />
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    09:00 AM - 04:30 PM
+                  </div>
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-teal-700 dark:text-teal-400 font-semibold">
+                    Consultation Desk 1
+                  </div>
+                </div>
+              ))}
             </div>
 
-            <div className="overflow-x-auto">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Time Slot</th>
-                    <th>Patient Name</th>
-                    <th>Type</th>
-                    <th>Reason for Visit</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {appointments.map((apt) => (
-                    <tr key={apt.id}>
-                      <td className="font-mono text-xs font-semibold">
-                        {new Date(apt.dateTime).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </td>
-                      <td className="font-medium text-slate-900">{apt.patientName}</td>
-                      <td>
-                        <Badge size="sm" variant="neutral">
-                          {apt.durationMinutes} min
-                        </Badge>
-                      </td>
-                      <td className="text-xs text-slate-600">{apt.reasonForVisit}</td>
-                      <td>
-                        <Badge size="sm" variant={apt.status === 'completed' ? 'success' : 'teal'}>
-                          {apt.status.replace('_', ' ')}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
+              <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-1">
+                Clinical Workflow Notes:
+              </span>
+              Appointments are slotted in 30-minute intervals. Walk-in registrations coordinated by Front Desk are triaged directly into the consultation queue.
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Prescription Modal */}
+      {/* ========================================================================= */}
+      {/* MODAL 1: WRITE PRESCRIPTION                                               */}
+      {/* ========================================================================= */}
       <Modal
         isOpen={isPrescriptionModalOpen}
         onClose={() => setIsPrescriptionModalOpen(false)}
-        title="Electronic Prescription Order (e-Rx)"
-        description="Prescription will be routed immediately to the clinic pharmacy dispensary."
+        title="Issue Medical Prescription (e-Rx)"
+        description="Prescribed medications are immediately logged into the central dispensary."
         maxWidth="lg"
         footer={
           <>
@@ -893,98 +1115,107 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <Button
               variant="primary"
               size="sm"
+              icon={<FilePlus className="w-4 h-4" />}
               onClick={handleSavePrescription}
             >
-              Authorize & Transmit Prescription
+              Sign & Issue Prescription
             </Button>
           </>
         }
       >
-        <div className="space-y-4">
-          <Input
-            label="Clinical Diagnosis"
-            value={diagnosis}
-            onChange={(e) => setDiagnosis(e.target.value)}
-            placeholder="e.g. Essential Hypertension"
-          />
+        <form onSubmit={handleSavePrescription} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Select Patient"
+              value={prescPatientId}
+              onChange={(e) => setPrescPatientId(e.target.value)}
+              options={patients.map((p) => ({
+                value: p.id,
+                label: `${p.firstName} ${p.lastName} (${p.mrn})`,
+              }))}
+            />
+            <Input
+              label="Primary Clinical Diagnosis"
+              value={diagnosis}
+              onChange={(e) => setDiagnosis(e.target.value)}
+              placeholder="e.g. Essential Hypertension, Bronchitis"
+              required
+            />
+          </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-900">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Prescribed Medications
               </span>
               <Button
                 type="button"
                 size="xs"
-                variant="soft"
+                variant="outline"
                 icon={<Plus className="w-3.5 h-3.5" />}
                 onClick={handleAddMedicationRow}
               >
-                Add Medicine
+                Add Medication
               </Button>
             </div>
 
-            {prescriptionItems.map((med, idx) => (
+            {prescriptionItems.map((item, idx) => (
               <div
-                key={med.id}
-                className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2"
+                key={item.id}
+                className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5"
               >
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2.5">
                   <Input
-                    label="Medication Name"
-                    value={med.medicineName}
-                    onChange={(e) =>
-                      handleUpdateMedication(idx, 'medicineName', e.target.value)
-                    }
-                    placeholder="e.g. Amlodipine"
+                    label="Medicine Name"
+                    value={item.medicineName}
+                    onChange={(e) => handleUpdateMedication(idx, 'medicineName', e.target.value)}
+                    placeholder="e.g. Amlodipine Besylate"
+                    required
                   />
                   <Input
-                    label="Dosage / Strength"
-                    value={med.dosage}
-                    onChange={(e) =>
-                      handleUpdateMedication(idx, 'dosage', e.target.value)
-                    }
+                    label="Dosage"
+                    value={item.dosage}
+                    onChange={(e) => handleUpdateMedication(idx, 'dosage', e.target.value)}
                     placeholder="e.g. 5 mg"
+                    required
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
                   <Input
                     label="Frequency"
-                    value={med.frequency}
-                    onChange={(e) =>
-                      handleUpdateMedication(idx, 'frequency', e.target.value)
-                    }
-                    placeholder="e.g. Once daily after breakfast"
-                  />
-                  <Input
-                    label="Duration"
-                    value={med.duration}
-                    onChange={(e) =>
-                      handleUpdateMedication(idx, 'duration', e.target.value)
-                    }
-                    placeholder="e.g. 30 days"
+                    value={item.frequency}
+                    onChange={(e) => handleUpdateMedication(idx, 'frequency', e.target.value)}
+                    placeholder="e.g. Once daily"
+                    required
                   />
                 </div>
-                <Input
-                  label="Instructions for Patient"
-                  value={med.instructions}
-                  onChange={(e) =>
-                    handleUpdateMedication(idx, 'instructions', e.target.value)
-                  }
-                  placeholder="Special instructions"
-                />
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Input
+                    label="Duration"
+                    value={item.duration}
+                    onChange={(e) => handleUpdateMedication(idx, 'duration', e.target.value)}
+                    placeholder="e.g. 30 days"
+                  />
+                  <Input
+                    label="Instructions"
+                    value={item.instructions}
+                    onChange={(e) => handleUpdateMedication(idx, 'instructions', e.target.value)}
+                    placeholder="e.g. Take after breakfast"
+                  />
+                </div>
               </div>
             ))}
           </div>
-        </div>
+        </form>
       </Modal>
 
-      {/* Lab Order Modal */}
+      {/* ========================================================================= */}
+      {/* MODAL 2: ORDER LAB TEST                                                   */}
+      {/* ========================================================================= */}
       <Modal
         isOpen={isLabOrderModalOpen}
         onClose={() => setIsLabOrderModalOpen(false)}
-        title="Diagnostic Laboratory Investigation Order"
-        description="Orders a pathology / diagnostic specimen test for the patient."
+        title="Order Diagnostic Laboratory Investigation"
+        description="Requisitions are dispatched directly to the Laboratory Technologist worklist."
+        maxWidth="lg"
         footer={
           <>
             <Button
@@ -997,50 +1228,108 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <Button
               variant="primary"
               size="sm"
+              icon={<FlaskConical className="w-4 h-4" />}
               onClick={handleSaveLabOrder}
             >
-              Transmit Lab Order
+              Place Diagnostic Order
             </Button>
           </>
         }
       >
-        <div className="space-y-3.5">
-          <Select
-            label="Select Diagnostic Investigation"
-            value={selectedLabTest}
-            onChange={(e) => setSelectedLabTest(e.target.value)}
-            options={[
-              { value: 'Comprehensive Metabolic Panel (CMP)', label: 'Comprehensive Metabolic Panel (CMP)' },
-              { value: 'Glycated Hemoglobin (HbA1c)', label: 'Glycated Hemoglobin (HbA1c)' },
-              { value: 'Lipid Profile Assay', label: 'Lipid Profile Assay' },
-              { value: 'High-Sensitivity C-Reactive Protein (hs-CRP)', label: 'hs-CRP Inflammation Test' },
-              { value: 'Complete Blood Count (CBC)', label: 'Complete Blood Count (CBC)' },
-              { value: 'Thyroid Stimulating Hormone (TSH)', label: 'Thyroid Stimulating Hormone (TSH)' },
-            ]}
-          />
+        <form onSubmit={handleSaveLabOrder} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Select Patient"
+              value={labPatientId}
+              onChange={(e) => setLabPatientId(e.target.value)}
+              options={patients.map((p) => ({
+                value: p.id,
+                label: `${p.firstName} ${p.lastName} (${p.mrn})`,
+              }))}
+            />
+            <Input
+              label="Investigation / Assay Name"
+              value={testName}
+              onChange={(e) => setTestName(e.target.value)}
+              placeholder="e.g. Lipid Profile, Complete Blood Count"
+              required
+            />
+          </div>
 
-          <Select
-            label="Clinical Priority"
-            value={labPriority}
-            onChange={(e) =>
-              setLabPriority(e.target.value as 'routine' | 'urgent' | 'stat')
-            }
-            options={[
-              { value: 'routine', label: 'Routine (Standard turnaround)' },
-              { value: 'urgent', label: 'Urgent (Within 4 hours)' },
-              { value: 'stat', label: 'STAT (Immediate medical necessity)' },
-            ]}
-          />
+          <div className="grid grid-cols-3 gap-3">
+            <Input
+              label="Category"
+              value={testCategory}
+              onChange={(e) => setTestCategory(e.target.value)}
+              placeholder="e.g. Biochemistry"
+            />
+            <Input
+              label="Specimen Container"
+              value={sampleType}
+              onChange={(e) => setSampleType(e.target.value)}
+              placeholder="e.g. Venous Whole Blood"
+            />
+            <Select
+              label="Clinical Priority"
+              value={labPriority}
+              onChange={(e) => setLabPriority(e.target.value as any)}
+              options={[
+                { value: 'routine', label: 'Routine (Standard turnaround)' },
+                { value: 'urgent', label: 'Urgent (Priority processing)' },
+                { value: 'stat', label: 'STAT (Immediate panic alert)' },
+              ]}
+            />
+          </div>
 
-          <Input
-            label="Clinical Indication / Notes"
+          <Textarea
+            label="Clinical Indication / Diagnostic Notes"
             value={labNotes}
             onChange={(e) => setLabNotes(e.target.value)}
-            placeholder="Reason for requesting investigation"
+            placeholder="e.g. Suspected metabolic disorder, pre-prescription safety check."
+            rows={2}
           />
-        </div>
+        </form>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: RECORD CONSULTATION NOTES                                        */}
+      {/* ========================================================================= */}
+      <Modal
+        isOpen={isNotesModalOpen}
+        onClose={() => setIsNotesModalOpen(false)}
+        title={`Clinical Consultation Notes: ${activePatient?.firstName} ${activePatient?.lastName}`}
+        description="Records are permanently appended to the electronic medical record."
+        maxWidth="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsNotesModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSaveConsultationNotes}
+            >
+              Save Notes to EMR
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSaveConsultationNotes} className="space-y-4">
+          <Textarea
+            label="Physician Assessment & Clinical Plan"
+            value={clinicalNotesText}
+            onChange={(e) => setClinicalNotesText(e.target.value)}
+            placeholder="Document physical examination findings, treatment response, and follow-up plan..."
+            rows={4}
+            required
+          />
+        </form>
       </Modal>
     </div>
   );
 };
-

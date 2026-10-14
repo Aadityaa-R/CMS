@@ -109,43 +109,43 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
 
       {/* Submodules */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400 flex items-center justify-center">
             <Calendar className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-slate-500">My Appointments</div>
-            <div className="text-lg font-bold text-slate-900">{myAppointments.length} Booked</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">My Appointments</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{myAppointments.length} Booked</div>
           </div>
         </div>
 
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center">
             <Pill className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-slate-500">Active Prescriptions</div>
-            <div className="text-lg font-bold text-slate-900">{myPrescriptions.length} Orders</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Active Prescriptions</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{myPrescriptions.length} Orders</div>
           </div>
         </div>
 
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400 flex items-center justify-center">
             <FlaskConical className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-slate-500">Laboratory Tests</div>
-            <div className="text-lg font-bold text-slate-900">{myLabTests.length} Reports</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Laboratory Tests</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{myLabTests.length} Reports</div>
           </div>
         </div>
 
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center">
             <CreditCard className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-slate-500">Billing Invoices</div>
-            <div className="text-lg font-bold text-slate-900">{myInvoices.length} Invoices</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Billing Invoices</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{myInvoices.length} Invoices</div>
           </div>
         </div>
       </div>
@@ -316,7 +316,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                       )}
                     </div>
                   ) : (
-                    <div className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 mt-2">
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 mt-2">
                       Specimen collected. Lab analysis in progress.
                     </div>
                   )}

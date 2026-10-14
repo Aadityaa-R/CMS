@@ -17,7 +17,6 @@ import {
   CheckCircle,
   CheckCircle2,
   Clock,
-  AlertTriangle,
   Filter,
   ChevronDown,
 } from 'lucide-react';
@@ -370,7 +369,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
           value={activeDoctors}
           unit={`/ ${doctors.length} Staff`}
           subtitle="Specialists on active roster"
-          colorScheme="blue"
+          colorScheme="slate"
         />
         <StatCard
           title="Consultations Today"
@@ -384,7 +383,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
           value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           unit="USD"
           subtitle={`Pending: $${pendingRevenue.toFixed(2)}`}
-          colorScheme="amber"
+          colorScheme="slate"
         />
       </div>
 
@@ -553,11 +552,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                     apt.status === 'completed'
                                       ? 'bg-teal-500'
-                                      : apt.status === 'in_consultation'
-                                      ? 'bg-blue-500'
-                                      : apt.status === 'checked_in'
-                                      ? 'bg-emerald-500'
-                                      : 'bg-amber-500'
+                                      : 'bg-slate-400'
                                   }`}
                                 />
                                 <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
@@ -605,13 +600,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
               </CardHeader>
               <CardContent className="space-y-3.5">
                 {lowStockItems.length > 0 ? (
-                  <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200/70 dark:border-amber-800/60 flex items-start gap-3">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="p-3.5 bg-rose-50/60 dark:bg-rose-950/40 rounded-xl border border-rose-200/70 dark:border-rose-800/60 flex items-start gap-3">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1" />
                     <div className="flex-1">
-                      <div className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                      <div className="text-xs font-bold text-rose-900 dark:text-rose-200">
                         Buffer Stock Threshold Alert ({lowStockItems.length} items)
                       </div>
-                      <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
+                      <p className="text-[11px] text-rose-800 dark:text-rose-300 mt-0.5">
                         {lowStockItems[0].name} ({lowStockItems[0].currentStock} {lowStockItems[0].unit} left, min threshold: {lowStockItems[0].minStockLevel}).
                       </p>
                       <button
@@ -863,8 +858,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                 doc.status === 'active'
                                   ? 'bg-teal-500'
-                                  : doc.status === 'on_leave'
-                                  ? 'bg-amber-500'
                                   : 'bg-slate-400'
                               }`}
                             />
@@ -974,11 +967,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                 apt.status === 'completed'
                                   ? 'bg-teal-500'
-                                  : apt.status === 'in_consultation'
-                                  ? 'bg-blue-500'
-                                  : apt.status === 'checked_in'
-                                  ? 'bg-emerald-500'
-                                  : 'bg-amber-500'
+                                  : 'bg-slate-400'
                               }`}
                             />
                             <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
@@ -1088,9 +1077,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                   inv.status === 'paid'
                                     ? 'bg-teal-500'
-                                    : inv.status === 'partially_paid'
-                                    ? 'bg-amber-500'
-                                    : 'bg-rose-500'
+                                    : 'bg-slate-400'
                                 }`}
                               />
                               <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
@@ -1170,7 +1157,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                         <tr
                           key={item.id}
                           className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
-                            isLow ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''
+                            isLow ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''
                           }`}
                         >
                           <td className="px-4 py-3.5 align-middle">
