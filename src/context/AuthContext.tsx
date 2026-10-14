@@ -57,6 +57,7 @@ interface AuthContextType {
   accessAuditLog: AccessAuditLogEntry[];
   grantStaffAccess: (recordId: string, reason?: string) => void;
   revokeStaffAccess: (recordId: string, reason?: string) => void;
+  deleteStaffAccount: (recordId: string, reason?: string) => void;
   toggleStaffPermission: (recordId: string, permissionId: string) => void;
   isRoleSuspended: (role: UserRole) => boolean;
   isStaffSuspended: (staffNameOrId: string) => boolean;
@@ -242,6 +243,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAccessAuditLog((prev) => [newAudit, ...prev]);
   };
 
+  const deleteStaffAccount = (recordId: string, reason?: string) => {
+    const record = staffAccessList.find((r) => r.id === recordId);
+    if (!record) return;
+
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+
+    setStaffAccessList((prev) => prev.filter((r) => r.id !== recordId));
+
+    const newAudit: AccessAuditLogEntry = {
+      id: `aud-${Date.now()}`,
+      timestamp,
+      targetRole: record.role,
+      targetStaffName: record.staffName,
+      action: 'account_deleted',
+      description: reason || `Account permanently deleted and purged from clinic directory by Managing Director`,
+      authorizedBy: 'Dr. Marcus Vance (Managing Director)',
+    };
+
+    setAccessAuditLog((prev) => [newAudit, ...prev]);
+  };
+
   const toggleStaffPermission = (recordId: string, permissionId: string) => {
     const record = staffAccessList.find((r) => r.id === recordId);
     if (!record) return;
@@ -355,6 +377,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         accessAuditLog,
         grantStaffAccess,
         revokeStaffAccess,
+        deleteStaffAccount,
         toggleStaffPermission,
         isRoleSuspended,
         isStaffSuspended,

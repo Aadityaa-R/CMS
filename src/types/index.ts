@@ -253,7 +253,7 @@ export interface AccessAuditLogEntry {
   timestamp: string;
   targetRole: UserRole;
   targetStaffName: string;
-  action: 'access_granted' | 'access_revoked' | 'permission_updated' | 'security_override';
+  action: 'access_granted' | 'access_revoked' | 'permission_updated' | 'security_override' | 'account_deleted';
   description: string;
   authorizedBy: string;
 }
