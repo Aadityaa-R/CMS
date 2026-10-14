@@ -3,7 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import {
   Bell,
-  Search,
   Building2,
   User,
   Settings,
@@ -132,17 +131,8 @@ export const Navbar: React.FC<NavbarProps> = () => {
           </div>
         </div>
 
-        {/* Right Section: Search, Notifications, Profile Dropdown */}
+        {/* Right Section: Notifications, Profile Dropdown */}
         <div className="flex items-center gap-4 sm:gap-5">
-          {/* Search bar */}
-          <div className="hidden md:flex items-center relative w-72 sm:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-            <input
-              type="text"
-              placeholder="Search records, patients..."
-              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-4 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-xs"
-            />
-          </div>
 
           {/* Notifications indicator with interactive popover */}
           <div className="relative" ref={notificationsRef}>
