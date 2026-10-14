@@ -51,6 +51,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return 'doc-1';
   });
 
+  const isReadOnlyView = isMD && activeDoctorId !== 'doc-1';
+
   useEffect(() => {
     if (currentRole === 'doctor') {
       setActiveDoctorId('doc-2');
@@ -281,7 +283,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               Physician Consultation Desk & Clinical Care
             </h2>
             {isMD ? (
-              <Badge variant="teal">Managing Director Console</Badge>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge variant="teal">Managing Director Console</Badge>
+                {isReadOnlyView && (
+                  <Badge variant="neutral">Supervisory View Only</Badge>
+                )}
+              </div>
             ) : (
               <Badge variant="neutral">Staff Physician Desk</Badge>
             )}
@@ -466,34 +473,40 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <Card>
                   <CardHeader
                     action={
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          icon={<FilePlus className="w-3.5 h-3.5" />}
-                          onClick={() => handleOpenPrescriptionModal(activePatient.id)}
-                        >
-                          Prescribe
-                        </Button>
-                        {activeAppointment.status === 'in_consultation' ? (
+                      !isReadOnlyView ? (
+                        <div className="flex items-center gap-2">
                           <Button
                             size="xs"
-                            variant="primary"
-                            icon={<CheckCircle className="w-3.5 h-3.5" />}
-                            onClick={() => handleConcludeConsultation(activeAppointment.id, activePatient.firstName)}
+                            variant="outline"
+                            icon={<FilePlus className="w-3.5 h-3.5" />}
+                            onClick={() => handleOpenPrescriptionModal(activePatient.id)}
                           >
-                            Conclude Visit
+                            Prescribe
                           </Button>
-                        ) : (
-                          <Button
-                            size="xs"
-                            variant="secondary"
-                            onClick={() => handleStartConsultation(activeAppointment)}
-                          >
-                            Start Consultation
-                          </Button>
-                        )}
-                      </div>
+                          {activeAppointment.status === 'in_consultation' ? (
+                            <Button
+                              size="xs"
+                              variant="primary"
+                              icon={<CheckCircle className="w-3.5 h-3.5" />}
+                              onClick={() => handleConcludeConsultation(activeAppointment.id, activePatient.firstName)}
+                            >
+                              Conclude Visit
+                            </Button>
+                          ) : (
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              onClick={() => handleStartConsultation(activeAppointment)}
+                            >
+                              Start Consultation
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                          View Only
+                        </span>
+                      )
                     }
                   >
                     <CardTitle>
@@ -568,15 +581,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     </div>
 
                     {/* Consultation Notes Action */}
-                    <div className="pt-2 flex justify-end">
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        onClick={() => setIsNotesModalOpen(true)}
-                      >
-                        Record Consultation Notes
-                      </Button>
-                    </div>
+                    {!isReadOnlyView && (
+                      <div className="pt-2 flex justify-end">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => setIsNotesModalOpen(true)}
+                        >
+                          Record Consultation Notes
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ) : (
@@ -663,20 +678,22 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 variant={isCurrent ? 'secondary' : 'outline'}
                                 onClick={() => setSelectedAppointmentId(apt.id)}
                               >
-                                {isCurrent ? 'Active at Desk' : 'Inspect File'}
+                                {isCurrent ? 'Viewing' : 'Inspect File'}
                               </Button>
-                              {apt.status !== 'completed' ? (
-                                <Button
-                                  size="xs"
-                                  variant="primary"
-                                  onClick={() => handleStartConsultation(apt)}
-                                >
-                                  Engage
-                                </Button>
-                              ) : (
-                                <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
-                                  Completed
-                                </span>
+                              {!isReadOnlyView && (
+                                apt.status !== 'completed' ? (
+                                  <Button
+                                    size="xs"
+                                    variant="primary"
+                                    onClick={() => handleStartConsultation(apt)}
+                                  >
+                                    Engage
+                                  </Button>
+                                ) : (
+                                  <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
+                                    Completed
+                                  </span>
+                                )
                               )}
                             </div>
                           </div>
@@ -738,10 +755,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   <div className="p-3 bg-teal-50/50 dark:bg-teal-950/40 rounded-xl border border-teal-200/70 dark:border-teal-800/60">
                     <div className="flex items-center gap-1.5 text-teal-800 dark:text-teal-200 font-semibold mb-1">
                       <CheckCircle className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                      <span>Clinical Governance Scope</span>
+                      <span>{isReadOnlyView ? 'Supervisory Read-Only Roster' : 'Clinical Governance Scope'}</span>
                     </div>
                     <p className="text-[11px] text-teal-900 dark:text-teal-300">
-                      {activeDoctor.id === 'doc-1'
+                      {isReadOnlyView
+                        ? `Viewing ${activeDoctor.name}'s active clinical session in supervisory read-only mode. Direct actions (prescriptions, consultations, note authoring) are restricted to the attending physician.`
+                        : activeDoctor.id === 'doc-1'
                         ? 'Managing Director executive and clinical station. Dr. Marcus Vance maintains ultimate authority over clinical standards, staff access, and complex internal medicine cases.'
                         : `${activeDoctor.name} conducts assigned outpatient sessions under the clinical governance and oversight of Managing Director Dr. Marcus Vance.`}
                     </p>
@@ -831,7 +850,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         >
                           Switch to Desk
                         </Button>
-                        {apt.status !== 'completed' && (
+                        {!isReadOnlyView && apt.status !== 'completed' && (
                           <Button
                             size="sm"
                             variant="secondary"
@@ -924,26 +943,34 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         {pat.chronicConditions.length > 0 ? pat.chronicConditions.join(', ') : 'None'}
                       </td>
                       <td className="px-4 py-3.5 text-right align-middle space-x-1.5">
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={() => {
-                            const apt = appointments.find((a) => a.patientId === pat.id);
-                            if (apt) {
-                              setSelectedAppointmentId(apt.id);
-                              setSelectedTab('overview');
-                            }
-                          }}
-                        >
-                          Admit to Desk
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="secondary"
-                          onClick={() => handleOpenPrescriptionModal(pat.id)}
-                        >
-                          Prescribe
-                        </Button>
+                        {!isReadOnlyView ? (
+                          <>
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => {
+                                const apt = appointments.find((a) => a.patientId === pat.id);
+                                if (apt) {
+                                  setSelectedAppointmentId(apt.id);
+                                  setSelectedTab('overview');
+                                }
+                              }}
+                            >
+                              Admit to Desk
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              onClick={() => handleOpenPrescriptionModal(pat.id)}
+                            >
+                              Prescribe
+                            </Button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-slate-400 dark:text-slate-500 italic">
+                            View Only
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
