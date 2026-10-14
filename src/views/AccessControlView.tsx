@@ -8,8 +8,12 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
-import { Filter } from 'lucide-react';
+import { Filter, UserCog, UserPlus, History } from 'lucide-react';
 import { UserRole, StaffAccessRecord, StaffPermission } from '@/types';
+
+interface AccessControlViewProps {
+  activeTab?: 'add_users' | 'edit_users' | 'ledger' | string;
+}
 
 type RoleFilterKey = '' | 'doc' | 'receptionist' | 'patient';
 
@@ -121,7 +125,17 @@ const INITIAL_PENDING_APPROVALS: PendingStaffApproval[] = [
   },
 ];
 
-export const AccessControlView: React.FC = () => {
+export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab = 'add_users' }) => {
+  const [selectedSubTab, setSelectedSubTab] = useState<'add_users' | 'edit_users' | 'ledger'>(() => {
+    if (activeTab === 'edit_users' || activeTab === 'ledger') return activeTab;
+    return 'add_users';
+  });
+
+  useEffect(() => {
+    if (activeTab === 'add_users' || activeTab === 'edit_users' || activeTab === 'ledger') {
+      setSelectedSubTab(activeTab);
+    }
+  }, [activeTab]);
   const {
     staffAccessList,
     accessAuditLog,
@@ -376,15 +390,10 @@ export const AccessControlView: React.FC = () => {
     return filteredStaff.filter((s) => s.role === role);
   };
 
-  // Equal Authority: User can either filter by role, search, or both
-  // If role is explicitly chosen -> filter strictly by that role
-  // Else if search term is entered -> search across all roles with equal authority
-  // Else -> empty array (no data sections at top)
+  // Candidate sections: filter strictly if role chosen, otherwise display all role sections
   const candidateSections = selectedRoleFilter
     ? ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter)
-    : searchTerm.trim() !== ''
-    ? ROLE_SECTIONS
-    : [];
+    : ROLE_SECTIONS;
 
   // When searching, display ONLY sections that contain matching personnel!
   const displayedSections = candidateSections.filter((section) => {
@@ -395,7 +404,7 @@ export const AccessControlView: React.FC = () => {
     return true;
   });
 
-  const isRoleOrSearchActive = selectedRoleFilter !== '' || searchTerm.trim() !== '';
+  const isRoleOrSearchActive = true;
 
   // Pagination State (10 records per page)
   const [auditPage, setAuditPage] = useState(1);
@@ -471,9 +480,66 @@ export const AccessControlView: React.FC = () => {
         </div>
       </div>
 
+      {/* Administrative Sub-Modules Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+        {[
+          {
+            id: 'add_users' as const,
+            label: 'Add New Users',
+            icon: <UserPlus className="w-4 h-4" />,
+            badge: pendingApprovals.length > 0 ? `${pendingApprovals.length} pending` : undefined,
+            badgeColor: 'amber',
+          },
+          {
+            id: 'edit_users' as const,
+            label: 'Edit Users',
+            icon: <UserCog className="w-4 h-4" />,
+            badge: `${filteredStaff.length}`,
+          },
+          {
+            id: 'ledger' as const,
+            label: 'Security Ledger',
+            icon: <History className="w-4 h-4" />,
+            badge: `${accessAuditLog.length}`,
+          },
+        ].map((tab) => {
+          const isActive = selectedSubTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setSelectedSubTab(tab.id)}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                isActive
+                  ? 'bg-teal-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-medium ${
+                    isActive
+                      ? 'bg-teal-700/80 text-white'
+                      : tab.badgeColor === 'amber'
+                      ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+      {/* SUB-MODULE 2: EDIT USERS */}
+      {selectedSubTab === 'edit_users' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="shrink-0">
             <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
@@ -828,185 +894,285 @@ export const AccessControlView: React.FC = () => {
         )}
       </div>
     )}
+  </div>
+)}
 
-      {/* Onboarding & Role Clearance Approvals Notification Box (Visible downward even after filters are active) */}
-      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
-        <CardHeader
-          action={
-            <div className="flex items-center gap-2.5">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {pendingApprovals.length} {pendingApprovals.length === 1 ? 'Pending Clearance' : 'Pending Clearances'}
-              </span>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  resetAddForm();
-                  setIsAddModalOpen(true);
-                }}
-              >
-                Directly Add to Role
-              </Button>
-            </div>
-          }
-        >
-          <div>
-            <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Onboarding & Role Clearance Approvals
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Review and authorize onboarding requests for Doctor and Receptionist workstations, or directly provision new personnel credentials.
-            </CardDescription>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4 pt-2">
-          {pendingApprovals.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-              <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
-                No Pending Onboarding Clearances
-              </p>
-              <p className="text-slate-500 dark:text-slate-400">
-                All candidates have been authorized and processed. Use &ldquo;Directly Add to Role&rdquo; to provision personnel immediately, or select a role from the dropdown above to inspect active clearances.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {pendingApprovals.map((req) => (
-                <div
-                  key={req.id}
-                  className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        {req.staffName}
-                      </h4>
-                      <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                        ({req.role === 'doctor' ? 'Doctor Workstation' : 'Receptionist Terminal'})
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">
-                      {req.staffTitle} • {req.department} • Badge: <span className="font-mono">{req.badgeNumber}</span>
-                      {req.specialization ? ` • ${req.specialization}` : ''}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Applied: {req.requestedAt} — <span className="italic">{req.notes}</span>
-                    </p>
+      {/* SUB-MODULE 1: ADD NEW USERS */}
+      {selectedSubTab === 'add_users' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Direct Staff Member Provisioning Card */}
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+            <CardHeader>
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  Directly Provision Staff Member
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Directly register and authorize a new physician or receptionist into the clinic access directory.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleDirectAddSubmit} className="space-y-4">
+                {addFormError && (
+                  <div className="p-3 bg-rose-50 dark:bg-rose-950/60 rounded-lg border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-xs text-rose-800 dark:text-rose-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                    <span>{addFormError}</span>
                   </div>
+                )}
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleRejectPending(req.id, req.staffName)}
-                    >
-                      Reject
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={() => handleApprovePending(req)}
-                    >
-                      Approve Clearance
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Managing Director Security Audit Ledger */}
-      <Card>
-        <CardHeader
-          action={
-            <span className="text-xs text-slate-400 font-mono">
-              Immutable Ledger
-            </span>
-          }
-        >
-          <div>
-            <CardTitle>Managing Director Security Audit Ledger</CardTitle>
-            <CardDescription className="mt-0.5">
-              Chronological record of access grants, workstation suspensions, account deletions, and permission updates.
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-6 space-y-4 py-2">
-            {paginatedAuditLog.map((log) => {
-              const isRevokeOrDelete =
-                log.action === 'access_revoked' || log.action === 'account_deleted';
-              const isGranted = log.action === 'access_granted';
-
-              return (
-                <div key={log.id} className="relative group">
-                  {/* Timeline Node Dot */}
-                  <span
-                    className={`absolute -left-[1.95rem] top-2 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 transition-transform group-hover:scale-125 ${
-                      isRevokeOrDelete
-                        ? 'bg-rose-500'
-                        : isGranted
-                        ? 'bg-teal-500'
-                        : 'bg-slate-400 dark:bg-slate-500'
-                    }`}
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Target Role <span className="text-rose-500">*</span>
+                  </label>
+                  <Select
+                    value={addFormRole}
+                    onChange={(e) => setAddFormRole(e.target.value as 'doctor' | 'receptionist')}
+                    options={[
+                      { value: 'doctor', label: 'Doctor / Consulting Physician' },
+                      { value: 'receptionist', label: 'Receptionist / Front Desk Workstation' },
+                    ]}
                   />
+                </div>
 
-                  {/* Log Card */}
-                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-2xs">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {/* Action Badge */}
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                            isRevokeOrDelete
-                              ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                              : isGranted
-                              ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                          }`}
-                        >
-                          {log.action.replace(/_/g, ' ')}
-                        </span>
-                        <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">
-                          {log.targetStaffName}
-                        </span>
-                        <span className="text-[11px] text-slate-400 capitalize">
-                          ({log.targetRole})
-                        </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    label="Full Name"
+                    required
+                    placeholder={addFormRole === 'doctor' ? 'e.g. Dr. Julian Bashir' : 'e.g. Sarah Jenkins'}
+                    value={addFormName}
+                    onChange={(e) => setAddFormName(e.target.value)}
+                  />
+                  <Input
+                    label="Professional Title"
+                    placeholder={addFormRole === 'doctor' ? 'e.g. Staff Consulting Physician' : 'e.g. Front Desk Workstation Coordinator'}
+                    value={addFormTitle}
+                    onChange={(e) => setAddFormTitle(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    label="Department"
+                    required
+                    placeholder={addFormRole === 'doctor' ? 'e.g. Cardiology & Triage' : 'e.g. Front Desk & Admissions'}
+                    value={addFormDepartment}
+                    onChange={(e) => setAddFormDepartment(e.target.value)}
+                  />
+                  <Input
+                    label="Badge / Staff ID Number"
+                    placeholder={addFormRole === 'doctor' ? 'e.g. DOC-105' : 'e.g. REC-304'}
+                    value={addFormBadge}
+                    onChange={(e) => setAddFormBadge(e.target.value)}
+                  />
+                </div>
+
+                {addFormRole === 'doctor' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <Input
+                      label="Clinical Specialization"
+                      placeholder="e.g. Internal Medicine"
+                      value={addFormSpecialization}
+                      onChange={(e) => setAddFormSpecialization(e.target.value)}
+                    />
+                    <Input
+                      label="Consultation Fee ($)"
+                      type="number"
+                      placeholder="120"
+                      value={addFormFee}
+                      onChange={(e) => setAddFormFee(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                    <span className="text-slate-600 dark:text-slate-300">
+                      This account will be instantly initialized with active clearance status and standard workstation permissions.
+                    </span>
+                  </div>
+                  <Button type="submit" variant="primary" size="sm" className="shrink-0">
+                    Provision & Grant Clearance
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Onboarding & Role Clearance Approvals Notification Box */}
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+            <CardHeader
+              action={
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {pendingApprovals.length} {pendingApprovals.length === 1 ? 'Pending Clearance' : 'Pending Clearances'}
+                </span>
+              }
+            >
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Onboarding & Role Clearance Approvals
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Review and authorize onboarding requests for Doctor and Receptionist workstations.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-2">
+              {pendingApprovals.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                    No Pending Onboarding Clearances
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    All candidates have been authorized and processed. Use the direct provisioning form above to add personnel immediately.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingApprovals.map((req) => (
+                    <div
+                      key={req.id}
+                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {req.staffName}
+                          </h4>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                            ({req.role === 'doctor' ? 'Doctor Workstation' : 'Receptionist Terminal'})
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">
+                          {req.staffTitle} • {req.department} • Badge: <span className="font-mono">{req.badgeNumber}</span>
+                          {req.specialization ? ` • ${req.specialization}` : ''}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Applied: {req.requestedAt} — <span className="italic">{req.notes}</span>
+                        </p>
                       </div>
 
-                      <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0">
-                        {log.timestamp}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRejectPending(req.id, req.staffName)}
+                        >
+                          Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => handleApprovePending(req)}
+                        >
+                          Approve Clearance
+                        </Button>
+                      </div>
                     </div>
-
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">
-                      {log.description}
-                    </p>
-
-                    <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
-                      <span>
-                        Authorized by: <strong className="text-slate-700 dark:text-slate-300">{log.authorizedBy}</strong>
-                      </span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
-          <Pagination
-            currentPage={auditPage}
-            totalItems={accessAuditLog.length}
-            pageSize={auditPageSize}
-            onPageChange={setAuditPage}
-            className="mt-4"
-          />
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* SUB-MODULE 3: SECURITY LEDGER */}
+      {selectedSubTab === 'ledger' && (
+        <div className="animate-fadeIn">
+          {/* Managing Director Security Audit Ledger */}
+          <Card>
+            <CardHeader
+              action={
+                <span className="text-xs text-slate-400 font-mono">
+                  Immutable Ledger
+                </span>
+              }
+            >
+              <div>
+                <CardTitle>Managing Director Security Audit Ledger</CardTitle>
+                <CardDescription className="mt-0.5">
+                  Chronological record of access grants, workstation suspensions, account deletions, and permission updates.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-6 space-y-4 py-2">
+                {paginatedAuditLog.map((log) => {
+                  const isRevokeOrDelete =
+                    log.action === 'access_revoked' || log.action === 'account_deleted';
+                  const isGranted = log.action === 'access_granted';
+
+                  return (
+                    <div key={log.id} className="relative group">
+                      {/* Timeline Node Dot */}
+                      <span
+                        className={`absolute -left-[1.95rem] top-2 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 transition-transform group-hover:scale-125 ${
+                          isRevokeOrDelete
+                            ? 'bg-rose-500'
+                            : isGranted
+                            ? 'bg-teal-500'
+                            : 'bg-slate-400 dark:bg-slate-500'
+                        }`}
+                      />
+
+                      {/* Log Card */}
+                      <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-2xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* Action Badge */}
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                isRevokeOrDelete
+                                  ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                  : isGranted
+                                  ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {log.action.replace(/_/g, ' ')}
+                            </span>
+                            <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">
+                              {log.targetStaffName}
+                            </span>
+                            <span className="text-[11px] text-slate-400 capitalize">
+                              ({log.targetRole})
+                            </span>
+                          </div>
+
+                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0">
+                            {log.timestamp}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">
+                          {log.description}
+                        </p>
+
+                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+                          <span>
+                            Authorized by: <strong className="text-slate-700 dark:text-slate-300">{log.authorizedBy}</strong>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pagination
+                currentPage={auditPage}
+                totalItems={accessAuditLog.length}
+                pageSize={auditPageSize}
+                onPageChange={setAuditPage}
+                className="mt-4"
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Delete Account Confirmation Modal */}
       <Modal
