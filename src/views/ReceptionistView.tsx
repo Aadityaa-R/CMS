@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   Filter,
   ChevronDown,
-  CheckCircle,
 } from 'lucide-react';
 import { BloodGroup, Appointment } from '@/types';
 
@@ -554,13 +553,6 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                       {appointments.length}
                     </span>
                   </div>
-                </div>
-
-                <div className="p-3 bg-teal-50/50 dark:bg-teal-950/40 rounded-xl border border-teal-200/70 dark:border-teal-800/60 flex items-start gap-2.5">
-                  <CheckCircle className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-teal-900 dark:text-teal-300">
-                    Direct patient triage pipeline. Arriving patients are checked in at this desk and queued across all 3 active consultation desks under MD clinical governance.
-                  </p>
                 </div>
               </CardContent>
             </Card>

@@ -742,20 +742,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </span>
                     </div>
                   </div>
-
-                  <div className="p-3 bg-teal-50/50 dark:bg-teal-950/40 rounded-xl border border-teal-200/70 dark:border-teal-800/60">
-                    <div className="flex items-center gap-1.5 text-teal-800 dark:text-teal-200 font-semibold mb-1">
-                      <CheckCircle className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                      <span>{isReadOnlyView ? 'Supervisory Read-Only Roster' : 'Clinical Governance Scope'}</span>
-                    </div>
-                    <p className="text-[11px] text-teal-900 dark:text-teal-300">
-                      {isReadOnlyView
-                        ? `Viewing ${activeDoctor.name}'s active clinical session in supervisory read-only mode. Direct actions (prescriptions, consultations, note authoring) are restricted to the attending physician.`
-                        : activeDoctor.id === 'doc-1'
-                        ? 'Managing Director executive and clinical station. Dr. Marcus Vance maintains ultimate authority over clinical standards, staff access, and complex internal medicine cases.'
-                        : `${activeDoctor.name} conducts assigned outpatient sessions under the clinical governance and oversight of Managing Director Dr. Marcus Vance.`}
-                    </p>
-                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -1073,13 +1059,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
-              <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-1">
-                Clinical Workflow Notes:
-              </span>
-              Appointments are slotted in 30-minute intervals. Walk-in registrations coordinated by Front Desk are triaged directly into {activeDoctor.name}&apos;s consultation queue ({activeDoctor.roomNumber}).
             </div>
           </CardContent>
         </Card>

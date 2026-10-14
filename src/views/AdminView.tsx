@@ -346,10 +346,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
 
           {/* Main Consultation Schedule Data (Rendered first when filter or search is active) */}
           {isOverviewActive && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
-              {/* Consultation Schedule Table */}
-              <div className="lg:col-span-2 space-y-4">
-                <Card>
+            <Card className="animate-fadeIn">
                   <CardHeader
                     action={
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -452,49 +449,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-
-              {/* Operational Triage Metrics */}
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Operational Triage & Clinic Metrics</CardTitle>
-                    <CardDescription>
-                      Real-time front-desk and outpatient clinical workflow status
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3.5">
-                    <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
-                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        Average Outpatient Triage Time
-                      </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                        Front-desk intake to doctor consultation desk currently averages 12 minutes.
-                      </p>
-                    </div>
-
-                    <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
-                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        Attending Physician Roster
-                      </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                        {activeDoctors} of {doctors.length} doctors currently active across consultation suites.
-                      </p>
-                    </div>
-
-                    <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
-                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        Consultation Clearance Efficiency
-                      </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                        {completedAppointments} of {todayAppointments} consultations marked completed today ({consultationRate}%).
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          )}
+              )}
 
           {/* Persistent Downward Notification Box: Active Outpatient Triage & Clearance Queue */}
           <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
