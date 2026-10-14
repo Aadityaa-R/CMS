@@ -7,13 +7,11 @@ import {
   CreditCard,
   Package,
   Pill,
-  FlaskConical,
   PlusCircle,
   PanelLeft,
   PanelLeftClose,
   PanelLeftOpen,
   Stethoscope,
-  TestTubes,
   User,
 } from 'lucide-react';
 
@@ -47,22 +45,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case 'doctor':
       case 'admin':
         return [
-          { id: 'admin_overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'role_doctor', label: 'Doctor', icon: <Stethoscope className="w-4 h-4" /> },
-          { id: 'admin_billing', label: 'Revenue & Billing', icon: <CreditCard className="w-4 h-4" /> },
-          { id: 'admin_inventory', label: 'Stock & Inventory', icon: <Package className="w-4 h-4" /> },
-          { id: 'role_receptionist', label: 'Receptionist', icon: <Calendar className="w-4 h-4" /> },
-          { id: 'role_lab_technician', label: 'Lab Technician', icon: <FlaskConical className="w-4 h-4" /> },
-          { id: 'role_patient', label: 'Patient', icon: <User className="w-4 h-4" /> },
-        ];
-
-      case 'patient':
-        return [
-          { id: 'overview', label: 'My Health Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'appointments', label: 'My Appointments', icon: <Calendar className="w-4 h-4" /> },
-          { id: 'prescriptions', label: 'My Prescriptions', icon: <Pill className="w-4 h-4" /> },
-          { id: 'lab_results', label: 'My Lab Results', icon: <FlaskConical className="w-4 h-4" /> },
-          { id: 'billing', label: 'My Invoices', icon: <CreditCard className="w-4 h-4" /> },
+          { id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> },
+          { id: 'role_receptionist', label: 'Reception Desk', icon: <Calendar className="w-4 h-4" /> },
+          { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
+          { id: 'admin_overview', label: 'Clinic Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+          { id: 'admin_billing', label: 'Billing & Revenue', icon: <CreditCard className="w-4 h-4" /> },
+          { id: 'admin_inventory', label: 'Supplies & Inventory', icon: <Package className="w-4 h-4" /> },
         ];
 
       case 'receptionist':
@@ -73,15 +61,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           { id: 'booking', label: 'Book Appointment', icon: <Calendar className="w-4 h-4" /> },
         ];
 
-      case 'lab_technician':
+      case 'patient':
         return [
-          { id: 'overview', label: 'Laboratory Worklist', icon: <LayoutDashboard className="w-4 h-4" /> },
-          {
-            id: 'samples',
-            label: 'Sample Collection',
-            icon: <TestTubes className="w-4 h-4" />,
-          },
-          { id: 'results', label: 'Diagnostic Results Entry', icon: <FlaskConical className="w-4 h-4" /> },
+          { id: 'overview', label: 'My Health Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
+          { id: 'appointments', label: 'My Appointments', icon: <Calendar className="w-4 h-4" /> },
+          { id: 'prescriptions', label: 'My Prescriptions', icon: <Pill className="w-4 h-4" /> },
+          { id: 'billing', label: 'My Invoices', icon: <CreditCard className="w-4 h-4" /> },
         ];
 
       default:
@@ -143,10 +128,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <div className="text-xs font-bold text-teal-400 tracking-wide uppercase">
-                Clinic Portal
+                Clinic Operations
               </div>
               <div className="text-xs font-semibold text-slate-300 capitalize truncate mt-0.5">
-                {currentRole === 'doctor' || currentRole === 'admin' ? 'Doctor (Admin)' : currentRole.replace('_', ' ')}
+                {currentRole === 'doctor' || currentRole === 'admin' ? 'Doctor' : currentRole.replace('_', ' ')}
               </div>
             </div>
           </div>

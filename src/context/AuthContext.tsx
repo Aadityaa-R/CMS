@@ -13,8 +13,8 @@ export const ALL_ROLES: RoleMeta[] = [
   {
     role: 'doctor',
     label: 'Doctor',
-    department: 'Internal Medicine & Administration',
-    description: 'Lead Physician & Clinic Administrator • Consultations, clinical governance, billing, inventory & oversight.',
+    department: 'Internal Medicine',
+    description: 'Lead Consulting Physician: clinical consultations, front desk coordination, and clinic operations.',
   },
   {
     role: 'receptionist',
@@ -23,16 +23,10 @@ export const ALL_ROLES: RoleMeta[] = [
     description: 'Appointment booking, patient check-in, token issuance, and queue coordination.',
   },
   {
-    role: 'lab_technician',
-    label: 'Lab Technician',
-    department: 'Diagnostic Laboratory',
-    description: 'Sample collection, specimen testing, diagnostic results, and reference ranges.',
-  },
-  {
     role: 'patient',
     label: 'Patient',
     department: 'Patient Portal',
-    description: 'Personal appointments, active prescriptions, lab reports, and billing receipts.',
+    description: 'Personal appointments, active prescriptions, and billing receipts.',
   },
 ];
 

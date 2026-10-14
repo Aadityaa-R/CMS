@@ -10,7 +10,6 @@ import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
 import {
-  FlaskConical,
   Search,
   CheckCircle2,
   Filter,
@@ -39,9 +38,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     patients,
     vitals,
     prescriptions,
-    labTests,
     createPrescription,
-    createLabTest,
     updateAppointmentStatus,
   } = useClinic();
 
@@ -104,15 +101,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       dispensed: false,
     },
   ]);
-
-  // Lab Order Modal State
-  const [isLabOrderModalOpen, setIsLabOrderModalOpen] = useState(false);
-  const [labPatientId, setLabPatientId] = useState<string>('');
-  const [testName, setTestName] = useState('Comprehensive Metabolic Panel (CMP)');
-  const [testCategory, setTestCategory] = useState('Biochemistry');
-  const [sampleType, setSampleType] = useState('Venous Whole Blood');
-  const [labPriority, setLabPriority] = useState<'routine' | 'urgent' | 'stat'>('routine');
-  const [labNotes, setLabNotes] = useState('');
 
   // Consultation Notes Modal State
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -200,40 +188,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     setIsPrescriptionModalOpen(false);
   };
 
-  const handleOpenLabModal = (targetPatientId?: string) => {
-    const pId = targetPatientId || activePatient?.id || patients[0]?.id || '';
-    setLabPatientId(pId);
-    setTestName('Comprehensive Metabolic Panel (CMP)');
-    setTestCategory('Biochemistry');
-    setSampleType('Serum / Venous Blood');
-    setLabPriority('routine');
-    setLabNotes('');
-    setIsLabOrderModalOpen(true);
-  };
 
-  const handleSaveLabOrder = (e: React.FormEvent) => {
-    e.preventDefault();
-    const patientObj = patients.find((p) => p.id === labPatientId);
-    if (!patientObj || !testName.trim()) return;
-
-    const newLab = createLabTest({
-      patientId: patientObj.id,
-      patientName: `${patientObj.firstName} ${patientObj.lastName}`,
-      doctorId: 'doc-1',
-      doctorName: currentUser.name,
-      testName,
-      category: testCategory,
-      sampleType,
-      priority: labPriority,
-      clinicalNotes: labNotes || 'Diagnostic evaluation ordered during outpatient consultation.',
-    });
-
-    showNotification(
-      `Diagnostic Order #${newLab.testOrderNumber} (${newLab.testName}) placed for ${newLab.patientName}. Accessioned into Lab Worklist.`
-    );
-
-    setIsLabOrderModalOpen(false);
-  };
 
   const handleSaveConsultationNotes = (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,7 +205,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   const totalQueue = appointments.length;
   const inConsultation = appointments.filter((a) => a.status === 'in_consultation').length;
   const totalPrescriptions = prescriptions.length;
-  const urgentLabOrders = labTests.filter((l) => l.priority === 'stat' || l.priority === 'urgent');
 
   // Filter Helper
   const query = searchTerm.toLowerCase();
@@ -292,18 +246,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return true;
   });
 
-  const filteredLabTests = labTests.filter((l) => {
-    const matchesSearch =
-      l.testOrderNumber.toLowerCase().includes(query) ||
-      l.patientName.toLowerCase().includes(query) ||
-      l.testName.toLowerCase().includes(query);
-
-    if (!matchesSearch) return false;
-    if (filterMode === 'active') return l.status === 'ordered' || l.status === 'sample_collected';
-    if (filterMode === 'urgent') return l.priority === 'stat' || l.priority === 'urgent';
-    return true;
-  });
-
   return (
     <div className="space-y-6">
       {/* Workstation Header */}
@@ -317,14 +259,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           </p>
         </div>
         <div className="flex items-center gap-2.5">
-          <Button
-            size="sm"
-            variant="outline"
-            icon={<FlaskConical className="w-4 h-4" />}
-            onClick={() => handleOpenLabModal()}
-          >
-            Order Lab Test
-          </Button>
           <Button
             size="sm"
             variant="primary"
@@ -342,7 +276,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           { id: 'overview', label: 'Consultation Desk' },
           { id: 'patients', label: 'My Patients' },
           { id: 'prescriptions', label: 'e-Prescriptions' },
-          { id: 'lab_orders', label: 'Diagnostic Requisitions' },
           { id: 'schedule', label: 'Weekly Schedule' },
         ].map((tab) => (
           <button
@@ -399,11 +332,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           colorScheme="slate"
         />
         <StatCard
-          title="Urgent Investigations"
-          value={urgentLabOrders.length}
-          unit="Orders"
-          subtitle="STAT priority diagnostics"
-          colorScheme={urgentLabOrders.length > 0 ? 'rose' : 'slate'}
+          title="Registered Outpatients"
+          value={patients.length}
+          unit="Profiles"
+          subtitle="Electronic medical directory"
+          colorScheme="slate"
         />
       </div>
 
@@ -415,7 +348,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search consultation queue, patient MRN, prescriptions, or labs..."
+            placeholder="Search consultation queue, patient MRN, or prescriptions..."
             className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-xs"
           />
         </div>
@@ -487,8 +420,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 }}
                 className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
                   filterMode === 'urgent'
-                    ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-semibold'
-                    : 'text-rose-700 dark:text-rose-400 hover:bg-rose-50/50 dark:hover:bg-rose-950/30'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                 }`}
               >
                 <span className="flex items-center gap-1.5">
@@ -513,14 +446,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <CardHeader
                   action={
                     <div className="flex items-center gap-2">
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        icon={<FlaskConical className="w-3.5 h-3.5" />}
-                        onClick={() => handleOpenLabModal(activePatient.id)}
-                      >
-                        Order Labs
-                      </Button>
                       <Button
                         size="xs"
                         variant="outline"
@@ -560,10 +485,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <CardContent className="space-y-4">
                   {/* Safety Alert (Red dot only if allergy exists) */}
                   {activePatient.allergies.length > 0 && (
-                    <div className="p-3 bg-rose-50/50 dark:bg-rose-950/30 rounded-xl border border-rose-200/60 dark:border-rose-900/40 text-xs flex items-center gap-2">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                      <span className="font-semibold text-rose-700 dark:text-rose-400">Allergy Warning:</span>
-                      <span className="text-rose-800 dark:text-rose-300">{activePatient.allergies.join(', ')}</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">Allergy Warning:</span>
+                      <span className="text-slate-700 dark:text-slate-300">{activePatient.allergies.join(', ')}</span>
                     </div>
                   )}
 
@@ -885,17 +810,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         </Button>
                         <Button
                           size="xs"
-                          variant="outline"
+                          variant="secondary"
                           onClick={() => handleOpenPrescriptionModal(pat.id)}
                         >
                           Prescribe
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="secondary"
-                          onClick={() => handleOpenLabModal(pat.id)}
-                        >
-                          Order Lab
                         </Button>
                       </td>
                     </tr>
@@ -993,107 +911,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </Card>
       )}
 
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 4: ORDER LAB TESTS (`lab_orders`)                              */}
-      {/* ========================================================================= */}
-      {selectedTab === 'lab_orders' && (
-        <Card>
-          <CardHeader
-            action={
-              <Button
-                size="xs"
-                variant="primary"
-                icon={<Plus className="w-3.5 h-3.5" />}
-                onClick={() => handleOpenLabModal()}
-              >
-                Order Lab Test
-              </Button>
-            }
-          >
-            <CardTitle>Diagnostic Pathology Requisitions</CardTitle>
-            <CardDescription>
-              Clinical laboratory orders requested by Dr. Marcus Vance with real-time assay progress
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">Order #</th>
-                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                    <th className="px-4 py-3.5 align-middle">Investigation Name</th>
-                    <th className="px-4 py-3.5 align-middle">Priority</th>
-                    <th className="px-4 py-3.5 align-middle">Specimen Status</th>
-                    <th className="px-4 py-3.5 align-middle">Reported Findings</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredLabTests.map((lab) => {
-                    const isStat = lab.priority === 'stat' || lab.priority === 'urgent';
-                    return (
-                      <tr
-                        key={lab.id}
-                        className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
-                          isStat && lab.status !== 'completed' ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''
-                        }`}
-                      >
-                        <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                          {lab.testOrderNumber}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
-                          {lab.patientName}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-medium text-slate-900 dark:text-slate-100">{lab.testName}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">{lab.category}</div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          {isStat ? (
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                              <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase">
-                                {lab.priority}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-slate-600 dark:text-slate-400 capitalize">
-                              {lab.priority}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                lab.status === 'completed'
-                                  ? 'bg-teal-500'
-                                  : 'bg-slate-400'
-                              }`}
-                            />
-                            <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                              {lab.status.replace('_', ' ')}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          {lab.result ? (
-                            <span className="font-semibold text-xs text-teal-800 dark:text-teal-300">
-                              {lab.result}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 dark:text-slate-500 italic">In Laboratory</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* ========================================================================= */}
       {/* SUB-MODULE 5: WEEKLY SCHEDULE (`schedule`)                                */}
@@ -1251,91 +1069,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       </Modal>
 
       {/* ========================================================================= */}
-      {/* MODAL 2: ORDER LAB TEST                                                   */}
-      {/* ========================================================================= */}
-      <Modal
-        isOpen={isLabOrderModalOpen}
-        onClose={() => setIsLabOrderModalOpen(false)}
-        title="Order Diagnostic Laboratory Investigation"
-        description="Requisitions are dispatched directly to the Laboratory Technologist worklist."
-        maxWidth="lg"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsLabOrderModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<FlaskConical className="w-4 h-4" />}
-              onClick={handleSaveLabOrder}
-            >
-              Place Diagnostic Order
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleSaveLabOrder} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Select
-              label="Select Patient"
-              value={labPatientId}
-              onChange={(e) => setLabPatientId(e.target.value)}
-              options={patients.map((p) => ({
-                value: p.id,
-                label: `${p.firstName} ${p.lastName} (${p.mrn})`,
-              }))}
-            />
-            <Input
-              label="Investigation / Assay Name"
-              value={testName}
-              onChange={(e) => setTestName(e.target.value)}
-              placeholder="e.g. Lipid Profile, Complete Blood Count"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <Input
-              label="Category"
-              value={testCategory}
-              onChange={(e) => setTestCategory(e.target.value)}
-              placeholder="e.g. Biochemistry"
-            />
-            <Input
-              label="Specimen Container"
-              value={sampleType}
-              onChange={(e) => setSampleType(e.target.value)}
-              placeholder="e.g. Venous Whole Blood"
-            />
-            <Select
-              label="Clinical Priority"
-              value={labPriority}
-              onChange={(e) => setLabPriority(e.target.value as any)}
-              options={[
-                { value: 'routine', label: 'Routine (Standard turnaround)' },
-                { value: 'urgent', label: 'Urgent (Priority processing)' },
-                { value: 'stat', label: 'STAT (Immediate panic alert)' },
-              ]}
-            />
-          </div>
-
-          <Textarea
-            label="Clinical Indication / Diagnostic Notes"
-            value={labNotes}
-            onChange={(e) => setLabNotes(e.target.value)}
-            placeholder="e.g. Suspected metabolic disorder, pre-prescription safety check."
-            rows={2}
-          />
-        </form>
-      </Modal>
-
-      {/* ========================================================================= */}
-      {/* MODAL 3: RECORD CONSULTATION NOTES                                        */}
+      {/* MODAL 2: RECORD CONSULTATION NOTES                                        */}
       {/* ========================================================================= */}
       <Modal
         isOpen={isNotesModalOpen}

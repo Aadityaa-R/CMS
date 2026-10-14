@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types';
-import { Shield, Stethoscope, User, Calendar, FlaskConical } from 'lucide-react';
+import { Shield, Stethoscope, User, Calendar } from 'lucide-react';
 
 export const RoleSwitcher: React.FC = () => {
   const { currentRole, switchRole, availableRoles, currentUser } = useAuth();
@@ -16,8 +16,8 @@ export const RoleSwitcher: React.FC = () => {
         return <User className="w-3.5 h-3.5" />;
       case 'receptionist':
         return <Calendar className="w-3.5 h-3.5" />;
-      case 'lab_technician':
-        return <FlaskConical className="w-3.5 h-3.5" />;
+      default:
+        return <Stethoscope className="w-3.5 h-3.5" />;
     }
   };
 
@@ -28,7 +28,7 @@ export const RoleSwitcher: React.FC = () => {
           Development Role Switcher:
         </span>
         <span className="text-slate-400 hidden sm:inline text-[11px]">
-          Select any of the 4 clinic roles to test its dashboard and workflow:
+          Select any of the 3 clinic roles to test its dashboard and workflow:
         </span>
       </div>
 
