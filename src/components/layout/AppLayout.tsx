@@ -94,8 +94,6 @@ export const AppLayout: React.FC = () => {
           return <DoctorView activeTab="overview" />;
         case 'role_patient':
           return <PatientView />;
-        case 'doctor_schedule':
-          return <DoctorView activeTab="schedule" />;
         default:
           return <DoctorView activeTab="overview" />;
       }

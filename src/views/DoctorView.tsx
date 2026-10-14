@@ -410,7 +410,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           { id: 'overview', label: 'Consultation Desk' },
           { id: 'patients', label: 'Patients' },
           { id: 'prescriptions', label: 'e-Prescriptions' },
-          { id: 'schedule', label: 'Weekly Schedule' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -1045,7 +1044,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <th className="px-4 py-3.5 align-middle">Issue Date</th>
                     <th className="px-4 py-3.5 align-middle">Diagnosis</th>
                     <th className="px-4 py-3.5 align-middle">Prescribed Regimen</th>
-                    <th className="px-4 py-3.5 align-middle">Dispense Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -1076,59 +1074,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 align-middle">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                              rx.status === 'dispensed'
-                                ? 'bg-teal-500'
-                                : 'bg-slate-400'
-                            }`}
-                          />
-                          <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                            {rx.status.replace('_', ' ')}
-                          </span>
-                        </div>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 4: WEEKLY SCHEDULE (`schedule`)                                */}
-      {/* ========================================================================= */}
-      {selectedTab === 'schedule' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Consulting Desk Roster & Clinic Calendar</CardTitle>
-            <CardDescription>
-              Operational schedule for {activeDoctor.name} across weekly outpatient blocks
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-              {activeDoctor.availableDays.map((day) => (
-                <div
-                  key={day}
-                  className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-slate-900 dark:text-slate-100">{day}</span>
-                    <span className="w-2 h-2 rounded-full bg-teal-500" />
-                  </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {activeDoctor.consultationHours}
-                  </div>
-                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-teal-700 dark:text-teal-400 font-semibold">
-                    {activeDoctor.roomNumber}
-                  </div>
-                </div>
-              ))}
             </div>
           </CardContent>
         </Card>

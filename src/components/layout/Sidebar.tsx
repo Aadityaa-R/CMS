@@ -61,7 +61,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         return [
           { id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> },
           { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
-          { id: 'doctor_schedule', label: 'Schedule & Appointments', icon: <Calendar className="w-4 h-4" /> },
         ];
 
       case 'receptionist':
