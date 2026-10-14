@@ -277,3 +277,22 @@ body.dark,
 .dark .hover\:bg-slate-50:hover {
   background-color: #1e293b !important;
 }
+
+/* Font Awesome Pro Sharp Thin compatibility & fallback */
+.fa-sharp,
+.fa-thin {
+  font-family: "Font Awesome 6 Sharp", "Font Awesome 6 Pro", "Font Awesome 6 Free", sans-serif;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+}
+
+.fa-vials {
+  font-size: 15px;
+}
+
