@@ -25,9 +25,9 @@ import {
 } from 'lucide-react';
 import { UserRole, StaffAccessRecord } from '@/types';
 
-type ModuleKey = 'all' | 'doc' | 'receptionist' | 'patient';
+type RoleFilterKey = 'all' | 'doc' | 'receptionist' | 'patient';
 
-interface RoleModuleMeta {
+interface RoleSectionMeta {
   key: 'doc' | 'receptionist' | 'patient';
   role: UserRole;
   title: string;
@@ -37,31 +37,31 @@ interface RoleModuleMeta {
   icon: React.ReactNode;
 }
 
-const ROLE_MODULES: RoleModuleMeta[] = [
+const ROLE_SECTIONS: RoleSectionMeta[] = [
   {
     key: 'doc',
     role: 'doctor',
-    title: 'Doctor / Physician Access Module',
+    title: 'Doctor / Physician Access',
     badgeLabel: 'Staff Physicians',
-    shortLabel: 'Doc Module',
+    shortLabel: 'Doctors',
     description: 'Staff consulting physicians operating outpatient desks under Managing Director clinical governance.',
     icon: <Stethoscope className="w-4 h-4 text-teal-600 dark:text-teal-400" />,
   },
   {
     key: 'receptionist',
     role: 'receptionist',
-    title: 'Receptionist Workstation Module',
+    title: 'Receptionist Workstation',
     badgeLabel: 'Front Desk',
-    shortLabel: 'Receptionist Module',
+    shortLabel: 'Receptionists',
     description: 'Front desk admissions, patient check-in, token dispatch, and consultation scheduling clearance.',
     icon: <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />,
   },
   {
     key: 'patient',
     role: 'patient',
-    title: 'Patient Portal Access Module',
+    title: 'Patient Portal Access',
     badgeLabel: 'Outpatient Accounts',
-    shortLabel: 'Patient Module',
+    shortLabel: 'Patients',
     description: 'Verified outpatient self-service accounts, personal EMR access, and online consultation booking.',
     icon: <UserIcon className="w-4 h-4 text-teal-600 dark:text-teal-400" />,
   },
@@ -77,15 +77,14 @@ export const AccessControlView: React.FC = () => {
     toggleStaffPermission,
   } = useAuth();
 
-  // Active module filter: 'doc' | 'receptionist' | 'patient' | 'all'
-  const [activeModule, setActiveModule] = useState<ModuleKey>('doc');
+  // Active role filter: 'all' | 'doc' | 'receptionist' | 'patient'
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('all');
 
   // Search & Status filters
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'granted' | 'revoked'>('all');
 
   // State to track which person has their control panel open
-  // Defaults to the first person in staffAccessList
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(() => {
     return staffAccessList[0]?.id || null;
   });
@@ -140,18 +139,25 @@ export const AccessControlView: React.FC = () => {
     setSelectedStaffId((prev) => (prev === staffId ? null : staffId));
   };
 
-  // KPI Calculations
+  // Counts for role options
   const totalPersonnel = staffAccessList.length;
+  const docCount = staffAccessList.filter((s) => s.role === 'doctor').length;
+  const receptionistCount = staffAccessList.filter((s) => s.role === 'receptionist').length;
+  const patientCount = staffAccessList.filter((s) => s.role === 'patient').length;
+
+  // KPI Calculations
   const activeGranted = staffAccessList.filter((s) => s.status === 'granted').length;
   const suspendedRevoked = staffAccessList.filter((s) => s.status === 'revoked').length;
 
   // Filter staff by search and status
   const filteredStaff = staffAccessList.filter((staff) => {
+    const query = searchTerm.toLowerCase().trim();
     const matchesSearch =
-      staff.staffName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.badgeNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.role.toLowerCase().includes(searchTerm.toLowerCase());
+      query === '' ||
+      staff.staffName.toLowerCase().includes(query) ||
+      staff.department.toLowerCase().includes(query) ||
+      staff.badgeNumber.toLowerCase().includes(query) ||
+      staff.role.toLowerCase().includes(query);
 
     const matchesStatus =
       filterStatus === 'all' ? true : staff.status === filterStatus;
@@ -159,16 +165,25 @@ export const AccessControlView: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Helper to get staff for a specific module
+  // Helper to get staff for a specific role
   const getStaffForRole = (role: UserRole) => {
     return filteredStaff.filter((s) => s.role === role);
   };
 
-  // Modules to render based on activeModule selection
-  const displayedModules =
-    activeModule === 'all'
-      ? ROLE_MODULES
-      : ROLE_MODULES.filter((m) => m.key === activeModule);
+  // Base candidate sections based on dropdown role filter
+  const candidateSections =
+    selectedRoleFilter === 'all'
+      ? ROLE_SECTIONS
+      : ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter);
+
+  // Search isolation: When searching, display ONLY sections that contain matching personnel!
+  const displayedSections = candidateSections.filter((section) => {
+    const staffInRole = getStaffForRole(section.role);
+    if (searchTerm.trim() !== '') {
+      return staffInRole.length > 0;
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -206,7 +221,7 @@ export const AccessControlView: React.FC = () => {
             Staff Access Control & Security Governance
           </h2>
           <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Authorized by <strong>Dr. Marcus Vance, MD</strong> (Managing Director). Manage workstation clearances, revoke access, and configure granular permissions sorted across Doctors, Receptionists, and Patients.
+            Authorized by <strong>Dr. Marcus Vance, MD</strong> (Managing Director). Manage workstation clearances, revoke access, and configure granular permissions across Doctors, Receptionists, and Patients.
           </p>
         </div>
 
@@ -250,67 +265,46 @@ export const AccessControlView: React.FC = () => {
         />
       </div>
 
-      {/* 3 Main Role Modules Selection Tabs */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-xs space-y-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
+      {/* Clearance Governance & Filter Controls Bar */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-              Clearance Governance Modules
+              Clearance Governance
             </span>
             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-              Select role module to manage access controls per individual:
+              Select role filter to view access controls:
             </span>
           </div>
 
-          {/* Module Switcher Buttons */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {ROLE_MODULES.map((mod) => {
-              const isSelected = activeModule === mod.key;
-              const count = staffAccessList.filter((s) => s.role === mod.role).length;
-              return (
-                <button
-                  key={mod.key}
-                  type="button"
-                  onClick={() => setActiveModule(mod.key)}
-                  className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
-                    isSelected
-                      ? 'bg-teal-600 text-white font-semibold shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    {mod.icon}
-                    <span>{mod.shortLabel}</span>
-                  </span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-semibold ${
-                      isSelected
-                        ? 'bg-teal-700 text-teal-100'
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-
-            <button
-              type="button"
-              onClick={() => setActiveModule('all')}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                activeModule === 'all'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
+          {/* Role Filter Dropdown */}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <label
+              htmlFor="role-filter-select"
+              className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 shrink-0"
             >
-              All Modules ({totalPersonnel})
-            </button>
+              <Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              <span>Role Filter:</span>
+            </label>
+            <div className="relative min-w-[210px]">
+              <select
+                id="role-filter-select"
+                value={selectedRoleFilter}
+                onChange={(e) => setSelectedRoleFilter(e.target.value as RoleFilterKey)}
+                className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer shadow-xs"
+              >
+                <option value="all">All Roles ({totalPersonnel})</option>
+                <option value="doc">Doctors ({docCount})</option>
+                <option value="receptionist">Receptionists ({receptionistCount})</option>
+                <option value="patient">Patients ({patientCount})</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
           </div>
         </div>
 
         {/* Toolbar: Search and Status Filter */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -322,16 +316,16 @@ export const AccessControlView: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 self-start sm:self-auto">
             <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5" /> Filter Status:
+              <Filter className="w-3.5 h-3.5" /> Status:
             </span>
             <button
               type="button"
               onClick={() => setFilterStatus('all')}
               className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors cursor-pointer ${
                 filterStatus === 'all'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
               }`}
             >
@@ -365,224 +359,236 @@ export const AccessControlView: React.FC = () => {
         </div>
       </div>
 
-      {/* The 3 Main Role Modules Layout */}
+      {/* Main Role Sections Layout with Search Result Isolation */}
       <div className="space-y-6">
-        {displayedModules.map((moduleMeta) => {
-          const staffInModule = getStaffForRole(moduleMeta.role);
+        {displayedSections.length === 0 ? (
+          <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
+            {searchTerm.trim() !== '' ? (
+              <span>
+                No personnel found matching &ldquo;<strong>{searchTerm}</strong>&rdquo;. Try refining your search query or selecting &ldquo;All Roles&rdquo;.
+              </span>
+            ) : (
+              <span>No personnel found matching the selected filter criteria.</span>
+            )}
+          </div>
+        ) : (
+          displayedSections.map((sectionMeta) => {
+            const staffInSection = getStaffForRole(sectionMeta.role);
 
-          return (
-            <Card key={moduleMeta.key} className="border border-slate-200 dark:border-slate-800 shadow-sm">
-              <CardHeader
-                action={
-                  <Badge variant="teal">
-                    {staffInModule.length} {staffInModule.length === 1 ? 'Person' : 'Personnel'}
-                  </Badge>
-                }
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                    {moduleMeta.icon}
+            return (
+              <Card key={sectionMeta.key} className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                <CardHeader
+                  action={
+                    <Badge variant="teal">
+                      {staffInSection.length} {staffInSection.length === 1 ? 'Person' : 'Personnel'}
+                    </Badge>
+                  }
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                      {sectionMeta.icon}
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                        {sectionMeta.title}
+                      </CardTitle>
+                      <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {sectionMeta.description}
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                      {moduleMeta.title}
-                    </CardTitle>
-                    <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {moduleMeta.description}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
+                </CardHeader>
 
-              <CardContent className="space-y-4 pt-2">
-                {staffInModule.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                    No personnel found matching the current search criteria in this module.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {staffInModule.map((staff) => {
-                      const isRevoked = staff.status === 'revoked';
-                      const isSelected = selectedStaffId === staff.id;
+                <CardContent className="space-y-4 pt-2">
+                  {staffInSection.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                      No personnel found matching the current search criteria.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {staffInSection.map((staff) => {
+                        const isRevoked = staff.status === 'revoked';
+                        const isSelected = selectedStaffId === staff.id;
 
-                      return (
-                        <div
-                          key={staff.id}
-                          className={`rounded-xl border transition-all duration-200 overflow-hidden ${
-                            isSelected
-                              ? 'border-teal-500 bg-slate-50/60 dark:bg-slate-800/40 shadow-xs'
-                              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
-                          }`}
-                        >
-                          {/* Person Header - Name is clickable to open/expand access controls */}
+                        return (
                           <div
-                            onClick={() => togglePersonSelection(staff.id)}
-                            className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none transition-colors"
+                            key={staff.id}
+                            className={`rounded-xl border transition-all duration-200 overflow-hidden ${
+                              isSelected
+                                ? 'border-teal-500 bg-slate-50/60 dark:bg-slate-800/40 shadow-xs'
+                                : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                            }`}
                           >
-                            <div className="flex items-center gap-3">
-                              {/* Status indicator dot */}
-                              <span
-                                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                                  isRevoked ? 'bg-rose-500' : 'bg-teal-500'
-                                }`}
-                              />
+                            {/* Person Header - Name is clickable to open/expand access controls */}
+                            <div
+                              onClick={() => togglePersonSelection(staff.id)}
+                              className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none transition-colors"
+                            >
+                              <div className="flex items-center gap-3">
+                                {/* Status indicator dot */}
+                                <span
+                                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                    isRevoked ? 'bg-rose-500' : 'bg-teal-500'
+                                  }`}
+                                />
 
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {/* Person Name Clickable */}
-                                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-                                    {staff.staffName}
-                                  </h4>
-                                  <Badge size="sm" variant={isRevoked ? 'neutral' : 'teal'}>
-                                    {isRevoked ? 'Access Revoked' : 'Access Granted'}
-                                  </Badge>
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Person Name Clickable */}
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
+                                      {staff.staffName}
+                                    </h4>
+                                    <Badge size="sm" variant={isRevoked ? 'neutral' : 'teal'}>
+                                      {isRevoked ? 'Access Revoked' : 'Access Granted'}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    {staff.staffTitle} • {staff.department} • Badge: <span className="font-mono">{staff.badgeNumber}</span>
+                                  </p>
                                 </div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                  {staff.staffTitle} • {staff.department} • Badge: <span className="font-mono">{staff.badgeNumber}</span>
-                                </p>
                               </div>
-                            </div>
 
-                            <div className="flex items-center gap-3">
-                              <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">
-                                {isSelected ? 'Click name to collapse controls' : 'Click name to configure controls'}
-                              </span>
-                              <div
-                                className={`p-1.5 rounded-lg border transition-colors ${
-                                  isSelected
-                                    ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                                }`}
-                              >
-                                {isSelected ? (
-                                  <ChevronUp className="w-4 h-4" />
-                                ) : (
-                                  <ChevronDown className="w-4 h-4" />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Expanded Access Control Console for this Person */}
-                          {isSelected && (
-                            <div className="px-4 pb-4 pt-2 border-t border-slate-200/80 dark:border-slate-800 space-y-4 animate-fadeIn">
-                              {/* Master Station Clearance Actions Bar */}
-                              <div className="p-3 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className={`w-2 h-2 rounded-full shrink-0 ${
-                                      isRevoked ? 'bg-rose-500' : 'bg-teal-500'
-                                    }`}
-                                  />
-                                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                    Current Workstation Access Status:
-                                  </span>
-                                  <span className="text-slate-700 dark:text-slate-300 font-medium">
-                                    {isRevoked ? 'Suspended by Managing Director' : 'Active & Authorized'}
-                                  </span>
-                                </div>
-
-                                {/* Action Buttons: Revoke Option AND next to it: Delete Account Option */}
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {isRevoked ? (
-                                    <Button
-                                      size="sm"
-                                      variant="primary"
-                                      icon={<Unlock className="w-3.5 h-3.5" />}
-                                      onClick={() => handleGrant(staff.id, staff.staffName)}
-                                    >
-                                      Grant Access
-                                    </Button>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">
+                                  {isSelected ? 'Click name to collapse controls' : 'Click name to configure controls'}
+                                </span>
+                                <div
+                                  className={`p-1.5 rounded-lg border transition-colors ${
+                                    isSelected
+                                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                                  }`}
+                                >
+                                  {isSelected ? (
+                                    <ChevronUp className="w-4 h-4" />
                                   ) : (
+                                    <ChevronDown className="w-4 h-4" />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Expanded Access Control Console for this Person */}
+                            {isSelected && (
+                              <div className="px-4 pb-4 pt-2 border-t border-slate-200/80 dark:border-slate-800 space-y-4 animate-fadeIn">
+                                {/* Master Station Clearance Actions Bar */}
+                                <div className="p-3 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`w-2 h-2 rounded-full shrink-0 ${
+                                        isRevoked ? 'bg-rose-500' : 'bg-teal-500'
+                                      }`}
+                                    />
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                      Current Workstation Access Status:
+                                    </span>
+                                    <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                      {isRevoked ? 'Suspended by Managing Director' : 'Active & Authorized'}
+                                    </span>
+                                  </div>
+
+                                  {/* Action Buttons: Revoke Option AND next to it: Delete Account Option */}
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {isRevoked ? (
+                                      <Button
+                                        size="sm"
+                                        variant="primary"
+                                        icon={<Unlock className="w-3.5 h-3.5" />}
+                                        onClick={() => handleGrant(staff.id, staff.staffName)}
+                                      >
+                                        Grant Access
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        icon={<Lock className="w-3.5 h-3.5" />}
+                                        onClick={() => handleRevoke(staff.id, staff.staffName)}
+                                      >
+                                        Revoke Access
+                                      </Button>
+                                    )}
+
+                                    {/* Delete Account Option next to Revoke */}
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      icon={<Lock className="w-3.5 h-3.5" />}
-                                      onClick={() => handleRevoke(staff.id, staff.staffName)}
+                                      icon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
+                                      className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                                      onClick={() => handlePromptDelete(staff)}
                                     >
-                                      Revoke Access
+                                      Delete Account
                                     </Button>
-                                  )}
-
-                                  {/* Delete Account Option next to Revoke */}
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    icon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
-                                    className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
-                                    onClick={() => handlePromptDelete(staff)}
-                                  >
-                                    Delete Account
-                                  </Button>
-                                </div>
-                              </div>
-
-                              {/* Authorized Workstation Capabilities (Sub-Permissions Switchboard) */}
-                              <div>
-                                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2 flex items-center justify-between">
-                                  <span className="flex items-center gap-1.5">
-                                    <Sliders className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                                    <span>Authorized Workstation Capabilities</span>
-                                  </span>
-                                  <span className="text-[10px] text-slate-400 font-normal">
-                                    Managing Director Controls
-                                  </span>
+                                  </div>
                                 </div>
 
-                                <div className="space-y-2 divide-y divide-slate-100 dark:divide-slate-800/60">
-                                  {staff.permissions.map((perm) => (
-                                    <div
-                                      key={perm.id}
-                                      className="pt-2 flex items-center justify-between gap-3 text-xs"
-                                    >
-                                      <div className="flex-1">
-                                        <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                                          {perm.name}
+                                {/* Authorized Workstation Capabilities (Sub-Permissions Switchboard) */}
+                                <div>
+                                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2 flex items-center justify-between">
+                                    <span className="flex items-center gap-1.5">
+                                      <Sliders className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                                      <span>Authorized Capabilities</span>
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-normal">
+                                      Managing Director Controls
+                                    </span>
+                                  </div>
+
+                                  <div className="space-y-2 divide-y divide-slate-100 dark:divide-slate-800/60">
+                                    {staff.permissions.map((perm) => (
+                                      <div
+                                        key={perm.id}
+                                        className="pt-2 flex items-center justify-between gap-3 text-xs"
+                                      >
+                                        <div className="flex-1">
+                                          <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
+                                            {perm.name}
+                                          </div>
+                                          <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                                            {perm.description}
+                                          </div>
                                         </div>
-                                        <div className="text-[11px] text-slate-400 dark:text-slate-500">
-                                          {perm.description}
-                                        </div>
+
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={perm.enabled && !isRevoked}
+                                            disabled={isRevoked}
+                                            onChange={() =>
+                                              handleTogglePermission(staff.id, perm.id, perm.name)
+                                            }
+                                            className="sr-only peer"
+                                          />
+                                          <div
+                                            className={`w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
+                                              isRevoked
+                                                ? 'opacity-40 cursor-not-allowed'
+                                                : 'peer-checked:bg-teal-600'
+                                            }`}
+                                          />
+                                        </label>
                                       </div>
+                                    ))}
+                                  </div>
+                                </div>
 
-                                      <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                          type="checkbox"
-                                          checked={perm.enabled && !isRevoked}
-                                          disabled={isRevoked}
-                                          onChange={() =>
-                                            handleTogglePermission(staff.id, perm.id, perm.name)
-                                          }
-                                          className="sr-only peer"
-                                        />
-                                        <div
-                                          className={`w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
-                                            isRevoked
-                                              ? 'opacity-40 cursor-not-allowed'
-                                              : 'peer-checked:bg-teal-600'
-                                          }`}
-                                        />
-                                      </label>
-                                    </div>
-                                  ))}
+                                {/* Audit Directive Footer */}
+                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                  <span>Last Authorized: <strong>{staff.updatedBy}</strong> ({staff.lastUpdated})</span>
+                                  <span className="italic">{staff.reason || 'Operational clearance in good standing'}</span>
                                 </div>
                               </div>
-
-                              {/* Audit Directive Footer */}
-                              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                                <span>Last Authorized: <strong>{staff.updatedBy}</strong> ({staff.lastUpdated})</span>
-                                <span className="italic">{staff.reason || 'Operational clearance in good standing'}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
       </div>
 
       {/* Managing Director Security Audit Ledger */}
@@ -600,7 +606,7 @@ export const AccessControlView: React.FC = () => {
             <Badge size="sm" variant="teal">Official Directives</Badge>
           </div>
           <CardDescription>
-            Chronological record of staff access grants, workstation suspensions, account deletions, and permission updates.
+            Chronological record of access grants, workstation suspensions, account deletions, and permission updates.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -703,7 +709,7 @@ export const AccessControlView: React.FC = () => {
                   Irreversible Administrative Directive
                 </span>
                 <span className="text-slate-600 dark:text-slate-400 text-[11px]">
-                  All workstation clearance, digital credentials, and sub-permissions will be permanently erased.
+                  All workstation clearance, digital credentials, and capabilities will be permanently erased.
                 </span>
               </div>
             </div>
@@ -714,7 +720,7 @@ export const AccessControlView: React.FC = () => {
                 <span className="font-bold text-slate-900 dark:text-slate-100">{deleteTarget.staffName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Role & Module:</span>
+                <span className="text-slate-500 dark:text-slate-400">Assigned Role:</span>
                 <span className="font-medium text-slate-800 dark:text-slate-200 capitalize">
                   {deleteTarget.role === 'doctor' ? 'Staff Doctor' : deleteTarget.role}
                 </span>

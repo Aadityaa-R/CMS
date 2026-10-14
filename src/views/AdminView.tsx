@@ -11,11 +11,12 @@ import {
   CreditCard,
   Package,
   Search,
-  CheckCircle,
   CheckCircle2,
   Clock,
   Filter,
   ChevronDown,
+  Stethoscope,
+  Activity,
 } from 'lucide-react';
 import { Invoice, InventoryItem, PaymentMethod } from '@/types';
 
@@ -25,15 +26,14 @@ interface AdminViewProps {
 
 export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) => {
   const { currentUser } = useAuth();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'billing' | 'inventory'>(
-    (activeTab === 'billing' || activeTab === 'inventory') ? activeTab : 'overview'
-  );
 
-  useEffect(() => {
-    if (activeTab === 'billing' || activeTab === 'inventory' || activeTab === 'overview') {
-      setSelectedTab(activeTab);
-    }
-  }, [activeTab]);
+  // Normalize section based on active sidebar tab (navigation is controlled via sidebar)
+  const currentSection: 'overview' | 'billing' | 'inventory' =
+    activeTab === 'billing' || activeTab === 'admin_billing'
+      ? 'billing'
+      : activeTab === 'inventory' || activeTab === 'admin_inventory'
+      ? 'inventory'
+      : 'overview';
 
   const {
     patients,
@@ -46,11 +46,18 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
     adjustInventoryStock,
   } = useClinic();
 
-  // Search & Filter State
+  // Search & Filter State (dedicated per view context)
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'active' | 'alerts'>('all');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Reset search and filter when switching sidebar sections
+  useEffect(() => {
+    setSearchTerm('');
+    setFilterMode('all');
+    setIsFilterDropdownOpen(false);
+  }, [currentSection]);
 
   // Close filter dropdown when clicking outside
   useEffect(() => {
@@ -87,17 +94,31 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [restockUnits, setRestockUnits] = useState<number>(25);
 
-  // KPI Calculations
+  // Overview KPIs
   const totalPatients = patients.length;
   const activeDoctors = doctors.filter((d) => d.status === 'active').length;
   const todayAppointments = appointments.length;
   const completedAppointments = appointments.filter((a) => a.status === 'completed').length;
+  const consultationRate =
+    todayAppointments > 0 ? Math.round((completedAppointments / todayAppointments) * 100) : 0;
+
+  // Billing KPIs
   const totalRevenue = invoices.reduce((acc, inv) => acc + inv.paidAmount, 0);
   const pendingRevenue = invoices.reduce(
     (acc, inv) => acc + (inv.totalAmount - inv.paidAmount),
     0
   );
+  const paidInvoicesCount = invoices.filter((i) => i.status === 'paid').length;
+  const settlementRate =
+    invoices.length > 0 ? Math.round((paidInvoicesCount / invoices.length) * 100) : 0;
+
+  // Inventory KPIs
   const lowStockItems = inventory.filter((i) => i.currentStock <= i.minStockLevel);
+  const totalStockValuation = inventory.reduce(
+    (sum, item) => sum + item.currentStock * item.unitPrice,
+    0
+  );
+  const totalCategoriesCount = new Set(inventory.map((i) => i.category)).size;
 
   // Handlers
   const handleCompleteAppointment = (aptId: string, patientName: string) => {
@@ -143,15 +164,18 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
     setRestockUnits(25);
   };
 
-  // Generic Search & Mode Filters
-  const query = searchTerm.toLowerCase();
+  // Generic Search Query
+  const query = searchTerm.toLowerCase().trim();
 
+  // Filtered Appointments (Overview)
   const filteredAppointments = appointments.filter((a) => {
     const matchesSearch =
+      query === '' ||
       a.patientName.toLowerCase().includes(query) ||
       a.doctorName.toLowerCase().includes(query) ||
       a.department.toLowerCase().includes(query) ||
-      a.appointmentNumber.toLowerCase().includes(query);
+      a.appointmentNumber.toLowerCase().includes(query) ||
+      a.tokenNumber.toString().includes(query);
 
     if (!matchesSearch) return false;
     if (filterMode === 'active') return a.status === 'in_consultation' || a.status === 'checked_in';
@@ -159,8 +183,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
     return true;
   });
 
+  // Filtered Invoices (Billing)
   const filteredInvoices = invoices.filter((i) => {
     const matchesSearch =
+      query === '' ||
       i.invoiceNumber.toLowerCase().includes(query) ||
       i.patientName.toLowerCase().includes(query) ||
       i.status.toLowerCase().includes(query);
@@ -171,11 +197,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
     return true;
   });
 
+  // Filtered Inventory (Inventory)
   const filteredInventory = inventory.filter((item) => {
     const matchesSearch =
+      query === '' ||
       item.name.toLowerCase().includes(query) ||
       item.category.toLowerCase().includes(query) ||
-      item.sku.toLowerCase().includes(query);
+      item.sku.toLowerCase().includes(query) ||
+      item.batchNumber.toLowerCase().includes(query);
 
     if (!matchesSearch) return false;
     if (filterMode === 'active') return item.currentStock > item.minStockLevel;
@@ -185,39 +214,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
 
   return (
     <div className="space-y-6">
-      {/* Workstation Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Executive Administration & Governance Desk
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Lead Administrator: {currentUser.name} • Clinical Operations, Financial Audit & Inventory Control
-          </p>
-        </div>
-      </div>
-
-      {/* Sub-Workstation Navigation Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
-        {[
-          { id: 'overview', label: 'Executive Overview' },
-          { id: 'billing', label: 'Revenue & Billing' },
-          { id: 'inventory', label: 'Stock & Inventory' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSelectedTab(tab.id as any)}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
-              selectedTab === tab.id
-                ? 'bg-teal-600 text-white font-semibold shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
       {/* Real-time Feedback Notification Banner */}
       {notification && (
         <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
@@ -234,539 +230,788 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
         </div>
       )}
 
-      {/* KPI Stats Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Registered Patients"
-          value={totalPatients}
-          unit="Records"
-          subtitle="Electronic Medical Records"
-          colorScheme="teal"
-        />
-        <StatCard
-          title="Active Consulting Doctors"
-          value={activeDoctors}
-          unit={`/ ${doctors.length} Staff`}
-          subtitle="Specialists on active roster"
-          colorScheme="slate"
-        />
-        <StatCard
-          title="Consultations Today"
-          value={todayAppointments}
-          unit="Visits"
-          subtitle={`${completedAppointments} completed`}
-          colorScheme="slate"
-        />
-        <StatCard
-          title="Gross Revenue Collected"
-          value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          unit="USD"
-          subtitle={`Pending: $${pendingRevenue.toFixed(2)}`}
-          colorScheme="slate"
-        />
-      </div>
+      {/* ========================================================================= */}
+      {/* SECTION 1: CLINIC OVERVIEW (`overview` / `admin_overview`)                */}
+      {/* ========================================================================= */}
+      {currentSection === 'overview' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header */}
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Clinic Operations & Executive Overview
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Lead Administrator: {currentUser.name} • Outpatient Queue, Attending Physicians & Today&apos;s Consultation Schedule
+            </p>
+          </div>
 
-      {/* Reusable Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
-        <div className="relative flex-1 max-w-md flex items-center">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search across records, names, identifiers, or departments..."
-            className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-xs"
-          />
-        </div>
+          {/* Dedicated Overview KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Total Registered Patients"
+              value={totalPatients}
+              unit="Records"
+              subtitle="Electronic Medical Records"
+              colorScheme="teal"
+            />
+            <StatCard
+              title="Active Consulting Doctors"
+              value={activeDoctors}
+              unit={`/ ${doctors.length} Staff`}
+              subtitle="Specialists on active roster"
+              colorScheme="slate"
+            />
+            <StatCard
+              title="Consultations Today"
+              value={todayAppointments}
+              unit="Visits"
+              subtitle={`${completedAppointments} completed`}
+              colorScheme="slate"
+            />
+            <StatCard
+              title="Consultation Clearance"
+              value={`${consultationRate}%`}
+              unit="Rate"
+              subtitle={`${completedAppointments} of ${todayAppointments} visits closed`}
+              colorScheme="slate"
+            />
+          </div>
 
-        {/* Priority / Scope Filter Dropdown */}
-        <div className="relative" ref={filterDropdownRef}>
-          <button
-            type="button"
-            onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors shadow-xs cursor-pointer focus:outline-none focus:ring-0 focus-visible:ring-1 focus-visible:ring-teal-500"
-            aria-label="Filter records"
-            aria-expanded={isFilterDropdownOpen}
-          >
-            <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-            <span>Scope:</span>
-            <span className="font-semibold text-teal-600 dark:text-teal-400">
-              {filterMode === 'all'
-                ? 'All Records'
-                : filterMode === 'active'
-                ? 'Active Only'
-                : 'Attention Required'}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
-          </button>
-
-          {isFilterDropdownOpen && (
-            <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
-              <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
-                Filter Records By Status
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode('all');
-                  setIsFilterDropdownOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
-                  filterMode === 'all'
-                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span>All Records</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode('active');
-                  setIsFilterDropdownOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
-                  filterMode === 'active'
-                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                  Active / In Service
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode('alerts');
-                  setIsFilterDropdownOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
-                  filterMode === 'alerts'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                  Attention Required
-                </span>
-              </button>
+          {/* Overview Search & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="relative flex-1 max-w-md flex items-center">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search consultations by patient, doctor, department, or token..."
+                className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
             </div>
-          )}
+
+            <div className="relative" ref={filterDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors cursor-pointer"
+              >
+                <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <span>Scope:</span>
+                <span className="font-semibold text-teal-600 dark:text-teal-400">
+                  {filterMode === 'all'
+                    ? 'All Visits'
+                    : filterMode === 'active'
+                    ? 'In Consultation / Checked In'
+                    : 'Scheduled'}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+              </button>
+
+              {isFilterDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                    Filter Consultations By Status
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMode('all');
+                      setIsFilterDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
+                      filterMode === 'all'
+                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>All Visits</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMode('active');
+                      setIsFilterDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
+                      filterMode === 'active'
+                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                      In Consultation / Checked In
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMode('alerts');
+                      setIsFilterDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
+                      filterMode === 'alerts'
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+                      Scheduled Only
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Overview Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Consultation Schedule Table */}
+            <div className="lg:col-span-2 space-y-4">
+              <Card>
+                <CardHeader
+                  action={
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {filteredAppointments.length} Consultations
+                    </span>
+                  }
+                >
+                  <CardTitle>Today&apos;s Consultation Schedule</CardTitle>
+                  <CardDescription>
+                    Live queue across attending physicians and consultation desks
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                        <tr>
+                          <th className="px-4 py-3.5 align-middle">Token & ID</th>
+                          <th className="px-4 py-3.5 align-middle">Patient</th>
+                          <th className="px-4 py-3.5 align-middle">Attending Doctor</th>
+                          <th className="px-4 py-3.5 align-middle">Time</th>
+                          <th className="px-4 py-3.5 align-middle">Status</th>
+                          <th className="px-4 py-3.5 text-right align-middle">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {filteredAppointments.length > 0 ? (
+                          filteredAppointments.map((apt) => (
+                            <tr
+                              key={apt.id}
+                              className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
+                            >
+                              <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
+                                #{apt.tokenNumber} • {apt.appointmentNumber}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle">
+                                <div className="font-semibold text-slate-900 dark:text-slate-100">
+                                  {apt.patientName}
+                                </div>
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  {apt.patientPhone}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3.5 align-middle">
+                                <div className="font-medium text-slate-800 dark:text-slate-200">
+                                  {apt.doctorName}
+                                </div>
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  {apt.department}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                                {new Date(apt.dateTime).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                      apt.status === 'completed'
+                                        ? 'bg-teal-500'
+                                        : 'bg-slate-400'
+                                    }`}
+                                  />
+                                  <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
+                                    {apt.status.replace('_', ' ')}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3.5 text-right align-middle">
+                                {apt.status !== 'completed' ? (
+                                  <Button
+                                    size="xs"
+                                    variant="secondary"
+                                    onClick={() => handleCompleteAppointment(apt.id, apt.patientName)}
+                                  >
+                                    Complete
+                                  </Button>
+                                ) : (
+                                  <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
+                                    Completed
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                              No consultations found matching current criteria.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Clinic Operational Metrics */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Operational Triage & Clinic Metrics</CardTitle>
+                  <CardDescription>
+                    Real-time front-desk and outpatient clinical workflow status
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3.5">
+                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-start gap-3">
+                    <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Average Outpatient Triage Time
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                        Front-desk intake to doctor consultation desk currently averages 12 minutes.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-start gap-3">
+                    <Stethoscope className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Attending Physician Roster
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                        {activeDoctors} of {doctors.length} doctors currently active across consultation suites.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-start gap-3">
+                    <Activity className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Consultation Clearance Efficiency
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                        {completedAppointments} of {todayAppointments} consultations marked completed today ({consultationRate}%).
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ========================================================================= */}
-      {/* SUB-MODULE 1: CLINIC OVERVIEW (`overview`)                                */}
+      {/* SECTION 2: BILLING & REVENUE (`billing` / `admin_billing`)                */}
       {/* ========================================================================= */}
-      {selectedTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Today's Consultations List */}
-          <div className="lg:col-span-2 space-y-4">
-            <Card>
-              <CardHeader
-                action={
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    {filteredAppointments.length} Consultations
-                  </span>
-                }
+      {currentSection === 'billing' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header */}
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Clinic Financial Audit & Invoicing Ledger
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Lead Administrator: {currentUser.name} • Patient Fee Collections, Insurance Direct Claims & Accounts Settlement
+            </p>
+          </div>
+
+          {/* Dedicated Billing KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Gross Revenue Collected"
+              value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              unit="USD"
+              subtitle="Settled patient payments"
+              colorScheme="teal"
+            />
+            <StatCard
+              title="Pending Revenue Balance"
+              value={`$${pendingRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              unit="USD"
+              subtitle="Unsettled patient fees"
+              colorScheme={pendingRevenue > 0 ? 'rose' : 'teal'}
+            />
+            <StatCard
+              title="Total Invoices Issued"
+              value={invoices.length}
+              unit="Invoices"
+              subtitle={`${paidInvoicesCount} settled in full`}
+              colorScheme="slate"
+            />
+            <StatCard
+              title="Accounts Settlement Rate"
+              value={`${settlementRate}%`}
+              unit="Rate"
+              subtitle="Discharge payment clearance"
+              colorScheme="slate"
+            />
+          </div>
+
+          {/* Billing Search & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="relative flex-1 max-w-md flex items-center">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search invoices by invoice #, patient name, or settlement status..."
+                className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+
+            <div className="relative" ref={filterDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors cursor-pointer"
               >
-                <CardTitle>Today's Consultation Schedule</CardTitle>
-                <CardDescription>
-                  Live queue across attending physicians and consultation desks
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                      <tr>
-                        <th className="px-4 py-3.5 align-middle">Token & ID</th>
-                        <th className="px-4 py-3.5 align-middle">Patient</th>
-                        <th className="px-4 py-3.5 align-middle">Attending Doctor</th>
-                        <th className="px-4 py-3.5 align-middle">Time</th>
-                        <th className="px-4 py-3.5 align-middle">Status</th>
-                        <th className="px-4 py-3.5 text-right align-middle">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredAppointments.length > 0 ? (
-                        filteredAppointments.slice(0, 6).map((apt) => (
+                <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <span>Scope:</span>
+                <span className="font-semibold text-teal-600 dark:text-teal-400">
+                  {filterMode === 'all'
+                    ? 'All Invoices'
+                    : filterMode === 'active'
+                    ? 'Paid Invoices'
+                    : 'Pending / Attention'}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+              </button>
+
+              {isFilterDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                    Filter Invoices By Status
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMode('all');
+                      setIsFilterDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
+                      filterMode === 'all'
+                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>All Invoices</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMode('active');
+                      setIsFilterDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
+                      filterMode === 'active'
+                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                      Paid In Full
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMode('alerts');
+                      setIsFilterDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
+                      filterMode === 'alerts'
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                      Pending / Partially Paid
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Invoices Table Card */}
+          <Card>
+            <CardHeader
+              action={
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {filteredInvoices.length} Invoices Listed
+                </span>
+              }
+            >
+              <CardTitle>Invoicing & Patient Payment Ledger</CardTitle>
+              <CardDescription>
+                Executive oversight of patient fee collections, insurance claims, and outstanding balances
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                    <tr>
+                      <th className="px-4 py-3.5 align-middle">Invoice #</th>
+                      <th className="px-4 py-3.5 align-middle">Patient Name</th>
+                      <th className="px-4 py-3.5 align-middle">Issue Date</th>
+                      <th className="px-4 py-3.5 align-middle">Total Billed</th>
+                      <th className="px-4 py-3.5 align-middle">Amount Settled</th>
+                      <th className="px-4 py-3.5 align-middle">Balance Due</th>
+                      <th className="px-4 py-3.5 align-middle">Method</th>
+                      <th className="px-4 py-3.5 align-middle">Settlement Status</th>
+                      <th className="px-4 py-3.5 text-right align-middle">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredInvoices.length > 0 ? (
+                      filteredInvoices.map((inv) => {
+                        const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
+                        return (
                           <tr
-                            key={apt.id}
+                            key={inv.id}
                             className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
                           >
                             <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                              #{apt.tokenNumber} • {apt.appointmentNumber}
+                              {inv.invoiceNumber}
                             </td>
-                            <td className="px-4 py-3.5 align-middle">
-                              <div className="font-semibold text-slate-900 dark:text-slate-100">
-                                {apt.patientName}
-                              </div>
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                {apt.patientPhone}
-                              </div>
+                            <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
+                              {inv.patientName}
                             </td>
-                            <td className="px-4 py-3.5 align-middle">
-                              <div className="font-medium text-slate-800 dark:text-slate-200">
-                                {apt.doctorName}
-                              </div>
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                {apt.department}
-                              </div>
+                            <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                              {inv.date}
                             </td>
-                            <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                              {new Date(apt.dateTime).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                            <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
+                              ${inv.totalAmount.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle font-mono text-teal-700 dark:text-teal-400">
+                              ${inv.paidAmount.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle font-mono text-rose-600 dark:text-rose-400">
+                              ${balance.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle capitalize text-slate-600 dark:text-slate-400">
+                              {inv.paymentMethod ? inv.paymentMethod.replace('_', ' ') : 'Unspecified'}
                             </td>
                             <td className="px-4 py-3.5 align-middle">
                               <div className="flex items-center gap-1.5">
                                 <span
                                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                    apt.status === 'completed'
+                                    inv.status === 'paid'
                                       ? 'bg-teal-500'
                                       : 'bg-slate-400'
                                   }`}
                                 />
                                 <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                                  {apt.status.replace('_', ' ')}
+                                  {inv.status.replace('_', ' ')}
                                 </span>
                               </div>
                             </td>
                             <td className="px-4 py-3.5 text-right align-middle">
-                              {apt.status !== 'completed' ? (
+                              {balance > 0 ? (
                                 <Button
                                   size="xs"
-                                  variant="secondary"
-                                  onClick={() => handleCompleteAppointment(apt.id, apt.patientName)}
+                                  variant="primary"
+                                  onClick={() => handleOpenPaymentModal(inv)}
                                 >
-                                  Complete
+                                  Record Payment
                                 </Button>
                               ) : (
-                                <span className="text-xs text-teal-600 dark:text-teal-400 font-semibold">
-                                  Concluded
+                                <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
+                                  Fully Paid
                                 </span>
                               )}
                             </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={6} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
-                            No appointments found matching current filters.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Operational Alerts & Department Health */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>System & Operations Health</CardTitle>
-                <CardDescription>Real-time clinic alerts and capacity</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3.5">
-                {lowStockItems.length > 0 ? (
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1" />
-                    <div className="flex-1">
-                      <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                        Buffer Stock Threshold Alert ({lowStockItems.length} items)
-                      </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                        {lowStockItems[0].name} ({lowStockItems[0].currentStock} {lowStockItems[0].unit} left, min threshold: {lowStockItems[0].minStockLevel}).
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRestockModal(lowStockItems[0])}
-                        className="mt-2 text-[11px] font-semibold text-teal-700 dark:text-teal-400 hover:underline cursor-pointer"
-                      >
-                        Restock {lowStockItems[0].name} now &rarr;
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3.5 bg-teal-50/60 dark:bg-teal-950/40 rounded-xl border border-teal-200/70 dark:border-teal-800/60 flex items-start gap-3">
-                    <CheckCircle className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
-                    <div>
-                      <div className="text-xs font-bold text-teal-900 dark:text-teal-200">
-                        Supply Buffer Stock Optimal
-                      </div>
-                      <p className="text-[11px] text-teal-800 dark:text-teal-300 mt-0.5">
-                        All pharmaceutical products and diagnostic kits meet clinical reserve thresholds.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-start gap-3">
-                  <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      Average Outpatient Triage Time
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                      Front-desk intake to doctor consultation desk currently averages 12 minutes.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-start gap-3">
-                  <CreditCard className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      Accounts Settlement Rate
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                      {invoices.length > 0
-                        ? `${Math.round((invoices.filter((i) => i.status === 'paid').length / invoices.length) * 100)}% of invoices paid upon patient discharge.`
-                        : 'No bills generated.'}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={9} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
+                          No invoices found matching criteria.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
-
-
-
       {/* ========================================================================= */}
-      {/* SUB-MODULE 2: REVENUE & BILLING (`billing`)                               */}
+      {/* SECTION 3: STOCK & INVENTORY (`inventory` / `admin_inventory`)            */}
       {/* ========================================================================= */}
-      {selectedTab === 'billing' && (
-        <Card>
-          <CardHeader
-            action={
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {filteredInvoices.length} Invoices Listed
+      {currentSection === 'inventory' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header */}
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Pharmaceutical & Clinical Supply Inventory
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Lead Administrator: {currentUser.name} • Essential Consumable Buffers, Reorder Thresholds & Stock Replenishment
+            </p>
+          </div>
+
+          {/* Dedicated Inventory KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Tracked Stock Items"
+              value={inventory.length}
+              unit="Products"
+              subtitle="Medical supplies & pharmaceuticals"
+              colorScheme="teal"
+            />
+            <StatCard
+              title="Low Buffer Alerts"
+              value={lowStockItems.length}
+              unit="Alerts"
+              subtitle="Items below safe reorder threshold"
+              colorScheme={lowStockItems.length > 0 ? 'rose' : 'teal'}
+            />
+            <StatCard
+              title="Total Buffer Valuation"
+              value={`$${totalStockValuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              unit="USD"
+              subtitle="On-hand inventory valuation"
+              colorScheme="slate"
+            />
+            <StatCard
+              title="Therapeutic Categories"
+              value={totalCategoriesCount}
+              unit="Categories"
+              subtitle="Supply classes actively monitored"
+              colorScheme="slate"
+            />
+          </div>
+
+          {/* Inventory Search & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="relative flex-1 max-w-md flex items-center">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search inventory by product name, category, SKU, or batch..."
+                className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+
+            <div className="relative" ref={filterDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors cursor-pointer"
+              >
+                <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <span>Scope:</span>
+                <span className="font-semibold text-teal-600 dark:text-teal-400">
+                  {filterMode === 'all'
+                    ? 'All Supplies'
+                    : filterMode === 'active'
+                    ? 'Stock Optimal'
+                    : 'Low Stock Alerts'}
                 </span>
-              </div>
-            }
-          >
-            <CardTitle>Clinic Financial Audit & Invoicing Ledger</CardTitle>
-            <CardDescription>
-              Executive oversight of patient fee collections, insurance claims, and outstanding balances
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">Invoice #</th>
-                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                    <th className="px-4 py-3.5 align-middle">Issue Date</th>
-                    <th className="px-4 py-3.5 align-middle">Total Billed</th>
-                    <th className="px-4 py-3.5 align-middle">Amount Settled</th>
-                    <th className="px-4 py-3.5 align-middle">Balance Due</th>
-                    <th className="px-4 py-3.5 align-middle">Method</th>
-                    <th className="px-4 py-3.5 align-middle">Settlement Status</th>
-                    <th className="px-4 py-3.5 text-right align-middle">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredInvoices.length > 0 ? (
-                    filteredInvoices.map((inv) => {
-                      const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
-                      return (
-                        <tr
-                          key={inv.id}
-                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                        >
-                          <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                            {inv.invoiceNumber}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
-                            {inv.patientName}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                            {inv.date}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                            ${inv.totalAmount.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle font-mono text-teal-700 dark:text-teal-400">
-                            ${inv.paidAmount.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle font-mono text-rose-600 dark:text-rose-400">
-                            ${balance.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle capitalize text-slate-600 dark:text-slate-400">
-                            {inv.paymentMethod ? inv.paymentMethod.replace('_', ' ') : 'Unspecified'}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle">
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                  inv.status === 'paid'
-                                    ? 'bg-teal-500'
-                                    : 'bg-slate-400'
-                                }`}
-                              />
-                              <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                                {inv.status.replace('_', ' ')}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5 text-right align-middle">
-                            {balance > 0 ? (
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+              </button>
+
+              {isFilterDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                    Filter Stock By Threshold
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMode('all');
+                      setIsFilterDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
+                      filterMode === 'all'
+                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>All Supplies</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMode('active');
+                      setIsFilterDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
+                      filterMode === 'active'
+                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                      Stock Optimal
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMode('alerts');
+                      setIsFilterDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
+                      filterMode === 'alerts'
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                      Low Stock Alerts
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Stock Inventory Table Card */}
+          <Card>
+            <CardHeader
+              action={
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {filteredInventory.length} Tracked Stock Items
+                </span>
+              }
+            >
+              <CardTitle>Pharmaceutical & Clinical Supply Ledger</CardTitle>
+              <CardDescription>
+                Essential consumable buffers, reorder thresholds, unit costs, and inventory replenishment
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                    <tr>
+                      <th className="px-4 py-3.5 align-middle">Item Description</th>
+                      <th className="px-4 py-3.5 align-middle">SKU / Code</th>
+                      <th className="px-4 py-3.5 align-middle">Category</th>
+                      <th className="px-4 py-3.5 align-middle">Current Stock</th>
+                      <th className="px-4 py-3.5 align-middle">Min Safe Level</th>
+                      <th className="px-4 py-3.5 align-middle">Unit Price</th>
+                      <th className="px-4 py-3.5 align-middle">Inventory Status</th>
+                      <th className="px-4 py-3.5 text-right align-middle">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredInventory.length > 0 ? (
+                      filteredInventory.map((item) => {
+                        const isLow = item.currentStock <= item.minStockLevel;
+                        return (
+                          <tr
+                            key={item.id}
+                            className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
+                          >
+                            <td className="px-4 py-3.5 align-middle">
+                              <div className="font-semibold text-slate-900 dark:text-slate-100">
+                                {item.name}
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Batch: {item.batchNumber}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 align-middle font-mono text-slate-700 dark:text-slate-300">
+                              {item.sku}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
+                              {item.category}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle font-mono font-bold text-slate-900 dark:text-slate-100">
+                              {item.currentStock} {item.unit}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle font-mono text-slate-600 dark:text-slate-400">
+                              {item.minStockLevel} {item.unit}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle font-mono text-slate-800 dark:text-slate-200">
+                              ${item.unitPrice.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3.5 align-middle">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                    isLow ? 'bg-rose-500' : 'bg-teal-500'
+                                  }`}
+                                />
+                                <span
+                                  className={`text-xs font-semibold ${
+                                    isLow
+                                      ? 'text-rose-600 dark:text-rose-400'
+                                      : 'text-teal-700 dark:text-teal-300'
+                                  }`}
+                                >
+                                  {isLow ? 'Low Buffer Alert' : 'Stock Optimal'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 text-right align-middle">
                               <Button
                                 size="xs"
-                                variant="primary"
-                                onClick={() => handleOpenPaymentModal(inv)}
+                                variant={isLow ? 'primary' : 'secondary'}
+                                onClick={() => handleOpenRestockModal(item)}
                               >
-                                Record Payment
+                                Restock Supply
                               </Button>
-                            ) : (
-                              <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
-                                Fully Paid
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={9} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                        No invoices found matching criteria.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
+                          No inventory stock items matching criteria.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-MODULE 6: STOCK & INVENTORY (`inventory`)                             */}
-      {/* ========================================================================= */}
-      {selectedTab === 'inventory' && (
-        <Card>
-          <CardHeader
-            action={
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {filteredInventory.length} Tracked Stock Items
-              </span>
-            }
-          >
-            <CardTitle>Pharmaceutical & Clinical Supply Inventory</CardTitle>
-            <CardDescription>
-              Essential consumable buffers, reorder thresholds, unit costs, and inventory replenishment
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">Item Description</th>
-                    <th className="px-4 py-3.5 align-middle">SKU / Code</th>
-                    <th className="px-4 py-3.5 align-middle">Category</th>
-                    <th className="px-4 py-3.5 align-middle">Current Stock</th>
-                    <th className="px-4 py-3.5 align-middle">Min Safe Level</th>
-                    <th className="px-4 py-3.5 align-middle">Unit Price</th>
-                    <th className="px-4 py-3.5 align-middle">Inventory Status</th>
-                    <th className="px-4 py-3.5 text-right align-middle">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredInventory.length > 0 ? (
-                    filteredInventory.map((item) => {
-                      const isLow = item.currentStock <= item.minStockLevel;
-                      return (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                        >
-                          <td className="px-4 py-3.5 align-middle">
-                            <div className="font-semibold text-slate-900 dark:text-slate-100">
-                              {item.name}
-                            </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                              Batch: {item.batchNumber}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5 align-middle font-mono text-slate-700 dark:text-slate-300">
-                            {item.sku}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
-                            {item.category}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle font-mono font-bold text-slate-900 dark:text-slate-100">
-                            {item.currentStock} {item.unit}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle font-mono text-slate-600 dark:text-slate-400">
-                            {item.minStockLevel} {item.unit}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle font-mono text-slate-800 dark:text-slate-200">
-                            ${item.unitPrice.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle">
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                  isLow ? 'bg-rose-500' : 'bg-teal-500'
-                                }`}
-                              />
-                              <span
-                                className={`text-xs font-semibold ${
-                                  isLow
-                                    ? 'text-rose-600 dark:text-rose-400'
-                                    : 'text-teal-700 dark:text-teal-300'
-                                }`}
-                              >
-                                {isLow ? 'Low Buffer Alert' : 'Stock Optimal'}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5 text-right align-middle">
-                            <Button
-                              size="xs"
-                              variant={isLow ? 'primary' : 'secondary'}
-                              onClick={() => handleOpenRestockModal(item)}
-                            >
-                              Restock Supply
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                        No inventory stock items matching criteria.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ========================================================================= */}
-      {/* ========================================================================= */}
-      {/* MODAL 1: RECORD PAYMENT                                                   */}
+      {/* MODAL 1: RECORD PAYMENT (BILLING)                                         */}
       {/* ========================================================================= */}
       <Modal
         isOpen={Boolean(selectedInvoice)}
@@ -843,7 +1088,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       </Modal>
 
       {/* ========================================================================= */}
-      {/* MODAL 2: RESTOCK INVENTORY SUPPLY                                         */}
+      {/* MODAL 2: RESTOCK INVENTORY SUPPLY (INVENTORY)                             */}
       {/* ========================================================================= */}
       <Modal
         isOpen={Boolean(selectedItem)}
