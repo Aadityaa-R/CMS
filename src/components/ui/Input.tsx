@@ -23,7 +23,7 @@ export const Input: React.FC<InputProps> = ({
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-xs font-medium text-slate-700 mb-1.5"
+          className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
         >
           {label}
         </label>

@@ -47,6 +47,10 @@ interface ClinicContextType {
 
   // Vitals Actions
   recordVitals: (data: Omit<VitalSigns, 'id' | 'recordedAt'>) => VitalSigns;
+  saveVitals: (
+    patientId: string,
+    data: Partial<VitalSigns> & { recordedBy?: string; recordedByName?: string }
+  ) => VitalSigns;
 
   // Prescription Actions
   createPrescription: (data: Omit<Prescription, 'id' | 'prescriptionNumber' | 'date' | 'status'>) => Prescription;
@@ -143,6 +147,46 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     setVitals((prev) => [newVital, ...prev]);
     return newVital;
+  };
+
+  const saveVitals = (
+    patientId: string,
+    data: Partial<VitalSigns> & { recordedBy?: string; recordedByName?: string }
+  ): VitalSigns => {
+    let savedVital: VitalSigns;
+    setVitals((prev) => {
+      const existingIndex = prev.findIndex((v) => v.patientId === patientId);
+      if (existingIndex >= 0) {
+        savedVital = {
+          ...prev[existingIndex],
+          ...data,
+          recordedAt: new Date().toISOString(),
+        };
+        const updated = [...prev];
+        updated[existingIndex] = savedVital;
+        return updated;
+      } else {
+        savedVital = {
+          id: `vit-${prev.length + 1}`,
+          patientId,
+          recordedBy: data.recordedBy || 'usr-1',
+          recordedByName: data.recordedByName || 'Dr. Marcus Vance',
+          recordedAt: new Date().toISOString(),
+          systolicBp: data.systolicBp ?? 120,
+          diastolicBp: data.diastolicBp ?? 80,
+          heartRateBpm: data.heartRateBpm ?? 72,
+          temperatureCelsius: data.temperatureCelsius ?? 37.0,
+          respiratoryRate: data.respiratoryRate ?? 16,
+          oxygenSaturationPct: data.oxygenSaturationPct ?? 98,
+          weightKg: data.weightKg ?? 70,
+          heightCm: data.heightCm ?? 170,
+          bmi: data.bmi ?? 24.2,
+          ...data,
+        };
+        return [savedVital, ...prev];
+      }
+    });
+    return savedVital!;
   };
 
   const createPrescription = (
@@ -288,6 +332,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addAppointment,
         updateAppointmentStatus,
         recordVitals,
+        saveVitals,
         createPrescription,
         dispensePrescriptionItem,
         createLabTest,

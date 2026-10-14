@@ -41,6 +41,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     prescriptions,
     createPrescription,
     updateAppointmentStatus,
+    saveVitals,
   } = useClinic();
 
   const isMD = currentRole === 'md' || currentRole === 'admin' || currentUser.role === 'md';
@@ -100,6 +101,53 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   const activePatient = activeAppointment ? patients.find((p) => p.id === activeAppointment.patientId) : null;
   const activeVitals = activePatient ? vitals.find((v) => v.patientId === activePatient.id) : null;
 
+  // Clinical Triage Vitals Input State
+  const [vitalsForm, setVitalsForm] = useState({
+    systolicBp: '',
+    diastolicBp: '',
+    heartRateBpm: '',
+    oxygenSaturationPct: '',
+    temperatureCelsius: '',
+  });
+
+  useEffect(() => {
+    if (activeVitals) {
+      setVitalsForm({
+        systolicBp: activeVitals.systolicBp ? String(activeVitals.systolicBp) : '',
+        diastolicBp: activeVitals.diastolicBp ? String(activeVitals.diastolicBp) : '',
+        heartRateBpm: activeVitals.heartRateBpm ? String(activeVitals.heartRateBpm) : '',
+        oxygenSaturationPct: activeVitals.oxygenSaturationPct ? String(activeVitals.oxygenSaturationPct) : '',
+        temperatureCelsius: activeVitals.temperatureCelsius ? String(activeVitals.temperatureCelsius) : '',
+      });
+    } else {
+      setVitalsForm({
+        systolicBp: '',
+        diastolicBp: '',
+        heartRateBpm: '',
+        oxygenSaturationPct: '',
+        temperatureCelsius: '',
+      });
+    }
+  }, [activePatient?.id, activeVitals?.id, activeVitals?.recordedAt]);
+
+  const handleVitalChange = (field: keyof typeof vitalsForm, value: string) => {
+    setVitalsForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveVitals = () => {
+    if (!activePatient) return;
+    saveVitals(activePatient.id, {
+      systolicBp: vitalsForm.systolicBp ? Number(vitalsForm.systolicBp) : 120,
+      diastolicBp: vitalsForm.diastolicBp ? Number(vitalsForm.diastolicBp) : 80,
+      heartRateBpm: vitalsForm.heartRateBpm ? Number(vitalsForm.heartRateBpm) : 72,
+      oxygenSaturationPct: vitalsForm.oxygenSaturationPct ? Number(vitalsForm.oxygenSaturationPct) : 98,
+      temperatureCelsius: vitalsForm.temperatureCelsius ? Number(vitalsForm.temperatureCelsius) : 37.0,
+      recordedBy: currentUser?.id || 'usr-1',
+      recordedByName: currentUser?.name || 'Dr. Marcus Vance',
+    });
+    showNotification(`Triage vitals updated for ${activePatient.firstName} ${activePatient.lastName}.`);
+  };
+
   // Prescription Modal State
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [prescPatientId, setPrescPatientId] = useState<string>('');
@@ -128,6 +176,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   };
 
   const handleConcludeConsultation = (aptId: string, patientName: string) => {
+    if (activePatient && (vitalsForm.systolicBp || vitalsForm.heartRateBpm)) {
+      saveVitals(activePatient.id, {
+        systolicBp: vitalsForm.systolicBp ? Number(vitalsForm.systolicBp) : 120,
+        diastolicBp: vitalsForm.diastolicBp ? Number(vitalsForm.diastolicBp) : 80,
+        heartRateBpm: vitalsForm.heartRateBpm ? Number(vitalsForm.heartRateBpm) : 72,
+        oxygenSaturationPct: vitalsForm.oxygenSaturationPct ? Number(vitalsForm.oxygenSaturationPct) : 98,
+        temperatureCelsius: vitalsForm.temperatureCelsius ? Number(vitalsForm.temperatureCelsius) : 37.0,
+        recordedBy: currentUser?.id || 'usr-1',
+        recordedByName: currentUser?.name || 'Dr. Marcus Vance',
+      });
+    }
     updateAppointmentStatus(aptId, 'completed');
     showNotification(`Consultation concluded for ${patientName}. Visit marked completed.`);
   };
@@ -532,43 +591,76 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       )}
                     </div>
 
-                    {/* Triage Vital Signs Snapshot */}
+                    {/* Clinical Triage Vitals (Editable Input Controls) */}
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-2">
-                        Clinical Triage Vitals
-                      </span>
-                      {activeVitals ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Blood Pressure</span>
-                            <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
-                              {activeVitals.systolicBp}/{activeVitals.diastolicBp} <span className="text-[10px] font-normal text-slate-500">mmHg</span>
-                            </span>
-                          </div>
-                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Heart Rate</span>
-                            <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
-                              {activeVitals.heartRateBpm} <span className="text-[10px] font-normal text-slate-500">bpm</span>
-                            </span>
-                          </div>
-                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">O2 Saturation</span>
-                            <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
-                              {activeVitals.oxygenSaturationPct}%
-                            </span>
-                          </div>
-                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Temperature</span>
-                            <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
-                              {activeVitals.temperatureCelsius}°C
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 text-center">
-                          No triage vitals recorded for this visit yet.
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                          Clinical Triage Vitals
+                        </span>
+                        {!isReadOnlyView && (
+                          <Button
+                            size="xs"
+                            variant="secondary"
+                            onClick={handleSaveVitals}
+                          >
+                            Save Vitals
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                        <Input
+                          label="BP Systolic (mmHg)"
+                          type="number"
+                          placeholder="120"
+                          value={vitalsForm.systolicBp}
+                          onChange={(e) => handleVitalChange('systolicBp', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          disabled={isReadOnlyView}
+                          className="font-mono text-xs py-1.5"
+                        />
+                        <Input
+                          label="BP Diastolic (mmHg)"
+                          type="number"
+                          placeholder="80"
+                          value={vitalsForm.diastolicBp}
+                          onChange={(e) => handleVitalChange('diastolicBp', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          disabled={isReadOnlyView}
+                          className="font-mono text-xs py-1.5"
+                        />
+                        <Input
+                          label="Heart Rate (bpm)"
+                          type="number"
+                          placeholder="72"
+                          value={vitalsForm.heartRateBpm}
+                          onChange={(e) => handleVitalChange('heartRateBpm', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          disabled={isReadOnlyView}
+                          className="font-mono text-xs py-1.5"
+                        />
+                        <Input
+                          label="O2 Saturation (%)"
+                          type="number"
+                          placeholder="98"
+                          value={vitalsForm.oxygenSaturationPct}
+                          onChange={(e) => handleVitalChange('oxygenSaturationPct', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          disabled={isReadOnlyView}
+                          className="font-mono text-xs py-1.5"
+                        />
+                        <Input
+                          label="Temperature (°C)"
+                          type="number"
+                          step="0.1"
+                          placeholder="36.8"
+                          value={vitalsForm.temperatureCelsius}
+                          onChange={(e) => handleVitalChange('temperatureCelsius', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          disabled={isReadOnlyView}
+                          className="font-mono text-xs py-1.5"
+                        />
+                      </div>
                     </div>
 
                     {/* Consultation Notes Action */}
