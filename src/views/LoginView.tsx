@@ -158,7 +158,7 @@ export const LoginView: React.FC = () => {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Authorized Role Credentials Directory (4 Roles)</span>
+                  <span>Authorized Role Credentials Directory ({roleCredentials.length} Accounts)</span>
                 </h3>
                 <span className="text-[11px] text-slate-500">
                   Click 'Fill' to load credentials
@@ -178,7 +178,7 @@ export const LoginView: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {roleCredentials.map((c) => (
-                      <tr key={c.role} className="hover:bg-slate-50/80 transition-colors">
+                      <tr key={c.username} className="hover:bg-slate-50/80 transition-colors">
                         <td className="px-3 py-2 font-medium text-slate-900">
                           <Badge size="sm" variant="teal">
                             {c.label}

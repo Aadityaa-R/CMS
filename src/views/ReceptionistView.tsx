@@ -25,9 +25,13 @@ interface ReceptionistViewProps {
 }
 
 export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 'overview' }) => {
-  const { currentUser, currentRole } = useAuth();
+  const { currentUser, currentRole, staffAccessList } = useAuth();
   const isMD = currentRole === 'md' || currentRole === 'admin' || currentUser.role === 'md';
   const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
+
+  const receptionistStaff = React.useMemo(() => {
+    return staffAccessList.filter((s) => s.role === 'receptionist');
+  }, [staffAccessList]);
 
   useEffect(() => {
     if (activeTab && activeTab !== 'overview') {
@@ -604,14 +608,45 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
               <CardContent className="space-y-3.5 text-xs">
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
                   <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">
-                    Sole Receptionist on Duty
+                    Terminal Operator on Duty
                   </span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
                     {currentUser.name}
                   </span>
                   <span className="text-teal-600 dark:text-teal-400 block text-[11px] mt-0.5">
-                    Lead Front Desk Coordinator • Admissions & Triage
+                    {currentUser.title || 'Front Desk Coordinator'} • Badge: {currentUser.badgeNumber || 'REC-301'}
                   </span>
+                </div>
+
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                  <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">
+                    Front Desk Roster ({receptionistStaff.length} Receptionists)
+                  </span>
+                  <div className="space-y-1.5">
+                    {receptionistStaff.map((rec) => (
+                      <div
+                        key={rec.id}
+                        className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-slate-700/60 last:border-0"
+                      >
+                        <div className="space-y-0.5">
+                          <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                rec.status === 'granted' ? 'bg-teal-500' : 'bg-rose-500'
+                              }`}
+                            />
+                            <span>{rec.staffName}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                            {rec.staffTitle}
+                          </span>
+                        </div>
+                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                          {rec.badgeNumber}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
@@ -756,7 +791,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           >
             <CardTitle>Patient Intake & Registration Registry</CardTitle>
             <CardDescription>
-              Registered outpatient files and demographic directory under Priya Sharma
+              Registered outpatient files and demographic directory under front desk administration
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">

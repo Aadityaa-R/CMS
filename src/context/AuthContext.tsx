@@ -77,6 +77,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return savedRole && DEMO_USERS[savedRole] ? (savedRole === 'admin' ? 'md' : savedRole) : 'md';
   });
 
+  const [activeUserKey, setActiveUserKey] = useState<string>(() => {
+    return sessionStorage.getItem('cms_auth_user_key') || 'md';
+  });
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem('cms_authenticated') === 'true';
   });
@@ -89,13 +93,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionStorage.removeItem('cms_staff_access_v2');
       sessionStorage.removeItem('cms_staff_access_v3');
       sessionStorage.removeItem('cms_staff_access_v4');
+      sessionStorage.removeItem('cms_staff_access_v5');
 
-      const saved = sessionStorage.getItem('cms_staff_access_v5');
+      const saved = sessionStorage.getItem('cms_staff_access_v6');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (
           Array.isArray(parsed) &&
-          parsed.length >= 9 &&
+          parsed.length >= 10 &&
           !parsed.some((r: StaffAccessRecord) => r.staffName === 'Outpatient Services Portal')
         ) {
           return parsed;
@@ -110,7 +115,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Access Audit Log state
   const [accessAuditLog, setAccessAuditLog] = useState<AccessAuditLogEntry[]>(() => {
     try {
-      const saved = sessionStorage.getItem('cms_access_audit_log_v5');
+      sessionStorage.removeItem('cms_access_audit_log_v5');
+      const saved = sessionStorage.getItem('cms_access_audit_log_v6');
       if (saved) return JSON.parse(saved);
     } catch {
       // Fallback
@@ -121,16 +127,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (isAuthenticated) {
       sessionStorage.setItem('cms_auth_role', currentRole);
+      sessionStorage.setItem('cms_auth_user_key', activeUserKey);
       sessionStorage.setItem('cms_authenticated', 'true');
     } else {
       sessionStorage.removeItem('cms_auth_role');
+      sessionStorage.removeItem('cms_auth_user_key');
       sessionStorage.removeItem('cms_authenticated');
     }
-  }, [currentRole, isAuthenticated]);
+  }, [currentRole, activeUserKey, isAuthenticated]);
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('cms_staff_access_v5', JSON.stringify(staffAccessList));
+      sessionStorage.setItem('cms_staff_access_v6', JSON.stringify(staffAccessList));
     } catch {
       // Fallback
     }
@@ -138,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('cms_access_audit_log_v5', JSON.stringify(accessAuditLog));
+      sessionStorage.setItem('cms_access_audit_log_v6', JSON.stringify(accessAuditLog));
     } catch {
       // Fallback
     }
@@ -156,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return DEMO_USERS;
   });
 
-  const currentUser = userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.md;
+  const currentUser = DEMO_USERS[activeUserKey] || userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.md;
 
   const updateCurrentUser = (updates: Partial<User>) => {
     setUserProfiles((prev) => {
@@ -375,6 +383,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
+    // Check if individual staff account is suspended
+    const matchingStaff = staffAccessList.find(
+      (s) =>
+        s.staffName.toLowerCase() === match.fullName.toLowerCase() ||
+        s.badgeNumber.toLowerCase() === match.username.toLowerCase()
+    );
+    if (matchingStaff && matchingStaff.status === 'revoked') {
+      return {
+        success: false,
+        error: `Access Suspended: Station credentials for ${match.fullName} have been revoked by the Managing Director (Dr. Marcus Vance).`,
+      };
+    }
+
     // Check if role is suspended
     if (isRoleSuspended(match.role)) {
       return {
@@ -384,6 +405,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setCurrentRole(match.role);
+    setActiveUserKey(match.username in DEMO_USERS ? match.username : match.role);
+    sessionStorage.setItem('cms_auth_user_key', match.username in DEMO_USERS ? match.username : match.role);
     setIsAuthenticated(true);
     return { success: true, matchedRole: match.role };
   };
@@ -396,6 +419,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       setCurrentRole(targetRole);
+      setActiveUserKey(targetRole);
+      sessionStorage.setItem('cms_auth_user_key', targetRole);
       setIsAuthenticated(true);
     }
   };
@@ -403,6 +428,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('cms_auth_role');
+    sessionStorage.removeItem('cms_auth_user_key');
     sessionStorage.removeItem('cms_authenticated');
   };
 
