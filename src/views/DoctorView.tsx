@@ -42,6 +42,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     createPrescription,
     updateAppointmentStatus,
     saveVitals,
+    updatePatient,
   } = useClinic();
 
   const isMD = currentRole === 'md' || currentRole === 'admin' || currentUser.role === 'md';
@@ -148,6 +149,27 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     showNotification(`Triage vitals updated for ${activePatient.firstName} ${activePatient.lastName}.`);
   };
 
+  // Allergy Warning Input State
+  const [allergyInput, setAllergyInput] = useState('');
+
+  useEffect(() => {
+    if (activePatient) {
+      setAllergyInput(activePatient.allergies.join(', '));
+    } else {
+      setAllergyInput('');
+    }
+  }, [activePatient?.id, activePatient?.allergies]);
+
+  const handleSaveAllergies = () => {
+    if (!activePatient) return;
+    const allergies = allergyInput
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0 && a.toLowerCase() !== 'none');
+    updatePatient(activePatient.id, { allergies });
+    showNotification(`Allergy record updated for ${activePatient.firstName} ${activePatient.lastName}.`);
+  };
+
   // Prescription Modal State
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [prescPatientId, setPrescPatientId] = useState<string>('');
@@ -186,6 +208,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         recordedBy: currentUser?.id || 'usr-1',
         recordedByName: currentUser?.name || 'Dr. Marcus Vance',
       });
+    }
+    if (activePatient) {
+      const allergies = allergyInput
+        .split(',')
+        .map((a) => a.trim())
+        .filter((a) => a.length > 0 && a.toLowerCase() !== 'none');
+      updatePatient(activePatient.id, { allergies });
     }
     updateAppointmentStatus(aptId, 'completed');
     showNotification(`Consultation concluded for ${patientName}. Visit marked completed.`);
@@ -498,14 +527,42 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Safety Alert (Red dot only if allergy exists) */}
-                    {activePatient.allergies.length > 0 && (
-                      <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">Allergy Warning:</span>
-                        <span className="text-slate-700 dark:text-slate-300">{activePatient.allergies.join(', ')}</span>
+                    {/* Safety Alert (Editable Allergy Warning) */}
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            allergyInput.trim() && allergyInput.toLowerCase().trim() !== 'none'
+                              ? 'bg-rose-500'
+                              : 'bg-slate-400'
+                          }`}
+                        />
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                          Allergy Warning:
+                        </span>
                       </div>
-                    )}
+
+                      <div className="flex items-center gap-2 flex-1 sm:max-w-md">
+                        <input
+                          type="text"
+                          value={allergyInput}
+                          onChange={(e) => setAllergyInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveAllergies()}
+                          placeholder="e.g. Penicillin, Peanuts (or None)"
+                          disabled={isReadOnlyView}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition-colors shadow-xs font-medium"
+                        />
+                        {!isReadOnlyView && (
+                          <Button
+                            size="xs"
+                            variant="secondary"
+                            onClick={handleSaveAllergies}
+                          >
+                            Save
+                          </Button>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Consultation Chief Complaint */}
                     <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
