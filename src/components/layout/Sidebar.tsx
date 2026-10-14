@@ -133,14 +133,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar container */}
       <aside
-        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[width] border-r border-slate-800 overflow-hidden shrink-0 select-none h-full ${
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[width] overflow-hidden shrink-0 select-none h-full ${
           isCollapsed ? 'lg:w-16 w-16' : 'lg:w-64 w-64'
         } ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Brand / Role header & Single Console Toggle Control */}
-        <div className="h-20 border-b border-slate-800 px-2.5 flex items-center justify-between shrink-0">
+        <div className="h-20 px-2.5 flex items-center justify-between shrink-0">
           <div className="flex items-center min-w-0">
             {/* Sidebar Console Toggle Icon with Arrow */}
             {onToggleCollapse ? (

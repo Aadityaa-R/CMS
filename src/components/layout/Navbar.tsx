@@ -112,7 +112,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
   return (
     <>
-      <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs transition-colors">
+      <header className="h-20 bg-slate-50 dark:bg-slate-950 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
         {/* Brand / Clinic Title */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
