@@ -3,7 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/ClinicContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { StatCard } from '@/components/ui/StatCard';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
@@ -360,10 +359,6 @@ export const AccessControlView: React.FC = () => {
   const receptionistCount = staffAccessList.filter((s) => s.role === 'receptionist').length;
   const patientCount = staffAccessList.filter((s) => s.role === 'patient').length;
 
-  // KPI Calculations
-  const activeGranted = staffAccessList.filter((s) => s.status === 'granted').length;
-  const suspendedRevoked = staffAccessList.filter((s) => s.status === 'revoked').length;
-
   // Filter staff by search query
   const filteredStaff = staffAccessList.filter((staff) => {
     const query = searchTerm.toLowerCase().trim();
@@ -472,33 +467,6 @@ export const AccessControlView: React.FC = () => {
         </div>
       </div>
 
-      {/* Metric Stat Cards (Decorative icons removed per design directive) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Monitored Personnel & Roles"
-          value={totalPersonnel.toString()}
-          subtitle="Total accounts in directory"
-          colorScheme="teal"
-        />
-        <StatCard
-          title="Active Clearances"
-          value={activeGranted.toString()}
-          subtitle="Workstations operational"
-          colorScheme="teal"
-        />
-        <StatCard
-          title="Suspended Clearances"
-          value={suspendedRevoked.toString()}
-          subtitle="Workstation access revoked"
-          colorScheme={suspendedRevoked > 0 ? 'rose' : 'teal'}
-        />
-        <StatCard
-          title="Audit Trail State"
-          value="Enforced"
-          subtitle="Managing Director ledger active"
-          colorScheme="teal"
-        />
-      </div>
 
       {/* Clearance Governance Bar: Side-by-Side Search & Role Filter Pills */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
