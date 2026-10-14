@@ -9,8 +9,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
+import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import {
-  Search,
   CheckCircle2,
   Filter,
   FilePlus,
@@ -332,6 +332,35 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return true;
   });
 
+  const doctorSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
+    const list: SearchSuggestion[] = [];
+    doctorAppointments.forEach((apt) => {
+      list.push({
+        label: apt.patientName,
+        category: 'Patient',
+        sublabel: `${apt.tokenNumber} • ${apt.reasonForVisit}`,
+      });
+      list.push({
+        label: String(apt.tokenNumber),
+        category: 'Token',
+        sublabel: apt.patientName,
+      });
+      list.push({
+        label: apt.reasonForVisit,
+        category: 'Complaint',
+        sublabel: apt.patientName,
+      });
+    });
+    patients.forEach((p) => {
+      list.push({
+        label: p.mrn,
+        category: 'MRN',
+        sublabel: `${p.firstName} ${p.lastName}`,
+      });
+    });
+    return list;
+  }, [doctorAppointments, patients]);
+
   return (
     <div className="space-y-6">
       {/* Workstation Header */}
@@ -370,15 +399,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
-              {/* Search Input positioned directly next to the Filter dropdown with equal authority */}
+              {/* Search Input with Interactive Dropdown and Autofill */}
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
+                <InteractiveSearchBar
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={setSearchTerm}
+                  suggestions={doctorSearchSuggestions}
                   placeholder="Search patient, MRN, diagnosis, or token..."
-                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
 
@@ -416,13 +443,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
+                <InteractiveSearchBar
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={setSearchTerm}
+                  suggestions={doctorSearchSuggestions}
                   placeholder="Search consultation queue or patient..."
-                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
 

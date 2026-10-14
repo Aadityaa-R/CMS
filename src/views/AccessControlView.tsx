@@ -7,8 +7,8 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
+import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import {
-  Search,
   Filter,
 } from 'lucide-react';
 import { UserRole, StaffAccessRecord, StaffPermission } from '@/types';
@@ -384,6 +384,32 @@ export const AccessControlView: React.FC = () => {
 
   const isRoleOrSearchActive = selectedRoleFilter !== '' || searchTerm.trim() !== '';
 
+  const searchSuggestions: SearchSuggestion[] = React.useMemo(() => {
+    const list: SearchSuggestion[] = [];
+    staffAccessList.forEach((staff) => {
+      list.push({
+        label: staff.staffName,
+        category: staff.role.toUpperCase(),
+        sublabel: `${staff.badgeNumber} • ${staff.department}`,
+      });
+      if (staff.badgeNumber) {
+        list.push({
+          label: staff.badgeNumber,
+          category: 'Badge #',
+          sublabel: staff.staffName,
+        });
+      }
+    });
+    const depts = Array.from(new Set(staffAccessList.map((s) => s.department)));
+    depts.forEach((d) => {
+      list.push({
+        label: d,
+        category: 'Department',
+      });
+    });
+    return list;
+  }, [staffAccessList]);
+
   return (
     <div className="space-y-6">
       {/* Real-time Directive Notification Banner */}
@@ -472,15 +498,13 @@ export const AccessControlView: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
-            {/* Search Input positioned directly next to the Role Filter dropdown */}
+            {/* Search Input with Interactive Dropdown and Autofill */}
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
+              <InteractiveSearchBar
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={setSearchTerm}
+                suggestions={searchSuggestions}
                 placeholder="Search name, badge #, department, or role..."
-                className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
               />
             </div>
 

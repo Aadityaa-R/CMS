@@ -7,8 +7,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
+import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import {
-  Search,
   Filter,
 } from 'lucide-react';
 import { Invoice, InventoryItem, PaymentMethod } from '@/types';
@@ -218,6 +218,81 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
     return true;
   });
 
+  const overviewSuggestions: SearchSuggestion[] = React.useMemo(() => {
+    const list: SearchSuggestion[] = [];
+    appointments.forEach((apt) => {
+      list.push({
+        label: apt.patientName,
+        category: 'Patient',
+        sublabel: `${apt.tokenNumber} • ${apt.reasonForVisit}`,
+      });
+      list.push({
+        label: String(apt.tokenNumber),
+        category: 'Token',
+        sublabel: apt.patientName,
+      });
+    });
+    doctors.forEach((doc) => {
+      list.push({
+        label: doc.name,
+        category: 'Doctor',
+        sublabel: `${doc.department} • Room ${doc.roomNumber}`,
+      });
+      list.push({
+        label: doc.department,
+        category: 'Department',
+      });
+    });
+    return list;
+  }, [appointments, doctors]);
+
+  const billingSuggestions: SearchSuggestion[] = React.useMemo(() => {
+    const list: SearchSuggestion[] = [];
+    invoices.forEach((inv) => {
+      list.push({
+        label: inv.invoiceNumber,
+        category: 'Invoice',
+        sublabel: `${inv.patientName} • $${inv.totalAmount} (${inv.status.toUpperCase()})`,
+      });
+      list.push({
+        label: inv.patientName,
+        category: 'Patient',
+        sublabel: `Invoice ${inv.invoiceNumber}`,
+      });
+    });
+    ['Paid', 'Pending', 'Unpaid', 'Overdue'].forEach((st) => {
+      list.push({
+        label: st,
+        category: 'Status',
+      });
+    });
+    return list;
+  }, [invoices]);
+
+  const inventorySuggestions: SearchSuggestion[] = React.useMemo(() => {
+    const list: SearchSuggestion[] = [];
+    inventory.forEach((item) => {
+      list.push({
+        label: item.name,
+        category: item.category,
+        sublabel: `SKU: ${item.sku} • Stock: ${item.currentStock} • Batch: ${item.batchNumber}`,
+      });
+      list.push({
+        label: item.sku,
+        category: 'SKU',
+        sublabel: item.name,
+      });
+    });
+    const cats = Array.from(new Set(inventory.map((i) => i.category)));
+    cats.forEach((c) => {
+      list.push({
+        label: c,
+        category: 'Category',
+      });
+    });
+    return list;
+  }, [inventory]);
+
   return (
     <div className="space-y-6">
       {/* Real-time Feedback Notification Banner */}
@@ -312,15 +387,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
               </div>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
-                {/* Search Input positioned side-by-side with Status Filter */}
+                {/* Search Input with Interactive Dropdown and Autofill */}
                 <div className="relative flex-1 min-w-[200px]">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
+                  <InteractiveSearchBar
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={setSearchTerm}
+                    suggestions={overviewSuggestions}
                     placeholder="Search by patient, doctor, department, or token..."
-                    className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                 </div>
 
@@ -613,15 +686,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
               </div>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
-                {/* Search Input positioned side-by-side with Status Filter */}
+                {/* Search Input with Interactive Dropdown and Autofill */}
                 <div className="relative flex-1 min-w-[200px]">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
+                  <InteractiveSearchBar
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={setSearchTerm}
+                    suggestions={billingSuggestions}
                     placeholder="Search by invoice #, patient, or settlement status..."
-                    className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                 </div>
 
@@ -913,15 +984,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
               </div>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
-                {/* Search Input positioned side-by-side with Scope Filter */}
+                {/* Search Input with Interactive Dropdown and Autofill */}
                 <div className="relative flex-1 min-w-[200px]">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
+                  <InteractiveSearchBar
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={setSearchTerm}
+                    suggestions={inventorySuggestions}
                     placeholder="Search by product name, category, SKU, or batch..."
-                    className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                 </div>
 

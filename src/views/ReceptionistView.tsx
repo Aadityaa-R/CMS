@@ -9,10 +9,10 @@ import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
+import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import {
   Plus,
   Ticket,
-  Search,
   CheckCircle2,
   Filter,
   ChevronDown,
@@ -200,6 +200,35 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
   const awaitingCheckIn = appointments.filter((a) => a.status === 'scheduled' || a.status === 'confirmed');
 
+  const receptionistSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
+    const list: SearchSuggestion[] = [];
+    appointments.forEach((apt) => {
+      list.push({
+        label: apt.patientName,
+        category: 'Patient',
+        sublabel: `${apt.tokenNumber} • ${apt.reasonForVisit}`,
+      });
+      list.push({
+        label: String(apt.tokenNumber),
+        category: 'Token',
+        sublabel: apt.patientName,
+      });
+      list.push({
+        label: apt.reasonForVisit,
+        category: 'Reason',
+        sublabel: apt.patientName,
+      });
+    });
+    patients.forEach((p) => {
+      list.push({
+        label: `${p.firstName} ${p.lastName}`,
+        category: 'Patient',
+        sublabel: `${p.mrn} • ${p.phone}`,
+      });
+    });
+    return list;
+  }, [appointments, patients]);
+
   return (
     <div className="space-y-6">
       {/* Workstation Header */}
@@ -304,14 +333,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
       {/* Universal Search & Scope Filter Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
-        <div className="relative flex-1 max-w-md flex items-center">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-          <input
-            type="text"
+        <div className="relative flex-1 max-w-md">
+          <InteractiveSearchBar
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={setSearchTerm}
+            suggestions={receptionistSearchSuggestions}
             placeholder="Search arriving patient, appointment ID, or reason for visit..."
-            className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-xs"
           />
         </div>
 
