@@ -23,7 +23,7 @@
    - Vite 6 + React 18 + TypeScript 5 + Tailwind CSS 3 + Lucide React.
    - Clean production build verified (`tsc && vite build` with 0 errors).
 2. **Pillar 2: Clinical Domain Modeling & Type Definitions** (Completed)
-   - Comprehensive TypeScript models in `src/types/index.ts` covering all 5 roles, patients, vitals, appointments, e-prescriptions, lab tests, invoices, and inventory.
+   - Comprehensive TypeScript models in `src/types/index.ts` covering all 5 roles, patients, vitals, appointments, e-prescriptions, lab tests, and invoices.
 3. **Pillar 3: Role Engine, Authentication & Reactive State** (Completed)
    - `AuthContext.tsx` with instant 1-click role switcher between all 5 roles.
    - `ClinicContext.tsx` providing full interactive CRUD state for all medical modules.
@@ -34,7 +34,7 @@
 5. **Pillar 5: Role-Specific Clinical Dashboards & Workstations** (Completed)
    - Complete functional views for all 5 roles + professional Login page.
 6. **Pillar 6: End-to-End Inter-Role Workflow Integration** (Ready for Next Steps / Deep Refinement)
-   - Cross-role workflows: Receptionist check-in -> Doctor consultation & prescriptions -> Lab processing -> Administration billing & inventory.
+   - Cross-role workflows: Receptionist check-in -> Doctor consultation & prescriptions -> Lab processing -> Administration billing & revenue settlement.
 7. **Pillar 7: Testing, Responsiveness & Verification** (Ready for Next Steps)
    - Edge case validation, mobile navigation testing, and responsive UI polish.
 
@@ -63,7 +63,7 @@ c:\Users\raadi\Downloads\CMS\
 │   │   └── mockData.ts             # Interconnected clinical demo dataset for all 8 roles
 │   ├── context/
 │   │   ├── AuthContext.tsx         # User authentication, active role, 1-click role switcher
-│   │   └── ClinicContext.tsx       # State management for patients, appointments, vitals, rx, lab, billing, inventory
+│   │   └── ClinicContext.tsx       # State management for patients, appointments, vitals, rx, lab, billing
 │   ├── components/
 │   │   ├── ui/
 │   │   │   ├── Button.tsx          # Primary, secondary, outline, danger, soft, loading state
@@ -79,7 +79,7 @@ c:\Users\raadi\Downloads\CMS\
 │   │       ├── Sidebar.tsx         # Dynamic role-specific navigation sidebar
 │   │       └── RoleSwitcher.tsx    # 1-click developer toolbar allowing instant switching between all 5 roles
 │   └── views/
-│       ├── AdminView.tsx           # Executive KPIs, patient directory, doctors, master calendar, billing & inventory
+│       ├── AdminView.tsx           # Dedicated Billing & Financial Administration console (invoices, settlements)
 │       ├── DoctorView.tsx          # Queue, triage vitals review, allergy warnings, e-Rx writer, lab test ordering
 │       ├── PatientView.tsx         # Eleanor Wright's portal (appointments, prescriptions, lab results, bills, booking modal)
 │       ├── ReceptionistView.tsx    # Waiting lounge, 1-click check-in, token issuing, patient registration, walk-ins

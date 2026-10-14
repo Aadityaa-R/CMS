@@ -74,15 +74,9 @@ export const AppLayout: React.FC = () => {
           return <PatientView />;
         case 'access_control':
           return <AccessControlView />;
-        case 'admin_overview':
-        case 'overview':
-          return <AdminView activeTab="overview" />;
         case 'admin_billing':
         case 'billing':
           return <AdminView activeTab="billing" />;
-        case 'admin_inventory':
-        case 'inventory':
-          return <AdminView activeTab="inventory" />;
         default:
           return <DoctorView activeTab="overview" />;
       }

@@ -12,29 +12,13 @@
   - **Password**: `Admin@123`
   - **Badge ID**: `ADM-101`
 - **Core Clinical Responsibility**:
-  Oversee clinic-wide medical operations, supervise healthcare personnel rosters and credentials, maintain registered patient directories, manage consultation schedules, monitor financial revenue streams, and verify supply inventory continuity.
+  Oversee clinic-wide medical operations, supervise healthcare personnel rosters and credentials, maintain registered patient directories, manage consultation schedules, and monitor financial revenue streams and accounts receivable.
 
 ---
 
 ## 2. MODULE ARCHITECTURE & SUB-MODULE BREAKDOWN
 
-The Admin workstation is modeled directly on the design language, reactive feedback mechanisms, and sub-module ergonomics of the Laboratory Technician module, providing full institutional control through six operational workstations:
-
-### 2.1 Module 1: Clinic Overview (`overview`)
-The executive high-level dashboard and operations dispatch desk.
-
-- **Clinical & Executive KPI Cards**:
-  - **Total Registered Patients**: Master active outpatient count with permanent electronic medical records.
-  - **Active Consulting Doctors**: Real-time count of specialists currently on duty / active roster.
-  - **Consultations Today**: Running tally of scheduled, in-consultation, and completed visits for the current day.
-  - **Gross Revenue Collected**: Accumulated settlements and fee collections, paired with pending receivables.
-- **Master Consultation Dispatch Table**:
-  - Displays today's patient queue across all attending physicians.
-  - **Fields**: Token & Appointment ID, Patient Name & Phone, Attending Doctor & Department, Scheduled Time, Status badge with colored indicator dot, Dynamic Action control (`Conclude` / `Completed`).
-- **Operational Alerts & Clinic Health**:
-  - Automated low buffer stock detection with 1-click restock shortcut.
-  - Outpatient triage wait time monitor.
-  - Accounts settlement rate metric.
+The Admin workstation provides full institutional financial and operational governance, tailored for a focused outpatient practice where pharmacy and medicine stock buffering are excluded:
 
 ---
 
@@ -98,16 +82,6 @@ Executive financial oversight and institutional accounts audit.
 
 ---
 
-### 2.6 Sub-Module 6: Stock & Supply Governance (`inventory`)
-Institution-level pharmaceutical and clinical supply oversight.
-
-- **Buffer Stock Table**:
-  - Item Description & Batch Number, SKU Code, Category, Current Stock vs Minimum Threshold, Unit Cost, Status badge (`Stock Optimal` vs `Low Buffer Alert`).
-- **Action Control**:
-  - **"Restock Supply"**: Launches inventory replenishment modal to add stock units directly to active inventory.
-
----
-
 ## 3. DOMAIN DATA MODELS
 
 The Admin workstation operates on and governs the core clinical data structures:
@@ -167,19 +141,19 @@ export interface Patient {
    │                                              │
    ├─── (Oversees Master Directory) ──────> [Doctor] (Consultations, e-Rx & Lab Orders)
    │                                              │
-   ├─── (Audits Revenue & Inventory) <───── [Patient] (Reviews Records & Pays Bills)
+   ├─── (Audits Revenue & Receivables) <─── [Patient] (Reviews Records & Pays Bills)
    │                                              │
    └─── (Diagnostic Quality Control) ─────> [Lab Technician] (Processes Assays & Results)
 ```
 
 1. **Physician Onboarding & Tariffs -> Receptionist Booking**: When the Admin onboards a doctor or updates consultation fees, the Receptionist's booking engine immediately offers the doctor and current tariffs.
 2. **Master EMR Directory -> Clinic Workstations**: Newly registered patients or demographic updates instantly propagate across Doctor consultation desks, Reception check-in queues, and Lab accessioning.
-3. **Billing & Inventory Governance**: Prescription and lab order fulfillment events adjust stock levels and invoice balances, providing executive financial and buffer alerts without external reconciliation.
+3. **Billing Governance**: Consultation completion and lab order fulfillment events reflect in invoice balances, providing executive financial tracking without external reconciliation.
 
 ---
 
 ## 5. UI PATTERNS & ERGONOMIC STANDARDS
 
 - **Dark Mode Compatibility**: Full support across light (`bg-slate-50`) and dark (`dark:bg-slate-950`) themes with high-contrast text and border styling.
-- **Reactive Notification System**: Real-time feedback banner appears upon every action (patient registration, doctor duty toggle, payment recording, inventory restock) with auto-dismiss after 4.5 seconds.
-- **Universal Search & Filter**: Integrated search bar with dropdown status selector and click-outside dismissal matching the Lab Technician workstation.
+- **Reactive Notification System**: Real-time feedback banner appears upon every action (patient registration, doctor duty toggle, payment recording) with auto-dismiss after 4.5 seconds.
+- **Universal Search & Filter**: Integrated search bar with dropdown status selector and click-outside dismissal matching the design system standard.

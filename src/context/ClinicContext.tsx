@@ -10,7 +10,6 @@ import {
   LabTestStatus,
   Invoice,
   PaymentMethod,
-  InventoryItem,
 } from '@/types';
 import {
   INITIAL_PATIENTS,
@@ -20,7 +19,6 @@ import {
   INITIAL_PRESCRIPTIONS,
   INITIAL_LAB_TESTS,
   INITIAL_INVOICES,
-  INITIAL_INVENTORY,
 } from '@/data/mockData';
 
 interface ClinicContextType {
@@ -31,7 +29,6 @@ interface ClinicContextType {
   prescriptions: Prescription[];
   labTests: LabTest[];
   invoices: Invoice[];
-  inventory: InventoryItem[];
 
   // Patient Actions
   addPatient: (data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>) => Patient;
@@ -67,9 +64,6 @@ interface ClinicContextType {
   // Billing Actions
   createInvoice: (data: Omit<Invoice, 'id' | 'invoiceNumber' | 'date' | 'status'>) => Invoice;
   recordPayment: (id: string, amount: number, method: PaymentMethod) => void;
-
-  // Inventory Actions
-  adjustInventoryStock: (id: string, delta: number) => void;
 }
 
 const ClinicContext = createContext<ClinicContextType | undefined>(undefined);
@@ -82,7 +76,6 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(INITIAL_PRESCRIPTIONS);
   const [labTests, setLabTests] = useState<LabTest[]>(INITIAL_LAB_TESTS);
   const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
-  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
 
   const addPatient = (data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>): Patient => {
     const newId = `pat-${patients.length + 1}`;
@@ -304,16 +297,6 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
-  const adjustInventoryStock = (id: string, delta: number) => {
-    setInventory((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        const newStock = Math.max(0, item.currentStock + delta);
-        return { ...item, currentStock: newStock };
-      })
-    );
-  };
-
   return (
     <ClinicContext.Provider
       value={{
@@ -324,7 +307,6 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         prescriptions,
         labTests,
         invoices,
-        inventory,
         addPatient,
         updatePatient,
         addDoctor,
@@ -339,7 +321,6 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateLabTestStatus,
         createInvoice,
         recordPayment,
-        adjustInventoryStock,
       }}
     >
       {children}

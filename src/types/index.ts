@@ -187,21 +187,6 @@ export interface Invoice {
   notes?: string;
 }
 
-export interface InventoryItem {
-  id: string;
-  sku: string;
-  name: string;
-  genericName: string;
-  category: 'tablet' | 'syrup' | 'injection' | 'consumable' | 'equipment';
-  currentStock: number;
-  minStockLevel: number;
-  unit: string;
-  unitPrice: number;
-  expiryDate: string;
-  batchNumber: string;
-  manufacturer: string;
-  location: string;
-}
 
 export interface ClinicalRecord {
   id: string;

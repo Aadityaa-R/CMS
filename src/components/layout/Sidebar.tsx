@@ -5,7 +5,6 @@ import {
   UserCheck,
   Calendar,
   CreditCard,
-  Package,
   Pill,
   PlusCircle,
   PanelLeft,
@@ -51,9 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           { id: 'role_receptionist', label: 'Reception Desk', icon: <Calendar className="w-4 h-4" /> },
           { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
           { id: 'access_control', label: 'Staff Access Control', icon: <ShieldCheck className="w-4 h-4" /> },
-          { id: 'admin_overview', label: 'Clinic Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'admin_billing', label: 'Billing & Revenue', icon: <CreditCard className="w-4 h-4" /> },
-          { id: 'admin_inventory', label: 'Supplies & Inventory', icon: <Package className="w-4 h-4" /> },
         ];
 
       case 'doctor':
