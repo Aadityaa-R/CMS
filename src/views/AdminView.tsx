@@ -220,75 +220,58 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
 
   const overviewSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
+    const seen = new Set<string>();
     appointments.forEach((apt) => {
-      list.push({
-        label: apt.patientName,
-        category: 'Patient',
-        sublabel: `${apt.tokenNumber} • ${apt.reasonForVisit}`,
-      });
-      list.push({
-        label: String(apt.tokenNumber),
-        category: 'Token',
-        sublabel: apt.patientName,
-      });
+      if (apt.patientName && !seen.has(apt.patientName.toLowerCase())) {
+        seen.add(apt.patientName.toLowerCase());
+        list.push({
+          label: apt.patientName,
+          category: 'Patient',
+          sublabel: `Token #${apt.tokenNumber} • ${apt.reasonForVisit}`,
+        });
+      }
     });
     doctors.forEach((doc) => {
-      list.push({
-        label: doc.name,
-        category: 'Doctor',
-        sublabel: `${doc.department} • Room ${doc.roomNumber}`,
-      });
-      list.push({
-        label: doc.department,
-        category: 'Department',
-      });
+      if (doc.name && !seen.has(doc.name.toLowerCase())) {
+        seen.add(doc.name.toLowerCase());
+        list.push({
+          label: doc.name,
+          category: 'Doctor',
+          sublabel: `${doc.department} • Room ${doc.roomNumber}`,
+        });
+      }
     });
     return list;
   }, [appointments, doctors]);
 
   const billingSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
+    const seen = new Set<string>();
     invoices.forEach((inv) => {
-      list.push({
-        label: inv.invoiceNumber,
-        category: 'Invoice',
-        sublabel: `${inv.patientName} • $${inv.totalAmount} (${inv.status.toUpperCase()})`,
-      });
-      list.push({
-        label: inv.patientName,
-        category: 'Patient',
-        sublabel: `Invoice ${inv.invoiceNumber}`,
-      });
-    });
-    ['Paid', 'Pending', 'Unpaid', 'Overdue'].forEach((st) => {
-      list.push({
-        label: st,
-        category: 'Status',
-      });
+      if (inv.patientName && !seen.has(inv.patientName.toLowerCase())) {
+        seen.add(inv.patientName.toLowerCase());
+        list.push({
+          label: inv.patientName,
+          category: 'Patient',
+          sublabel: `Invoice ${inv.invoiceNumber} • $${inv.totalAmount}`,
+        });
+      }
     });
     return list;
   }, [invoices]);
 
   const inventorySuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
+    const seen = new Set<string>();
     inventory.forEach((item) => {
-      list.push({
-        label: item.name,
-        category: item.category,
-        sublabel: `SKU: ${item.sku} • Stock: ${item.currentStock} • Batch: ${item.batchNumber}`,
-      });
-      list.push({
-        label: item.sku,
-        category: 'SKU',
-        sublabel: item.name,
-      });
-    });
-    const cats = Array.from(new Set(inventory.map((i) => i.category)));
-    cats.forEach((c) => {
-      list.push({
-        label: c,
-        category: 'Category',
-      });
+      if (item.name && !seen.has(item.name.toLowerCase())) {
+        seen.add(item.name.toLowerCase());
+        list.push({
+          label: item.name,
+          category: item.category,
+          sublabel: `SKU: ${item.sku} • Stock: ${item.currentStock}`,
+        });
+      }
     });
     return list;
   }, [inventory]);
@@ -393,7 +376,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                     value={searchTerm}
                     onChange={setSearchTerm}
                     suggestions={overviewSuggestions}
-                    placeholder="Search by patient, doctor, department, or token..."
+                    placeholder="Search by patient or doctor name..."
                   />
                 </div>
 
@@ -682,7 +665,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                     value={searchTerm}
                     onChange={setSearchTerm}
                     suggestions={billingSuggestions}
-                    placeholder="Search by invoice #, patient, or settlement status..."
+                    placeholder="Search by patient name..."
                   />
                 </div>
 
@@ -980,7 +963,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                     value={searchTerm}
                     onChange={setSearchTerm}
                     suggestions={inventorySuggestions}
-                    placeholder="Search by product name, category, SKU, or batch..."
+                    placeholder="Search by medicine or product name..."
                   />
                 </div>
 

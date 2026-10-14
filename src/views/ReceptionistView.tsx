@@ -24,7 +24,8 @@ interface ReceptionistViewProps {
 }
 
 export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 'overview' }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, currentRole } = useAuth();
+  const isMD = currentRole === 'md' || currentRole === 'admin' || currentUser.role === 'md';
   const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
 
   useEffect(() => {
@@ -202,29 +203,27 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
   const receptionistSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
+    const seen = new Set<string>();
     appointments.forEach((apt) => {
-      list.push({
-        label: apt.patientName,
-        category: 'Patient',
-        sublabel: `${apt.tokenNumber} • ${apt.reasonForVisit}`,
-      });
-      list.push({
-        label: String(apt.tokenNumber),
-        category: 'Token',
-        sublabel: apt.patientName,
-      });
-      list.push({
-        label: apt.reasonForVisit,
-        category: 'Reason',
-        sublabel: apt.patientName,
-      });
+      if (apt.patientName && !seen.has(apt.patientName.toLowerCase())) {
+        seen.add(apt.patientName.toLowerCase());
+        list.push({
+          label: apt.patientName,
+          category: 'Patient',
+          sublabel: `Token #${apt.tokenNumber} • ${apt.reasonForVisit}`,
+        });
+      }
     });
     patients.forEach((p) => {
-      list.push({
-        label: `${p.firstName} ${p.lastName}`,
-        category: 'Patient',
-        sublabel: `${p.mrn} • ${p.phone}`,
-      });
+      const fullName = `${p.firstName} ${p.lastName}`;
+      if (!seen.has(fullName.toLowerCase())) {
+        seen.add(fullName.toLowerCase());
+        list.push({
+          label: fullName,
+          category: 'Patient',
+          sublabel: `${p.mrn} • ${p.phone}`,
+        });
+      }
     });
     return list;
   }, [appointments, patients]);
@@ -241,24 +240,26 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
             Front Desk Lead: {currentUser.name} • Patient Admissions & Consultation Queue Coordination
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <Button
-            size="sm"
-            variant="outline"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={() => setIsRegisterOpen(true)}
-          >
-            Register Patient
-          </Button>
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Ticket className="w-4 h-4" />}
-            onClick={() => setIsBookOpen(true)}
-          >
-            Walk-in Check-In
-          </Button>
-        </div>
+        {!isMD && (
+          <div className="flex items-center gap-2.5">
+            <Button
+              size="sm"
+              variant="outline"
+              icon={<Plus className="w-4 h-4" />}
+              onClick={() => setIsRegisterOpen(true)}
+            >
+              Register Patient
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<Ticket className="w-4 h-4" />}
+              onClick={() => setIsBookOpen(true)}
+            >
+              Walk-in Check-In
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Sub-Workstation Navigation Tabs */}
@@ -338,7 +339,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
             value={searchTerm}
             onChange={setSearchTerm}
             suggestions={receptionistSearchSuggestions}
-            placeholder="Search arriving patient, appointment ID, or reason for visit..."
+            placeholder="Search by patient name..."
           />
         </div>
 
@@ -460,7 +461,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                         <th className="px-4 py-3.5 align-middle">Scheduled Time</th>
                         <th className="px-4 py-3.5 align-middle">Reason for Visit</th>
                         <th className="px-4 py-3.5 align-middle">Status</th>
-                        <th className="px-4 py-3.5 text-right align-middle">Front Desk Action</th>
+                        {!isMD && <th className="px-4 py-3.5 text-right align-middle">Front Desk Action</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -513,25 +514,27 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3.5 text-right align-middle">
-                            {apt.status === 'scheduled' || apt.status === 'confirmed' ? (
-                              <Button
-                                size="xs"
-                                variant="primary"
-                                onClick={() => handleCheckIn(apt)}
-                              >
-                                Check In
-                              </Button>
-                            ) : apt.status === 'checked_in' ? (
-                              <span className="text-xs text-teal-600 dark:text-teal-400 font-semibold">
-                                In Lounge
-                              </span>
-                            ) : (
-                              <span className="text-xs text-slate-400 dark:text-slate-500 capitalize">
-                                {apt.status.replace('_', ' ')}
-                              </span>
-                            )}
-                          </td>
+                          {!isMD && (
+                            <td className="px-4 py-3.5 text-right align-middle">
+                              {apt.status === 'scheduled' || apt.status === 'confirmed' ? (
+                                <Button
+                                  size="xs"
+                                  variant="primary"
+                                  onClick={() => handleCheckIn(apt)}
+                                >
+                                  Check In
+                                </Button>
+                              ) : apt.status === 'checked_in' ? (
+                                <span className="text-xs text-teal-600 dark:text-teal-400 font-semibold">
+                                  In Lounge
+                                </span>
+                              ) : (
+                                <span className="text-xs text-slate-400 dark:text-slate-500 capitalize">
+                                  {apt.status.replace('_', ' ')}
+                                </span>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -615,7 +618,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                     <th className="px-4 py-3.5 align-middle">Scheduled Slot</th>
                     <th className="px-4 py-3.5 align-middle">Consulting Doctor</th>
                     <th className="px-4 py-3.5 align-middle">Status</th>
-                    <th className="px-4 py-3.5 text-right align-middle">Action</th>
+                    {!isMD && <th className="px-4 py-3.5 text-right align-middle">Action</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -648,21 +651,23 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-right align-middle">
-                          <Button
-                            size="xs"
-                            variant="primary"
-                            icon={<Ticket className="w-3.5 h-3.5" />}
-                            onClick={() => handleCheckIn(apt)}
-                          >
-                            Issue Token & Check In
-                          </Button>
-                        </td>
+                        {!isMD && (
+                          <td className="px-4 py-3.5 text-right align-middle">
+                            <Button
+                              size="xs"
+                              variant="primary"
+                              icon={<Ticket className="w-3.5 h-3.5" />}
+                              onClick={() => handleCheckIn(apt)}
+                            >
+                              Issue Token & Check In
+                            </Button>
+                          </td>
+                        )}
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
+                      <td colSpan={isMD ? 6 : 7} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
                         All scheduled patients have been checked in or no further bookings pending.
                       </td>
                     </tr>
@@ -681,14 +686,16 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         <Card>
           <CardHeader
             action={
-              <Button
-                size="xs"
-                variant="primary"
-                icon={<Plus className="w-3.5 h-3.5" />}
-                onClick={() => setIsRegisterOpen(true)}
-              >
-                Register New Patient
-              </Button>
+              !isMD && (
+                <Button
+                  size="xs"
+                  variant="primary"
+                  icon={<Plus className="w-3.5 h-3.5" />}
+                  onClick={() => setIsRegisterOpen(true)}
+                >
+                  Register New Patient
+                </Button>
+              )
             }
           >
             <CardTitle>Patient Intake & Registration Registry</CardTitle>
@@ -763,14 +770,16 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         <Card>
           <CardHeader
             action={
-              <Button
-                size="xs"
-                variant="primary"
-                icon={<Ticket className="w-3.5 h-3.5" />}
-                onClick={() => setIsBookOpen(true)}
-              >
-                Book Consultation
-              </Button>
+              !isMD && (
+                <Button
+                  size="xs"
+                  variant="primary"
+                  icon={<Ticket className="w-3.5 h-3.5" />}
+                  onClick={() => setIsBookOpen(true)}
+                >
+                  Book Consultation
+                </Button>
+              )
             }
           >
             <CardTitle>Appointment Booking & Scheduling Terminal</CardTitle>

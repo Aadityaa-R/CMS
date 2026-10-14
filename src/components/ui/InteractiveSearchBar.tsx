@@ -167,10 +167,19 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
           autoFocus={autoFocus}
           autoComplete="off"
           placeholder={placeholder}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            if (value.trim().length > 0) {
+              setIsOpen(true);
+            }
+          }}
           onChange={(e) => {
-            onChange(e.target.value);
-            if (!isOpen) setIsOpen(true);
+            const nextVal = e.target.value;
+            onChange(nextVal);
+            if (nextVal.trim().length > 0) {
+              setIsOpen(true);
+            } else {
+              setIsOpen(false);
+            }
             setHighlightedIndex(-1);
           }}
           onKeyDown={handleKeyDown}
@@ -190,7 +199,7 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
       </div>
 
       {/* Interactive Dropdown with Autofill Suggestions */}
-      {isOpen && (
+      {isOpen && value.trim().length > 0 && (
         <div className="absolute left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-fadeIn max-h-72 overflow-y-auto">
           {filteredSuggestions.length > 0 ? (
             <>

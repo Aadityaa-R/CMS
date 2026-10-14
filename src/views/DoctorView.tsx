@@ -280,11 +280,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   );
   const totalPrescriptions = doctorPrescriptions.length;
 
-  // Global Active Triage Queue across all attending physician desks for MD oversight
-  const allActiveTriageAppointments = appointments.filter(
-    (a) => a.status === 'in_consultation' || a.status === 'checked_in'
-  );
-
   // Filter Helper with Equal Authority
   const query = searchTerm.toLowerCase().trim();
 
@@ -334,29 +329,27 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   const doctorSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
+    const seen = new Set<string>();
     doctorAppointments.forEach((apt) => {
-      list.push({
-        label: apt.patientName,
-        category: 'Patient',
-        sublabel: `${apt.tokenNumber} • ${apt.reasonForVisit}`,
-      });
-      list.push({
-        label: String(apt.tokenNumber),
-        category: 'Token',
-        sublabel: apt.patientName,
-      });
-      list.push({
-        label: apt.reasonForVisit,
-        category: 'Complaint',
-        sublabel: apt.patientName,
-      });
+      if (apt.patientName && !seen.has(apt.patientName.toLowerCase())) {
+        seen.add(apt.patientName.toLowerCase());
+        list.push({
+          label: apt.patientName,
+          category: 'Patient',
+          sublabel: `Token #${apt.tokenNumber} • ${apt.reasonForVisit}`,
+        });
+      }
     });
     patients.forEach((p) => {
-      list.push({
-        label: p.mrn,
-        category: 'MRN',
-        sublabel: `${p.firstName} ${p.lastName}`,
-      });
+      const fullName = `${p.firstName} ${p.lastName}`;
+      if (!seen.has(fullName.toLowerCase())) {
+        seen.add(fullName.toLowerCase());
+        list.push({
+          label: fullName,
+          category: 'Patient',
+          sublabel: `${p.mrn} • ${p.phone}`,
+        });
+      }
     });
     return list;
   }, [doctorAppointments, patients]);
@@ -625,8 +618,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
               {/* MD Clinical Queue Inspector / Staff Doctor Station Governance Bar */}
               {isMD ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 my-1 shadow-xs">
+                  <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                     <div className="shrink-0">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
@@ -639,19 +632,19 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </span>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 flex-1 xl:max-w-3xl xl:justify-end">
                       {/* Search Input with Interactive Dropdown and Autofill */}
                       <div className="relative flex-1 min-w-[200px]">
                         <InteractiveSearchBar
                           value={searchTerm}
                           onChange={setSearchTerm}
                           suggestions={doctorSearchSuggestions}
-                          placeholder="Search patient, MRN, diagnosis, or token..."
+                          placeholder="Search by patient name..."
                         />
                       </div>
 
-                      {/* Attending Physician Worklist Selector using Custom Select with Filter icon */}
-                      <div className="w-full sm:w-64 shrink-0">
+                      {/* Attending Physician Worklist Selector with Expanded Margin & Width */}
+                      <div className="w-full sm:w-80 shrink-0">
                         <Select
                           icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
                           value={activeDoctorId}
@@ -671,7 +664,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 </div>
               ) : (
                 /* Staff Doctor Station Governance Bar */
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 my-1 shadow-xs">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="shrink-0">
                       <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
@@ -688,11 +681,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           value={searchTerm}
                           onChange={setSearchTerm}
                           suggestions={doctorSearchSuggestions}
-                          placeholder="Search consultation queue or patient..."
+                          placeholder="Search by patient name..."
                         />
                       </div>
 
-                      <div className="w-full sm:w-56 shrink-0">
+                      <div className="w-full sm:w-60 shrink-0">
                         <Select
                           icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
                           value={filterMode}
@@ -863,81 +856,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               </Card>
             </div>
           </div>
-
-          {/* Persistent Downward Notification Box: Active Outpatient Desk & Immediate Triage Attention Queue */}
-          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
-            <CardHeader
-              action={
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                    {allActiveTriageAppointments.length} Active Consultations Across Clinic
-                  </span>
-                </div>
-              }
-            >
-              <div>
-                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Active Consultation Triage & Clearance Queue
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Real-time outpatient desks across attending physicians requiring Managing Director clearance, active engagement, or triage authorization.
-                </CardDescription>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-4 pt-2">
-              {allActiveTriageAppointments.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
-                    All Attending Physician Queues Cleared
-                  </p>
-                  <p className="text-slate-500 dark:text-slate-400">
-                    No outpatients currently waiting or in consultation across any clinic suite.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {allActiveTriageAppointments.map((apt) => (
-                    <div
-                      key={apt.id}
-                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span
-                            className={`w-2 h-2 rounded-full shrink-0 ${
-                              apt.status === 'in_consultation' ? 'bg-teal-500' : 'bg-slate-400'
-                            }`}
-                          />
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                            {apt.patientName}
-                          </h4>
-                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                            (Token #{apt.tokenNumber} • {apt.appointmentNumber})
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-300">
-                          Attending Physician: <strong>{apt.doctorName}</strong> ({apt.department}) • Scheduled:{' '}
-                          <span className="font-mono">
-                            {new Date(apt.dateTime).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Complaint: {apt.reasonForVisit} — Status:{' '}
-                          <span className="capitalize font-medium text-slate-700 dark:text-slate-300">
-                            {apt.status.replace('_', ' ')}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       )}
 

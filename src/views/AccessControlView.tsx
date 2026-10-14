@@ -386,26 +386,16 @@ export const AccessControlView: React.FC = () => {
 
   const searchSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
+    const seenNames = new Set<string>();
     staffAccessList.forEach((staff) => {
-      list.push({
-        label: staff.staffName,
-        category: staff.role.toUpperCase(),
-        sublabel: `${staff.badgeNumber} • ${staff.department}`,
-      });
-      if (staff.badgeNumber) {
+      if (staff.staffName && !seenNames.has(staff.staffName.toLowerCase())) {
+        seenNames.add(staff.staffName.toLowerCase());
         list.push({
-          label: staff.badgeNumber,
-          category: 'Badge #',
-          sublabel: staff.staffName,
+          label: staff.staffName,
+          category: staff.role.toUpperCase(),
+          sublabel: `${staff.badgeNumber} • ${staff.department}`,
         });
       }
-    });
-    const depts = Array.from(new Set(staffAccessList.map((s) => s.department)));
-    depts.forEach((d) => {
-      list.push({
-        label: d,
-        category: 'Department',
-      });
     });
     return list;
   }, [staffAccessList]);
@@ -504,7 +494,7 @@ export const AccessControlView: React.FC = () => {
                 value={searchTerm}
                 onChange={setSearchTerm}
                 suggestions={searchSuggestions}
-                placeholder="Search name, badge #, department, or role..."
+                placeholder="Search by staff name..."
               />
             </div>
 
