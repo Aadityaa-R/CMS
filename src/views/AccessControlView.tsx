@@ -9,12 +9,29 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
-import {
-  Filter,
-} from 'lucide-react';
 import { UserRole, StaffAccessRecord, StaffPermission } from '@/types';
 
-type RoleFilterKey = '' | 'doc' | 'receptionist' | 'patient';
+type RoleFilterKey = 'all' | 'doc' | 'receptionist' | 'patient';
+
+const getInitials = (name: string): string => {
+  const clean = name.replace(/^Dr\.\s+/i, '').trim();
+  const parts = clean.split(/\s+/);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return (clean.slice(0, 2) || 'ST').toUpperCase();
+};
+
+const getRoleAvatarStyles = (role: UserRole) => {
+  switch (role) {
+    case 'doctor':
+      return 'bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800';
+    case 'receptionist':
+      return 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+    default:
+      return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
+  }
+};
 
 interface RoleSectionMeta {
   key: 'doc' | 'receptionist' | 'patient';
@@ -117,8 +134,8 @@ export const AccessControlView: React.FC = () => {
 
   const { addDoctor } = useClinic();
 
-  // Active role filter: '' (unselected) | 'doc' | 'receptionist' | 'patient'
-  const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('');
+  // Active role filter: 'all' | 'doc' | 'receptionist' | 'patient'
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('all');
 
   // Search filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -364,15 +381,11 @@ export const AccessControlView: React.FC = () => {
     return filteredStaff.filter((s) => s.role === role);
   };
 
-  // Equal Authority: User can either filter by role, search, or both
-  // If role is explicitly chosen -> filter strictly by that role
-  // Else if search term is entered -> search across all roles with equal authority
-  // Else -> empty array (no data sections at top)
-  const candidateSections = selectedRoleFilter
-    ? ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter)
-    : searchTerm.trim() !== ''
-    ? ROLE_SECTIONS
-    : [];
+  // Candidate sections based on selected role filter
+  const candidateSections =
+    selectedRoleFilter === 'all'
+      ? ROLE_SECTIONS
+      : ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter);
 
   // When searching, display ONLY sections that contain matching personnel!
   const displayedSections = candidateSections.filter((section) => {
@@ -383,7 +396,7 @@ export const AccessControlView: React.FC = () => {
     return true;
   });
 
-  const isRoleOrSearchActive = selectedRoleFilter !== '' || searchTerm.trim() !== '';
+  const isRoleOrSearchActive = true;
 
   // Pagination State (10 records per page)
   const [auditPage, setAuditPage] = useState(1);
@@ -487,7 +500,7 @@ export const AccessControlView: React.FC = () => {
         />
       </div>
 
-      {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
+      {/* Clearance Governance Bar: Side-by-Side Search & Role Filter Pills */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="shrink-0">
@@ -499,7 +512,7 @@ export const AccessControlView: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-2xl lg:justify-end">
             {/* Search Input with Interactive Dropdown and Autofill */}
             <div className="relative flex-1 min-w-[200px]">
               <InteractiveSearchBar
@@ -510,24 +523,42 @@ export const AccessControlView: React.FC = () => {
               />
             </div>
 
-            {/* Role Filter Dropdown with Filter icon inside */}
-            <div className="w-full sm:w-56 shrink-0">
-              <Select
-                icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
-                value={selectedRoleFilter}
-                placeholder="Select Role"
-                onChange={(e) => {
-                  const newRole = e.target.value as RoleFilterKey;
-                  setSelectedRoleFilter(newRole);
-                  setSelectedStaffId(null);
-                }}
-                options={[
-                  { value: '', label: 'Select Role' },
-                  { value: 'doc', label: `Doctors (${docCount})` },
-                  { value: 'receptionist', label: `Receptionists (${receptionistCount})` },
-                  { value: 'patient', label: `Patients (${patientCount})` },
-                ]}
-              />
+            {/* Role Filter Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+              {[
+                { key: 'all' as RoleFilterKey, label: 'All', count: totalPersonnel },
+                { key: 'doc' as RoleFilterKey, label: 'Doctors', count: docCount },
+                { key: 'receptionist' as RoleFilterKey, label: 'Receptionists', count: receptionistCount },
+                { key: 'patient' as RoleFilterKey, label: 'Patients', count: patientCount },
+              ].map((pill) => {
+                const isActive = selectedRoleFilter === pill.key;
+                return (
+                  <button
+                    key={pill.key}
+                    type="button"
+                    onClick={() => {
+                      setSelectedRoleFilter(pill.key);
+                      setSelectedStaffId(null);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-teal-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <span>{pill.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                        isActive
+                          ? 'bg-teal-700/60 text-white'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      {pill.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -592,164 +623,242 @@ export const AccessControlView: React.FC = () => {
                       No personnel found matching the current search criteria.
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {paginatedStaff.map((staff) => {
-                        const isRevoked = staff.status === 'revoked';
-                        const isSelected = selectedStaffId === staff.id;
+                    <div className="space-y-4">
+                      {/* Responsive Staff Card Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {paginatedStaff.map((staff) => {
+                          const isRevoked = staff.status === 'revoked';
+                          const isSelected = selectedStaffId === staff.id;
+                          const enabledCount = staff.permissions.filter((p) => p.enabled && !isRevoked).length;
+                          const totalCount = staff.permissions.length;
+                          const avatarStyle = getRoleAvatarStyles(staff.role);
 
-                        return (
-                          <div
-                            key={staff.id}
-                            className={`rounded-xl border transition-all duration-200 overflow-hidden ${
-                              isSelected
-                                ? 'border-teal-500 bg-slate-50/60 dark:bg-slate-800/40 shadow-xs'
-                                : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
-                            }`}
-                          >
-                            {/* Person Header - Name is clickable to open/expand access controls */}
+                          return (
                             <div
-                              onClick={() => togglePersonSelection(staff.id)}
-                              className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none transition-colors"
+                              key={staff.id}
+                              className={`rounded-xl border p-4 flex flex-col justify-between transition-all duration-200 ${
+                                isSelected
+                                  ? 'border-teal-500 bg-slate-50/70 dark:bg-slate-800/60 shadow-sm ring-1 ring-teal-500/20'
+                                  : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                              }`}
                             >
-                              <div className="flex items-center gap-3">
-                                {/* Status indicator dot */}
-                                <span
-                                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                                    isRevoked ? 'bg-rose-500' : 'bg-teal-500'
-                                  }`}
-                                />
+                              <div className="space-y-3">
+                                {/* Header: Avatar, Name, Status Badge */}
+                                <div className="flex items-start justify-between gap-2.5">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div
+                                      className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarStyle}`}
+                                    >
+                                      {getInitials(staff.staffName)}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                                          {staff.staffName}
+                                        </h4>
+                                        <span
+                                          className={`w-2 h-2 rounded-full shrink-0 ${
+                                            isRevoked ? 'bg-rose-500' : 'bg-teal-500'
+                                          }`}
+                                          title={isRevoked ? 'Suspended' : 'Active'}
+                                        />
+                                      </div>
+                                      <span
+                                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block mt-0.5 ${
+                                          isRevoked
+                                            ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                            : 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
+                                        }`}
+                                      >
+                                        {isRevoked ? 'Suspended' : 'Active'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
 
-                                <div>
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    {/* Person Name Clickable */}
-                                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-                                      {staff.staffName}
-                                    </h4>
-                                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                                      ({isRevoked ? 'Suspended' : 'Active'})
+                                {/* Title, Department, Badge */}
+                                <div className="text-xs space-y-1 text-slate-500 dark:text-slate-400">
+                                  <div className="text-slate-700 dark:text-slate-300 font-medium truncate">
+                                    {staff.staffTitle}
+                                  </div>
+                                  <div className="flex items-center justify-between text-[11px]">
+                                    <span className="truncate">{staff.department}</span>
+                                    <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-700 dark:text-slate-300 shrink-0">
+                                      {staff.badgeNumber}
                                     </span>
                                   </div>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                    {staff.staffTitle} • {staff.department} • Badge: <span className="font-mono">{staff.badgeNumber}</span>
+                                </div>
+
+                                {/* Permission count */}
+                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                                  <span className="text-slate-400 dark:text-slate-500">Permissions:</span>
+                                  <span className="font-medium text-slate-700 dark:text-slate-300">
+                                    {enabledCount}/{totalCount} enabled
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Footer Action */}
+                              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800">
+                                <Button
+                                  size="sm"
+                                  variant={isSelected ? 'primary' : 'outline'}
+                                  className="w-full text-xs"
+                                  onClick={() => togglePersonSelection(staff.id)}
+                                >
+                                  {isSelected ? 'Collapse Console' : 'Manage Access'}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Full-width Expanded Access Control Console if a card in this section is selected */}
+                      {(() => {
+                        const activeStaff = paginatedStaff.find((s) => s.id === selectedStaffId);
+                        if (!activeStaff) return null;
+                        const isRevoked = activeStaff.status === 'revoked';
+                        const avatarStyle = getRoleAvatarStyles(activeStaff.role);
+
+                        return (
+                          <div className="mt-4 p-4.5 rounded-xl border border-teal-500/70 dark:border-teal-500/50 bg-slate-50/80 dark:bg-slate-800/60 shadow-xs space-y-4 animate-fadeIn">
+                            {/* Panel Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarStyle}`}
+                                >
+                                  {getInitials(activeStaff.staffName)}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                      Managing Controls: {activeStaff.staffName}
+                                    </h4>
+                                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                                      ({activeStaff.badgeNumber})
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    {activeStaff.staffTitle} • {activeStaff.department}
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-3">
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                                  {isSelected ? 'Collapse' : 'Configure Controls'}
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                onClick={() => setSelectedStaffId(null)}
+                              >
+                                Close Console
+                              </Button>
+                            </div>
+
+                            {/* Master Station Clearance Actions Bar */}
+                            <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`w-2 h-2 rounded-full shrink-0 ${
+                                    isRevoked ? 'bg-rose-500' : 'bg-teal-500'
+                                  }`}
+                                />
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                  Clearance Status:
                                 </span>
+                                <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                  {isRevoked ? 'Suspended by Managing Director' : 'Active & Authorized'}
+                                </span>
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {isRevoked ? (
+                                  <Button
+                                    size="sm"
+                                    variant="primary"
+                                    onClick={() => handleGrant(activeStaff.id, activeStaff.staffName)}
+                                  >
+                                    Grant Access
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleRevoke(activeStaff.id, activeStaff.staffName)}
+                                  >
+                                    Revoke Access
+                                  </Button>
+                                )}
+
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                                  onClick={() => handlePromptDelete(activeStaff)}
+                                >
+                                  Delete Account
+                                </Button>
                               </div>
                             </div>
 
-                            {/* Expanded Access Control Console for this Person */}
-                            {isSelected && (
-                              <div className="px-4 pb-4 pt-2 border-t border-slate-200/80 dark:border-slate-800 space-y-4 animate-fadeIn">
-                                {/* Master Station Clearance Actions Bar */}
-                                <div className="p-3 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                                  <div className="flex items-center gap-2">
-                                    <span
-                                      className={`w-2 h-2 rounded-full shrink-0 ${
-                                        isRevoked ? 'bg-rose-500' : 'bg-teal-500'
-                                      }`}
-                                    />
-                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                      Clearance Status:
-                                    </span>
-                                    <span className="text-slate-700 dark:text-slate-300 font-medium">
-                                      {isRevoked ? 'Suspended by Managing Director' : 'Active & Authorized'}
-                                    </span>
-                                  </div>
-
-                                  {/* Action Buttons (Icons removed per design directive) */}
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    {isRevoked ? (
-                                      <Button
-                                        size="sm"
-                                        variant="primary"
-                                        onClick={() => handleGrant(staff.id, staff.staffName)}
-                                      >
-                                        Grant Access
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRevoke(staff.id, staff.staffName)}
-                                      >
-                                        Revoke Access
-                                      </Button>
-                                    )}
-
-                                    {/* Delete Account Option next to Revoke */}
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
-                                      onClick={() => handlePromptDelete(staff)}
-                                    >
-                                      Delete Account
-                                    </Button>
-                                  </div>
-                                </div>
-
-                                {/* Authorized Capabilities Switchboard */}
-                                <div>
-                                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2 flex items-center justify-between">
-                                    <span>Authorized Capabilities & Authorities</span>
-                                    <span className="text-[10px] text-slate-400 font-normal">
-                                      Managing Director Controls
-                                    </span>
-                                  </div>
-
-                                  <div className="space-y-2 divide-y divide-slate-100 dark:divide-slate-800/60">
-                                    {staff.permissions.map((perm) => (
-                                      <div
-                                        key={perm.id}
-                                        className="pt-2 flex items-center justify-between gap-3 text-xs"
-                                      >
-                                        <div className="flex-1">
-                                          <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                                            {perm.name}
-                                          </div>
-                                          <div className="text-[11px] text-slate-400 dark:text-slate-500">
-                                            {perm.description}
-                                          </div>
-                                        </div>
-
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                          <input
-                                            type="checkbox"
-                                            checked={perm.enabled && !isRevoked}
-                                            disabled={isRevoked}
-                                            onChange={() =>
-                                              handleTogglePermission(staff.id, perm.id, perm.name)
-                                            }
-                                            className="sr-only peer"
-                                          />
-                                          <div
-                                            className={`w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
-                                              isRevoked
-                                                ? 'opacity-40 cursor-not-allowed'
-                                                : 'peer-checked:bg-teal-600'
-                                            }`}
-                                          />
-                                        </label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Audit Directive Footer */}
-                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                                  <span>Last Authorized: <strong>{staff.updatedBy}</strong> ({staff.lastUpdated})</span>
-                                  <span className="italic">{staff.reason || 'Operational clearance in good standing'}</span>
-                                </div>
+                            {/* Authorized Capabilities Switchboard */}
+                            <div>
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2 flex items-center justify-between">
+                                <span>Authorized Capabilities & Authorities</span>
+                                <span className="text-[10px] text-slate-400 font-normal">
+                                  Managing Director Controls
+                                </span>
                               </div>
-                            )}
+
+                              <div className="space-y-2 divide-y divide-slate-200/70 dark:divide-slate-700/60">
+                                {activeStaff.permissions.map((perm) => (
+                                  <div
+                                    key={perm.id}
+                                    className="pt-2 flex items-center justify-between gap-3 text-xs"
+                                  >
+                                    <div className="flex-1">
+                                      <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
+                                        {perm.name}
+                                      </div>
+                                      <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                                        {perm.description}
+                                      </div>
+                                    </div>
+
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={perm.enabled && !isRevoked}
+                                        disabled={isRevoked}
+                                        onChange={() =>
+                                          handleTogglePermission(activeStaff.id, perm.id, perm.name)
+                                        }
+                                        className="sr-only peer"
+                                      />
+                                      <div
+                                        className={`w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
+                                          isRevoked
+                                            ? 'opacity-40 cursor-not-allowed'
+                                            : 'peer-checked:bg-teal-600'
+                                        }`}
+                                      />
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Audit Directive Footer */}
+                            <div className="pt-2 border-t border-slate-200/70 dark:border-slate-700/70 text-[11px] text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                              <span>
+                                Last Authorized: <strong>{activeStaff.updatedBy}</strong> ({activeStaff.lastUpdated})
+                              </span>
+                              <span className="italic">{activeStaff.reason || 'Operational clearance in good standing'}</span>
+                            </div>
                           </div>
                         );
-                      })}
+                      })()}
                     </div>
                   )}
                   <Pagination
@@ -873,72 +982,74 @@ export const AccessControlView: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
-                <tr>
-                  <th className="px-3.5 py-2.5">Timestamp</th>
-                  <th className="px-3.5 py-2.5">Target Personnel & Role</th>
-                  <th className="px-3.5 py-2.5">Directive Action</th>
-                  <th className="px-3.5 py-2.5">Operational Details</th>
-                  <th className="px-3.5 py-2.5">Authorizing Executive</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                {paginatedAuditLog.map((log) => {
-                  const isRevokeOrDelete =
-                    log.action === 'access_revoked' || log.action === 'account_deleted';
+          <div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-6 space-y-4 py-2">
+            {paginatedAuditLog.map((log) => {
+              const isRevokeOrDelete =
+                log.action === 'access_revoked' || log.action === 'account_deleted';
+              const isGranted = log.action === 'access_granted';
 
-                  return (
-                    <tr
-                      key={log.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    >
-                      <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                        {log.timestamp}
-                      </td>
-                      <td className="px-3.5 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
-                        {log.targetStaffName}
-                        <span className="text-[10px] text-slate-400 block font-normal capitalize">
-                          {log.targetRole}
+              return (
+                <div key={log.id} className="relative group">
+                  {/* Timeline Node Dot */}
+                  <span
+                    className={`absolute -left-[1.95rem] top-2 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 transition-transform group-hover:scale-125 ${
+                      isRevokeOrDelete
+                        ? 'bg-rose-500'
+                        : isGranted
+                        ? 'bg-teal-500'
+                        : 'bg-slate-400 dark:bg-slate-500'
+                    }`}
+                  />
+
+                  {/* Log Card */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-2xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Action Badge */}
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                            isRevokeOrDelete
+                              ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                              : isGranted
+                              ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          {log.action.replace(/_/g, ' ')}
                         </span>
-                      </td>
-                      <td className="px-3.5 py-2.5">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                              isRevokeOrDelete ? 'bg-rose-500' : 'bg-teal-500'
-                            }`}
-                          />
-                          <span
-                            className={`font-medium ${
-                              isRevokeOrDelete
-                                ? 'text-slate-900 dark:text-slate-100 font-semibold'
-                                : 'text-teal-700 dark:text-teal-300'
-                            }`}
-                          >
-                            {log.action.replace('_', ' ').toUpperCase()}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3.5 py-2.5 text-slate-600 dark:text-slate-400 max-w-sm">
-                        {log.description}
-                      </td>
-                      <td className="px-3.5 py-2.5 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                        {log.authorizedBy}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">
+                          {log.targetStaffName}
+                        </span>
+                        <span className="text-[11px] text-slate-400 capitalize">
+                          ({log.targetRole})
+                        </span>
+                      </div>
+
+                      <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0">
+                        {log.timestamp}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">
+                      {log.description}
+                    </p>
+
+                    <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+                      <span>
+                        Authorized by: <strong className="text-slate-700 dark:text-slate-300">{log.authorizedBy}</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <Pagination
             currentPage={auditPage}
             totalItems={accessAuditLog.length}
             pageSize={auditPageSize}
             onPageChange={setAuditPage}
-            className="mt-3 rounded-b-lg"
+            className="mt-4"
           />
         </CardContent>
       </Card>
