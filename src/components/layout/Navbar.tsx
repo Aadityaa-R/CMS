@@ -436,48 +436,142 @@ export const Navbar: React.FC<NavbarProps> = () => {
           </Button>
         }
       >
-        <div className="space-y-4 text-xs">
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2.5">
-            <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-              Clinical Notification Preferences
+        <div className="space-y-5 text-xs divide-y divide-slate-100 dark:divide-slate-800">
+          {/* Category 1: Clinical Alerts & Notifications */}
+          <div className="space-y-2.5 pt-1 first:pt-0">
+            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs tracking-tight">
+              Clinical Alerts & Notifications
             </div>
-            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
-              />
-              <span className="cursor-default">Audible chime on high-priority / STAT orders</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
-              />
-              <span className="cursor-default">Real-time queue update banners</span>
+            <div className="pl-3 space-y-2.5 border-l-2 border-teal-500/40 dark:border-teal-500/30">
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Audible chime on high-priority / STAT orders</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Real-time queue update banners</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Broadcast immediate alert on critical diagnostic panic values</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Browser desktop notifications for new incoming lab orders</span>
+              </div>
             </div>
           </div>
 
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2.5">
-            <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-              Display & Terminal Options
+          {/* Category 2: Display & Workspace Density */}
+          <div className="space-y-2.5 pt-4">
+            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs tracking-tight">
+              Display & Workspace Density
             </div>
-            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
-              />
-              <span className="cursor-default">High contrast clinical table borders</span>
+            <div className="pl-3 space-y-2.5 border-l-2 border-teal-500/40 dark:border-teal-500/30">
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">High contrast clinical table borders</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Compact table row density</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Auto-refresh active worklist queues every 30 seconds</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Highlight STAT and urgent orders with high-visibility indicator</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
-              />
-              <span className="cursor-default">Compact table row density</span>
+          </div>
+
+          {/* Category 3: Security & Patient Privacy */}
+          <div className="space-y-2.5 pt-4">
+            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs tracking-tight">
+              Security & Patient Privacy
+            </div>
+            <div className="pl-3 space-y-2.5 border-l-2 border-teal-500/40 dark:border-teal-500/30">
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Mask patient Medical Record Numbers (MRN) on public screens</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Automatic terminal session lockout after 15 minutes of inactivity</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Require technologist credential verification before report publish</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Category 4: Workflow & Printing Automation */}
+          <div className="space-y-2.5 pt-4">
+            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs tracking-tight">
+              Workflow & Printing Automation
+            </div>
+            <div className="pl-3 space-y-2.5 border-l-2 border-teal-500/40 dark:border-teal-500/30">
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Auto-generate specimen barcode accession labels on collection</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
+                />
+                <span className="cursor-default">Automatically trigger PDF report download upon certification</span>
+              </div>
             </div>
           </div>
         </div>
