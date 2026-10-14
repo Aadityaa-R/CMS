@@ -112,7 +112,7 @@ export const ClinicAdminView: React.FC<ClinicAdminViewProps> = ({ activeTab }) =
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-            Clinic Administration Dashboard
+            Admin Dashboard
           </h2>
           <p className="text-xs text-slate-500">
             Real-time clinic performance, medical departments, and patient operations.

@@ -1,11 +1,8 @@
 export type UserRole =
-  | 'clinic_admin'
+  | 'admin'
   | 'doctor'
   | 'patient'
   | 'receptionist'
-  | 'nurse'
-  | 'pharmacist'
-  | 'accountant'
   | 'lab_technician';
 
 export interface User {

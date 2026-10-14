@@ -10,9 +10,6 @@ import { ClinicAdminView } from '@/views/ClinicAdminView';
 import { DoctorView } from '@/views/DoctorView';
 import { PatientView } from '@/views/PatientView';
 import { ReceptionistView } from '@/views/ReceptionistView';
-import { NurseView } from '@/views/NurseView';
-import { PharmacistView } from '@/views/PharmacistView';
-import { AccountantView } from '@/views/AccountantView';
 import { LabTechnicianView } from '@/views/LabTechnicianView';
 
 export const AppLayout: React.FC = () => {
@@ -34,7 +31,7 @@ export const AppLayout: React.FC = () => {
 
   const renderActiveView = () => {
     switch (currentRole) {
-      case 'clinic_admin':
+      case 'admin':
         return <ClinicAdminView activeTab={activeTab} />;
       case 'doctor':
         return <DoctorView activeTab={activeTab} />;
@@ -42,12 +39,6 @@ export const AppLayout: React.FC = () => {
         return <PatientView activeTab={activeTab} />;
       case 'receptionist':
         return <ReceptionistView activeTab={activeTab} />;
-      case 'nurse':
-        return <NurseView activeTab={activeTab} />;
-      case 'pharmacist':
-        return <PharmacistView activeTab={activeTab} />;
-      case 'accountant':
-        return <AccountantView activeTab={activeTab} />;
       case 'lab_technician':
         return <LabTechnicianView activeTab={activeTab} />;
       default:

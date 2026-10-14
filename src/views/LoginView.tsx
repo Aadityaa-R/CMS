@@ -153,13 +153,13 @@ export const LoginView: React.FC = () => {
             </Button>
           </form>
 
-          {/* Credentials Guide Table for all 8 roles */}
+          {/* Credentials Guide Table for all 5 roles */}
           {showCredentialsGuide && (
             <div className="mt-8 pt-6 border-t border-slate-200">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Authorized Role Credentials Directory (8 Roles)</span>
+                  <span>Authorized Role Credentials Directory (5 Roles)</span>
                 </h3>
                 <span className="text-[11px] text-slate-500">
                   Click 'Fill' to load credentials

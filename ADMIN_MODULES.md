@@ -1,10 +1,10 @@
-# CLINIC MANAGEMENT SYSTEM (CMS) - CLINIC ADMIN MODULE SPECIFICATION
+# CLINIC MANAGEMENT SYSTEM (CMS) - ADMIN MODULE SPECIFICATION
 
 ## 1. ROLE PROFILE & ACCESS SCOPE
 
-- **Role Title**: Clinic Director / Executive Administrator
+- **Role Title**: Administrator
 - **Default Profile**: Dr. Sarah Jenkins
-- **Department**: Clinic Administration & Executive Management
+- **Department**: Administration & Executive Management
 - **Access Level**: Full Administrative Oversight, Operations Governance, Master Roster & Analytics
 - **Login Credentials**:
   - **Username**: `admin`
@@ -18,7 +18,7 @@
 
 ## 2. MODULE ARCHITECTURE & SUB-MODULE BREAKDOWN
 
-The Clinic Admin workstation provides full institutional control through six key operational modules:
+The Admin workstation provides full institutional control through six key operational modules:
 
 ### 2.1 Module 1: Clinic Overview (`overview`)
 The executive high-level dashboard for operational visibility.

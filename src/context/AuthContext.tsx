@@ -11,10 +11,10 @@ export interface RoleMeta {
 
 export const ALL_ROLES: RoleMeta[] = [
   {
-    role: 'clinic_admin',
-    label: 'Clinic Admin',
+    role: 'admin',
+    label: 'Admin',
     department: 'Administration',
-    description: 'Clinic operations, doctors, patient directory, and operational analytics.',
+    description: 'Operations, doctors, patient directory, and operational analytics.',
   },
   {
     role: 'doctor',
@@ -33,24 +33,6 @@ export const ALL_ROLES: RoleMeta[] = [
     label: 'Receptionist',
     department: 'Front Desk',
     description: 'Appointment booking, patient check-in, token issuance, and queue coordination.',
-  },
-  {
-    role: 'nurse',
-    label: 'Nurse',
-    department: 'Triage & Nursing',
-    description: 'Vital signs recording, patient triage, preparation, and nursing observations.',
-  },
-  {
-    role: 'pharmacist',
-    label: 'Pharmacist',
-    department: 'Pharmacy',
-    description: 'Prescription dispensing, drug fulfillment, stock levels, and medicine inventory.',
-  },
-  {
-    role: 'accountant',
-    label: 'Accountant',
-    department: 'Billing & Finance',
-    description: 'Invoicing, payment processing, fee collections, and financial summaries.',
   },
   {
     role: 'lab_technician',
@@ -84,7 +66,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRole, setCurrentRole] = useState<UserRole>(() => {
     const savedRole = sessionStorage.getItem('cms_auth_role') as UserRole;
-    return savedRole && DEMO_USERS[savedRole] ? savedRole : 'clinic_admin';
+    return savedRole && DEMO_USERS[savedRole] ? savedRole : 'admin';
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -113,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return DEMO_USERS;
   });
 
-  const currentUser = userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.clinic_admin;
+  const currentUser = userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.admin;
 
   const updateCurrentUser = (updates: Partial<User>) => {
     setUserProfiles((prev) => {

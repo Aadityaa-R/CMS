@@ -13,14 +13,14 @@ import {
 
 export const ROLE_CREDENTIALS: RoleCredential[] = [
   {
-    role: 'clinic_admin',
+    role: 'admin',
     username: 'admin',
     email: 'admin@beaconclinic.com',
     password: 'Admin@123',
-    label: 'Clinic Admin',
+    label: 'Admin',
     department: 'Administration',
     fullName: 'Dr. Sarah Jenkins',
-    description: 'Clinic Director • Operations, doctors, staff & analytics',
+    description: 'Administrator • Operations, doctors, staff & analytics',
   },
   {
     role: 'doctor',
@@ -53,36 +53,6 @@ export const ROLE_CREDENTIALS: RoleCredential[] = [
     description: 'Front Desk Lead • Registration, check-in, tokens & bookings',
   },
   {
-    role: 'nurse',
-    username: 'nurse',
-    email: 'nurse@beaconclinic.com',
-    password: 'Nurse@123',
-    label: 'Nurse',
-    department: 'Nursing & Clinical Triage',
-    fullName: 'Daniel Cho, RN',
-    description: 'Head Triage Nurse • Vitals measurement, BMI & nursing intake',
-  },
-  {
-    role: 'pharmacist',
-    username: 'pharmacist',
-    email: 'pharmacist@beaconclinic.com',
-    password: 'Pharmacy@123',
-    label: 'Pharmacist',
-    department: 'Dispensary',
-    fullName: 'Maya Lin, PharmD',
-    description: 'Lead Clinical Pharmacist • e-Rx fulfillment & drug inventory',
-  },
-  {
-    role: 'accountant',
-    username: 'accountant',
-    email: 'accountant@beaconclinic.com',
-    password: 'Billing@123',
-    label: 'Accountant',
-    department: 'Finance & Billing',
-    fullName: 'David Ross',
-    description: 'Senior Billing Officer • Invoicing, fee collections & receipts',
-  },
-  {
     role: 'lab_technician',
     username: 'labtech',
     email: 'labtech@beaconclinic.com',
@@ -95,12 +65,12 @@ export const ROLE_CREDENTIALS: RoleCredential[] = [
 ];
 
 export const DEMO_USERS: Record<string, User> = {
-  clinic_admin: {
+  admin: {
     id: 'usr-admin-1',
     name: 'Dr. Sarah Jenkins',
     email: 'admin@beaconclinic.com',
-    role: 'clinic_admin',
-    title: 'Clinic Director',
+    role: 'admin',
+    title: 'Administrator',
     department: 'Administration',
     badgeNumber: 'ADM-101',
   },
@@ -130,33 +100,6 @@ export const DEMO_USERS: Record<string, User> = {
     title: 'Front Desk Coordinator',
     department: 'Reception & Triage',
     badgeNumber: 'REC-301',
-  },
-  nurse: {
-    id: 'usr-nur-1',
-    name: 'Daniel Cho, RN',
-    email: 'd.cho@beaconclinic.com',
-    role: 'nurse',
-    title: 'Head Triage & Clinical Nurse',
-    department: 'Nursing & Patient Care',
-    badgeNumber: 'NUR-402',
-  },
-  pharmacist: {
-    id: 'usr-pha-1',
-    name: 'Maya Lin, PharmD',
-    email: 'm.lin@beaconclinic.com',
-    role: 'pharmacist',
-    title: 'Chief Clinical Pharmacist',
-    department: 'Pharmacy Dispensary',
-    badgeNumber: 'PHA-505',
-  },
-  accountant: {
-    id: 'usr-acc-1',
-    name: 'David Ross',
-    email: 'd.ross@beaconclinic.com',
-    role: 'accountant',
-    title: 'Senior Financial & Billing Officer',
-    department: 'Finance & Accounts',
-    badgeNumber: 'ACC-601',
   },
   lab_technician: {
     id: 'usr-lab-1',

@@ -7,8 +7,6 @@ import {
   Calendar,
   CreditCard,
   Package,
-  FileText,
-  Activity,
   Pill,
   FlaskConical,
   Clock,
@@ -46,9 +44,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const getNavItems = (): NavItem[] => {
     switch (currentRole) {
-      case 'clinic_admin':
+      case 'admin':
         return [
-          { id: 'overview', label: 'Clinic Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+          { id: 'overview', label: 'Admin Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'patients', label: 'Patient Directory', icon: <Users className="w-4 h-4" /> },
           { id: 'doctors', label: 'Doctor Management', icon: <UserCheck className="w-4 h-4" /> },
           { id: 'appointments', label: 'All Appointments', icon: <Calendar className="w-4 h-4" /> },
@@ -80,27 +78,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           { id: 'checkin', label: 'Patient Check-In', icon: <UserCheck className="w-4 h-4" /> },
           { id: 'registration', label: 'Register New Patient', icon: <PlusCircle className="w-4 h-4" /> },
           { id: 'booking', label: 'Book Appointment', icon: <Calendar className="w-4 h-4" /> },
-        ];
-
-      case 'nurse':
-        return [
-          { id: 'overview', label: 'Triage Station', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'vitals', label: 'Record Vital Signs', icon: <Activity className="w-4 h-4" /> },
-          { id: 'queue', label: 'Patient Triage Queue', icon: <Users className="w-4 h-4" /> },
-        ];
-
-      case 'pharmacist':
-        return [
-          { id: 'overview', label: 'Dispensary Queue', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'prescriptions', label: 'Prescription Orders', icon: <Pill className="w-4 h-4" /> },
-          { id: 'inventory', label: 'Medication Inventory', icon: <Package className="w-4 h-4" /> },
-        ];
-
-      case 'accountant':
-        return [
-          { id: 'overview', label: 'Billing Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'invoices', label: 'Invoices & Receipts', icon: <FileText className="w-4 h-4" /> },
-          { id: 'collections', label: 'Fee Collections', icon: <CreditCard className="w-4 h-4" /> },
         ];
 
       case 'lab_technician':
@@ -176,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Clinic Portal
               </div>
               <div className="text-xs font-semibold text-slate-300 capitalize truncate mt-0.5">
-                {currentRole.replace('_', ' ')}
+                {currentRole === 'admin' ? 'Admin' : currentRole.replace('_', ' ')}
               </div>
             </div>
           </div>

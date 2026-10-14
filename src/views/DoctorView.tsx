@@ -424,7 +424,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     </div>
                   ) : (
                     <div className="p-4 bg-white rounded-lg border border-slate-200 text-center text-xs text-slate-500">
-                      No vitals recorded for this visit yet. Request nurse triage station.
+                      No vitals recorded for this visit yet. Request clinical triage station.
                     </div>
                   )}
                 </div>
