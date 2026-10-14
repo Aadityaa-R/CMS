@@ -283,12 +283,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               Physician Consultation Desk & Clinical Care
             </h2>
             {isMD ? (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Badge variant="teal">Managing Director Console</Badge>
-                {isReadOnlyView && (
-                  <Badge variant="neutral">Supervisory View Only</Badge>
-                )}
-              </div>
+              <Badge variant="teal">Managing Director Console</Badge>
             ) : (
               <Badge variant="neutral">Staff Physician Desk</Badge>
             )}
@@ -502,11 +497,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             </Button>
                           )}
                         </div>
-                      ) : (
-                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                          View Only
-                        </span>
-                      )
+                      ) : null
                     }
                   >
                     <CardTitle>
@@ -966,11 +957,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               Prescribe
                             </Button>
                           </>
-                        ) : (
-                          <span className="text-xs text-slate-400 dark:text-slate-500 italic">
-                            View Only
-                          </span>
-                        )}
+                        ) : null}
                       </td>
                     </tr>
                   ))}
