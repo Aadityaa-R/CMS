@@ -251,7 +251,10 @@ The system defines 4 operational roles across 5 test personas:
 
 ### 6.3 Administrative Console (`AccessControlView.tsx`)
 - **Add New Users**: Onboard staff physicians, receptionists, and outpatient accounts with custom authorities.
-- **Edit Users**: Filter by Doctors, Receptionists, or Patients. Selecting any user displays an isolated clearance management view with back button, permission toggles, status grant/revoke, and account deletion with confirmation.
+- **Edit Users**: Filter by Doctors, Receptionists, or Patients. Selecting any user displays an isolated clearance management view with back button, capability controls (Status Badge + Grant/Revoke action button with dependency rules), status grant/revoke, and account deletion with confirmation.
+- **Access Console Close & Esc-Key**: Standard X close icon button in top-right corner (`aria-label="Close console"`, title="Close"). Pressing `Esc` closes the console; if a modal is open on top (e.g. capability confirm dialog), `Esc` closes only that dialog first.
+- **Unsaved Changes Protection**: If changes are unsaved, closing via X or Esc prompts with: *"You have unsaved changes. Discard and close?"* ("Discard" / "Keep editing"). Closes immediately if clean.
+- **Focus Trap & Return**: Focus is trapped within the Access Console while open, and focus is automatically returned to the opening button upon closing.
 - **Security Ledger**: Immutable audit log recording all access changes, grants, revocations, and account deletions with timestamp and authorizer name.
 - **Pagination**: 10-records-per-page navigation across both users directory and audit ledger.
 

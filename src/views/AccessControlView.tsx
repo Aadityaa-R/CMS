@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/ClinicContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
-import { Filter, UserCog, UserPlus, History, ArrowLeft } from 'lucide-react';
+import { Filter, UserCog, UserPlus, History, ArrowLeft, X } from 'lucide-react';
 import { UserRole, StaffAccessRecord, StaffPermission } from '@/types';
 
 interface AccessControlViewProps {
@@ -126,6 +126,15 @@ const INITIAL_PENDING_APPROVALS: PendingStaffApproval[] = [
   },
 ];
 
+const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
+  if (!container) return [];
+  const selector =
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  return Array.from(container.querySelectorAll<HTMLElement>(selector)).filter(
+    (el) => el.offsetParent !== null || el.offsetWidth > 0 || el.offsetHeight > 0
+  );
+};
+
 export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab = 'add_users' }) => {
   const [selectedSubTab, setSelectedSubTab] = useState<'add_users' | 'edit_users' | 'ledger'>(() => {
     if (activeTab === 'edit_users' || activeTab === 'ledger') return activeTab;
@@ -199,6 +208,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
   // State to track which person has their control panel open
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const consoleRef = useRef<HTMLDivElement | null>(null);
+  const prevSelectedStaffIdRef = useRef<string | null>(null);
+
+  // Unsaved changes state (Requirement 3)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const [isDiscardModalOpen, setIsDiscardModalOpen] = useState<boolean>(false);
 
   // State for permanent deletion confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<StaffAccessRecord | null>(null);
@@ -351,15 +367,138 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     deleteStaffAccount(targetId, `Account permanently deleted and purged from clinic directory by Managing Director`);
 
     if (selectedStaffId === targetId) {
-      setSelectedStaffId(null);
+      performCloseConsole();
     }
     setDeleteTarget(null);
     showNotification(`Account for ${targetName} has been permanently deleted and purged from the clinic directory.`);
   };
 
-  const togglePersonSelection = (staffId: string) => {
-    setSelectedStaffId((prev) => (prev === staffId ? null : staffId));
+  const performCloseConsole = () => {
+    setHasUnsavedChanges(false);
+    setIsDiscardModalOpen(false);
+    setSelectedStaffId(null);
+    setTimeout(() => {
+      if (openerRef.current && typeof openerRef.current.focus === 'function') {
+        openerRef.current.focus();
+      }
+    }, 50);
   };
+
+  const handleCloseConsole = () => {
+    if (hasUnsavedChanges) {
+      setIsDiscardModalOpen(true);
+    } else {
+      performCloseConsole();
+    }
+  };
+
+  const togglePersonSelection = (staffId: string, openerEl?: HTMLElement | null) => {
+    if (selectedStaffId !== staffId) {
+      openerRef.current = openerEl || (document.activeElement as HTMLElement) || null;
+      setSelectedStaffId(staffId);
+    } else {
+      handleCloseConsole();
+    }
+  };
+
+  // Focus return tracking when console closes (Requirement 4)
+  useEffect(() => {
+    if (prevSelectedStaffIdRef.current && !selectedStaffId) {
+      setTimeout(() => {
+        if (openerRef.current && typeof openerRef.current.focus === 'function') {
+          openerRef.current.focus();
+        }
+      }, 50);
+    }
+    prevSelectedStaffIdRef.current = selectedStaffId;
+  }, [selectedStaffId]);
+
+  // Initial focus inside console when opened (Requirement 4)
+  useEffect(() => {
+    if (selectedStaffId && consoleRef.current) {
+      const timer = setTimeout(() => {
+        if (consoleRef.current) {
+          const focusables = getFocusableElements(consoleRef.current);
+          if (focusables.length > 0) {
+            focusables[0].focus();
+          }
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedStaffId]);
+
+  // Escape key and focus trap while Access Console is open (Requirements 2, 3, 4)
+  useEffect(() => {
+    if (!selectedStaffId) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if any modal dialog is currently open on top of the console
+      const isAnyModalOpen =
+        pendingCapAction !== null ||
+        isDiscardModalOpen ||
+        deleteTarget !== null ||
+        isAddModalOpen;
+
+      if (e.key === 'Escape') {
+        if (isAnyModalOpen) {
+          // If another dialog is open on top of the console, Esc closes only that dialog first, not the console.
+          return;
+        }
+        e.preventDefault();
+        handleCloseConsole();
+        return;
+      }
+
+      // Focus trap inside the console
+      if (e.key === 'Tab' && consoleRef.current && !isAnyModalOpen) {
+        const focusables = getFocusableElements(consoleRef.current);
+        if (focusables.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const firstEl = focusables[0];
+        const lastEl = focusables[focusables.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstEl || !consoleRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            lastEl.focus();
+          }
+        } else {
+          if (document.activeElement === lastEl || !consoleRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            firstEl.focus();
+          }
+        }
+      }
+    };
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const isAnyModalOpen =
+        pendingCapAction !== null ||
+        isDiscardModalOpen ||
+        deleteTarget !== null ||
+        isAddModalOpen;
+
+      if (isAnyModalOpen) return;
+
+      if (consoleRef.current && !consoleRef.current.contains(e.target as Node)) {
+        const focusables = getFocusableElements(consoleRef.current);
+        if (focusables.length > 0) {
+          focusables[0].focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('focusin', handleFocusIn);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('focusin', handleFocusIn);
+    };
+  }, [selectedStaffId, pendingCapAction, isDiscardModalOpen, deleteTarget, isAddModalOpen, hasUnsavedChanges]);
 
   // Handlers for Onboarding Approvals
   const handleApprovePending = (req: PendingStaffApproval) => {
@@ -681,7 +820,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       size="sm"
                       variant="outline"
                       className="mt-3 gap-2"
-                      onClick={() => setSelectedStaffId(null)}
+                      onClick={handleCloseConsole}
                     >
                       <ArrowLeft className="w-4 h-4" />
                       Back to Staff Directory
@@ -694,14 +833,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               const avatarStyle = getRoleAvatarStyles(activeStaff.role);
 
               return (
-                <div className="space-y-4 animate-fadeIn">
+                <div ref={consoleRef} tabIndex={-1} className="space-y-4 animate-fadeIn focus:outline-none">
                   {/* Top Navigation & Context Bar */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
                     <Button
                       variant="outline"
                       size="sm"
                       className="gap-2 text-xs w-fit"
-                      onClick={() => setSelectedStaffId(null)}
+                      onClick={handleCloseConsole}
                     >
                       <ArrowLeft className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                       Back to Staff Directory
@@ -719,13 +858,15 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   <Card className="border border-teal-500/60 dark:border-teal-500/40 shadow-sm">
                     <CardHeader
                       action={
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={() => setSelectedStaffId(null)}
+                        <button
+                          type="button"
+                          onClick={handleCloseConsole}
+                          aria-label="Close console"
+                          title="Close"
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-0 cursor-pointer"
                         >
-                          Close Console
-                        </Button>
+                          <X className="w-5 h-5" />
+                        </button>
                       }
                     >
                       <div className="flex items-center gap-3">
@@ -1082,7 +1223,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                             size="sm"
                                             variant="outline"
                                             className="w-full text-xs"
-                                            onClick={() => togglePersonSelection(staff.id)}
+                                            onClick={(e) => togglePersonSelection(staff.id, e.currentTarget)}
                                           >
                                             Manage Access
                                           </Button>
@@ -1569,6 +1710,37 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             </p>
           </div>
         )}
+      </Modal>
+
+      {/* Unsaved Changes Confirmation Modal (Requirement 3) */}
+      <Modal
+        isOpen={isDiscardModalOpen}
+        onClose={() => setIsDiscardModalOpen(false)}
+        title="Unsaved Changes"
+        description="Confirm closing the Access Console"
+        maxWidth="sm"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDiscardModalOpen(false)}
+            >
+              Keep editing
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={performCloseConsole}
+            >
+              Discard
+            </Button>
+          </>
+        }
+      >
+        <p className="text-xs text-slate-600 dark:text-slate-400">
+          You have unsaved changes. Discard and close?
+        </p>
       </Modal>
 
       {/* Directly Add Staff Member Modal */}
