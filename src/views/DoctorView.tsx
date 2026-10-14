@@ -290,16 +290,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             Consulting Physician: <strong className="text-slate-700 dark:text-slate-200">{activeDoctor.name}</strong> ({activeDoctor.qualification}) • {activeDoctor.department} • {activeDoctor.roomNumber}
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<FilePlus className="w-4 h-4" />}
-            onClick={() => handleOpenPrescriptionModal()}
-          >
-            Write Prescription
-          </Button>
-        </div>
       </div>
 
       {/* MD Clinical Queue Inspector Governance Bar (Clearance Governance Reference) */}
@@ -969,18 +959,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {selectedTab === 'prescriptions' && (
         <Card>
-          <CardHeader
-            action={
-              <Button
-                size="xs"
-                variant="primary"
-                icon={<Plus className="w-3.5 h-3.5" />}
-                onClick={() => handleOpenPrescriptionModal()}
-              >
-                Write Prescription
-              </Button>
-            }
-          >
+          <CardHeader>
             <CardTitle>e-Prescription Master Ledger</CardTitle>
             <CardDescription>
               Electronic medication orders, therapeutic dosing, and pharmaceutical fulfillment records
