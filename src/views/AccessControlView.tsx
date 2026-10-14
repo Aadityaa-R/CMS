@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { UserRole, StaffAccessRecord } from '@/types';
 
-type RoleFilterKey = 'all' | 'doc' | 'receptionist' | 'patient';
+type RoleFilterKey = '' | 'doc' | 'receptionist' | 'patient';
 
 interface RoleSectionMeta {
   key: 'doc' | 'receptionist' | 'patient';
@@ -59,17 +59,14 @@ export const AccessControlView: React.FC = () => {
     toggleStaffPermission,
   } = useAuth();
 
-  // Active role filter: 'all' | 'doc' | 'receptionist' | 'patient'
-  const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('all');
+  // Active role filter: '' (unselected) | 'doc' | 'receptionist' | 'patient'
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('');
 
-  // Search & Status filters
+  // Search filter
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'granted' | 'revoked'>('all');
 
   // State to track which person has their control panel open
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(() => {
-    return staffAccessList[0]?.id || null;
-  });
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
 
   // State for permanent deletion confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<StaffAccessRecord | null>(null);
@@ -131,20 +128,16 @@ export const AccessControlView: React.FC = () => {
   const activeGranted = staffAccessList.filter((s) => s.status === 'granted').length;
   const suspendedRevoked = staffAccessList.filter((s) => s.status === 'revoked').length;
 
-  // Filter staff by search and status
+  // Filter staff by search query
   const filteredStaff = staffAccessList.filter((staff) => {
     const query = searchTerm.toLowerCase().trim();
-    const matchesSearch =
+    return (
       query === '' ||
       staff.staffName.toLowerCase().includes(query) ||
       staff.department.toLowerCase().includes(query) ||
       staff.badgeNumber.toLowerCase().includes(query) ||
-      staff.role.toLowerCase().includes(query);
-
-    const matchesStatus =
-      filterStatus === 'all' ? true : staff.status === filterStatus;
-
-    return matchesSearch && matchesStatus;
+      staff.role.toLowerCase().includes(query)
+    );
   });
 
   // Helper to get staff for a specific role
@@ -152,11 +145,10 @@ export const AccessControlView: React.FC = () => {
     return filteredStaff.filter((s) => s.role === role);
   };
 
-  // Base candidate sections based on dropdown role filter
-  const candidateSections =
-    selectedRoleFilter === 'all'
-      ? ROLE_SECTIONS
-      : ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter);
+  // Base candidate sections: empty if no role selected, otherwise strictly the selected role
+  const candidateSections = selectedRoleFilter
+    ? ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter)
+    : [];
 
   // Search isolation: When searching, display ONLY sections that contain matching personnel!
   const displayedSections = candidateSections.filter((section) => {
@@ -250,31 +242,34 @@ export const AccessControlView: React.FC = () => {
               Clearance Governance
             </span>
             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-              Select role filter to view access controls:
+              Select role to view access controls:
             </span>
           </div>
 
-          {/* Role Filter Dropdown using custom Design-System Select (Filter icon kept) */}
-          <div className="flex items-center gap-2 self-start sm:self-auto min-w-[220px]">
-            <Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-            <div className="flex-1">
-              <Select
-                value={selectedRoleFilter}
-                onChange={(e) => setSelectedRoleFilter(e.target.value as RoleFilterKey)}
-                options={[
-                  { value: 'all', label: `All Roles (${totalPersonnel})` },
-                  { value: 'doc', label: `Doctors (${docCount})` },
-                  { value: 'receptionist', label: `Receptionists (${receptionistCount})` },
-                  { value: 'patient', label: `Patients (${patientCount})` },
-                ]}
-              />
-            </div>
+          {/* Role Filter Dropdown using custom Design-System Select (Filter icon inside the box) */}
+          <div className="w-full sm:w-64">
+            <Select
+              icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+              value={selectedRoleFilter}
+              placeholder="Select Role"
+              onChange={(e) => {
+                const newRole = e.target.value as RoleFilterKey;
+                setSelectedRoleFilter(newRole);
+                setSelectedStaffId(null);
+              }}
+              options={[
+                { value: '', label: 'Select Role' },
+                { value: 'doc', label: `Doctors (${docCount})` },
+                { value: 'receptionist', label: `Receptionists (${receptionistCount})` },
+                { value: 'patient', label: `Patients (${patientCount})` },
+              ]}
+            />
           </div>
         </div>
 
-        {/* Toolbar: Search and Status Filter */}
-        <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md">
+        {/* Toolbar: Search input (secondary status filter removed per directive) */}
+        <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800">
+          <div className="relative w-full max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
@@ -284,60 +279,30 @@ export const AccessControlView: React.FC = () => {
               className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
             />
           </div>
-
-          <div className="flex items-center gap-1.5 self-start sm:self-auto">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5" /> Status:
-            </span>
-            <button
-              type="button"
-              onClick={() => setFilterStatus('all')}
-              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors cursor-pointer ${
-                filterStatus === 'all'
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              All
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterStatus('granted')}
-              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                filterStatus === 'granted'
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-              Active
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterStatus('revoked')}
-              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                filterStatus === 'revoked'
-                  ? 'bg-slate-800 text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              Suspended
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Main Role Sections Layout (Icon boxes & bubble structures eliminated) */}
+      {/* Main Role Sections Layout (Only displays role data when a role is selected) */}
       <div className="space-y-6">
-        {displayedSections.length === 0 ? (
+        {!selectedRoleFilter ? (
+          <div className="p-12 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-xs">
+            <div className="max-w-md mx-auto space-y-2">
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                Please Select a Role
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Choose a role from the clearance governance dropdown above (Doctors, Receptionists, or Patients) to inspect credentials, access logs, and configure workstation permissions.
+              </p>
+            </div>
+          </div>
+        ) : displayedSections.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
             {searchTerm.trim() !== '' ? (
               <span>
-                No personnel found matching &ldquo;<strong>{searchTerm}</strong>&rdquo;. Try refining your search query or selecting &ldquo;All Roles&rdquo;.
+                No personnel found matching &ldquo;<strong>{searchTerm}</strong>&rdquo; within the selected role. Try refining your search query.
               </span>
             ) : (
-              <span>No personnel found matching the selected filter criteria.</span>
+              <span>No personnel found matching the selected role.</span>
             )}
           </div>
         ) : (

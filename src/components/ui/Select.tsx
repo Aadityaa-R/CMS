@@ -19,6 +19,7 @@ export interface SelectProps {
   required?: boolean;
   id?: string;
   name?: string;
+  icon?: React.ReactNode;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -33,6 +34,7 @@ export const Select: React.FC<SelectProps> = ({
   disabled = false,
   required = false,
   id,
+  icon,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -79,7 +81,9 @@ export const Select: React.FC<SelectProps> = ({
         id={id}
         disabled={disabled}
         onClick={() => !disabled && setIsOpen((prev) => !prev)}
-        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors text-left shadow-xs focus:outline-none focus:ring-1 focus:ring-teal-500 ${
+        className={`w-full relative flex items-center justify-between ${
+          icon ? 'pl-9 pr-3' : 'px-3'
+        } py-2 text-xs font-medium rounded-lg border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors text-left shadow-xs focus:outline-none focus:ring-1 focus:ring-teal-500 ${
           disabled
             ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800'
             : 'cursor-pointer'
@@ -89,7 +93,18 @@ export const Select: React.FC<SelectProps> = ({
             : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
         }`}
       >
-        <span className={selectedOption ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'}>
+        {icon && (
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+            {icon}
+          </span>
+        )}
+        <span
+          className={`truncate ${
+            selectedOption && selectedOption.value !== ''
+              ? 'text-slate-900 dark:text-slate-100 font-medium'
+              : 'text-slate-400 dark:text-slate-500'
+          }`}
+        >
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
@@ -116,7 +131,7 @@ export const Select: React.FC<SelectProps> = ({
               const isSelected = String(opt.value) === String(value);
               return (
                 <button
-                  key={opt.value}
+                  key={opt.value || '__empty__'}
                   type="button"
                   onClick={() => handleSelect(opt.value)}
                   className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer transition-colors ${
@@ -125,8 +140,8 @@ export const Select: React.FC<SelectProps> = ({
                       : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span>{opt.label}</span>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                  <span className="truncate">{opt.label}</span>
+                  {isSelected && <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0 ml-2" />}
                 </button>
               );
             })
