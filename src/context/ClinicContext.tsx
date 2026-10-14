@@ -37,6 +37,10 @@ interface ClinicContextType {
   addPatient: (data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>) => Patient;
   updatePatient: (id: string, data: Partial<Patient>) => void;
 
+  // Doctor Actions
+  addDoctor: (data: Omit<Doctor, 'id'>) => Doctor;
+  updateDoctorStatus: (id: string, status: 'active' | 'on_leave' | 'inactive') => void;
+
   // Appointment Actions
   addAppointment: (data: Omit<Appointment, 'id' | 'appointmentNumber' | 'tokenNumber'>) => Appointment;
   updateAppointmentStatus: (id: string, status: AppointmentStatus) => void;
@@ -68,7 +72,7 @@ const ClinicContext = createContext<ClinicContextType | undefined>(undefined);
 
 export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
-  const [doctors] = useState<Doctor[]>(INITIAL_DOCTORS);
+  const [doctors, setDoctors] = useState<Doctor[]>(INITIAL_DOCTORS);
   const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
   const [vitals, setVitals] = useState<VitalSigns[]>(INITIAL_VITALS);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(INITIAL_PRESCRIPTIONS);
@@ -92,6 +96,20 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updatePatient = (id: string, data: Partial<Patient>) => {
     setPatients((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
+  };
+
+  const addDoctor = (data: Omit<Doctor, 'id'>): Doctor => {
+    const newId = `doc-${doctors.length + 1}`;
+    const newDoc: Doctor = {
+      ...data,
+      id: newId,
+    };
+    setDoctors((prev) => [...prev, newDoc]);
+    return newDoc;
+  };
+
+  const updateDoctorStatus = (id: string, status: 'active' | 'on_leave' | 'inactive') => {
+    setDoctors((prev) => prev.map((d) => (d.id === id ? { ...d, status } : d)));
   };
 
   const addAppointment = (
@@ -265,6 +283,8 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         inventory,
         addPatient,
         updatePatient,
+        addDoctor,
+        updateDoctorStatus,
         addAppointment,
         updateAppointmentStatus,
         recordVitals,

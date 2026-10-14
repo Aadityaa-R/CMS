@@ -79,7 +79,7 @@ c:\Users\raadi\Downloads\CMS\
 │   │       ├── Sidebar.tsx         # Dynamic role-specific navigation sidebar
 │   │       └── RoleSwitcher.tsx    # 1-click developer toolbar allowing instant switching between all 5 roles
 │   └── views/
-│       ├── ClinicAdminView.tsx     # Executive KPIs, patient directory, doctors, master calendar, billing & inventory
+│       ├── AdminView.tsx           # Executive KPIs, patient directory, doctors, master calendar, billing & inventory
 │       ├── DoctorView.tsx          # Queue, triage vitals review, allergy warnings, e-Rx writer, lab test ordering
 │       ├── PatientView.tsx         # Eleanor Wright's portal (appointments, prescriptions, lab results, bills, booking modal)
 │       ├── ReceptionistView.tsx    # Waiting lounge, 1-click check-in, token issuing, patient registration, walk-ins
