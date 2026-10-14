@@ -59,6 +59,7 @@ interface AuthContextType {
   revokeStaffAccess: (recordId: string, reason?: string) => void;
   deleteStaffAccount: (recordId: string, reason?: string) => void;
   toggleStaffPermission: (recordId: string, permissionId: string) => void;
+  addStaffAccount: (record: StaffAccessRecord, auditDescription?: string) => void;
   isRoleSuspended: (role: UserRole) => boolean;
   isStaffSuspended: (staffNameOrId: string) => boolean;
   login: (identifier: string, password: string) => LoginResult;
@@ -314,6 +315,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAccessAuditLog((prev) => [newAudit, ...prev]);
   };
 
+  const addStaffAccount = (record: StaffAccessRecord, auditDescription?: string) => {
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const enrichedRecord: StaffAccessRecord = {
+      ...record,
+      lastUpdated: timestamp,
+      updatedBy: 'Dr. Marcus Vance (Managing Director)',
+    };
+
+    setStaffAccessList((prev) => [enrichedRecord, ...prev]);
+
+    const newAudit: AccessAuditLogEntry = {
+      id: `aud-${Date.now()}`,
+      timestamp,
+      targetRole: record.role,
+      targetStaffName: record.staffName,
+      action: 'access_granted',
+      description:
+        auditDescription ||
+        `New ${record.role} account provisioned and workstation clearance authorized by Managing Director`,
+      authorizedBy: 'Dr. Marcus Vance (Managing Director)',
+    };
+
+    setAccessAuditLog((prev) => [newAudit, ...prev]);
+  };
+
   const login = (identifier: string, password: string): LoginResult => {
     const cleanId = identifier.trim().toLowerCase();
     const cleanPass = password.trim();
@@ -394,6 +420,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         revokeStaffAccess,
         deleteStaffAccount,
         toggleStaffPermission,
+        addStaffAccount,
         isRoleSuspended,
         isStaffSuspended,
         login,
