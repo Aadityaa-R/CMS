@@ -5,14 +5,21 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { DatePicker, TimePicker } from '@/components/ui/DatePicker';
+import { Badge } from '@/components/ui/Badge';
+import { StatCard } from '@/components/ui/StatCard';
+import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
+import { DatePicker } from '@/components/ui/DatePicker';
 import {
+  Filter,
+  Plus,
+  CheckCircle2,
   Calendar,
   Pill,
-  CreditCard,
-  Plus,
-  Clock,
+  Activity,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
+import { BloodGroup } from '@/types';
 
 interface PatientViewProps {
   activeTab?: string;
@@ -21,380 +28,762 @@ interface PatientViewProps {
 export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab = 'overview' }) => {
   const {
     patients,
-    doctors,
     appointments,
     prescriptions,
-    invoices,
-    addAppointment,
+    vitals,
+    addPatient,
+    updatePatient,
   } = useClinic();
 
-  // Active patient selection state for multi-patient testing
-  const [selectedPatientId, setSelectedPatientId] = useState<string>('pat-1');
-  const currentPatient = patients.find((p) => p.id === selectedPatientId) || patients[0];
+  // Search & Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'allergy' | 'chronic'>('all');
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
-  const [isBookModalOpen, setIsBookModalOpen] = useState(false);
-  const [selectedDoctorId, setSelectedDoctorId] = useState(doctors[0]?.id || '');
-  const [appointmentDate, setAppointmentDate] = useState('2026-10-20');
-  const [appointmentTime, setAppointmentTime] = useState('10:00');
-  const [reason, setReason] = useState('Follow-up blood pressure consultation');
+  // Notification State
+  const [notification, setNotification] = useState<string | null>(null);
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => {
+      setNotification(null);
+    }, 4500);
+  };
 
-  const myAppointments = appointments.filter(
-    (a) => a.patientId === currentPatient.id
-  );
-  const myPrescriptions = prescriptions.filter(
-    (p) => p.patientId === currentPatient.id
-  );
-  const myInvoices = invoices.filter((i) => i.patientId === currentPatient.id);
+  // Register New Outpatient Modal State
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [regFirstName, setRegFirstName] = useState('');
+  const [regLastName, setRegLastName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regDob, setRegDob] = useState('1994-05-18');
+  const [regGender, setRegGender] = useState<'male' | 'female' | 'other'>('female');
+  const [regBlood, setRegBlood] = useState<BloodGroup>('O+');
+  const [regAllergies, setRegAllergies] = useState('');
+  const [regChronic, setRegChronic] = useState('');
+  const [regEmergName, setRegEmergName] = useState('');
+  const [regEmergPhone, setRegEmergPhone] = useState('');
+  const [regEmergRelation, setRegEmergRelation] = useState('Spouse');
+  const [regError, setRegError] = useState('');
 
-  const handleBookAppointment = (e: React.FormEvent) => {
+  const resetRegisterForm = () => {
+    setRegFirstName('');
+    setRegLastName('');
+    setRegEmail('');
+    setRegPhone('');
+    setRegDob('1994-05-18');
+    setRegGender('female');
+    setRegBlood('O+');
+    setRegAllergies('');
+    setRegChronic('');
+    setRegEmergName('');
+    setRegEmergPhone('');
+    setRegEmergRelation('Spouse');
+    setRegError('');
+  };
+
+  const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const doc = doctors.find((d) => d.id === selectedDoctorId) || doctors[0];
+    if (!regFirstName.trim() || !regLastName.trim()) {
+      setRegError('First name and last name are required.');
+      return;
+    }
+    if (!regPhone.trim()) {
+      setRegError('Contact telephone number is required.');
+      return;
+    }
 
-    addAppointment({
-      patientId: currentPatient.id,
-      patientName: `${currentPatient.firstName} ${currentPatient.lastName}`,
-      patientPhone: currentPatient.phone,
-      doctorId: doc.id,
-      doctorName: doc.name,
-      department: doc.department,
-      dateTime: `${appointmentDate}T${appointmentTime}:00`,
-      durationMinutes: 30,
-      status: 'scheduled',
-      reasonForVisit: reason,
+    const birthYear = parseInt(regDob.split('-')[0], 10);
+    const calculatedAge = isNaN(birthYear) ? 30 : Math.max(1, new Date().getFullYear() - birthYear);
+
+    const allergiesArr = regAllergies
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0 && a.toLowerCase() !== 'none');
+
+    const chronicArr = regChronic
+      .split(',')
+      .map((c) => c.trim())
+      .filter((c) => c.length > 0 && c.toLowerCase() !== 'none');
+
+    const newPatient = addPatient({
+      firstName: regFirstName.trim(),
+      lastName: regLastName.trim(),
+      email: regEmail.trim() || `${regFirstName.toLowerCase()}.${regLastName.toLowerCase()}@outpatient.clinic`,
+      phone: regPhone.trim(),
+      dob: regDob,
+      gender: regGender,
+      bloodGroup: regBlood,
+      address: 'Central District, Clinic Zone 1',
+      emergencyContact: {
+        name: regEmergName.trim() || 'Primary Kin',
+        relationship: regEmergRelation.trim() || 'Family',
+        phone: regEmergPhone.trim() || regPhone.trim(),
+      },
+      allergies: allergiesArr,
+      chronicConditions: chronicArr,
+      age: calculatedAge,
     });
 
-    setIsBookModalOpen(false);
+    setIsRegisterOpen(false);
+    resetRegisterForm();
+    setSelectedPatientId(newPatient.id);
+    showNotification(`Outpatient demographic file registered for ${newPatient.firstName} ${newPatient.lastName} (${newPatient.mrn}).`);
   };
+
+  // Editable Allergy State for Selected Patient in Inspector
+  const [editingAllergyText, setEditingAllergyText] = useState('');
+
+  // Selected Patient Details
+  const inspectedPatient = patients.find((p) => p.id === selectedPatientId) || null;
+
+  React.useEffect(() => {
+    if (inspectedPatient) {
+      setEditingAllergyText(inspectedPatient.allergies.join(', '));
+    } else {
+      setEditingAllergyText('');
+    }
+  }, [inspectedPatient?.id, inspectedPatient?.allergies]);
+
+  const handleSaveInspectedAllergies = () => {
+    if (!inspectedPatient) return;
+    const allergies = editingAllergyText
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0 && a.toLowerCase() !== 'none');
+    updatePatient(inspectedPatient.id, { allergies });
+    showNotification(`Allergy warnings updated for ${inspectedPatient.firstName} ${inspectedPatient.lastName}.`);
+  };
+
+  // Key Clinical KPI Metrics
+  const totalPatients = patients.length;
+  const activePatientsCount = patients.filter((p) => p.status === 'active').length;
+  const allergyRiskCount = patients.filter((p) => p.allergies && p.allergies.length > 0).length;
+  const chronicCareCount = patients.filter((p) => p.chronicConditions && p.chronicConditions.length > 0).length;
+
+  // Search Suggestions: Patient Names Only
+  const patientSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
+    const list: SearchSuggestion[] = [];
+    const seen = new Set<string>();
+    patients.forEach((p) => {
+      const fullName = `${p.firstName} ${p.lastName}`;
+      if (!seen.has(fullName.toLowerCase())) {
+        seen.add(fullName.toLowerCase());
+        list.push({
+          label: fullName,
+          category: 'Patient',
+          sublabel: `${p.mrn} • ${p.phone}`,
+        });
+      }
+    });
+    return list;
+  }, [patients]);
+
+  // Filtering Logic
+  const query = searchTerm.toLowerCase().trim();
+  const filteredPatients = patients.filter((p) => {
+    const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+    const matchesSearch =
+      query === '' ||
+      fullName.includes(query) ||
+      p.mrn.toLowerCase().includes(query) ||
+      p.phone.toLowerCase().includes(query);
+
+    if (!matchesSearch) return false;
+    if (statusFilter === 'active') return p.status === 'active';
+    if (statusFilter === 'allergy') return p.allergies.length > 0;
+    if (statusFilter === 'chronic') return p.chronicConditions.length > 0;
+    return true;
+  });
 
   return (
     <div className="space-y-6">
-      {/* Patient Profile Transition Bar for Verification */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-            Switch Patient Profile:
-          </span>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">
-            Verify portal data across outpatients
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {patients.slice(0, 4).map((p) => {
-            const isSelected = p.id === currentPatient.id;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setSelectedPatientId(p.id)}
-                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer ${
-                  isSelected
-                    ? 'bg-teal-600 text-white font-semibold shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                {p.firstName} {p.lastName} ({p.mrn})
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Patient Profile Header */}
-      <div className="bg-gradient-to-r from-teal-700 to-slate-900 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xl font-bold">
-            {currentPatient.firstName[0]}
-            {currentPatient.lastName[0]}
+      {/* Real-time Feedback Notification Banner */}
+      {notification && (
+        <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+            <span className="font-semibold text-teal-950 dark:text-teal-100">Patient Directory:</span>
+            <span>{notification}</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold">
-                Welcome, {currentPatient.firstName} {currentPatient.lastName}
-              </h2>
-              <span className="text-xs bg-teal-500/30 text-teal-200 border border-teal-400/30 px-2 py-0.5 rounded-full">
-                Active Patient
-              </span>
-            </div>
-            <div className="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-3">
-              <span>Medical Record Number: <strong>{currentPatient.mrn}</strong></span>
-              <span>•</span>
-              <span>Blood Group: <strong>{currentPatient.bloodGroup}</strong></span>
-              <span>•</span>
-              <span>Contact: {currentPatient.phone}</span>
-            </div>
-          </div>
-        </div>
-
-        <Button
-          size="md"
-          variant="primary"
-          className="bg-white text-teal-900 hover:bg-slate-100 font-semibold"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={() => setIsBookModalOpen(true)}
-        >
-          Book New Consultation
-        </Button>
-      </div>
-
-      {/* Submodules */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400 flex items-center justify-center">
-            <Calendar className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">My Appointments</div>
-            <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{myAppointments.length} Booked</div>
-          </div>
-        </div>
-
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center">
-            <Pill className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Active Prescriptions</div>
-            <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{myPrescriptions.length} Orders</div>
-          </div>
-        </div>
-
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center">
-            <CreditCard className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Billing Invoices</div>
-            <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{myInvoices.length} Invoices</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Appointments Section */}
-        <Card>
-          <CardHeader
-            action={
-              <Button
-                size="xs"
-                variant="soft"
-                onClick={() => setIsBookModalOpen(true)}
-              >
-                + Book Visit
-              </Button>
-            }
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            className="text-teal-700 dark:text-teal-400 hover:text-teal-900 dark:hover:text-teal-200 text-xs font-semibold cursor-pointer"
           >
-            <CardTitle>My Appointments & Visits</CardTitle>
-            <CardDescription>Scheduled checkups and clinic visits</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {myAppointments.length > 0 ? (
-              myAppointments.map((apt) => (
-                <div
-                  key={apt.id}
-                  className="p-3.5 bg-slate-50 rounded-lg border border-slate-200/80 flex items-start justify-between gap-3"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">
-                        {apt.appointmentNumber}
-                      </span>
-                      <span className="text-xs font-semibold capitalize text-slate-700">
-                        ({apt.status.replace('_', ' ')})
-                      </span>
-                    </div>
-                    <div className="text-xs font-semibold text-slate-800 mt-1">
-                      {apt.doctorName} ({apt.department})
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Reason: {apt.reasonForVisit}
-                    </p>
-                    <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-2">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        {new Date(apt.dateTime).toLocaleDateString([], {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}{' '}
-                        at{' '}
-                        {new Date(apt.dateTime).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                      <span>Token #{apt.tokenNumber}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-slate-500">No appointments scheduled.</p>
-            )}
-          </CardContent>
-        </Card>
+            Dismiss
+          </button>
+        </div>
+      )}
 
-        {/* Prescriptions Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>My Active Prescriptions & Medications</CardTitle>
-            <CardDescription>Prescribed medications, instructions, and dispensary status</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {myPrescriptions.length > 0 ? (
-              myPrescriptions.map((rx) => (
-                <div
-                  key={rx.id}
-                  className="p-3.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-slate-900">
-                        {rx.prescriptionNumber}
-                      </span>
-                      <div className="text-[11px] text-slate-600 font-medium">
-                        Prescribed by {rx.doctorName} • {rx.diagnosis}
-                      </div>
-                    </div>
-                    <span className="text-xs font-semibold capitalize text-slate-700">
-                      ({rx.status})
-                    </span>
-                  </div>
+      {/* Executive Workstation Header (Model: AccessControlView) */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="text-[10px] font-bold text-teal-300 tracking-wider uppercase">
+              Managing Director Console
+            </span>
+            <span>•</span>
+            <span className="text-slate-300 font-medium">Central Medical Records & EHR Governance</span>
+          </div>
+          <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
+            Patients Medical Directory & Health Records Governance
+          </h2>
+          <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+            Authorized by <strong>Dr. Marcus Vance, MD</strong> (Managing Director). Custody of electronic health records, clinical triage profiles, consultation histories, and outpatient registries.
+          </p>
+        </div>
 
-                  <div className="divide-y divide-slate-200/60 pt-1">
-                    {rx.items.map((item) => (
-                      <div key={item.id} className="py-2 text-xs">
-                        <div className="font-semibold text-slate-900">
-                          {item.medicineName} ({item.dosage})
-                        </div>
-                        <div className="text-slate-600 text-[11px]">
-                          Dosage: {item.frequency} for {item.duration}
-                        </div>
-                        <div className="text-slate-500 text-[11px] italic mt-0.5">
-                          "{item.instructions}"
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-slate-500">No active prescriptions.</p>
-            )}
-          </CardContent>
-        </Card>
-
-
-        {/* Billing Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>My Invoices & Receipts</CardTitle>
-            <CardDescription>Clinic fees, procedures, and payment status</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {myInvoices.length > 0 ? (
-              myInvoices.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="p-3.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-slate-900">
-                        {inv.invoiceNumber}
-                      </span>
-                      <div className="text-[11px] text-slate-500">Date: {inv.date}</div>
-                    </div>
-                    <span className="text-xs font-semibold capitalize text-slate-700">
-                      ({inv.status})
-                    </span>
-                  </div>
-
-                  <div className="divide-y divide-slate-200/60 pt-1">
-                    {inv.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="py-1.5 flex justify-between text-xs text-slate-700"
-                      >
-                        <span>{item.description}</span>
-                        <span className="font-semibold">${item.total.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-xs font-bold text-slate-900">
-                    <span>Total Amount</span>
-                    <span>${inv.totalAmount.toFixed(2)}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-slate-500">No invoices on file.</p>
-            )}
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={() => {
+              resetRegisterForm();
+              setIsRegisterOpen(true);
+            }}
+          >
+            Register Outpatient
+          </Button>
+        </div>
       </div>
 
-      {/* Book Appointment Modal */}
+      {/* Key Metric Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Registered Outpatients"
+          value={totalPatients.toString()}
+          subtitle="Demographic files in registry"
+          colorScheme="teal"
+        />
+        <StatCard
+          title="Active in Care"
+          value={activePatientsCount.toString()}
+          subtitle="Under clinical care"
+          colorScheme="teal"
+        />
+        <StatCard
+          title="Allergy Risk Flagged"
+          value={allergyRiskCount.toString()}
+          subtitle="Documented safety alerts"
+          colorScheme={allergyRiskCount > 0 ? 'rose' : 'teal'}
+        />
+        <StatCard
+          title="Chronic Care Tracked"
+          value={chronicCareCount.toString()}
+          subtitle="Hypertension & diabetes"
+          colorScheme="slate"
+        />
+      </div>
+
+      {/* Patient Governance Bar: Side-by-Side Search & Filter */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+              Outpatient Directory Governance
+            </span>
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              Search by patient name or select filter to inspect medical profiles:
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
+            {/* Search Input with Interactive Dropdown and Autofill */}
+            <div className="relative w-full sm:w-64">
+              <InteractiveSearchBar
+                value={searchTerm}
+                onChange={setSearchTerm}
+                suggestions={patientSearchSuggestions}
+                placeholder="Search by patient name..."
+              />
+            </div>
+
+            {/* Scope Filter Dropdown using custom Select with Filter icon */}
+            <div className="w-full sm:w-60">
+              <Select
+                icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                value={statusFilter}
+                placeholder="Select Filter Scope"
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'allergy' | 'chronic')}
+                options={[
+                  { value: 'all', label: `All Patients (${totalPatients})` },
+                  { value: 'active', label: `Active in Care (${activePatientsCount})` },
+                  { value: 'allergy', label: `Allergy Warnings (${allergyRiskCount})` },
+                  { value: 'chronic', label: `Chronic Conditions (${chronicCareCount})` },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Master Patient Records Directory Ledger Table */}
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+        <CardHeader
+          action={
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {filteredPatients.length} Records in Active Ledger
+            </span>
+          }
+        >
+          <CardTitle>Master Outpatient Medical Ledger</CardTitle>
+          <CardDescription>
+            Electronic Health Records, allergy profiles, and consultation histories under clinical administration
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                <tr>
+                  <th className="px-4 py-3.5 align-middle">MRN</th>
+                  <th className="px-4 py-3.5 align-middle">Patient Name & Contact</th>
+                  <th className="px-4 py-3.5 align-middle">Demographics</th>
+                  <th className="px-4 py-3.5 align-middle">Blood Group</th>
+                  <th className="px-4 py-3.5 align-middle">Allergies</th>
+                  <th className="px-4 py-3.5 align-middle">Chronic Conditions</th>
+                  <th className="px-4 py-3.5 align-middle">Emergency Contact</th>
+                  <th className="px-4 py-3.5 text-right align-middle">Medical File Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredPatients.length > 0 ? (
+                  filteredPatients.map((pat) => {
+                    const isSelected = selectedPatientId === pat.id;
+                    return (
+                      <React.Fragment key={pat.id}>
+                        <tr
+                          className={`transition-colors ${
+                            isSelected
+                              ? 'bg-teal-50/60 dark:bg-teal-950/40'
+                              : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
+                          }`}
+                        >
+                          <td className="px-4 py-3.5 align-middle font-mono font-bold text-slate-900 dark:text-slate-100">
+                            {pat.mrn}
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="font-semibold text-slate-900 dark:text-slate-100">
+                              {pat.firstName} {pat.lastName}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                              <span>{pat.phone}</span>
+                              <span>•</span>
+                              <span>{pat.email}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 capitalize">
+                            {pat.age} yrs • {pat.gender}
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <Badge variant="teal">{pat.bloodGroup}</Badge>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            {pat.allergies && pat.allergies.length > 0 ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                <span className="text-slate-700 dark:text-slate-300 font-medium text-xs">
+                                  {pat.allergies.join(', ')}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">
+                                None Recorded
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400">
+                            {pat.chronicConditions && pat.chronicConditions.length > 0
+                              ? pat.chronicConditions.join(', ')
+                              : 'None'}
+                          </td>
+                          <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
+                            <div className="font-medium text-xs">{pat.emergencyContact?.name}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {pat.emergencyContact?.relationship} • {pat.emergencyContact?.phone}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 text-right align-middle">
+                            <Button
+                              size="xs"
+                              variant={isSelected ? 'secondary' : 'outline'}
+                              onClick={() => setSelectedPatientId(isSelected ? null : pat.id)}
+                            >
+                              <span className="flex items-center gap-1">
+                                {isSelected ? 'Close File' : 'Inspect File'}
+                                {isSelected ? (
+                                  <ChevronUp className="w-3.5 h-3.5 ml-0.5" />
+                                ) : (
+                                  <ChevronDown className="w-3.5 h-3.5 ml-0.5" />
+                                )}
+                              </span>
+                            </Button>
+                          </td>
+                        </tr>
+
+                        {/* Inline Inspection Panel for Selected Patient */}
+                        {isSelected && (
+                          <tr className="bg-slate-50/70 dark:bg-slate-900/60 border-y border-teal-100 dark:border-teal-900/40 animate-fadeIn">
+                            <td colSpan={8} className="p-5">
+                              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-5 shadow-xs">
+                                {/* Inspection Header */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3.5">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-teal-500" />
+                                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                        Electronic Health Record: {pat.firstName} {pat.lastName}
+                                      </h3>
+                                      <Badge variant="teal">{pat.status.toUpperCase()}</Badge>
+                                    </div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                      MRN: <strong className="font-mono text-slate-700 dark:text-slate-300">{pat.mrn}</strong> • Registered: {pat.registeredDate} • Address: {pat.address}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="xs"
+                                      variant="outline"
+                                      onClick={() => setSelectedPatientId(null)}
+                                    >
+                                      Close Inspection
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {/* Editable Allergy Profile Banner inside Inspector */}
+                                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span
+                                      className={`w-2 h-2 rounded-full shrink-0 ${
+                                        editingAllergyText.trim() && editingAllergyText.toLowerCase().trim() !== 'none'
+                                          ? 'bg-rose-500'
+                                          : 'bg-slate-400'
+                                      }`}
+                                    />
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                      Allergy Safety Warnings:
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 flex-1 sm:max-w-md">
+                                    <input
+                                      type="text"
+                                      value={editingAllergyText}
+                                      onChange={(e) => setEditingAllergyText(e.target.value)}
+                                      onKeyDown={(e) => e.key === 'Enter' && handleSaveInspectedAllergies()}
+                                      placeholder="e.g. Penicillin, Peanuts (or None)"
+                                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition-colors shadow-xs font-medium"
+                                    />
+                                    <Button
+                                      size="xs"
+                                      variant="secondary"
+                                      onClick={handleSaveInspectedAllergies}
+                                    >
+                                      Save
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {/* Patient Clinical Ledger Tabs Breakdown */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                  {/* Clinical Vitals Card */}
+                                  <div className="p-4 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2">
+                                    <div className="flex items-center gap-2 font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                                      <Activity className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                                      <span>Latest Triage Vitals</span>
+                                    </div>
+                                    {(() => {
+                                      const patientVitals = vitals.find((v) => v.patientId === pat.id);
+                                      if (!patientVitals) {
+                                        return (
+                                          <p className="text-xs text-slate-400 italic py-2">
+                                            No clinical triage vitals recorded for this patient.
+                                          </p>
+                                        );
+                                      }
+                                      return (
+                                        <div className="grid grid-cols-2 gap-2 text-xs pt-1 font-mono">
+                                          <div>
+                                            <span className="text-[10px] text-slate-400 block font-sans">BP</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                              {patientVitals.systolicBp}/{patientVitals.diastolicBp} mmHg
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-[10px] text-slate-400 block font-sans">Heart Rate</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                              {patientVitals.heartRateBpm} bpm
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-[10px] text-slate-400 block font-sans">O2 Sat</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                              {patientVitals.oxygenSaturationPct}%
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-[10px] text-slate-400 block font-sans">Temperature</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                              {patientVitals.temperatureCelsius}°C
+                                            </span>
+                                          </div>
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+
+                                  {/* Prescriptions & Medications Card */}
+                                  <div className="p-4 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2">
+                                    <div className="flex items-center gap-2 font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                                      <Pill className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                                      <span>Active Prescriptions (e-Rx)</span>
+                                    </div>
+                                    {(() => {
+                                      const patientRx = prescriptions.filter((rx) => rx.patientId === pat.id);
+                                      if (patientRx.length === 0) {
+                                        return (
+                                          <p className="text-xs text-slate-400 italic py-2">
+                                            No active prescriptions on file.
+                                          </p>
+                                        );
+                                      }
+                                      return (
+                                        <div className="space-y-2 max-h-36 overflow-y-auto pt-1">
+                                          {patientRx.map((rx) => (
+                                            <div key={rx.id} className="text-xs border-b border-slate-100 dark:border-slate-800 pb-1.5 last:border-0">
+                                              <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-slate-100">
+                                                <span>{rx.prescriptionNumber}</span>
+                                                <span className="text-[10px] font-mono text-slate-500">{rx.date}</span>
+                                              </div>
+                                              <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                                                Dx: {rx.diagnosis}
+                                              </div>
+                                              <div className="text-[10px] text-teal-700 dark:text-teal-400 font-medium">
+                                                {rx.items.map((i) => i.medicineName).join(', ')}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+
+                                  {/* Visits & Consultations Card */}
+                                  <div className="p-4 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2">
+                                    <div className="flex items-center gap-2 font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                                      <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                                      <span>Consultation & Visit Log</span>
+                                    </div>
+                                    {(() => {
+                                      const patientApts = appointments.filter((a) => a.patientId === pat.id);
+                                      if (patientApts.length === 0) {
+                                        return (
+                                          <p className="text-xs text-slate-400 italic py-2">
+                                            No consultations recorded.
+                                          </p>
+                                        );
+                                      }
+                                      return (
+                                        <div className="space-y-2 max-h-36 overflow-y-auto pt-1">
+                                          {patientApts.map((a) => (
+                                            <div key={a.id} className="text-xs border-b border-slate-100 dark:border-slate-800 pb-1.5 last:border-0">
+                                              <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-slate-100">
+                                                <span>{a.doctorName}</span>
+                                                <span className="text-[10px] font-mono text-teal-600 dark:text-teal-400 font-bold">
+                                                  Token #{a.tokenNumber}
+                                                </span>
+                                              </div>
+                                              <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                                                {a.reasonForVisit}
+                                              </div>
+                                              <div className="text-[10px] text-slate-500 capitalize">
+                                                Status: {a.status.replace('_', ' ')}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-12 text-center text-xs text-slate-400 dark:text-slate-500">
+                      {searchTerm.trim() !== ''
+                        ? `No outpatients found matching "${searchTerm}".`
+                        : 'No outpatient records found under the current filter scope.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Register New Outpatient Demographic File Modal */}
       <Modal
-        isOpen={isBookModalOpen}
-        onClose={() => setIsBookModalOpen(false)}
-        title="Book Clinic Appointment"
-        description="Select a specialist physician and preferred consultation schedule."
+        isOpen={isRegisterOpen}
+        onClose={() => {
+          setIsRegisterOpen(false);
+          resetRegisterForm();
+        }}
+        title="Register Outpatient Demographic File"
+        description="Creates a verified Electronic Health Record (EHR) profile with MRN assignment."
+        maxWidth="lg"
         footer={
           <>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsBookModalOpen(false)}
+              onClick={() => {
+                setIsRegisterOpen(false);
+                resetRegisterForm();
+              }}
             >
               Cancel
             </Button>
             <Button
               variant="primary"
               size="sm"
-              onClick={handleBookAppointment}
+              icon={<Plus className="w-4 h-4" />}
+              onClick={handleRegisterSubmit}
             >
-              Confirm Appointment
+              Authorize & Create Record
             </Button>
           </>
         }
       >
-        <form onSubmit={handleBookAppointment} className="space-y-3.5">
-          <Select
-            label="Attending Doctor"
-            value={selectedDoctorId}
-            onChange={(e) => setSelectedDoctorId(e.target.value)}
-            options={doctors.map((d) => ({
-              value: d.id,
-              label: `${d.name} (${d.specialization}) - $${d.consultationFee}`,
-            }))}
-          />
+        <form onSubmit={handleRegisterSubmit} className="space-y-4">
+          {regError && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+              {regError}
+            </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <DatePicker
-              label="Appointment Date"
-              value={appointmentDate}
-              onChange={setAppointmentDate}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="First Name"
+              value={regFirstName}
+              onChange={(e) => setRegFirstName(e.target.value)}
+              placeholder="e.g. Eleanor"
               required
             />
-            <TimePicker
-              label="Preferred Time"
-              value={appointmentTime}
-              onChange={setAppointmentTime}
+            <Input
+              label="Last Name"
+              value={regLastName}
+              onChange={(e) => setRegLastName(e.target.value)}
+              placeholder="e.g. Vance"
               required
             />
           </div>
 
-          <Input
-            label="Reason for Visit / Symptoms"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Briefly describe your symptoms"
-            required
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Contact Telephone"
+              value={regPhone}
+              onChange={(e) => setRegPhone(e.target.value)}
+              placeholder="e.g. +1 (555) 234-5678"
+              required
+            />
+            <Input
+              label="Email Address"
+              type="email"
+              value={regEmail}
+              onChange={(e) => setRegEmail(e.target.value)}
+              placeholder="e.g. eleanor.vance@outpatient.clinic"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <DatePicker
+              label="Date of Birth"
+              value={regDob}
+              onChange={setRegDob}
+              required
+            />
+            <Select
+              label="Gender"
+              value={regGender}
+              onChange={(e) => setRegGender(e.target.value as 'male' | 'female' | 'other')}
+              options={[
+                { value: 'female', label: 'Female' },
+                { value: 'male', label: 'Male' },
+                { value: 'other', label: 'Other' },
+              ]}
+            />
+            <Select
+              label="Blood Group"
+              value={regBlood}
+              onChange={(e) => setRegBlood(e.target.value as BloodGroup)}
+              options={[
+                { value: 'A+', label: 'A+' },
+                { value: 'A-', label: 'A-' },
+                { value: 'B+', label: 'B+' },
+                { value: 'B-', label: 'B-' },
+                { value: 'AB+', label: 'AB+' },
+                { value: 'AB-', label: 'AB-' },
+                { value: 'O+', label: 'O+' },
+                { value: 'O-', label: 'O-' },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <Input
+              label="Allergies (comma-separated)"
+              value={regAllergies}
+              onChange={(e) => setRegAllergies(e.target.value)}
+              placeholder="e.g. Penicillin, Peanuts (or None)"
+            />
+            <Input
+              label="Chronic Conditions (comma-separated)"
+              value={regChronic}
+              onChange={(e) => setRegChronic(e.target.value)}
+              placeholder="e.g. Hypertension, Asthma (or None)"
+            />
+          </div>
+
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-2">
+              Emergency Contact Information
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                label="Contact Name"
+                value={regEmergName}
+                onChange={(e) => setRegEmergName(e.target.value)}
+                placeholder="e.g. Thomas Vance"
+              />
+              <Input
+                label="Relationship"
+                value={regEmergRelation}
+                onChange={(e) => setRegEmergRelation(e.target.value)}
+                placeholder="e.g. Spouse / Sibling"
+              />
+              <Input
+                label="Contact Phone"
+                value={regEmergPhone}
+                onChange={(e) => setRegEmergPhone(e.target.value)}
+                placeholder="e.g. +1 (555) 987-6543"
+              />
+            </div>
+          </div>
         </form>
       </Modal>
     </div>
   );
 };
+
+export default PatientView;
