@@ -93,26 +93,12 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
     return null;
   }, [matchedSuggestion, value]);
 
-  const showAutofillAction =
-    Boolean(matchedSuggestion) &&
-    matchedSuggestion?.toLowerCase() !== value.trim().toLowerCase();
-
-  const handleAutofill = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    if (matchedSuggestion) {
-      onChange(matchedSuggestion);
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Tab' || e.key === 'Enter') {
-      if (showAutofillAction && matchedSuggestion) {
+      if (
+        matchedSuggestion &&
+        matchedSuggestion.toLowerCase() !== value.trim().toLowerCase()
+      ) {
         e.preventDefault();
         onChange(matchedSuggestion);
       }
@@ -155,18 +141,14 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onScroll={handleScroll}
-          className={`w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 ${
-            showAutofillAction ? 'pr-24' : 'pr-8'
-          } py-2 text-xs leading-5 font-sans text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition-colors shadow-xs`}
+          className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-8 py-2 text-xs leading-5 font-sans text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition-colors shadow-xs"
         />
 
         {/* Inline Ghost Text Completion */}
         {completionSuffix && (
           <div
             ref={ghostRef}
-            className={`absolute inset-0 flex items-center pl-9 ${
-              showAutofillAction ? 'pr-24' : 'pr-8'
-            } py-2 text-xs leading-5 font-sans pointer-events-none select-none z-10 overflow-hidden whitespace-pre`}
+            className="absolute inset-0 flex items-center pl-9 pr-8 py-2 text-xs leading-5 font-sans pointer-events-none select-none z-10 overflow-hidden whitespace-pre"
             aria-hidden="true"
           >
             <span className="opacity-0">{value}</span>
@@ -176,32 +158,17 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
           </div>
         )}
 
-        {/* Right Action Controls: Tab / Enter Pill and Clear Button */}
-        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-20">
-          {showAutofillAction && (
-            <button
-              type="button"
-              onClick={handleAutofill}
-              className="px-1.5 py-0.5 text-[10px] font-mono font-medium text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300 bg-slate-200/70 hover:bg-teal-50 dark:bg-slate-700/70 dark:hover:bg-teal-950/60 rounded border border-slate-300/80 dark:border-slate-600/80 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-              title={`Press Tab or Enter to complete "${matchedSuggestion}"`}
-            >
-              <span>Tab</span>
-              <span className="text-slate-300 dark:text-slate-600">/</span>
-              <span>Enter</span>
-            </button>
-          )}
-
-          {value ? (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded cursor-pointer transition-colors"
-              title="Clear search"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          ) : null}
-        </div>
+        {/* Clear Button */}
+        {value ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded cursor-pointer transition-colors z-20"
+            title="Clear search"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        ) : null}
       </div>
     </div>
   );
