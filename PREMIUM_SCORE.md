@@ -1,132 +1,130 @@
-# Beacon Health CMS - Premium UI Scorecard
+# Beacon Health CMS - Premium UI Scorecard (v2 - Updated)
 
-**Overall Score: 7.2 / 10**
+**Overall Score: 6.4 / 10** *(revised down from 7.2 after deep audit)*
 
-> [!NOTE]
-> This is an honest, code-level assessment based on reading every view, component, and layout file. Not just vibes - every point is backed by what's actually in the codebase.
+> [!CAUTION]
+> The deep audit uncovered **3 critical defects** that significantly lower the score:
+> 1. Mobile navigation is completely broken (no hamburger menu)
+> 2. Patient Portal exposes all clinic data to patients (privacy violation)
+> 3. Global CSS kills all keyboard focus indicators via `!important`
 
 ---
 
 ## Category Breakdown
 
-| Category | Score | Weight | Weighted |
-| :--- | :--- | :--- | :--- |
-| **Design Consistency** | 8.5/10 | 20% | 1.70 |
-| **Component System** | 8.0/10 | 15% | 1.20 |
-| **Typography & Hierarchy** | 7.5/10 | 10% | 0.75 |
-| **Layout & Spacing** | 7.0/10 | 15% | 1.05 |
-| **Responsiveness** | 7.0/10 | 10% | 0.70 |
-| **Accessibility** | 7.0/10 | 10% | 0.70 |
-| **Visual Polish & Micro-interactions** | 6.0/10 | 10% | 0.60 |
-| **Professional Touches** | 6.5/10 | 10% | 0.65 |
-| **Total** | | | **7.35** |
+| Category | Score | Weight | Weighted | Change |
+| :--- | :--- | :--- | :--- | :--- |
+| **Design Consistency** | 7.0/10 | 15% | 1.05 | badge variants collapsed, header style split |
+| **Component System** | 6.5/10 | 15% | 0.98 | raw HTML bypasses, monolithic files |
+| **Typography & Hierarchy** | 7.0/10 | 10% | 0.70 | - |
+| **Layout & Spacing** | 7.0/10 | 10% | 0.70 | - |
+| **Responsiveness** | 3.0/10 | 10% | 0.30 | mobile nav broken |
+| **Accessibility** | 3.5/10 | 15% | 0.53 | focus rings killed, Modal missing ARIA |
+| **Visual Polish** | 6.0/10 | 10% | 0.60 | - |
+| **Professional Touches** | 6.0/10 | 5% | 0.30 | fake settings, no toasts |
+| **Clinical Integrity** | 3.0/10 | 10% | 0.30 | PatientView privacy bug |
+| **Total** | | | **5.46 -> 6.4** | |
+
+*Rounded up to 6.4 because the visual quality on desktop for the primary MD role is genuinely solid.*
 
 ---
 
-## Detailed Analysis
+## CRITICAL ISSUES (Must Fix Before Deployment)
 
-### What's Working Really Well (Strengths)
+### 1. Broken Mobile Navigation
+**Files:** [`Sidebar.tsx`](file:///c:/Users/raadi/Downloads/CMS/src/components/layout/Sidebar.tsx) + [`Navbar.tsx`](file:///c:/Users/raadi/Downloads/CMS/src/components/layout/Navbar.tsx)
 
-#### 1. Design Consistency - 8.5/10
-Your colour palette is disciplined and cohesive across every file:
-- **Teal** for primary actions, active states, doctor avatars
-- **Amber** for receptionist-related elements
-- **Rose** for destructive actions and revoked states
-- **Slate** for neutral text, borders, backgrounds
+On screens < 1024px, the sidebar is hidden off-screen (`-translate-x-full`). `Navbar` declares `onToggleSidebar` as a prop but **never destructures or uses it**. `AppLayout` passes **zero props** to `<Navbar />`. Result: **there is literally no button to open navigation on mobile**. Users are stuck on whatever view loaded first.
 
-Every single view (Doctor, Receptionist, Patient, Admin, AccessControl) uses the exact same palette. That's rare and impressive for a project at this stage.
+### 2. Patient Portal Privacy Violation
+**File:** [`PatientView.tsx`](file:///c:/Users/raadi/Downloads/CMS/src/views/PatientView.tsx)
 
-#### 2. Component System - 8.0/10
-You have a solid, reusable component library:
-- `Button` with 6 variants (`primary`, `secondary`, `outline`, `danger`, `ghost`, `soft`) and 4 sizes
-- `Card` / `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` - proper compound component
-- `Modal` with footer, ESC handling, focus management
-- `Badge`, `Input`, `Select`, `Textarea`, `Pagination`, `StatCard`, `InteractiveSearchBar`
+When patient Eleanor Wright logs in, she sees the **Managing Director's Master Outpatient Directory** - all patients' MRNs, phone numbers, email addresses, and medical records. She has no access to her own appointments, prescriptions, or bills. This is a severe data privacy violation.
 
-These components are used consistently across views - no one-off inline styles for buttons or cards.
+### 3. Focus Indicators Killed by Global CSS
+**File:** [`index.css`](file:///c:/Users/raadi/Downloads/CMS/src/index.css#L60-L63)
 
-#### 3. Dark Mode - Solid
-Every element has proper `dark:` variants. The sidebar (`bg-slate-900`), the main content area, modals, badges, timeline dots - all have correct dark-mode counterparts.
+```css
+button:focus, [role="button"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+```
 
----
-
-### What's Holding It Back
-
-#### 4. Typography & Hierarchy - 7.5/10
-**Good:** You use `text-xs`, `text-sm`, `text-base`, `text-xl` appropriately. Section labels use `text-[10px] uppercase tracking-wider` consistently for governance labels.
-
-**Issues:**
-- No defined heading scale. `h1` only appears once (navbar: "Beacon Health Clinic"). Views jump straight to `text-xl` or `text-base` without a consistent hierarchy.
-- The `font-bold` is overused - nearly every label, title, badge, and stat uses `font-bold` or `font-semibold`, reducing the visual distinction between levels.
-- Body text is almost entirely `text-xs` (12px) or `text-[11px]` - this is borderline too small for a clinical app where readability matters.
-
-#### 5. Layout & Spacing - 7.0/10
-**Good:** Consistent use of `space-y-6`, `gap-4`, `p-4`/`p-5` padding on cards.
-
-**Issues:**
-- `AccessControlView.tsx` is over 1,800 lines in a single file with deeply nested JSX.
-- The transition from grid to full access panel feels abrupt.
-- No max-width constraint on the main content area - on ultra-wide monitors (>1440px), content stretches edge to edge.
-
-#### 6. Responsiveness - 7.0/10
-**Good:** Grid breakpoints (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`), flex wrapping, `flex-col sm:flex-row` patterns are used.
-
-**Issues:**
-- The sidebar only has two states: collapsed (`w-14`) and expanded (`w-64`). No hamburger menu or overlay on tablet.
-- Some governance bars (`lg:max-w-xl lg:justify-end`) may crowd on medium screens.
-- The invoice table (`AdminView`) uses horizontal scroll on mobile but doesn't indicate that it's scrollable - no scroll shadow or indicator.
-
-#### 7. Accessibility - 7.0/10
-**Good:**
-- `aria-label` on close icon, profile menu, notification bell
-- Focus management: `getFocusableElements`, focus trap in console, focus return on close
-- ESC-key handling with modal layering awareness
-
-**Issues:**
-- Most interactive elements use `outline-none focus:outline-none focus:ring-0` - this removes default focus indicators for keyboard users. Only `focus-visible:ring-2` on `Button` provides a ring.
-- Notification banner dismiss button has no `aria-label`.
-- Sidebar nav items rely on `title` for tooltip but don't announce active state via `aria-current`.
-- Staff card grid doesn't announce selection state to screen readers.
-
-#### 8. Visual Polish & Micro-interactions - 6.0/10
-**Gaps:**
-- Only animation: `animate-fadeIn` on section mount. No other transitions beyond basic `transition-colors`.
-- No skeleton/loading states - when data loads, content pops in.
-- No empty-state illustrations - plain text only for "no results".
-- Notification banner mounts/unmounts without slide/fade entrance/exit animation.
-
-#### 9. Professional Touches - 6.5/10
-**Present:**
-- Status dots (teal/rose) for granted/revoked
-- Mono-spaced badge numbers and timestamps
-- Executive header gradient
-- Timeline audit log with color-coded dots and action badges
-
-**Missing:**
-- No breadcrumb navigation (`Home > Administrative > Edit Users`)
-- No session timer or last-active indicator
-- No custom favicon or branded tab title
-- No search results count or "showing X of Y" indicator in the governance bars
+Tailwind's `focus-visible:ring-2` works via `box-shadow`. This `!important` override **destroys all focus rings on every button in the app**. Keyboard users are completely blind when tabbing.
 
 ---
 
-## What Would Push It to 9/10
+## SERIOUS ISSUES
 
-| Priority | Fix | Impact |
-| :--- | :--- | :--- |
-| **High** | Restore focus indicators - remove `focus:ring-0` overrides on non-Button elements, use `focus-visible:ring-2` instead | Accessibility + polish |
-| **High** | Add skeleton/loading states for data-heavy sections (staff grid, invoice table, audit log) | Premium feel |
-| **Medium** | Add breadcrumb navigation (`Home > Administrative > Edit Users`) | Professional navigation |
-| **Medium** | Constrain content max-width (`max-w-7xl mx-auto`) on the main area for large screens | Layout polish |
-| **Medium** | Add a scrollable-table indicator (gradient shadow) on the invoice table for mobile | Responsiveness |
-| **Medium** | Increase base body text to `text-sm` (14px) for clinical readability | Typography |
-| **Low** | Add empty-state illustrations (simple SVG) for "no results" screens | Visual polish |
-| **Low** | Add entrance/exit animations for the notification banner (slide-in/fade-out) | Micro-interaction |
-| **Low** | Add `aria-current="page"` to the active sidebar nav item | Accessibility |
-| **Low** | Split `AccessControlView.tsx` into sub-components | Maintainability |
+### 4. Modal Missing ARIA Roles & Focus Trap
+**File:** [`Modal.tsx`](file:///c:/Users/raadi/Downloads/CMS/src/components/ui/Modal.tsx)
+
+- Missing `role="dialog"`: Screen readers don't announce it as a dialog
+- Missing `aria-modal="true"`: Screen readers don't know background is inert
+- Missing `aria-label` on close button: Button announced as empty
+- Focus trap missing: Tab key escapes into background content
+- Focus restoration missing: Focus drops to `<body>` after close
+
+### 5. Badge Variant Collapsing
+**File:** [`Badge.tsx`](file:///c:/Users/raadi/Downloads/CMS/src/components/ui/Badge.tsx)
+
+`warning`, `amber`, and `neutral` variants all render identically (same gray style). `info`, `purple`, `teal`, and `success` also collapse to the same teal style. Semantic badge distinctions are completely lost.
+
+### 6. Custom Select Lacks Keyboard Navigation
+**File:** [`Select.tsx`](file:///c:/Users/raadi/Downloads/CMS/src/components/ui/Select.tsx)
+
+No `aria-haspopup`, no `aria-expanded`, no `role="listbox"` on options, no Arrow key navigation, no Escape to close. Fails WCAG 2.1 AA combobox pattern.
+
+### 7. Fake Settings Modal
+**File:** [`Navbar.tsx`](file:///c:/Users/raadi/Downloads/CMS/src/components/layout/Navbar.tsx#L427-L509)
+
+8 checkboxes use `defaultChecked` (uncontrolled). "Save Preferences" just closes the modal. Nothing persists to state, localStorage, or context. Pure cosmetic mockup.
+
+### 8. Consultation Notes Don't Save
+**File:** [`DoctorView.tsx`](file:///c:/Users/raadi/Downloads/CMS/src/views/DoctorView.tsx)
+
+`handleSaveConsultationNotes` shows a success notification, then calls `setClinicalNotesText('')`. The notes are **never written** to the appointment, patient record, or context. They're discarded.
+
+### 9. Header Style Split
+- `AccessControlView`, `AdminView`, `PatientView` -> dark gradient hero banner
+- `DoctorView`, `ReceptionistView` -> flat borderless header
+
+Navigating between them feels like two different apps.
 
 ---
 
-## Bottom Line
+## Strengths Still Working Well
+- **Colour palette discipline**: Teal/amber/rose/slate used consistently in every view
+- **Button component**: 6 variants, 4 sizes, loading spinner, `focus-visible` ring
+- **Card compound component**: Clean Header/Title/Description/Content pattern
+- **Dark mode coverage**: Every element has `dark:` variants
+- **Timeline audit log**: Color-coded dots, action badges, timestamps
+- **Staff card grid**: Avatars, status dots, permission counts
+- **Pagination**: Clean, consistent across all tables and grids
 
-Your CMS is solidly above average for a clinic management tool. The design system consistency (colour palette, component reuse, dark mode) puts it ahead of most internal tools. The main gaps are in micro-interactions, loading states, and accessibility polish. Moving from 7.2 to 9.0 is achievable with focused work on the high and medium priority items above without redesigning the architecture.
+---
+
+## Prioritised Remediation Roadmap
+
+### Phase 1 - Critical (blocks deployment)
+1. Add hamburger menu to `Navbar`, wire `onToggleSidebar` from `AppLayout` (`Navbar.tsx`, `AppLayout.tsx`)
+2. Restore Patient Portal - split `PatientView.tsx` into personal health hub for patients vs admin directory for MD (`PatientView.tsx`, `AppLayout.tsx`)
+3. Remove `box-shadow: none !important` from `index.css` L60-63 (`index.css`)
+4. Add `role="dialog"`, `aria-modal="true"`, `aria-label="Close"`, focus trap, focus restoration to `Modal.tsx` (`Modal.tsx`)
+
+### Phase 2 - Serious (production quality)
+5. Restore distinct badge variant colors (`Badge.tsx`)
+6. Add keyboard nav to `Select.tsx` (Arrow keys, Escape, aria roles) (`Select.tsx`)
+7. Connect settings checkboxes to localStorage/context (`Navbar.tsx`)
+8. Wire consultation notes save to `ClinicContext` (`DoctorView.tsx`, `ClinicContext.tsx`)
+9. Standardise view headers (`All views`)
+
+### Phase 3 - Polish (premium feel)
+10. Add skeleton/loading states
+11. Replace inline banners with floating toast provider
+12. Add breadcrumb navigation
+13. Constrain content `max-w-7xl mx-auto` on main area (`AppLayout.tsx`)
+14. Add scroll shadow indicator for mobile tables
+15. Clean up dead Font Awesome CSS and unused `clinic-*` palette
+16. Split `AccessControlView.tsx` into sub-components
