@@ -83,8 +83,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Staff Access Records state
   const [staffAccessList, setStaffAccessList] = useState<StaffAccessRecord[]>(() => {
     try {
-      const saved = sessionStorage.getItem('cms_staff_access');
-      if (saved) return JSON.parse(saved);
+      // Invalidate legacy single-module portal caches
+      sessionStorage.removeItem('cms_staff_access');
+      sessionStorage.removeItem('cms_staff_access_v2');
+      sessionStorage.removeItem('cms_staff_access_v3');
+      sessionStorage.removeItem('cms_staff_access_v4');
+
+      const saved = sessionStorage.getItem('cms_staff_access_v5');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (
+          Array.isArray(parsed) &&
+          parsed.length >= 9 &&
+          !parsed.some((r: StaffAccessRecord) => r.staffName === 'Outpatient Services Portal')
+        ) {
+          return parsed;
+        }
+      }
     } catch {
       // Fallback
     }
@@ -94,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Access Audit Log state
   const [accessAuditLog, setAccessAuditLog] = useState<AccessAuditLogEntry[]>(() => {
     try {
-      const saved = sessionStorage.getItem('cms_access_audit_log');
+      const saved = sessionStorage.getItem('cms_access_audit_log_v5');
       if (saved) return JSON.parse(saved);
     } catch {
       // Fallback
@@ -114,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('cms_staff_access', JSON.stringify(staffAccessList));
+      sessionStorage.setItem('cms_staff_access_v5', JSON.stringify(staffAccessList));
     } catch {
       // Fallback
     }
@@ -122,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('cms_access_audit_log', JSON.stringify(accessAuditLog));
+      sessionStorage.setItem('cms_access_audit_log_v5', JSON.stringify(accessAuditLog));
     } catch {
       // Fallback
     }

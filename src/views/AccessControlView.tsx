@@ -2,26 +2,12 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { StatCard } from '@/components/ui/StatCard';
 import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import {
-  ShieldCheck,
   Search,
   Filter,
-  UserCheck,
-  UserX,
-  Lock,
-  Unlock,
-  Clock,
-  KeyRound,
-  Stethoscope,
-  Calendar,
-  User as UserIcon,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-  Sliders,
 } from 'lucide-react';
 import { UserRole, StaffAccessRecord } from '@/types';
 
@@ -34,7 +20,6 @@ interface RoleSectionMeta {
   badgeLabel: string;
   shortLabel: string;
   description: string;
-  icon: React.ReactNode;
 }
 
 const ROLE_SECTIONS: RoleSectionMeta[] = [
@@ -45,7 +30,6 @@ const ROLE_SECTIONS: RoleSectionMeta[] = [
     badgeLabel: 'Staff Physicians',
     shortLabel: 'Doctors',
     description: 'Staff consulting physicians operating outpatient desks under Managing Director clinical governance.',
-    icon: <Stethoscope className="w-4 h-4 text-teal-600 dark:text-teal-400" />,
   },
   {
     key: 'receptionist',
@@ -54,7 +38,6 @@ const ROLE_SECTIONS: RoleSectionMeta[] = [
     badgeLabel: 'Front Desk',
     shortLabel: 'Receptionists',
     description: 'Front desk admissions, patient check-in, token dispatch, and consultation scheduling clearance.',
-    icon: <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />,
   },
   {
     key: 'patient',
@@ -62,8 +45,7 @@ const ROLE_SECTIONS: RoleSectionMeta[] = [
     title: 'Patient Portal Access',
     badgeLabel: 'Outpatient Accounts',
     shortLabel: 'Patients',
-    description: 'Verified outpatient self-service accounts, personal EMR access, and online consultation booking.',
-    icon: <UserIcon className="w-4 h-4 text-teal-600 dark:text-teal-400" />,
+    description: 'Verified outpatient self-service accounts, personal EMR access clearance, and digital self-service authorities.',
   },
 ];
 
@@ -210,12 +192,12 @@ export const AccessControlView: React.FC = () => {
       {/* Executive Workstation Header */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-400/30 tracking-wider uppercase">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="text-[10px] font-bold text-teal-300 tracking-wider uppercase">
               Managing Director Console
             </span>
-            <span className="text-xs text-slate-400">•</span>
-            <span className="text-xs text-slate-300 font-medium">Supreme Administrative Authority</span>
+            <span>•</span>
+            <span className="text-slate-300 font-medium">Supreme Administrative Authority</span>
           </div>
           <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
             Staff Access Control & Security Governance
@@ -226,41 +208,36 @@ export const AccessControlView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="px-3.5 py-2 rounded-lg bg-white/10 border border-white/15 text-xs flex items-center gap-2 text-slate-200">
-            <ShieldCheck className="w-4 h-4 text-teal-400" />
+          <div className="px-3.5 py-2 rounded-lg bg-white/10 border border-white/15 text-xs text-slate-200">
             <span>MD Non-Revocable Authority</span>
           </div>
         </div>
       </div>
 
-      {/* Metric Stat Cards */}
+      {/* Metric Stat Cards (Decorative icons removed per design directive) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Monitored Personnel & Roles"
           value={totalPersonnel.toString()}
           subtitle="Total accounts in directory"
-          icon={<KeyRound className="w-5 h-5" />}
           colorScheme="teal"
         />
         <StatCard
           title="Active Clearances"
           value={activeGranted.toString()}
           subtitle="Workstations operational"
-          icon={<UserCheck className="w-5 h-5" />}
           colorScheme="teal"
         />
         <StatCard
           title="Suspended Clearances"
           value={suspendedRevoked.toString()}
           subtitle="Workstation access revoked"
-          icon={<UserX className="w-5 h-5" />}
           colorScheme={suspendedRevoked > 0 ? 'rose' : 'teal'}
         />
         <StatCard
           title="Audit Trail State"
           value="Enforced"
           subtitle="Managing Director ledger active"
-          icon={<ShieldCheck className="w-5 h-5" />}
           colorScheme="teal"
         />
       </div>
@@ -277,28 +254,20 @@ export const AccessControlView: React.FC = () => {
             </span>
           </div>
 
-          {/* Role Filter Dropdown */}
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <label
-              htmlFor="role-filter-select"
-              className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 shrink-0"
-            >
-              <Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-              <span>Role Filter:</span>
-            </label>
-            <div className="relative min-w-[210px]">
-              <select
-                id="role-filter-select"
+          {/* Role Filter Dropdown using custom Design-System Select (Filter icon kept) */}
+          <div className="flex items-center gap-2 self-start sm:self-auto min-w-[220px]">
+            <Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+            <div className="flex-1">
+              <Select
                 value={selectedRoleFilter}
                 onChange={(e) => setSelectedRoleFilter(e.target.value as RoleFilterKey)}
-                className="w-full appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer shadow-xs"
-              >
-                <option value="all">All Roles ({totalPersonnel})</option>
-                <option value="doc">Doctors ({docCount})</option>
-                <option value="receptionist">Receptionists ({receptionistCount})</option>
-                <option value="patient">Patients ({patientCount})</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                options={[
+                  { value: 'all', label: `All Roles (${totalPersonnel})` },
+                  { value: 'doc', label: `Doctors (${docCount})` },
+                  { value: 'receptionist', label: `Receptionists (${receptionistCount})` },
+                  { value: 'patient', label: `Patients (${patientCount})` },
+                ]}
+              />
             </div>
           </div>
         </div>
@@ -359,7 +328,7 @@ export const AccessControlView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Role Sections Layout with Search Result Isolation */}
+      {/* Main Role Sections Layout (Icon boxes & bubble structures eliminated) */}
       <div className="space-y-6">
         {displayedSections.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
@@ -379,23 +348,18 @@ export const AccessControlView: React.FC = () => {
               <Card key={sectionMeta.key} className="border border-slate-200 dark:border-slate-800 shadow-sm">
                 <CardHeader
                   action={
-                    <Badge variant="teal">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                       {staffInSection.length} {staffInSection.length === 1 ? 'Person' : 'Personnel'}
-                    </Badge>
+                    </span>
                   }
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                      {sectionMeta.icon}
-                    </div>
-                    <div>
-                      <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                        {sectionMeta.title}
-                      </CardTitle>
-                      <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {sectionMeta.description}
-                      </CardDescription>
-                    </div>
+                  <div>
+                    <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      {sectionMeta.title}
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {sectionMeta.description}
+                    </CardDescription>
                   </div>
                 </CardHeader>
 
@@ -438,9 +402,9 @@ export const AccessControlView: React.FC = () => {
                                     <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
                                       {staff.staffName}
                                     </h4>
-                                    <Badge size="sm" variant={isRevoked ? 'neutral' : 'teal'}>
-                                      {isRevoked ? 'Access Revoked' : 'Access Granted'}
-                                    </Badge>
+                                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                      ({isRevoked ? 'Suspended' : 'Active'})
+                                    </span>
                                   </div>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                     {staff.staffTitle} • {staff.department} • Badge: <span className="font-mono">{staff.badgeNumber}</span>
@@ -449,22 +413,9 @@ export const AccessControlView: React.FC = () => {
                               </div>
 
                               <div className="flex items-center gap-3">
-                                <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">
-                                  {isSelected ? 'Click name to collapse controls' : 'Click name to configure controls'}
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                                  {isSelected ? 'Collapse' : 'Configure Controls'}
                                 </span>
-                                <div
-                                  className={`p-1.5 rounded-lg border transition-colors ${
-                                    isSelected
-                                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800'
-                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                                  }`}
-                                >
-                                  {isSelected ? (
-                                    <ChevronUp className="w-4 h-4" />
-                                  ) : (
-                                    <ChevronDown className="w-4 h-4" />
-                                  )}
-                                </div>
                               </div>
                             </div>
 
@@ -480,20 +431,19 @@ export const AccessControlView: React.FC = () => {
                                       }`}
                                     />
                                     <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                      Current Workstation Access Status:
+                                      Clearance Status:
                                     </span>
                                     <span className="text-slate-700 dark:text-slate-300 font-medium">
                                       {isRevoked ? 'Suspended by Managing Director' : 'Active & Authorized'}
                                     </span>
                                   </div>
 
-                                  {/* Action Buttons: Revoke Option AND next to it: Delete Account Option */}
+                                  {/* Action Buttons (Icons removed per design directive) */}
                                   <div className="flex items-center gap-2 flex-wrap">
                                     {isRevoked ? (
                                       <Button
                                         size="sm"
                                         variant="primary"
-                                        icon={<Unlock className="w-3.5 h-3.5" />}
                                         onClick={() => handleGrant(staff.id, staff.staffName)}
                                       >
                                         Grant Access
@@ -502,7 +452,6 @@ export const AccessControlView: React.FC = () => {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        icon={<Lock className="w-3.5 h-3.5" />}
                                         onClick={() => handleRevoke(staff.id, staff.staffName)}
                                       >
                                         Revoke Access
@@ -513,7 +462,6 @@ export const AccessControlView: React.FC = () => {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      icon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
                                       className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
                                       onClick={() => handlePromptDelete(staff)}
                                     >
@@ -522,13 +470,10 @@ export const AccessControlView: React.FC = () => {
                                   </div>
                                 </div>
 
-                                {/* Authorized Workstation Capabilities (Sub-Permissions Switchboard) */}
+                                {/* Authorized Capabilities Switchboard */}
                                 <div>
                                   <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2 flex items-center justify-between">
-                                    <span className="flex items-center gap-1.5">
-                                      <Sliders className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                                      <span>Authorized Capabilities</span>
-                                    </span>
+                                    <span>Authorized Capabilities & Authorities</span>
                                     <span className="text-[10px] text-slate-400 font-normal">
                                       Managing Director Controls
                                     </span>
@@ -595,19 +540,17 @@ export const AccessControlView: React.FC = () => {
       <Card>
         <CardHeader
           action={
-            <div className="text-xs text-slate-400 font-mono flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>Immutable Ledger</span>
-            </div>
+            <span className="text-xs text-slate-400 font-mono">
+              Immutable Ledger
+            </span>
           }
         >
-          <div className="flex items-center gap-2">
+          <div>
             <CardTitle>Managing Director Security Audit Ledger</CardTitle>
-            <Badge size="sm" variant="teal">Official Directives</Badge>
+            <CardDescription className="mt-0.5">
+              Chronological record of access grants, workstation suspensions, account deletions, and permission updates.
+            </CardDescription>
           </div>
-          <CardDescription>
-            Chronological record of access grants, workstation suspensions, account deletions, and permission updates.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">

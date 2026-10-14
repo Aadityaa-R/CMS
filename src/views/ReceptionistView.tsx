@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
 import {
@@ -878,11 +879,10 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 { value: 'other', label: 'Other' },
               ]}
             />
-            <Input
+            <DatePicker
               label="Date of Birth"
-              type="date"
               value={regDob}
-              onChange={(e) => setRegDob(e.target.value)}
+              onChange={setRegDob}
               required
             />
             <Select

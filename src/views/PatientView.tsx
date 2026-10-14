@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { DatePicker, TimePicker } from '@/components/ui/DatePicker';
 import {
   Calendar,
   Pill,
@@ -199,18 +199,9 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                       <span className="text-xs font-bold text-slate-900">
                         {apt.appointmentNumber}
                       </span>
-                      <Badge
-                        size="sm"
-                        variant={
-                          apt.status === 'completed'
-                            ? 'success'
-                            : apt.status === 'in_consultation'
-                            ? 'teal'
-                            : 'info'
-                        }
-                      >
-                        {apt.status.replace('_', ' ')}
-                      </Badge>
+                      <span className="text-xs font-semibold capitalize text-slate-700">
+                        ({apt.status.replace('_', ' ')})
+                      </span>
                     </div>
                     <div className="text-xs font-semibold text-slate-800 mt-1">
                       {apt.doctorName} ({apt.department})
@@ -265,12 +256,9 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                         Prescribed by {rx.doctorName} • {rx.diagnosis}
                       </div>
                     </div>
-                    <Badge
-                      size="sm"
-                      variant={rx.status === 'dispensed' ? 'success' : 'warning'}
-                    >
-                      {rx.status}
-                    </Badge>
+                    <span className="text-xs font-semibold capitalize text-slate-700">
+                      ({rx.status})
+                    </span>
                   </div>
 
                   <div className="divide-y divide-slate-200/60 pt-1">
@@ -317,12 +305,9 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                       </span>
                       <div className="text-[11px] text-slate-500">Date: {inv.date}</div>
                     </div>
-                    <Badge
-                      size="sm"
-                      variant={inv.status === 'paid' ? 'success' : 'danger'}
-                    >
-                      {inv.status}
-                    </Badge>
+                    <span className="text-xs font-semibold capitalize text-slate-700">
+                      ({inv.status})
+                    </span>
                   </div>
 
                   <div className="divide-y divide-slate-200/60 pt-1">
@@ -387,18 +372,16 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
           />
 
           <div className="grid grid-cols-2 gap-3">
-            <Input
+            <DatePicker
               label="Appointment Date"
-              type="date"
               value={appointmentDate}
-              onChange={(e) => setAppointmentDate(e.target.value)}
+              onChange={setAppointmentDate}
               required
             />
-            <Input
+            <TimePicker
               label="Preferred Time"
-              type="time"
               value={appointmentTime}
-              onChange={(e) => setAppointmentTime(e.target.value)}
+              onChange={setAppointmentTime}
               required
             />
           </div>

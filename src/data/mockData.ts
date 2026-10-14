@@ -1011,9 +1011,11 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Verified outpatient medical record and portal credentials',
     permissions: [
-      { id: 'perm-portal-login', name: 'Patient Portal Sign-In', description: 'Access personal health records, vitals, and reports', enabled: true },
-      { id: 'perm-portal-book', name: 'Online Visit Booking', description: 'Schedule consultations with clinic doctors', enabled: true },
-      { id: 'perm-portal-rx', name: 'Prescription Repository', description: 'View and download active e-prescriptions', enabled: true },
+      { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+      { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+      { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+      { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+      { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
     ],
   },
   {
@@ -1028,9 +1030,11 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Verified outpatient medical record and portal credentials',
     permissions: [
-      { id: 'perm-portal-login', name: 'Patient Portal Sign-In', description: 'Access personal health records, vitals, and reports', enabled: true },
-      { id: 'perm-portal-book', name: 'Online Visit Booking', description: 'Schedule consultations with clinic doctors', enabled: true },
-      { id: 'perm-portal-rx', name: 'Prescription Repository', description: 'View and download active e-prescriptions', enabled: true },
+      { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+      { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+      { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+      { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+      { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
     ],
   },
   {
@@ -1045,9 +1049,11 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Verified outpatient medical record and portal credentials',
     permissions: [
-      { id: 'perm-portal-login', name: 'Patient Portal Sign-In', description: 'Access personal health records, vitals, and reports', enabled: true },
-      { id: 'perm-portal-book', name: 'Online Visit Booking', description: 'Schedule consultations with clinic doctors', enabled: true },
-      { id: 'perm-portal-rx', name: 'Prescription Repository', description: 'View and download active e-prescriptions', enabled: true },
+      { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+      { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+      { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+      { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+      { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
     ],
   },
   {
@@ -1062,9 +1068,11 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Verified outpatient medical record and portal credentials',
     permissions: [
-      { id: 'perm-portal-login', name: 'Patient Portal Sign-In', description: 'Access personal health records, vitals, and reports', enabled: true },
-      { id: 'perm-portal-book', name: 'Online Visit Booking', description: 'Schedule consultations with clinic doctors', enabled: true },
-      { id: 'perm-portal-rx', name: 'Prescription Repository', description: 'View and download active e-prescriptions', enabled: true },
+      { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+      { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+      { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+      { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+      { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
     ],
   },
   {
@@ -1079,9 +1087,11 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Verified outpatient medical record and portal credentials',
     permissions: [
-      { id: 'perm-portal-login', name: 'Patient Portal Sign-In', description: 'Access personal health records, vitals, and reports', enabled: true },
-      { id: 'perm-portal-book', name: 'Online Visit Booking', description: 'Schedule consultations with clinic doctors', enabled: true },
-      { id: 'perm-portal-rx', name: 'Prescription Repository', description: 'View and download active e-prescriptions', enabled: true },
+      { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+      { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+      { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+      { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+      { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
     ],
   },
   {
@@ -1096,9 +1106,11 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Verified outpatient medical record and portal credentials',
     permissions: [
-      { id: 'perm-portal-login', name: 'Patient Portal Sign-In', description: 'Access personal health records, vitals, and reports', enabled: true },
-      { id: 'perm-portal-book', name: 'Online Visit Booking', description: 'Schedule consultations with clinic doctors', enabled: true },
-      { id: 'perm-portal-rx', name: 'Prescription Repository', description: 'View and download active e-prescriptions', enabled: true },
+      { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+      { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+      { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+      { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+      { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
     ],
   },
   {
@@ -1113,9 +1125,11 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Verified outpatient medical record and portal credentials',
     permissions: [
-      { id: 'perm-portal-login', name: 'Patient Portal Sign-In', description: 'Access personal health records, vitals, and reports', enabled: true },
-      { id: 'perm-portal-book', name: 'Online Visit Booking', description: 'Schedule consultations with clinic doctors', enabled: true },
-      { id: 'perm-portal-rx', name: 'Prescription Repository', description: 'View and download active e-prescriptions', enabled: true },
+      { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+      { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+      { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+      { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+      { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
     ],
   },
   {
@@ -1130,9 +1144,11 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Verified outpatient medical record and portal credentials',
     permissions: [
-      { id: 'perm-portal-login', name: 'Patient Portal Sign-In', description: 'Access personal health records, vitals, and reports', enabled: true },
-      { id: 'perm-portal-book', name: 'Online Visit Booking', description: 'Schedule consultations with clinic doctors', enabled: true },
-      { id: 'perm-portal-rx', name: 'Prescription Repository', description: 'View and download active e-prescriptions', enabled: true },
+      { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+      { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+      { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+      { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+      { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
     ],
   },
   {
@@ -1147,9 +1163,11 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Verified outpatient medical record and portal credentials',
     permissions: [
-      { id: 'perm-portal-login', name: 'Patient Portal Sign-In', description: 'Access personal health records, vitals, and reports', enabled: true },
-      { id: 'perm-portal-book', name: 'Online Visit Booking', description: 'Schedule consultations with clinic doctors', enabled: true },
-      { id: 'perm-portal-rx', name: 'Prescription Repository', description: 'View and download active e-prescriptions', enabled: true },
+      { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+      { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+      { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+      { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+      { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
     ],
   },
 ];
