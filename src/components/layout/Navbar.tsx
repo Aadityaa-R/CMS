@@ -240,7 +240,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 >
                   <div className="flex items-center gap-2.5">
                     {theme === 'dark' ? (
-                      <Sun className="w-4 h-4 text-amber-500" />
+                      <Sun className="w-4 h-4 text-teal-400" />
                     ) : (
                       <Moon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                     )}
@@ -410,7 +410,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block">
                   Session Status
                 </span>
-                <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                <span className="font-medium text-teal-700 dark:text-teal-400">
                   Active & Verified
                 </span>
               </div>

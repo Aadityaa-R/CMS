@@ -147,22 +147,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="w-10 h-10 flex items-center justify-center text-teal-400 hover:text-teal-300 transition-colors duration-200 cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-teal-400 hover:text-teal-300 hover:bg-slate-800/70 transition-colors duration-200 cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0"
                 title={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
                 aria-label={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
               >
                 {isCollapsed ? (
-                  <PanelLeftOpen className="w-7 h-7 text-teal-400 hover:text-teal-300 transition-colors" />
+                  <PanelLeftOpen className="w-4 h-4 text-teal-400 hover:text-teal-300 transition-colors" />
                 ) : (
-                  <PanelLeftClose className="w-7 h-7 text-teal-400 hover:text-teal-300 transition-colors" />
+                  <PanelLeftClose className="w-4 h-4 text-teal-400 hover:text-teal-300 transition-colors" />
                 )}
               </button>
             ) : (
               <div
-                className="w-10 h-10 flex items-center justify-center text-teal-400 shrink-0"
+                className="w-7 h-7 flex items-center justify-center text-teal-400 shrink-0"
                 title="Clinic Portal"
               >
-                <PanelLeft className="w-7 h-7 text-teal-400" />
+                <PanelLeft className="w-4 h-4 text-teal-400" />
               </div>
             )}
 

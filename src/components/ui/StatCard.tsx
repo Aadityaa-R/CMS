@@ -24,11 +24,11 @@ export const StatCard: React.FC<StatCardProps> = ({
 }) => {
   const iconColorClasses = {
     teal: 'bg-teal-50 text-teal-600 border border-teal-100 dark:bg-teal-950/60 dark:text-teal-400 dark:border-teal-800/60',
-    blue: 'bg-sky-50 text-sky-600 border border-sky-100 dark:bg-sky-950/60 dark:text-sky-400 dark:border-sky-800/60',
-    purple: 'bg-purple-50 text-purple-600 border border-purple-100 dark:bg-purple-950/60 dark:text-purple-400 dark:border-purple-800/60',
-    amber: 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/60',
+    blue: 'bg-teal-50 text-teal-600 border border-teal-100 dark:bg-teal-950/60 dark:text-teal-400 dark:border-teal-800/60',
+    purple: 'bg-teal-50 text-teal-600 border border-teal-100 dark:bg-teal-950/60 dark:text-teal-400 dark:border-teal-800/60',
+    amber: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
     rose: 'bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/60',
-    slate: 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+    slate: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
   };
 
   return (

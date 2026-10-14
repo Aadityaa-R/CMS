@@ -189,14 +189,14 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
           value={pendingCollection.length}
           unit={pendingCollection.length === 1 ? 'Order' : 'Orders'}
           subtitle="Orders requiring phlebotomy"
-          colorScheme="amber"
+          colorScheme="slate"
         />
         <StatCard
           title="In Testing Pipeline"
           value={pendingAnalysis.length}
           unit={pendingAnalysis.length === 1 ? 'Order' : 'Orders'}
           subtitle="Orders ready for assay"
-          colorScheme="blue"
+          colorScheme="teal"
         />
         <StatCard
           title="Urgent / STAT Priority"
@@ -373,10 +373,8 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                           <td className="px-4 py-3.5 align-middle">
                             <span
                               className={`text-xs capitalize font-medium ${
-                                test.priority === 'stat'
+                                test.priority === 'stat' || test.priority === 'urgent'
                                   ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                                  : test.priority === 'urgent'
-                                  ? 'text-amber-600 dark:text-amber-400 font-semibold'
                                   : 'text-slate-700 dark:text-slate-300'
                               }`}
                             >
@@ -391,10 +389,10 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                               <span
                                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                   test.status === 'completed'
-                                    ? 'bg-emerald-500'
+                                    ? 'bg-teal-500'
                                     : test.status === 'sample_collected'
-                                    ? 'bg-sky-500'
-                                    : 'bg-amber-500'
+                                    ? 'bg-teal-400'
+                                    : 'bg-slate-400 dark:bg-slate-500'
                                 }`}
                               />
                               <span className="text-xs text-slate-700 dark:text-slate-300 capitalize font-medium">
@@ -431,7 +429,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                             )}
 
                             {test.status === 'completed' && (
-                              <span className="text-emerald-700 dark:text-emerald-400 font-medium text-xs">
+                              <span className="text-teal-700 dark:text-teal-400 font-medium text-xs">
                                 Certified
                               </span>
                             )}
@@ -512,10 +510,8 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                           <td className="px-4 py-3.5 align-middle">
                             <span
                               className={`text-xs capitalize font-medium ${
-                                test.priority === 'stat'
+                                test.priority === 'stat' || test.priority === 'urgent'
                                   ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                                  : test.priority === 'urgent'
-                                  ? 'text-amber-600 dark:text-amber-400 font-semibold'
                                   : 'text-slate-700 dark:text-slate-300'
                               }`}
                             >
@@ -527,7 +523,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                           </td>
                           <td className="px-4 py-3.5 align-middle">
                             <div className="flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-500" />
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-slate-400 dark:bg-slate-500" />
                               <span className="text-xs text-slate-700 dark:text-slate-300 capitalize font-medium">
                                 Awaiting Specimen
                               </span>
@@ -621,10 +617,8 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                           <td className="px-4 py-3.5 align-middle">
                             <span
                               className={`text-xs capitalize font-medium ${
-                                test.priority === 'stat'
+                                test.priority === 'stat' || test.priority === 'urgent'
                                   ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                                  : test.priority === 'urgent'
-                                  ? 'text-amber-600 dark:text-amber-400 font-semibold'
                                   : 'text-slate-700 dark:text-slate-300'
                               }`}
                             >
@@ -636,7 +630,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
                           </td>
                           <td className="px-4 py-3.5 align-middle">
                             <div className="flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-sky-500" />
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-teal-500" />
                               <span className="text-xs text-slate-700 dark:text-slate-300 capitalize font-medium">
                                 In Lab Testing
                               </span>
