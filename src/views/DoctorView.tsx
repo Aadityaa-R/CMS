@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -13,7 +13,6 @@ import {
   Search,
   CheckCircle2,
   Filter,
-  ChevronDown,
   FilePlus,
   Plus,
   CheckCircle,
@@ -33,6 +32,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       setSelectedTab(activeTab);
     }
   }, [activeTab]);
+
   const {
     doctors,
     appointments,
@@ -62,29 +62,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   const activeDoctor = doctors.find((d) => d.id === activeDoctorId) || doctors[0];
   const doctorAppointments = appointments.filter((a) => a.doctorId === activeDoctorId);
 
-  // Search & Filter State
+  // Search & Filter State (Equal Authority Governance pattern)
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'active' | 'urgent'>('all');
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const filterDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close filter dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        filterDropdownRef.current &&
-        !filterDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsFilterDropdownOpen(false);
-      }
-    };
-    if (isFilterDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isFilterDropdownOpen]);
 
   // Real-time Feedback Notification Banner State
   const [notification, setNotification] = useState<string | null>(null);
@@ -239,14 +219,21 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   );
   const totalPrescriptions = doctorPrescriptions.length;
 
-  // Filter Helper
-  const query = searchTerm.toLowerCase();
+  // Global Active Triage Queue across all attending physician desks for MD oversight
+  const allActiveTriageAppointments = appointments.filter(
+    (a) => a.status === 'in_consultation' || a.status === 'checked_in'
+  );
+
+  // Filter Helper with Equal Authority
+  const query = searchTerm.toLowerCase().trim();
 
   const filteredAppointments = doctorAppointments.filter((a) => {
     const matchesSearch =
+      query === '' ||
       a.patientName.toLowerCase().includes(query) ||
       a.appointmentNumber.toLowerCase().includes(query) ||
-      a.reasonForVisit.toLowerCase().includes(query);
+      a.reasonForVisit.toLowerCase().includes(query) ||
+      a.tokenNumber.toString().includes(query);
 
     if (!matchesSearch) return false;
     if (filterMode === 'active') return a.status === 'in_consultation' || a.status === 'checked_in';
@@ -259,6 +246,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   const filteredPatients = doctorPatients.filter((p) => {
     const matchesSearch =
+      query === '' ||
       p.firstName.toLowerCase().includes(query) ||
       p.lastName.toLowerCase().includes(query) ||
       p.mrn.toLowerCase().includes(query) ||
@@ -272,6 +260,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   const filteredPrescriptions = doctorPrescriptions.filter((r) => {
     const matchesSearch =
+      query === '' ||
       r.prescriptionNumber.toLowerCase().includes(query) ||
       r.patientName.toLowerCase().includes(query) ||
       r.diagnosis.toLowerCase().includes(query);
@@ -313,66 +302,94 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </div>
       </div>
 
-      {/* MD Attending Physician Worklist Switcher (Option 1 - Clinical Oversight) */}
+      {/* MD Clinical Queue Inspector Governance Bar (Clearance Governance Reference) */}
       {isMD ? (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-            <div>
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
-                MD Clinical Queue Inspector
-              </span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                Select an attending physician worklist to review their 3 assigned patients and active consultations
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                  MD Clinical Queue Inspector
+                </span>
+              </div>
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5 block">
+                Search consultation queue or select attending physician to inspect worklist:
               </span>
             </div>
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {doctors.map((doc) => {
-              const isSelected = activeDoctorId === doc.id;
-              const docAptCount = appointments.filter((a) => a.doctorId === doc.id).length;
-              return (
-                <button
-                  key={doc.id}
-                  type="button"
-                  onClick={() => setActiveDoctorId(doc.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
-                    isSelected
-                      ? 'bg-teal-600 text-white font-semibold shadow-xs'
-                      : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <span>
-                    {doc.name} {doc.id === 'doc-1' ? '(MD)' : ''}
-                  </span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-semibold ${
-                      isSelected
-                        ? 'bg-teal-700 text-teal-100'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {docAptCount} visits
-                  </span>
-                </button>
-              );
-            })}
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+              {/* Search Input positioned directly next to the Filter dropdown with equal authority */}
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search patient, MRN, diagnosis, or token..."
+                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                />
+              </div>
+
+              {/* Attending Physician Worklist Selector using Custom Select with Filter icon */}
+              <div className="w-full sm:w-64 shrink-0">
+                <Select
+                  icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                  value={activeDoctorId}
+                  placeholder="Select Attending Physician"
+                  onChange={(e) => setActiveDoctorId(e.target.value)}
+                  options={doctors.map((doc) => {
+                    const count = appointments.filter((a) => a.doctorId === doc.id).length;
+                    return {
+                      value: doc.id,
+                      label: `${doc.name} ${doc.id === 'doc-1' ? '(MD)' : ''} (${count} visits)`,
+                    };
+                  })}
+                />
+              </div>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
-              Staff Consulting Station:
-            </span>
-            <span className="text-slate-600 dark:text-slate-400">
-              Active physician session for {currentUser.name} at {activeDoctor.roomNumber}
-            </span>
+        /* Staff Doctor Station Governance Bar */
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="shrink-0">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                Staff Consultation Station
+              </span>
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Active physician session for {currentUser.name} at {activeDoctor.roomNumber}:
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search consultation queue or patient..."
+                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                />
+              </div>
+
+              <div className="w-full sm:w-56 shrink-0">
+                <Select
+                  icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                  value={filterMode}
+                  placeholder="Select Scope"
+                  onChange={(e) => setFilterMode(e.target.value as 'all' | 'active' | 'urgent')}
+                  options={[
+                    { value: 'all', label: 'All Items' },
+                    { value: 'active', label: 'Active / In Progress' },
+                    { value: 'urgent', label: 'STAT / Urgent' },
+                  ]}
+                />
+              </div>
+            </div>
           </div>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">
-            Reporting to Dr. Marcus Vance (Managing Director)
-          </span>
         </div>
       )}
 
@@ -403,7 +420,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
-            <span className="font-medium">{notification}</span>
+            <span className="font-semibold text-teal-950 dark:text-teal-100">Consultation Desk:</span>
+            <span>{notification}</span>
           </div>
           <button
             onClick={() => setNotification(null)}
@@ -446,390 +464,399 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         />
       </div>
 
-      {/* Universal Search & Scope Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
-        <div className="relative flex-1 max-w-md flex items-center">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search consultation queue, patient MRN, or prescriptions..."
-            className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-xs"
-          />
-        </div>
-
-        {/* Priority Filter as Dropdown Selector */}
-        <div className="relative" ref={filterDropdownRef}>
-          <button
-            type="button"
-            onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors shadow-xs cursor-pointer focus:outline-none focus:ring-0 focus-visible:ring-1 focus-visible:ring-teal-500"
-            aria-label="Filter scope"
-            aria-expanded={isFilterDropdownOpen}
-          >
-            <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-            <span>Scope:</span>
-            <span className="font-semibold text-teal-600 dark:text-teal-400">
-              {filterMode === 'all'
-                ? 'All Items'
-                : filterMode === 'active'
-                ? 'Active / In Progress'
-                : 'Urgent Only'}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
-          </button>
-
-          {isFilterDropdownOpen && (
-            <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
-              <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
-                Filter Consultation Desk
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode('all');
-                  setIsFilterDropdownOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
-                  filterMode === 'all'
-                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span>All Items</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode('active');
-                  setIsFilterDropdownOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
-                  filterMode === 'active'
-                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                  Active / In Progress
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode('urgent');
-                  setIsFilterDropdownOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
-                  filterMode === 'urgent'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                  STAT & Urgent
-                </span>
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* ========================================================================= */}
       {/* SUB-MODULE 1: CONSULTATION DESK (`overview`)                              */}
       {/* ========================================================================= */}
       {selectedTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Active Patient Desk (Left 2 cols) */}
-          <div className="lg:col-span-2 space-y-4">
-            {activePatient && activeAppointment ? (
-              <Card>
-                <CardHeader
-                  action={
-                    <div className="flex items-center gap-2">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Active Patient Desk (Left 2 cols) */}
+            <div className="lg:col-span-2 space-y-4">
+              {activePatient && activeAppointment ? (
+                <Card>
+                  <CardHeader
+                    action={
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          icon={<FilePlus className="w-3.5 h-3.5" />}
+                          onClick={() => handleOpenPrescriptionModal(activePatient.id)}
+                        >
+                          Prescribe
+                        </Button>
+                        {activeAppointment.status === 'in_consultation' ? (
+                          <Button
+                            size="xs"
+                            variant="primary"
+                            icon={<CheckCircle className="w-3.5 h-3.5" />}
+                            onClick={() => handleConcludeConsultation(activeAppointment.id, activePatient.firstName)}
+                          >
+                            Conclude Visit
+                          </Button>
+                        ) : (
+                          <Button
+                            size="xs"
+                            variant="secondary"
+                            onClick={() => handleStartConsultation(activeAppointment)}
+                          >
+                            Start Consultation
+                          </Button>
+                        )}
+                      </div>
+                    }
+                  >
+                    <CardTitle>
+                      Active Consultation Desk: {activePatient.firstName} {activePatient.lastName}
+                    </CardTitle>
+                    <CardDescription>
+                      {activePatient.mrn} • {activePatient.age} yrs • {activePatient.gender} • Blood Group: {activePatient.bloodGroup}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Safety Alert (Red dot only if allergy exists) */}
+                    {activePatient.allergies.length > 0 && (
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">Allergy Warning:</span>
+                        <span className="text-slate-700 dark:text-slate-300">{activePatient.allergies.join(', ')}</span>
+                      </div>
+                    )}
+
+                    {/* Consultation Chief Complaint */}
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                        Chief Complaint & Reason for Visit
+                      </span>
+                      <p className="text-slate-900 dark:text-slate-100 font-medium">
+                        {activeAppointment.reasonForVisit}
+                      </p>
+                      {activeAppointment.notes && (
+                        <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">
+                          Intake Note: {activeAppointment.notes}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Triage Vital Signs Snapshot */}
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-2">
+                        Clinical Triage Vitals
+                      </span>
+                      {activeVitals ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Blood Pressure</span>
+                            <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
+                              {activeVitals.systolicBp}/{activeVitals.diastolicBp} <span className="text-[10px] font-normal text-slate-500">mmHg</span>
+                            </span>
+                          </div>
+                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Heart Rate</span>
+                            <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
+                              {activeVitals.heartRateBpm} <span className="text-[10px] font-normal text-slate-500">bpm</span>
+                            </span>
+                          </div>
+                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">O2 Saturation</span>
+                            <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
+                              {activeVitals.oxygenSaturationPct}%
+                            </span>
+                          </div>
+                          <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Temperature</span>
+                            <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
+                              {activeVitals.temperatureCelsius}°C
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 text-center">
+                          No triage vitals recorded for this visit yet.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Consultation Notes Action */}
+                    <div className="pt-2 flex justify-end">
                       <Button
                         size="xs"
                         variant="outline"
-                        icon={<FilePlus className="w-3.5 h-3.5" />}
-                        onClick={() => handleOpenPrescriptionModal(activePatient.id)}
+                        onClick={() => setIsNotesModalOpen(true)}
                       >
-                        Prescribe
+                        Record Consultation Notes
                       </Button>
-                      {activeAppointment.status === 'in_consultation' ? (
-                        <Button
-                          size="xs"
-                          variant="primary"
-                          icon={<CheckCircle className="w-3.5 h-3.5" />}
-                          onClick={() => handleConcludeConsultation(activeAppointment.id, activePatient.firstName)}
-                        >
-                          Conclude Visit
-                        </Button>
-                      ) : (
-                        <Button
-                          size="xs"
-                          variant="secondary"
-                          onClick={() => handleStartConsultation(activeAppointment)}
-                        >
-                          Start Consultation
-                        </Button>
-                      )}
                     </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+                    No active consultation selected. Choose a patient from the queue below.
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Waiting Consultations Worklist (Interactive Inspector Cards) */}
+              <Card>
+                <CardHeader
+                  action={
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {filteredAppointments.length} on {activeDoctor.name}&apos;s Worklist
+                    </span>
                   }
                 >
                   <CardTitle>
-                    Active Consultation Desk: {activePatient.firstName} {activePatient.lastName}
+                    {activeDoctor.name}&apos;s Consultation Worklist
                   </CardTitle>
                   <CardDescription>
-                    {activePatient.mrn} • {activePatient.age} yrs • {activePatient.gender} • Blood Group: {activePatient.bloodGroup}
+                    Ordered queue of checked-in, in-progress, and scheduled consultations
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Safety Alert (Red dot only if allergy exists) */}
-                  {activePatient.allergies.length > 0 && (
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">Allergy Warning:</span>
-                      <span className="text-slate-700 dark:text-slate-300">{activePatient.allergies.join(', ')}</span>
-                    </div>
-                  )}
-
-                  {/* Consultation Chief Complaint */}
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
-                      Chief Complaint & Reason for Visit
-                    </span>
-                    <p className="text-slate-900 dark:text-slate-100 font-medium">
-                      {activeAppointment.reasonForVisit}
-                    </p>
-                    {activeAppointment.notes && (
-                      <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">
-                        Intake Note: {activeAppointment.notes}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Triage Vital Signs Snapshot */}
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-2">
-                      Clinical Triage Vitals
-                    </span>
-                    {activeVitals ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Blood Pressure</span>
-                          <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
-                            {activeVitals.systolicBp}/{activeVitals.diastolicBp} <span className="text-[10px] font-normal text-slate-500">mmHg</span>
-                          </span>
-                        </div>
-                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Heart Rate</span>
-                          <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
-                            {activeVitals.heartRateBpm} <span className="text-[10px] font-normal text-slate-500">bpm</span>
-                          </span>
-                        </div>
-                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">O2 Saturation</span>
-                          <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
-                            {activeVitals.oxygenSaturationPct}%
-                          </span>
-                        </div>
-                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Temperature</span>
-                          <span className="font-mono text-sm font-bold text-slate-900 dark:text-slate-100">
-                            {activeVitals.temperatureCelsius}°C
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 text-center">
-                        No triage vitals recorded for this visit yet.
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Consultation Notes Action */}
-                  <div className="pt-2 flex justify-end">
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => setIsNotesModalOpen(true)}
-                    >
-                      Record Consultation Notes
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center text-slate-400 dark:text-slate-500 text-xs">
-                  No active consultation selected. Choose a patient from the queue below.
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Waiting Consultations Ledger */}
-            <Card>
-              <CardHeader
-                action={
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    {filteredAppointments.length} Total on Roster
-                  </span>
-                }
-              >
-                <CardTitle>Today's Patient Consultation Queue</CardTitle>
-                <CardDescription>
-                  Ordered schedule of checked-in and upcoming clinic consultations
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                      <tr>
-                        <th className="px-4 py-3.5 align-middle">Token #</th>
-                        <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                        <th className="px-4 py-3.5 align-middle">Scheduled Time</th>
-                        <th className="px-4 py-3.5 align-middle">Clinical Reason</th>
-                        <th className="px-4 py-3.5 align-middle">Status</th>
-                        <th className="px-4 py-3.5 text-right align-middle">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredAppointments.map((apt) => {
+                <CardContent className="p-0">
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredAppointments.length > 0 ? (
+                      filteredAppointments.map((apt) => {
                         const isCurrent = apt.id === selectedAppointmentId;
+                        const isLive = apt.status === 'in_consultation';
+                        const isWaiting = apt.status === 'checked_in';
+
                         return (
-                          <tr
+                          <div
                             key={apt.id}
-                            className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
-                              isCurrent ? 'bg-teal-50/30 dark:bg-teal-950/20' : ''
+                            className={`p-4 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                              isCurrent
+                                ? 'bg-teal-50/50 dark:bg-teal-950/30 border-l-2 border-teal-500'
+                                : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
                             }`}
                           >
-                            <td className="px-4 py-3.5 align-middle font-mono font-bold text-teal-600 dark:text-teal-400">
-                              #{apt.tokenNumber}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle">
-                              <div className="font-semibold text-slate-900 dark:text-slate-100">
-                                {apt.patientName}
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                  isLive
+                                    ? 'bg-teal-500'
+                                    : isWaiting
+                                    ? 'bg-teal-600'
+                                    : 'bg-slate-400'
+                                }`}
+                              />
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                    {apt.patientName}
+                                  </h4>
+                                  <span className="text-[11px] font-mono font-bold text-teal-600 dark:text-teal-400">
+                                    #{apt.tokenNumber} • {apt.appointmentNumber}
+                                  </span>
+                                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                                    {new Date(apt.dateTime).toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                                  Complaint: <strong>{apt.reasonForVisit}</strong>
+                                </p>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  Phone: {apt.patientPhone} — Status:{' '}
+                                  <span className="capitalize font-medium text-slate-700 dark:text-slate-300">
+                                    {apt.status.replace('_', ' ')}
+                                  </span>
+                                </p>
                               </div>
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                {apt.patientPhone}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                              {new Date(apt.dateTime).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
-                              {apt.reasonForVisit}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle">
-                              <div className="flex items-center gap-1.5">
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                    apt.status === 'in_consultation'
-                                      ? 'bg-teal-500'
-                                      : apt.status === 'checked_in'
-                                      ? 'bg-teal-500'
-                                      : 'bg-slate-400'
-                                  }`}
-                                />
-                                <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                                  {apt.status.replace('_', ' ')}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5 text-right align-middle space-x-1.5">
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <Button
                                 size="xs"
-                                variant="outline"
+                                variant={isCurrent ? 'secondary' : 'outline'}
                                 onClick={() => setSelectedAppointmentId(apt.id)}
                               >
-                                View File
+                                {isCurrent ? 'Active at Desk' : 'Inspect File'}
                               </Button>
-                              {apt.status !== 'completed' && (
+                              {apt.status !== 'completed' ? (
                                 <Button
                                   size="xs"
-                                  variant="secondary"
+                                  variant="primary"
                                   onClick={() => handleStartConsultation(apt)}
                                 >
                                   Engage
                                 </Button>
+                              ) : (
+                                <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
+                                  Completed
+                                </span>
                               )}
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+                      })
+                    ) : (
+                      <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                        No consultations found matching active search criteria on this worklist.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column: Active Doctor Schedule Card */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Consulting Physician Profile</CardTitle>
+                  <CardDescription>Clinical credentials & schedule</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3.5 text-xs">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">
+                      {activeDoctor.id === 'doc-1' ? 'Managing Director & Lead Physician' : 'Staff Consulting Physician'}
+                    </span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                      {activeDoctor.name}, {activeDoctor.qualification}
+                    </span>
+                    <span className="text-teal-600 dark:text-teal-400 block text-[11px] mt-0.5">
+                      {activeDoctor.specialization} • {activeDoctor.department}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Assigned Room:</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{activeDoctor.roomNumber}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Working Hours:</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{activeDoctor.consultationHours}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Duty Days:</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {activeDoctor.availableDays.length === 5 ? 'Mon - Fri' : activeDoctor.availableDays.join(', ')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Consultation Fee:</span>
+                      <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                        ${activeDoctor.consultationFee.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-teal-50/50 dark:bg-teal-950/40 rounded-xl border border-teal-200/70 dark:border-teal-800/60">
+                    <div className="flex items-center gap-1.5 text-teal-800 dark:text-teal-200 font-semibold mb-1">
+                      <CheckCircle className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                      <span>Clinical Governance Scope</span>
+                    </div>
+                    <p className="text-[11px] text-teal-900 dark:text-teal-300">
+                      {activeDoctor.id === 'doc-1'
+                        ? 'Managing Director executive and clinical station. Dr. Marcus Vance maintains ultimate authority over clinical standards, staff access, and complex internal medicine cases.'
+                        : `${activeDoctor.name} conducts assigned outpatient sessions under the clinical governance and oversight of Managing Director Dr. Marcus Vance.`}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
-          {/* Right Column: Active Doctor Schedule Card */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Consulting Physician Profile</CardTitle>
-                <CardDescription>Clinical credentials & schedule</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3.5 text-xs">
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">
-                    {activeDoctor.id === 'doc-1' ? 'Managing Director & Lead Physician' : 'Staff Consulting Physician'}
-                  </span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
-                    {activeDoctor.name}, {activeDoctor.qualification}
-                  </span>
-                  <span className="text-teal-600 dark:text-teal-400 block text-[11px] mt-0.5">
-                    {activeDoctor.specialization} • {activeDoctor.department}
+          {/* Persistent Downward Notification Box: Active Outpatient Desk & Immediate Triage Attention Queue */}
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+            <CardHeader
+              action={
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    {allActiveTriageAppointments.length} Active Consultations Across Clinic
                   </span>
                 </div>
+              }
+            >
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Active Consultation Triage & Clearance Queue
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Real-time outpatient desks across attending physicians requiring Managing Director clearance, active engagement, or triage authorization.
+                </CardDescription>
+              </div>
+            </CardHeader>
 
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Assigned Room:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">{activeDoctor.roomNumber}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Working Hours:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">{activeDoctor.consultationHours}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Duty Days:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">
-                      {activeDoctor.availableDays.length === 5 ? 'Mon - Fri' : activeDoctor.availableDays.join(', ')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Consultation Fee:</span>
-                    <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
-                      ${activeDoctor.consultationFee.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-teal-50/50 dark:bg-teal-950/40 rounded-xl border border-teal-200/70 dark:border-teal-800/60">
-                  <div className="flex items-center gap-1.5 text-teal-800 dark:text-teal-200 font-semibold mb-1">
-                    <CheckCircle className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    <span>Clinical Governance Scope</span>
-                  </div>
-                  <p className="text-[11px] text-teal-900 dark:text-teal-300">
-                    {activeDoctor.id === 'doc-1'
-                      ? 'Managing Director executive and clinical station. Dr. Marcus Vance maintains ultimate authority over clinical standards, staff access, and complex internal medicine cases.'
-                      : `${activeDoctor.name} conducts assigned outpatient sessions under the clinical governance and oversight of Managing Director Dr. Marcus Vance.`}
+            <CardContent className="space-y-4 pt-2">
+              {allActiveTriageAppointments.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                    All Attending Physician Queues Cleared
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    No outpatients currently waiting or in consultation across any clinic suite.
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              ) : (
+                <div className="space-y-3">
+                  {allActiveTriageAppointments.map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              apt.status === 'in_consultation' ? 'bg-teal-500' : 'bg-slate-400'
+                            }`}
+                          />
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {apt.patientName}
+                          </h4>
+                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                            (Token #{apt.tokenNumber} • {apt.appointmentNumber})
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">
+                          Attending Physician: <strong>{apt.doctorName}</strong> ({apt.department}) • Scheduled:{' '}
+                          <span className="font-mono">
+                            {new Date(apt.dateTime).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Complaint: {apt.reasonForVisit} — Status:{' '}
+                          <span className="capitalize font-medium text-slate-700 dark:text-slate-300">
+                            {apt.status.replace('_', ' ')}
+                          </span>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setActiveDoctorId(apt.doctorId);
+                            setSelectedAppointmentId(apt.id);
+                          }}
+                        >
+                          Switch to Desk
+                        </Button>
+                        {apt.status !== 'completed' && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleConcludeConsultation(apt.id, apt.patientName)}
+                          >
+                            Conclude Visit
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -1023,10 +1050,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </Card>
       )}
 
-
-
       {/* ========================================================================= */}
-      {/* SUB-MODULE 5: WEEKLY SCHEDULE (`schedule`)                                */}
+      {/* SUB-MODULE 4: WEEKLY SCHEDULE (`schedule`)                                */}
       {/* ========================================================================= */}
       {selectedTab === 'schedule' && (
         <Card>
