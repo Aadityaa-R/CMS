@@ -6,7 +6,6 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
-import { StatCard } from '@/components/ui/StatCard';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Pagination } from '@/components/ui/Pagination';
@@ -257,34 +256,6 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             Register Outpatient
           </Button>
         </div>
-      </div>
-
-      {/* Key Metric Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Registered Outpatients"
-          value={totalPatients.toString()}
-          subtitle="Demographic files in registry"
-          colorScheme="teal"
-        />
-        <StatCard
-          title="Active in Care"
-          value={activePatientsCount.toString()}
-          subtitle="Under clinical care"
-          colorScheme="teal"
-        />
-        <StatCard
-          title="Allergy Risk Flagged"
-          value={allergyRiskCount.toString()}
-          subtitle="Documented safety alerts"
-          colorScheme={allergyRiskCount > 0 ? 'rose' : 'teal'}
-        />
-        <StatCard
-          title="Chronic Care Tracked"
-          value={chronicCareCount.toString()}
-          subtitle="Hypertension & diabetes"
-          colorScheme="slate"
-        />
       </div>
 
       {/* Patient Governance Bar: Side-by-Side Search & Filter */}
