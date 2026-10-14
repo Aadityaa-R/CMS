@@ -460,7 +460,7 @@ export const AccessControlView: React.FC = () => {
             <span className="text-slate-300 font-medium">Supreme Administrative Authority</span>
           </div>
           <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
-            Staff Access Control & Security Governance
+            Administrative & Security Governance
           </h2>
         </div>
 
