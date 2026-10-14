@@ -592,16 +592,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                           </span>
                         </p>
                       </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleCompleteAppointment(apt.id, apt.patientName)}
-                        >
-                          Complete Consultation
-                        </Button>
-                      </div>
                     </div>
                   ))}
                 </div>

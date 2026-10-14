@@ -382,93 +382,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </div>
       </div>
 
-      {/* MD Clinical Queue Inspector Governance Bar (Clearance Governance Reference) */}
-      {isMD ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                  MD Clinical Queue Inspector
-                </span>
-              </div>
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5 block">
-                Search consultation queue or select attending physician to inspect worklist:
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
-              {/* Search Input with Interactive Dropdown and Autofill */}
-              <div className="relative flex-1 min-w-[200px]">
-                <InteractiveSearchBar
-                  value={searchTerm}
-                  onChange={setSearchTerm}
-                  suggestions={doctorSearchSuggestions}
-                  placeholder="Search patient, MRN, diagnosis, or token..."
-                />
-              </div>
-
-              {/* Attending Physician Worklist Selector using Custom Select with Filter icon */}
-              <div className="w-full sm:w-64 shrink-0">
-                <Select
-                  icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
-                  value={activeDoctorId}
-                  placeholder="Select Attending Physician"
-                  onChange={(e) => setActiveDoctorId(e.target.value)}
-                  options={doctors.map((doc) => {
-                    const count = appointments.filter((a) => a.doctorId === doc.id).length;
-                    return {
-                      value: doc.id,
-                      label: `${doc.name} ${doc.id === 'doc-1' ? '(MD)' : ''} (${count} visits)`,
-                    };
-                  })}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Staff Doctor Station Governance Bar */
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="shrink-0">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                Staff Consultation Station
-              </span>
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                Active physician session for {currentUser.name} at {activeDoctor.roomNumber}:
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
-              <div className="relative flex-1 min-w-[200px]">
-                <InteractiveSearchBar
-                  value={searchTerm}
-                  onChange={setSearchTerm}
-                  suggestions={doctorSearchSuggestions}
-                  placeholder="Search consultation queue or patient..."
-                />
-              </div>
-
-              <div className="w-full sm:w-56 shrink-0">
-                <Select
-                  icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
-                  value={filterMode}
-                  placeholder="Select Scope"
-                  onChange={(e) => setFilterMode(e.target.value as 'all' | 'active' | 'urgent')}
-                  options={[
-                    { value: 'all', label: 'All Items' },
-                    { value: 'active', label: 'Active / In Progress' },
-                    { value: 'urgent', label: 'STAT / Urgent' },
-                  ]}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Sub-Workstation Navigation Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
         {[
@@ -710,6 +623,93 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 </Card>
               )}
 
+              {/* MD Clinical Queue Inspector / Staff Doctor Station Governance Bar */}
+              {isMD ? (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div className="shrink-0">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                          MD Clinical Queue Inspector
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5 block">
+                        Search consultation queue or select attending physician to inspect worklist:
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+                      {/* Search Input with Interactive Dropdown and Autofill */}
+                      <div className="relative flex-1 min-w-[200px]">
+                        <InteractiveSearchBar
+                          value={searchTerm}
+                          onChange={setSearchTerm}
+                          suggestions={doctorSearchSuggestions}
+                          placeholder="Search patient, MRN, diagnosis, or token..."
+                        />
+                      </div>
+
+                      {/* Attending Physician Worklist Selector using Custom Select with Filter icon */}
+                      <div className="w-full sm:w-64 shrink-0">
+                        <Select
+                          icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                          value={activeDoctorId}
+                          placeholder="Select Attending Physician"
+                          onChange={(e) => setActiveDoctorId(e.target.value)}
+                          options={doctors.map((doc) => {
+                            const count = appointments.filter((a) => a.doctorId === doc.id).length;
+                            return {
+                              value: doc.id,
+                              label: `${doc.name} ${doc.id === 'doc-1' ? '(MD)' : ''} (${count} visits)`,
+                            };
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Staff Doctor Station Governance Bar */
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div className="shrink-0">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                        Staff Consultation Station
+                      </span>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Active physician session for {currentUser.name} at {activeDoctor.roomNumber}:
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+                      <div className="relative flex-1 min-w-[200px]">
+                        <InteractiveSearchBar
+                          value={searchTerm}
+                          onChange={setSearchTerm}
+                          suggestions={doctorSearchSuggestions}
+                          placeholder="Search consultation queue or patient..."
+                        />
+                      </div>
+
+                      <div className="w-full sm:w-56 shrink-0">
+                        <Select
+                          icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                          value={filterMode}
+                          placeholder="Select Scope"
+                          onChange={(e) => setFilterMode(e.target.value as 'all' | 'active' | 'urgent')}
+                          options={[
+                            { value: 'all', label: 'All Items' },
+                            { value: 'active', label: 'Active / In Progress' },
+                            { value: 'urgent', label: 'STAT / Urgent' },
+                          ]}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Waiting Consultations Worklist (Interactive Inspector Cards) */}
               <Card>
                 <CardHeader
@@ -931,28 +931,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             {apt.status.replace('_', ' ')}
                           </span>
                         </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setActiveDoctorId(apt.doctorId);
-                            setSelectedAppointmentId(apt.id);
-                          }}
-                        >
-                          Switch to Desk
-                        </Button>
-                        {!isReadOnlyView && apt.status !== 'completed' && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleConcludeConsultation(apt.id, apt.patientName)}
-                          >
-                            Conclude Visit
-                          </Button>
-                        )}
                       </div>
                     </div>
                   ))}
