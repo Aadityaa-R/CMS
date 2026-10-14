@@ -19,9 +19,9 @@ export const AppLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
 
-  // Whenever the active role changes upon login, reset the active module tab to overview
+  // Whenever the active role changes upon login, reset the active module tab
   useEffect(() => {
-    setActiveTab('overview');
+    setActiveTab(currentRole === 'admin' ? 'admin_overview' : 'overview');
   }, [currentRole]);
 
   // If user signed out, display login screen
@@ -30,13 +30,39 @@ export const AppLayout: React.FC = () => {
   }
 
   const renderActiveView = () => {
+    if (currentRole === 'admin') {
+      switch (activeTab) {
+        case 'admin_overview':
+        case 'overview':
+          return <AdminView activeTab="overview" />;
+        case 'admin_billing':
+        case 'billing':
+          return <AdminView activeTab="billing" />;
+        case 'admin_inventory':
+        case 'inventory':
+          return <AdminView activeTab="inventory" />;
+        case 'role_doctor':
+        case 'doctor':
+          return <DoctorView activeTab="overview" />;
+        case 'role_receptionist':
+        case 'receptionist':
+          return <ReceptionistView activeTab="overview" />;
+        case 'role_lab_technician':
+        case 'lab_technician':
+          return <LabTechnicianView activeTab="overview" />;
+        case 'role_patient':
+        case 'patient':
+          return <PatientView />;
+        default:
+          return <AdminView activeTab="overview" />;
+      }
+    }
+
     switch (currentRole) {
-      case 'admin':
-        return <AdminView activeTab={activeTab} />;
       case 'doctor':
         return <DoctorView activeTab={activeTab} />;
       case 'patient':
-        return <PatientView activeTab={activeTab} />;
+        return <PatientView />;
       case 'receptionist':
         return <ReceptionistView activeTab={activeTab} />;
       case 'lab_technician':

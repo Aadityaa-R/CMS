@@ -20,11 +20,18 @@ import {
 import { BloodGroup, Appointment } from '@/types';
 
 interface ReceptionistViewProps {
-  activeTab: string;
+  activeTab?: string;
 }
 
 export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 'overview' }) => {
   const { currentUser } = useAuth();
+  const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
+
+  useEffect(() => {
+    if (activeTab && activeTab !== 'overview') {
+      setSelectedTab(activeTab);
+    }
+  }, [activeTab]);
   const {
     appointments,
     patients,
@@ -220,6 +227,28 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         </div>
       </div>
 
+      {/* Sub-Workstation Navigation Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
+        {[
+          { id: 'overview', label: 'Waiting Lounge & Tokens' },
+          { id: 'checkin', label: 'Patient Check-In' },
+          { id: 'registration', label: 'Patient Intake Registry' },
+          { id: 'booking', label: 'Book Consultation' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSelectedTab(tab.id)}
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+              selectedTab === tab.id
+                ? 'bg-teal-600 text-white font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Real-time Feedback Notification Banner */}
       {notification && (
         <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
@@ -371,7 +400,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       {/* ========================================================================= */}
       {/* SUB-MODULE 1: FRONT DESK OVERVIEW (`overview`)                            */}
       {/* ========================================================================= */}
-      {activeTab === 'overview' && (
+      {selectedTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Waiting Lounge & Token Dispatch Table */}
           <div className="lg:col-span-2 space-y-4">
@@ -527,7 +556,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       {/* ========================================================================= */}
       {/* SUB-MODULE 2: PATIENT CHECK-IN WORKSTATION (`checkin`)                    */}
       {/* ========================================================================= */}
-      {activeTab === 'checkin' && (
+      {selectedTab === 'checkin' && (
         <Card>
           <CardHeader
             action={
@@ -614,7 +643,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       {/* ========================================================================= */}
       {/* SUB-MODULE 3: REGISTER NEW PATIENT (`registration`)                       */}
       {/* ========================================================================= */}
-      {activeTab === 'registration' && (
+      {selectedTab === 'registration' && (
         <Card>
           <CardHeader
             action={
@@ -696,7 +725,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       {/* ========================================================================= */}
       {/* SUB-MODULE 4: BOOK APPOINTMENT (`booking`)                                 */}
       {/* ========================================================================= */}
-      {activeTab === 'booking' && (
+      {selectedTab === 'booking' && (
         <Card>
           <CardHeader
             action={

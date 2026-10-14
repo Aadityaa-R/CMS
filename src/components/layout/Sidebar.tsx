@@ -15,6 +15,8 @@ import {
   PanelLeft,
   PanelLeftClose,
   PanelLeftOpen,
+  Stethoscope,
+  User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -46,12 +48,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     switch (currentRole) {
       case 'admin':
         return [
-          { id: 'overview', label: 'Admin Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'patients', label: 'Patient Directory', icon: <Users className="w-4 h-4" /> },
-          { id: 'doctors', label: 'Doctor Management', icon: <UserCheck className="w-4 h-4" /> },
-          { id: 'appointments', label: 'All Appointments', icon: <Calendar className="w-4 h-4" /> },
-          { id: 'billing', label: 'Revenue & Billing', icon: <CreditCard className="w-4 h-4" /> },
-          { id: 'inventory', label: 'Stock & Inventory', icon: <Package className="w-4 h-4" /> },
+          { id: 'admin_overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+          { id: 'admin_billing', label: 'Revenue & Billing', icon: <CreditCard className="w-4 h-4" /> },
+          { id: 'admin_inventory', label: 'Stock & Inventory', icon: <Package className="w-4 h-4" /> },
+          { id: 'role_doctor', label: 'Doctor', icon: <Stethoscope className="w-4 h-4" /> },
+          { id: 'role_receptionist', label: 'Receptionist', icon: <Calendar className="w-4 h-4" /> },
+          { id: 'role_lab_technician', label: 'Lab Technician', icon: <FlaskConical className="w-4 h-4" /> },
+          { id: 'role_patient', label: 'Patient', icon: <User className="w-4 h-4" /> },
         ];
 
       case 'doctor':
@@ -166,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               isCollapsed ? 'max-w-0 opacity-0 pb-0' : 'max-w-[170px] opacity-100 pb-2'
             }`}
           >
-            Navigation Menu
+            Navigation Pane
           </div>
           {navItems.map((item) => {
             const isActive = activeTab === item.id;

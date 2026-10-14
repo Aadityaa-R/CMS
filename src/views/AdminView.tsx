@@ -7,12 +7,9 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
-import { Badge } from '@/components/ui/Badge';
 import {
-  UserCheck,
   CreditCard,
   Package,
-  Plus,
   Search,
   CheckCircle,
   CheckCircle2,
@@ -20,23 +17,30 @@ import {
   Filter,
   ChevronDown,
 } from 'lucide-react';
-import { BloodGroup, Doctor, Invoice, InventoryItem, PaymentMethod } from '@/types';
+import { Invoice, InventoryItem, PaymentMethod } from '@/types';
 
 interface AdminViewProps {
-  activeTab: string;
+  activeTab?: string;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) => {
   const { currentUser } = useAuth();
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'billing' | 'inventory'>(
+    (activeTab === 'billing' || activeTab === 'inventory') ? activeTab : 'overview'
+  );
+
+  useEffect(() => {
+    if (activeTab === 'billing' || activeTab === 'inventory' || activeTab === 'overview') {
+      setSelectedTab(activeTab);
+    }
+  }, [activeTab]);
+
   const {
     patients,
     doctors,
     appointments,
     invoices,
     inventory,
-    addPatient,
-    addDoctor,
-    updateDoctorStatus,
     updateAppointmentStatus,
     recordPayment,
     adjustInventoryStock,
@@ -77,35 +81,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
   };
 
   // Modals State
-  const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
-  const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [restockUnits, setRestockUnits] = useState<number>(25);
-
-  // Patient Registration Form State
-  const [patientFirstName, setPatientFirstName] = useState('');
-  const [patientLastName, setPatientLastName] = useState('');
-  const [patientGender, setPatientGender] = useState<'male' | 'female' | 'other'>('male');
-  const [patientDob, setPatientDob] = useState('1990-01-01');
-  const [patientPhone, setPatientPhone] = useState('');
-  const [patientEmail, setPatientEmail] = useState('');
-  const [patientAddress, setPatientAddress] = useState('');
-  const [patientBloodGroup, setPatientBloodGroup] = useState<BloodGroup>('O+');
-  const [patientAllergies, setPatientAllergies] = useState('');
-
-  // Doctor Onboarding Form State
-  const [doctorName, setDoctorName] = useState('');
-  const [doctorDept, setDoctorDept] = useState('Cardiology');
-  const [doctorSpec, setDoctorSpec] = useState('Consultant Cardiologist');
-  const [doctorQual, setDoctorQual] = useState('MD, FACC');
-  const [doctorPhone, setDoctorPhone] = useState('');
-  const [doctorEmail, setDoctorEmail] = useState('');
-  const [doctorHours, setDoctorHours] = useState('Mon - Fri, 09:00 - 16:30');
-  const [doctorRoom, setDoctorRoom] = useState('Room 205');
-  const [doctorFee, setDoctorFee] = useState<number>(120);
 
   // KPI Calculations
   const totalPatients = patients.length;
@@ -120,83 +100,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
   const lowStockItems = inventory.filter((i) => i.currentStock <= i.minStockLevel);
 
   // Handlers
-  const handleSavePatient = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!patientFirstName || !patientLastName || !patientPhone) return;
-
-    const birthYear = new Date(patientDob).getFullYear();
-    const calculatedAge = Math.max(1, new Date().getFullYear() - birthYear);
-
-    const newPat = addPatient({
-      firstName: patientFirstName,
-      lastName: patientLastName,
-      gender: patientGender,
-      dob: patientDob,
-      age: calculatedAge,
-      phone: patientPhone,
-      email: patientEmail || `${patientFirstName.toLowerCase()}.${patientLastName.toLowerCase()}@patient.com`,
-      address: patientAddress || 'Beacon City',
-      bloodGroup: patientBloodGroup,
-      allergies: patientAllergies
-        ? patientAllergies.split(',').map((s) => s.trim()).filter(Boolean)
-        : [],
-      chronicConditions: [],
-      emergencyContact: {
-        name: 'Primary Contact',
-        relationship: 'Family',
-        phone: patientPhone,
-      },
-    });
-
-    showNotification(
-      `New patient record registered for ${newPat.firstName} ${newPat.lastName} (${newPat.mrn}). EMR profile active.`
-    );
-
-    setIsAddPatientOpen(false);
-    setPatientFirstName('');
-    setPatientLastName('');
-    setPatientPhone('');
-    setPatientEmail('');
-    setPatientAddress('');
-    setPatientAllergies('');
-  };
-
-  const handleSaveDoctor = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!doctorName || !doctorSpec) return;
-
-    const newDoc = addDoctor({
-      name: doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`,
-      specialization: doctorSpec,
-      qualification: doctorQual || 'MD',
-      department: doctorDept,
-      phone: doctorPhone || '+1 (555) 432-1000',
-      email: doctorEmail || `${doctorName.toLowerCase().replace(/[^a-z]/g, '')}@beaconclinic.com`,
-      consultationFee: doctorFee > 0 ? doctorFee : 100,
-      availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-      consultationHours: doctorHours,
-      status: 'active',
-      roomNumber: doctorRoom || 'Room 101',
-    });
-
-    showNotification(
-      `Physician ${newDoc.name} successfully onboarded to ${newDoc.department} department.`
-    );
-
-    setIsAddDoctorOpen(false);
-    setDoctorName('');
-    setDoctorPhone('');
-    setDoctorEmail('');
-  };
-
-  const handleToggleDoctorStatus = (doc: Doctor) => {
-    const nextStatus = doc.status === 'active' ? 'on_leave' : 'active';
-    updateDoctorStatus(doc.id, nextStatus);
-    showNotification(
-      `Duty status for ${doc.name} updated to ${nextStatus === 'active' ? 'Active Duty' : 'On Leave'}.`
-    );
-  };
-
   const handleCompleteAppointment = (aptId: string, patientName: string) => {
     updateAppointmentStatus(aptId, 'completed');
     showNotification(`Appointment for ${patientName} marked as completed.`);
@@ -242,33 +145,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
 
   // Generic Search & Mode Filters
   const query = searchTerm.toLowerCase();
-
-  const filteredPatients = patients.filter((p) => {
-    const matchesSearch =
-      p.firstName.toLowerCase().includes(query) ||
-      p.lastName.toLowerCase().includes(query) ||
-      p.mrn.toLowerCase().includes(query) ||
-      p.phone.includes(query) ||
-      p.bloodGroup.toLowerCase().includes(query);
-
-    if (!matchesSearch) return false;
-    if (filterMode === 'active') return p.status === 'active';
-    if (filterMode === 'alerts') return p.allergies.length > 0;
-    return true;
-  });
-
-  const filteredDoctors = doctors.filter((d) => {
-    const matchesSearch =
-      d.name.toLowerCase().includes(query) ||
-      d.specialization.toLowerCase().includes(query) ||
-      d.department.toLowerCase().includes(query) ||
-      d.roomNumber.toLowerCase().includes(query);
-
-    if (!matchesSearch) return false;
-    if (filterMode === 'active') return d.status === 'active';
-    if (filterMode === 'alerts') return d.status !== 'active';
-    return true;
-  });
 
   const filteredAppointments = appointments.filter((a) => {
     const matchesSearch =
@@ -316,27 +192,30 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
             Executive Administration & Governance Desk
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Lead Administrator: {currentUser.name} • Clinical Operations, Master Roster & Governance
+            Lead Administrator: {currentUser.name} • Clinical Operations, Financial Audit & Inventory Control
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <Button
-            size="sm"
-            variant="outline"
-            icon={<UserCheck className="w-4 h-4" />}
-            onClick={() => setIsAddDoctorOpen(true)}
+      </div>
+
+      {/* Sub-Workstation Navigation Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
+        {[
+          { id: 'overview', label: 'Executive Overview' },
+          { id: 'billing', label: 'Revenue & Billing' },
+          { id: 'inventory', label: 'Stock & Inventory' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSelectedTab(tab.id as any)}
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+              selectedTab === tab.id
+                ? 'bg-teal-600 text-white font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
           >
-            Onboard Doctor
-          </Button>
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={() => setIsAddPatientOpen(true)}
-          >
-            Register Patient
-          </Button>
-        </div>
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Real-time Feedback Notification Banner */}
@@ -484,7 +363,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       {/* ========================================================================= */}
       {/* SUB-MODULE 1: CLINIC OVERVIEW (`overview`)                                */}
       {/* ========================================================================= */}
-      {activeTab === 'overview' && (
+      {selectedTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Today's Consultations List */}
           <div className="lg:col-span-2 space-y-4">
@@ -663,353 +542,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 2: PATIENT DIRECTORY (`patients`)                              */}
-      {/* ========================================================================= */}
-      {activeTab === 'patients' && (
-        <Card>
-          <CardHeader
-            action={
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {filteredPatients.length} Active Records
-                </span>
-                <Button
-                  size="xs"
-                  variant="primary"
-                  icon={<Plus className="w-3.5 h-3.5" />}
-                  onClick={() => setIsAddPatientOpen(true)}
-                >
-                  Register Patient
-                </Button>
-              </div>
-            }
-          >
-            <CardTitle>Master Patient Directory & EMR Registry</CardTitle>
-            <CardDescription>
-              Comprehensive medical record numbers, demographic files, and clinical safety profiles
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">MRN</th>
-                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                    <th className="px-4 py-3.5 align-middle">Demographics</th>
-                    <th className="px-4 py-3.5 align-middle">Contact Phone</th>
-                    <th className="px-4 py-3.5 align-middle">Blood Group</th>
-                    <th className="px-4 py-3.5 align-middle">Clinical Safety Allergies</th>
-                    <th className="px-4 py-3.5 align-middle">EMR Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredPatients.length > 0 ? (
-                    filteredPatients.map((pat) => (
-                      <tr
-                        key={pat.id}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                      >
-                        <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                          {pat.mrn}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">
-                            {pat.firstName} {pat.lastName}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {pat.email}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 capitalize">
-                          {pat.age} yrs • {pat.gender}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                          {pat.phone}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <Badge variant="teal">{pat.bloodGroup}</Badge>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          {pat.allergies.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {pat.allergies.map((alg) => (
-                                <Badge key={alg} variant="danger" size="sm">
-                                  {alg}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 dark:text-slate-500 italic">
-                              None Recorded
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                pat.status === 'active' ? 'bg-teal-500' : 'bg-slate-400'
-                              }`}
-                            />
-                            <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                              {pat.status}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                        No registered patients matching your filter criteria.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 3: DOCTOR MANAGEMENT (`doctors`)                               */}
-      {/* ========================================================================= */}
-      {activeTab === 'doctors' && (
-        <Card>
-          <CardHeader
-            action={
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {filteredDoctors.length} Rostered Physicians
-                </span>
-                <Button
-                  size="xs"
-                  variant="primary"
-                  icon={<Plus className="w-3.5 h-3.5" />}
-                  onClick={() => setIsAddDoctorOpen(true)}
-                >
-                  Onboard Doctor
-                </Button>
-              </div>
-            }
-          >
-            <CardTitle>Medical Specialist Directory & Physician Roster</CardTitle>
-            <CardDescription>
-              Physician credentialing, clinical departments, consulting hours, and fee structures
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">Physician</th>
-                    <th className="px-4 py-3.5 align-middle">Specialty & Department</th>
-                    <th className="px-4 py-3.5 align-middle">Qualifications</th>
-                    <th className="px-4 py-3.5 align-middle">Consulting Hours & Room</th>
-                    <th className="px-4 py-3.5 align-middle">Consultation Fee</th>
-                    <th className="px-4 py-3.5 align-middle">Duty Status</th>
-                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredDoctors.length > 0 ? (
-                    filteredDoctors.map((doc) => (
-                      <tr
-                        key={doc.id}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                      >
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">
-                            {doc.name}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {doc.email}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-medium text-slate-800 dark:text-slate-200">
-                            {doc.specialization}
-                          </div>
-                          <div className="text-[11px] text-teal-600 dark:text-teal-400">
-                            {doc.department}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                          {doc.qualification}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="text-slate-700 dark:text-slate-300">
-                            {doc.consultationHours}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {doc.roomNumber}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                          ${doc.consultationFee}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                doc.status === 'active'
-                                  ? 'bg-teal-500'
-                                  : 'bg-slate-400'
-                              }`}
-                            />
-                            <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                              {doc.status.replace('_', ' ')}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 text-right align-middle">
-                          <Button
-                            size="xs"
-                            variant={doc.status === 'active' ? 'outline' : 'secondary'}
-                            onClick={() => handleToggleDoctorStatus(doc)}
-                          >
-                            {doc.status === 'active' ? 'Mark Leave' : 'Set Active'}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                        No physicians found matching the search criteria.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 4: ALL APPOINTMENTS (`appointments`)                           */}
-      {/* ========================================================================= */}
-      {activeTab === 'appointments' && (
-        <Card>
-          <CardHeader
-            action={
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {filteredAppointments.length} Total Bookings
-              </span>
-            }
-          >
-            <CardTitle>Master Clinic Appointment Ledger</CardTitle>
-            <CardDescription>
-              Comprehensive institutional consultation schedule and patient coordination desk
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">Token #</th>
-                    <th className="px-4 py-3.5 align-middle">Appointment ID</th>
-                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                    <th className="px-4 py-3.5 align-middle">Attending Doctor</th>
-                    <th className="px-4 py-3.5 align-middle">Date & Time</th>
-                    <th className="px-4 py-3.5 align-middle">Reason for Visit</th>
-                    <th className="px-4 py-3.5 align-middle">Workflow Status</th>
-                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredAppointments.length > 0 ? (
-                    filteredAppointments.map((apt) => (
-                      <tr
-                        key={apt.id}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                      >
-                        <td className="px-4 py-3.5 align-middle font-mono font-bold text-teal-600 dark:text-teal-400">
-                          #{apt.tokenNumber}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle font-mono text-slate-800 dark:text-slate-200">
-                          {apt.appointmentNumber}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-semibold text-slate-900 dark:text-slate-100">
-                            {apt.patientName}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {apt.patientPhone}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="font-medium text-slate-800 dark:text-slate-200">
-                            {apt.doctorName}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {apt.department}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                          {new Date(apt.dateTime).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400">
-                          {apt.reasonForVisit || 'Routine Consultation'}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                apt.status === 'completed'
-                                  ? 'bg-teal-500'
-                                  : 'bg-slate-400'
-                              }`}
-                            />
-                            <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                              {apt.status.replace('_', ' ')}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 text-right align-middle">
-                          {apt.status !== 'completed' ? (
-                            <Button
-                              size="xs"
-                              variant="secondary"
-                              onClick={() => handleCompleteAppointment(apt.id, apt.patientName)}
-                            >
-                              Conclude
-                            </Button>
-                          ) : (
-                            <span className="text-xs text-teal-600 dark:text-teal-400 font-semibold">
-                              Completed
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                        No appointments found matching search criteria.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 5: REVENUE & BILLING (`billing`)                               */}
-      {/* ========================================================================= */}
-      {activeTab === 'billing' && (
+      /* ========================================================================= */
+      /* SUB-MODULE 2: REVENUE & BILLING (`billing`)                               */
+      /* ========================================================================= */
+      {selectedTab === 'billing' && (
         <Card>
           <CardHeader
             action={
@@ -1120,7 +659,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       {/* ========================================================================= */}
       {/* SUB-MODULE 6: STOCK & INVENTORY (`inventory`)                             */}
       {/* ========================================================================= */}
-      {activeTab === 'inventory' && (
+      {selectedTab === 'inventory' && (
         <Card>
           <CardHeader
             action={
@@ -1228,217 +767,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 1: REGISTER NEW PATIENT                                             */}
       {/* ========================================================================= */}
-      <Modal
-        isOpen={isAddPatientOpen}
-        onClose={() => setIsAddPatientOpen(false)}
-        title="Register New Clinic Patient"
-        description="Creates an electronic medical record profile within the master directory."
-        maxWidth="lg"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddPatientOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleSavePatient}
-            >
-              Complete Registration
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleSavePatient} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="First Name"
-              value={patientFirstName}
-              onChange={(e) => setPatientFirstName(e.target.value)}
-              placeholder="e.g. Eleanor"
-              required
-            />
-            <Input
-              label="Last Name"
-              value={patientLastName}
-              onChange={(e) => setPatientLastName(e.target.value)}
-              placeholder="e.g. Wright"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <Select
-              label="Gender"
-              value={patientGender}
-              onChange={(e) => setPatientGender(e.target.value as any)}
-              options={[
-                { value: 'male', label: 'Male' },
-                { value: 'female', label: 'Female' },
-                { value: 'other', label: 'Other' },
-              ]}
-            />
-            <Input
-              label="Date of Birth"
-              type="date"
-              value={patientDob}
-              onChange={(e) => setPatientDob(e.target.value)}
-              required
-            />
-            <Select
-              label="Blood Group"
-              value={patientBloodGroup}
-              onChange={(e) => setPatientBloodGroup(e.target.value as BloodGroup)}
-              options={[
-                { value: 'A+', label: 'A+' },
-                { value: 'A-', label: 'A-' },
-                { value: 'B+', label: 'B+' },
-                { value: 'B-', label: 'B-' },
-                { value: 'AB+', label: 'AB+' },
-                { value: 'AB-', label: 'AB-' },
-                { value: 'O+', label: 'O+' },
-                { value: 'O-', label: 'O-' },
-              ]}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Phone Number"
-              value={patientPhone}
-              onChange={(e) => setPatientPhone(e.target.value)}
-              placeholder="+1 (555) 019-2831"
-              required
-            />
-            <Input
-              label="Email Address"
-              type="email"
-              value={patientEmail}
-              onChange={(e) => setPatientEmail(e.target.value)}
-              placeholder="eleanor@example.com"
-            />
-          </div>
-
-          <Input
-            label="Residential Address"
-            value={patientAddress}
-            onChange={(e) => setPatientAddress(e.target.value)}
-            placeholder="124 Beacon Way, City Center"
-          />
-
-          <Input
-            label="Allergies (comma-separated)"
-            value={patientAllergies}
-            onChange={(e) => setPatientAllergies(e.target.value)}
-            placeholder="e.g. Penicillin, NSAIDs, Peanuts"
-            helperText="Flagged across doctor consultation and pharmacy dispatch stations"
-          />
-        </form>
-      </Modal>
-
-      {/* ========================================================================= */}
-      {/* MODAL 2: ONBOARD NEW PHYSICIAN                                            */}
-      {/* ========================================================================= */}
-      <Modal
-        isOpen={isAddDoctorOpen}
-        onClose={() => setIsAddDoctorOpen(false)}
-        title="Onboard Attending Physician"
-        description="Add a certified physician to the clinic's consulting roster and room assignment."
-        maxWidth="lg"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddDoctorOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleSaveDoctor}
-            >
-              Confirm Doctor Onboarding
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleSaveDoctor} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Physician Full Name"
-              value={doctorName}
-              onChange={(e) => setDoctorName(e.target.value)}
-              placeholder="e.g. Dr. Arthur Bennett"
-              required
-            />
-            <Input
-              label="Department"
-              value={doctorDept}
-              onChange={(e) => setDoctorDept(e.target.value)}
-              placeholder="e.g. Cardiology"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Clinical Specialization"
-              value={doctorSpec}
-              onChange={(e) => setDoctorSpec(e.target.value)}
-              placeholder="e.g. Interventional Cardiology"
-              required
-            />
-            <Input
-              label="Medical Qualifications"
-              value={doctorQual}
-              onChange={(e) => setDoctorQual(e.target.value)}
-              placeholder="e.g. MD, FACC, MBBS"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <Input
-              label="Assigned Room"
-              value={doctorRoom}
-              onChange={(e) => setDoctorRoom(e.target.value)}
-              placeholder="Room 205"
-            />
-            <Input
-              label="Consultation Fee ($)"
-              type="number"
-              value={doctorFee}
-              onChange={(e) => setDoctorFee(Number(e.target.value))}
-              placeholder="120"
-              required
-            />
-            <Input
-              label="Contact Phone"
-              value={doctorPhone}
-              onChange={(e) => setDoctorPhone(e.target.value)}
-              placeholder="+1 (555) 000-0000"
-            />
-          </div>
-
-          <Input
-            label="Consulting Schedule & Hours"
-            value={doctorHours}
-            onChange={(e) => setDoctorHours(e.target.value)}
-            placeholder="Mon - Fri, 09:00 - 16:30"
-          />
-        </form>
-      </Modal>
-
-      {/* ========================================================================= */}
-      {/* MODAL 3: RECORD PAYMENT                                                   */}
+      {/* MODAL 1: RECORD PAYMENT                                                   */}
       {/* ========================================================================= */}
       <Modal
         isOpen={Boolean(selectedInvoice)}
@@ -1515,7 +845,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       </Modal>
 
       {/* ========================================================================= */}
-      {/* MODAL 4: RESTOCK INVENTORY SUPPLY                                         */}
+      {/* MODAL 2: RESTOCK INVENTORY SUPPLY                                         */}
       {/* ========================================================================= */}
       <Modal
         isOpen={Boolean(selectedItem)}

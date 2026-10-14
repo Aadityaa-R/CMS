@@ -16,10 +16,10 @@ import {
 } from 'lucide-react';
 
 interface PatientViewProps {
-  activeTab: string;
+  activeTab?: string;
 }
 
-export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab }) => {
+export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab = 'overview' }) => {
   const {
     patients,
     doctors,

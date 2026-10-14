@@ -18,11 +18,18 @@ import {
 import { LabTest } from '@/types';
 
 interface LabTechnicianViewProps {
-  activeTab: string;
+  activeTab?: string;
 }
 
 export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab = 'overview' }) => {
   const { currentUser } = useAuth();
+  const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
+
+  useEffect(() => {
+    if (activeTab && activeTab !== 'overview') {
+      setSelectedTab(activeTab);
+    }
+  }, [activeTab]);
   const { labTests, updateLabTestStatus } = useClinic();
 
   // Search & Filter State
@@ -164,6 +171,27 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
             Lead Medical Technologist: {currentUser.name} • Certified Diagnostic Laboratory
           </p>
         </div>
+      </div>
+
+      {/* Sub-Workstation Navigation Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
+        {[
+          { id: 'overview', label: 'Laboratory Worklist' },
+          { id: 'samples', label: 'Sample Collection' },
+          { id: 'results', label: 'Diagnostic Results Entry' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSelectedTab(tab.id)}
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+              selectedTab === tab.id
+                ? 'bg-teal-600 text-white font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Real-time Feedback Notification Banner */}
@@ -317,7 +345,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
       {/* ========================================================================= */}
       {/* SUB-MODULE 1: LABORATORY WORKLIST (OVERVIEW)                              */}
       {/* ========================================================================= */}
-      {activeTab === 'overview' && (
+      {selectedTab === 'overview' && (
         <Card>
           <CardHeader
             action={
@@ -454,7 +482,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
       {/* ========================================================================= */}
       {/* SUB-MODULE 2: SAMPLE COLLECTION & PHLEBOTOMY (`samples`)                  */}
       {/* ========================================================================= */}
-      {activeTab === 'samples' && (
+      {selectedTab === 'samples' && (
         <Card>
           <CardHeader
             action={
@@ -561,7 +589,7 @@ export const LabTechnicianView: React.FC<LabTechnicianViewProps> = ({ activeTab 
       {/* ========================================================================= */}
       {/* SUB-MODULE 3: DIAGNOSTIC RESULTS ENTRY & CERTIFICATION (`results`)        */}
       {/* ========================================================================= */}
-      {activeTab === 'results' && (
+      {selectedTab === 'results' && (
         <Card>
           <CardHeader
             action={

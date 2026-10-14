@@ -22,11 +22,18 @@ import {
 import { Appointment, PrescriptionItem } from '@/types';
 
 interface DoctorViewProps {
-  activeTab: string;
+  activeTab?: string;
 }
 
 export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }) => {
   const { currentUser } = useAuth();
+  const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
+
+  useEffect(() => {
+    if (activeTab && activeTab !== 'overview') {
+      setSelectedTab(activeTab);
+    }
+  }, [activeTab]);
   const {
     appointments,
     patients,
@@ -329,6 +336,29 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </div>
       </div>
 
+      {/* Sub-Workstation Navigation Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
+        {[
+          { id: 'overview', label: 'Consultation Desk' },
+          { id: 'patients', label: 'My Patients' },
+          { id: 'prescriptions', label: 'e-Prescriptions' },
+          { id: 'lab_orders', label: 'Diagnostic Requisitions' },
+          { id: 'schedule', label: 'Weekly Schedule' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSelectedTab(tab.id)}
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+              selectedTab === tab.id
+                ? 'bg-teal-600 text-white font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Real-time Feedback Notification Banner */}
       {notification && (
         <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
@@ -474,7 +504,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {/* SUB-MODULE 1: CONSULTATION DESK (`overview`)                              */}
       {/* ========================================================================= */}
-      {activeTab === 'overview' && (
+      {selectedTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Active Patient Desk (Left 2 cols) */}
           <div className="lg:col-span-2 space-y-4">
@@ -769,7 +799,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {/* SUB-MODULE 2: MY PATIENTS (`patients`)                                    */}
       {/* ========================================================================= */}
-      {activeTab === 'patients' && (
+      {selectedTab === 'patients' && (
         <Card>
           <CardHeader
             action={
@@ -867,7 +897,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {/* SUB-MODULE 3: WRITE PRESCRIPTIONS (`prescriptions`)                       */}
       {/* ========================================================================= */}
-      {activeTab === 'prescriptions' && (
+      {selectedTab === 'prescriptions' && (
         <Card>
           <CardHeader
             action={
@@ -953,7 +983,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {/* SUB-MODULE 4: ORDER LAB TESTS (`lab_orders`)                              */}
       {/* ========================================================================= */}
-      {activeTab === 'lab_orders' && (
+      {selectedTab === 'lab_orders' && (
         <Card>
           <CardHeader
             action={
@@ -1055,7 +1085,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {/* SUB-MODULE 5: WEEKLY SCHEDULE (`schedule`)                                */}
       {/* ========================================================================= */}
-      {activeTab === 'schedule' && (
+      {selectedTab === 'schedule' && (
         <Card>
           <CardHeader>
             <CardTitle>Consulting Desk Roster & Clinic Calendar</CardTitle>
