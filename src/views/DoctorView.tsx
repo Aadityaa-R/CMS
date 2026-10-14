@@ -389,7 +389,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
         {[
           { id: 'overview', label: 'Consultation Desk' },
-          { id: 'patients', label: 'Patient' },
+          { id: 'patients', label: 'Patients' },
           { id: 'prescriptions', label: 'e-Prescriptions' },
           { id: 'schedule', label: 'Weekly Schedule' },
         ].map((tab) => (
@@ -861,7 +861,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-MODULE 2: PATIENT (`patients`)                                        */}
+      {/* SUB-MODULE 2: PATIENTS (`patients`)                                       */}
       {/* ========================================================================= */}
       {selectedTab === 'patients' && (
         <Card>
@@ -872,7 +872,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               </span>
             }
           >
-            <CardTitle>Patient Medical Directory</CardTitle>
+            <CardTitle>Patients Medical Directory</CardTitle>
             <CardDescription>
               Electronic Health Records, allergy profiles, and consultation histories under {activeDoctor.name}
             </CardDescription>
