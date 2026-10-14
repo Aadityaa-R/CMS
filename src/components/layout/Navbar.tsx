@@ -436,13 +436,13 @@ export const Navbar: React.FC<NavbarProps> = () => {
           </Button>
         }
       >
-        <div className="space-y-5 text-xs divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="space-y-6 text-xs">
           {/* Category 1: Clinical Alerts & Notifications */}
-          <div className="space-y-2.5 pt-1 first:pt-0">
+          <div className="space-y-2.5">
             <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs tracking-tight">
               Clinical Alerts & Notifications
             </div>
-            <div className="pl-3 space-y-2.5 border-l-2 border-teal-500/40 dark:border-teal-500/30">
+            <div className="space-y-2.5 pl-0.5">
               <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
                 <input
                   type="checkbox"
@@ -478,11 +478,11 @@ export const Navbar: React.FC<NavbarProps> = () => {
           </div>
 
           {/* Category 2: Display & Workspace Density */}
-          <div className="space-y-2.5 pt-4">
+          <div className="space-y-2.5">
             <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs tracking-tight">
               Display & Workspace Density
             </div>
-            <div className="pl-3 space-y-2.5 border-l-2 border-teal-500/40 dark:border-teal-500/30">
+            <div className="space-y-2.5 pl-0.5">
               <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
                 <input
                   type="checkbox"
@@ -514,63 +514,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
                   className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
                 />
                 <span className="cursor-default">Highlight STAT and urgent orders with high-visibility indicator</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Category 3: Security & Patient Privacy */}
-          <div className="space-y-2.5 pt-4">
-            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs tracking-tight">
-              Security & Patient Privacy
-            </div>
-            <div className="pl-3 space-y-2.5 border-l-2 border-teal-500/40 dark:border-teal-500/30">
-              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
-                />
-                <span className="cursor-default">Mask patient Medical Record Numbers (MRN) on public screens</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
-                />
-                <span className="cursor-default">Automatic terminal session lockout after 15 minutes of inactivity</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
-                />
-                <span className="cursor-default">Require technologist credential verification before report publish</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Category 4: Workflow & Printing Automation */}
-          <div className="space-y-2.5 pt-4">
-            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs tracking-tight">
-              Workflow & Printing Automation
-            </div>
-            <div className="pl-3 space-y-2.5 border-l-2 border-teal-500/40 dark:border-teal-500/30">
-              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
-                />
-                <span className="cursor-default">Auto-generate specimen barcode accession labels on collection</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300 select-none">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 rounded text-teal-600 focus:ring-0 outline-none cursor-pointer"
-                />
-                <span className="cursor-default">Automatically trigger PDF report download upon certification</span>
               </div>
             </div>
           </div>

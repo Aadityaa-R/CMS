@@ -202,7 +202,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 title={item.label}
                 aria-label={item.label}
-                className={`w-full flex items-center px-1.5 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-0 ${
+                className={`w-full h-10 flex items-center px-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-0 ${
                   isActive
                     ? 'bg-teal-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'
