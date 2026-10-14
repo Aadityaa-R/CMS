@@ -424,9 +424,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Badge variant="neutral">Staff Physician Desk</Badge>
             )}
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Consulting Physician: <strong className="text-slate-700 dark:text-slate-200">{activeDoctor.name}</strong> ({activeDoctor.qualification}) • {activeDoctor.department} • {activeDoctor.roomNumber}
-          </p>
         </div>
       </div>
 

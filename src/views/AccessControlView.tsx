@@ -450,9 +450,6 @@ export const AccessControlView: React.FC = () => {
           <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
             Staff Access Control & Security Governance
           </h2>
-          <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Authorized by <strong>Dr. Marcus Vance, MD</strong> (Managing Director). Manage workstation clearances, revoke access, and configure granular permissions across Doctors, Receptionists, and Patients.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">

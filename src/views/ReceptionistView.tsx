@@ -284,9 +284,6 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Front Desk & Patient Reception Workstation
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Front Desk Lead: {currentUser.name} • Patient Admissions & Consultation Queue Coordination
-          </p>
         </div>
         {!isMD && (
           <div className="flex items-center gap-2.5">

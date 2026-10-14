@@ -242,9 +242,6 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
           <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
             Patients Medical Directory & Health Records Governance
           </h2>
-          <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Authorized by <strong>Dr. Marcus Vance, MD</strong> (Managing Director). Custody of electronic health records, clinical triage profiles, consultation histories, and outpatient registries.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">

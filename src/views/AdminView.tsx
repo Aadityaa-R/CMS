@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
-import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -17,7 +16,6 @@ interface AdminViewProps {
 }
 
 export const AdminView: React.FC<AdminViewProps> = () => {
-  const { currentUser } = useAuth();
   const { invoices, recordPayment } = useClinic();
 
   // Search & Filter State
@@ -158,9 +156,6 @@ export const AdminView: React.FC<AdminViewProps> = () => {
           <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
             Clinic Financial Audit & Invoicing Ledger
           </h2>
-          <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Lead Administrator: <strong>{currentUser.name}</strong> • Patient fee collections, insurance claims, balance settlement, and executive financial governance.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
