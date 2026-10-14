@@ -10,6 +10,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
+import { Pagination } from '@/components/ui/Pagination';
 import {
   Plus,
   Ticket,
@@ -185,10 +186,11 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   };
 
   // Filter Helper
-  const query = searchTerm.toLowerCase();
+  const query = searchTerm.toLowerCase().trim();
 
   const filteredAppointments = appointments.filter((a) => {
     const matchesSearch =
+      query === '' ||
       a.patientName.toLowerCase().includes(query) ||
       a.appointmentNumber.toLowerCase().includes(query) ||
       a.reasonForVisit.toLowerCase().includes(query);
@@ -199,7 +201,49 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     return true;
   });
 
-  const awaitingCheckIn = appointments.filter((a) => a.status === 'scheduled' || a.status === 'confirmed');
+  const awaitingCheckIn = appointments.filter(
+    (a) =>
+      (a.status === 'scheduled' || a.status === 'confirmed') &&
+      (query === '' ||
+        a.patientName.toLowerCase().includes(query) ||
+        a.appointmentNumber.toLowerCase().includes(query) ||
+        a.patientPhone.includes(query))
+  );
+
+  const filteredIntakePatients = patients.filter(
+    (p) =>
+      query === '' ||
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(query) ||
+      p.mrn.toLowerCase().includes(query) ||
+      p.phone.includes(query)
+  );
+
+  const filteredBookings = appointments.filter(
+    (a) =>
+      query === '' ||
+      a.patientName.toLowerCase().includes(query) ||
+      a.appointmentNumber.toLowerCase().includes(query) ||
+      a.reasonForVisit.toLowerCase().includes(query)
+  );
+
+  // Pagination State (10 records per page)
+  const [loungePage, setLoungePage] = useState(1);
+  const [checkinPage, setCheckinPage] = useState(1);
+  const [intakePage, setIntakePage] = useState(1);
+  const [bookingPage, setBookingPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setLoungePage(1);
+    setCheckinPage(1);
+    setIntakePage(1);
+    setBookingPage(1);
+  }, [searchTerm, filterMode]);
+
+  const paginatedLounge = filteredAppointments.slice((loungePage - 1) * pageSize, loungePage * pageSize);
+  const paginatedCheckIn = awaitingCheckIn.slice((checkinPage - 1) * pageSize, checkinPage * pageSize);
+  const paginatedIntake = filteredIntakePatients.slice((intakePage - 1) * pageSize, intakePage * pageSize);
+  const paginatedBookings = filteredBookings.slice((bookingPage - 1) * pageSize, bookingPage * pageSize);
 
   const receptionistSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
@@ -465,7 +509,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredAppointments.map((apt) => (
+                      {paginatedLounge.map((apt) => (
                         <tr
                           key={apt.id}
                           className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
@@ -540,6 +584,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                     </tbody>
                   </table>
                 </div>
+                <Pagination
+                  currentPage={loungePage}
+                  totalItems={filteredAppointments.length}
+                  pageSize={pageSize}
+                  onPageChange={setLoungePage}
+                />
               </CardContent>
             </Card>
           </div>
@@ -623,7 +673,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {awaitingCheckIn.length > 0 ? (
-                    awaitingCheckIn.map((apt) => (
+                    paginatedCheckIn.map((apt) => (
                       <tr
                         key={apt.id}
                         className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
@@ -675,6 +725,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={checkinPage}
+              totalItems={awaitingCheckIn.length}
+              pageSize={pageSize}
+              onPageChange={setCheckinPage}
+            />
           </CardContent>
         </Card>
       )}
@@ -718,7 +774,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {patients.map((pat) => (
+                  {paginatedIntake.map((pat) => (
                     <tr
                       key={pat.id}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
@@ -759,6 +815,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={intakePage}
+              totalItems={filteredIntakePatients.length}
+              pageSize={pageSize}
+              onPageChange={setIntakePage}
+            />
           </CardContent>
         </Card>
       )}
@@ -802,7 +864,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {appointments.map((apt) => (
+                  {paginatedBookings.map((apt) => (
                     <tr
                       key={apt.id}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
@@ -846,6 +908,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={bookingPage}
+              totalItems={filteredBookings.length}
+              pageSize={pageSize}
+              onPageChange={setBookingPage}
+            />
           </CardContent>
         </Card>
       )}

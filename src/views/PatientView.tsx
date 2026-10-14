@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { StatCard } from '@/components/ui/StatCard';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { Pagination } from '@/components/ui/Pagination';
 import {
   Filter,
   Plus,
@@ -195,6 +196,19 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
     return true;
   });
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  const paginatedPatients = filteredPatients.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="space-y-6">
       {/* Real-time Feedback Notification Banner */}
@@ -350,7 +364,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredPatients.length > 0 ? (
-                  filteredPatients.map((pat) => {
+                  paginatedPatients.map((pat) => {
                     const isSelected = selectedPatientId === pat.id;
                     return (
                       <React.Fragment key={pat.id}>
@@ -629,6 +643,12 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={currentPage}
+            totalItems={filteredPatients.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
 

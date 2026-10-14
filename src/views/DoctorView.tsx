@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge } from '@/components/ui/Badge';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
+import { Pagination } from '@/components/ui/Pagination';
 import {
   CheckCircle2,
   Filter,
@@ -355,6 +356,31 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     if (filterMode === 'urgent') return r.status === 'pending';
     return true;
   });
+
+  // Pagination State (10 records per page)
+  const [worklistPage, setWorklistPage] = useState(1);
+  const [patientsPage, setPatientsPage] = useState(1);
+  const [prescriptionsPage, setPrescriptionsPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setWorklistPage(1);
+    setPatientsPage(1);
+    setPrescriptionsPage(1);
+  }, [searchTerm, filterMode, activeDoctorId]);
+
+  const paginatedAppointments = filteredAppointments.slice(
+    (worklistPage - 1) * pageSize,
+    worklistPage * pageSize
+  );
+  const paginatedPatients = filteredPatients.slice(
+    (patientsPage - 1) * pageSize,
+    patientsPage * pageSize
+  );
+  const paginatedPrescriptions = filteredPrescriptions.slice(
+    (prescriptionsPage - 1) * pageSize,
+    prescriptionsPage * pageSize
+  );
 
   const doctorSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
@@ -778,7 +804,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <CardContent className="p-0">
                   <div className="divide-y divide-slate-100 dark:divide-slate-800">
                     {filteredAppointments.length > 0 ? (
-                      filteredAppointments.map((apt) => {
+                      paginatedAppointments.map((apt) => {
                         const isCurrent = apt.id === selectedAppointmentId;
                         const isLive = apt.status === 'in_consultation';
                         const isWaiting = apt.status === 'checked_in';
@@ -862,6 +888,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
                     )}
                   </div>
+                  <Pagination
+                    currentPage={worklistPage}
+                    totalItems={filteredAppointments.length}
+                    pageSize={pageSize}
+                    onPageChange={setWorklistPage}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -948,7 +980,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredPatients.map((pat) => (
+                  {paginatedPatients.map((pat) => (
                     <tr
                       key={pat.id}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
@@ -1019,6 +1051,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={patientsPage}
+              totalItems={filteredPatients.length}
+              pageSize={pageSize}
+              onPageChange={setPatientsPage}
+            />
           </CardContent>
         </Card>
       )}
@@ -1047,7 +1085,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredPrescriptions.map((rx) => (
+                  {paginatedPrescriptions.map((rx) => (
                     <tr
                       key={rx.id}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
@@ -1079,6 +1117,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={prescriptionsPage}
+              totalItems={filteredPrescriptions.length}
+              pageSize={pageSize}
+              onPageChange={setPrescriptionsPage}
+            />
           </CardContent>
         </Card>
       )}

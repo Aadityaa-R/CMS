@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
+import { Pagination } from '@/components/ui/Pagination';
 import {
   Filter,
 } from 'lucide-react';
@@ -384,6 +385,20 @@ export const AccessControlView: React.FC = () => {
 
   const isRoleOrSearchActive = selectedRoleFilter !== '' || searchTerm.trim() !== '';
 
+  // Pagination State (10 records per page)
+  const [auditPage, setAuditPage] = useState(1);
+  const [sectionPages, setSectionPages] = useState<Record<string, number>>({});
+  const getSectionPage = (key: string) => sectionPages[key] || 1;
+  const setSectionPage = (key: string, page: number) => setSectionPages((prev) => ({ ...prev, [key]: page }));
+
+  useEffect(() => {
+    setAuditPage(1);
+    setSectionPages({});
+  }, [searchTerm, selectedRoleFilter]);
+
+  const auditPageSize = 10;
+  const paginatedAuditLog = accessAuditLog.slice((auditPage - 1) * auditPageSize, auditPage * auditPageSize);
+
   const searchSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
     const seenNames = new Set<string>();
@@ -537,6 +552,8 @@ export const AccessControlView: React.FC = () => {
           ) : (
             displayedSections.map((sectionMeta) => {
               const staffInSection = getStaffForRole(sectionMeta.role);
+              const sectionPage = getSectionPage(sectionMeta.key);
+              const paginatedStaff = staffInSection.slice((sectionPage - 1) * 10, sectionPage * 10);
 
               return (
                 <Card key={sectionMeta.key} className="border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -579,7 +596,7 @@ export const AccessControlView: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {staffInSection.map((staff) => {
+                      {paginatedStaff.map((staff) => {
                         const isRevoked = staff.status === 'revoked';
                         const isSelected = selectedStaffId === staff.id;
 
@@ -738,6 +755,12 @@ export const AccessControlView: React.FC = () => {
                       })}
                     </div>
                   )}
+                  <Pagination
+                    currentPage={sectionPage}
+                    totalItems={staffInSection.length}
+                    pageSize={10}
+                    onPageChange={(p) => setSectionPage(sectionMeta.key, p)}
+                  />
                 </CardContent>
               </Card>
             );
@@ -865,7 +888,7 @@ export const AccessControlView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                {accessAuditLog.map((log) => {
+                {paginatedAuditLog.map((log) => {
                   const isRevokeOrDelete =
                     log.action === 'access_revoked' || log.action === 'account_deleted';
 
@@ -913,6 +936,13 @@ export const AccessControlView: React.FC = () => {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={auditPage}
+            totalItems={accessAuditLog.length}
+            pageSize={auditPageSize}
+            onPageChange={setAuditPage}
+            className="mt-3 rounded-b-lg"
+          />
         </CardContent>
       </Card>
 

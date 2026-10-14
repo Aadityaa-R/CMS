@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
+import { Pagination } from '@/components/ui/Pagination';
 import {
   Filter,
 } from 'lucide-react';
@@ -217,6 +218,28 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
     }
     return true;
   });
+
+  // Pagination State (10 records per page)
+  const [overviewPage, setOverviewPage] = useState(1);
+  const [billingPage, setBillingPage] = useState(1);
+  const [inventoryPage, setInventoryPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setOverviewPage(1);
+  }, [searchTerm, overviewStatusFilter]);
+
+  useEffect(() => {
+    setBillingPage(1);
+  }, [searchTerm, billingStatusFilter]);
+
+  useEffect(() => {
+    setInventoryPage(1);
+  }, [searchTerm, inventoryFilter]);
+
+  const paginatedAppointments = filteredAppointments.slice((overviewPage - 1) * pageSize, overviewPage * pageSize);
+  const paginatedInvoices = filteredInvoices.slice((billingPage - 1) * pageSize, billingPage * pageSize);
+  const paginatedInventory = filteredInventory.slice((inventoryPage - 1) * pageSize, inventoryPage * pageSize);
 
   const overviewSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
@@ -430,7 +453,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                           {filteredAppointments.length > 0 ? (
-                            filteredAppointments.map((apt) => (
+                            paginatedAppointments.map((apt) => (
                               <tr
                                 key={apt.id}
                                 className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
@@ -503,6 +526,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                         </tbody>
                       </table>
                     </div>
+                    <Pagination
+                      currentPage={overviewPage}
+                      totalItems={filteredAppointments.length}
+                      pageSize={pageSize}
+                      onPageChange={setOverviewPage}
+                    />
                   </CardContent>
                 </Card>
               )}
@@ -721,7 +750,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {filteredInvoices.length > 0 ? (
-                        filteredInvoices.map((inv) => {
+                        paginatedInvoices.map((inv) => {
                           const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
                           return (
                             <tr
@@ -791,6 +820,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                     </tbody>
                   </table>
                 </div>
+                <Pagination
+                  currentPage={billingPage}
+                  totalItems={filteredInvoices.length}
+                  pageSize={pageSize}
+                  onPageChange={setBillingPage}
+                />
               </CardContent>
             </Card>
           )}
@@ -1021,7 +1056,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {filteredInventory.length > 0 ? (
-                        filteredInventory.map((item) => {
+                        paginatedInventory.map((item) => {
                           const isLow = item.currentStock <= item.minStockLevel;
                           return (
                             <tr
@@ -1091,6 +1126,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
                     </tbody>
                   </table>
                 </div>
+                <Pagination
+                  currentPage={inventoryPage}
+                  totalItems={filteredInventory.length}
+                  pageSize={pageSize}
+                  onPageChange={setInventoryPage}
+                />
               </CardContent>
             </Card>
           )}
