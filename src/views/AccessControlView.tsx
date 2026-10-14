@@ -8,9 +8,10 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
+import { Filter } from 'lucide-react';
 import { UserRole, StaffAccessRecord, StaffPermission } from '@/types';
 
-type RoleFilterKey = 'all' | 'doc' | 'receptionist' | 'patient';
+type RoleFilterKey = '' | 'doc' | 'receptionist' | 'patient';
 
 const getInitials = (name: string): string => {
   const clean = name.replace(/^Dr\.\s+/i, '').trim();
@@ -133,8 +134,8 @@ export const AccessControlView: React.FC = () => {
 
   const { addDoctor } = useClinic();
 
-  // Active role filter: 'all' | 'doc' | 'receptionist' | 'patient'
-  const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('all');
+  // Active role filter: '' (unselected) | 'doc' | 'receptionist' | 'patient'
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('');
 
   // Search filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -354,7 +355,6 @@ export const AccessControlView: React.FC = () => {
   };
 
   // Counts for role options
-  const totalPersonnel = staffAccessList.length;
   const docCount = staffAccessList.filter((s) => s.role === 'doctor').length;
   const receptionistCount = staffAccessList.filter((s) => s.role === 'receptionist').length;
   const patientCount = staffAccessList.filter((s) => s.role === 'patient').length;
@@ -376,11 +376,15 @@ export const AccessControlView: React.FC = () => {
     return filteredStaff.filter((s) => s.role === role);
   };
 
-  // Candidate sections based on selected role filter
-  const candidateSections =
-    selectedRoleFilter === 'all'
-      ? ROLE_SECTIONS
-      : ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter);
+  // Equal Authority: User can either filter by role, search, or both
+  // If role is explicitly chosen -> filter strictly by that role
+  // Else if search term is entered -> search across all roles with equal authority
+  // Else -> empty array (no data sections at top)
+  const candidateSections = selectedRoleFilter
+    ? ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter)
+    : searchTerm.trim() !== ''
+    ? ROLE_SECTIONS
+    : [];
 
   // When searching, display ONLY sections that contain matching personnel!
   const displayedSections = candidateSections.filter((section) => {
@@ -391,7 +395,7 @@ export const AccessControlView: React.FC = () => {
     return true;
   });
 
-  const isRoleOrSearchActive = true;
+  const isRoleOrSearchActive = selectedRoleFilter !== '' || searchTerm.trim() !== '';
 
   // Pagination State (10 records per page)
   const [auditPage, setAuditPage] = useState(1);
@@ -468,7 +472,7 @@ export const AccessControlView: React.FC = () => {
       </div>
 
 
-      {/* Clearance Governance Bar: Side-by-Side Search & Role Filter Pills */}
+      {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="shrink-0">
@@ -480,7 +484,7 @@ export const AccessControlView: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-2xl lg:justify-end">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
             {/* Search Input with Interactive Dropdown and Autofill */}
             <div className="relative flex-1 min-w-[200px]">
               <InteractiveSearchBar
@@ -491,42 +495,24 @@ export const AccessControlView: React.FC = () => {
               />
             </div>
 
-            {/* Role Filter Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
-              {[
-                { key: 'all' as RoleFilterKey, label: 'All', count: totalPersonnel },
-                { key: 'doc' as RoleFilterKey, label: 'Doctors', count: docCount },
-                { key: 'receptionist' as RoleFilterKey, label: 'Receptionists', count: receptionistCount },
-                { key: 'patient' as RoleFilterKey, label: 'Patients', count: patientCount },
-              ].map((pill) => {
-                const isActive = selectedRoleFilter === pill.key;
-                return (
-                  <button
-                    key={pill.key}
-                    type="button"
-                    onClick={() => {
-                      setSelectedRoleFilter(pill.key);
-                      setSelectedStaffId(null);
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      isActive
-                        ? 'bg-teal-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span>{pill.label}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                        isActive
-                          ? 'bg-teal-700/60 text-white'
-                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                      }`}
-                    >
-                      {pill.count}
-                    </span>
-                  </button>
-                );
-              })}
+            {/* Role Filter Dropdown with Filter icon inside */}
+            <div className="w-full sm:w-56 shrink-0">
+              <Select
+                icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                value={selectedRoleFilter}
+                placeholder="Select Role"
+                onChange={(e) => {
+                  const newRole = e.target.value as RoleFilterKey;
+                  setSelectedRoleFilter(newRole);
+                  setSelectedStaffId(null);
+                }}
+                options={[
+                  { value: '', label: 'Select Role' },
+                  { value: 'doc', label: `Doctors (${docCount})` },
+                  { value: 'receptionist', label: `Receptionists (${receptionistCount})` },
+                  { value: 'patient', label: `Patients (${patientCount})` },
+                ]}
+              />
             </div>
           </div>
         </div>
