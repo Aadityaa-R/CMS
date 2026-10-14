@@ -1,9 +1,9 @@
 export type UserRole =
-  | 'admin'
   | 'doctor'
-  | 'patient'
   | 'receptionist'
-  | 'lab_technician';
+  | 'lab_technician'
+  | 'patient'
+  | 'admin';
 
 export interface User {
   id: string;

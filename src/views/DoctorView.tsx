@@ -873,6 +873,19 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <Button
                           size="xs"
                           variant="outline"
+                          onClick={() => {
+                            const apt = appointments.find((a) => a.patientId === pat.id);
+                            if (apt) {
+                              setSelectedAppointmentId(apt.id);
+                              setSelectedTab('overview');
+                            }
+                          }}
+                        >
+                          Admit to Desk
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="outline"
                           onClick={() => handleOpenPrescriptionModal(pat.id)}
                         >
                           Prescribe

@@ -21,7 +21,7 @@ export const AppLayout: React.FC = () => {
 
   // Whenever the active role changes upon login, reset the active module tab
   useEffect(() => {
-    setActiveTab(currentRole === 'admin' ? 'admin_overview' : 'overview');
+    setActiveTab(currentRole === 'doctor' || currentRole === 'admin' ? 'admin_overview' : 'overview');
   }, [currentRole]);
 
   // If user signed out, display login screen
@@ -30,7 +30,7 @@ export const AppLayout: React.FC = () => {
   }
 
   const renderActiveView = () => {
-    if (currentRole === 'admin') {
+    if (currentRole === 'doctor' || currentRole === 'admin') {
       switch (activeTab) {
         case 'admin_overview':
         case 'overview':
@@ -59,8 +59,6 @@ export const AppLayout: React.FC = () => {
     }
 
     switch (currentRole) {
-      case 'doctor':
-        return <DoctorView activeTab={activeTab} />;
       case 'patient':
         return <PatientView />;
       case 'receptionist':
@@ -68,7 +66,7 @@ export const AppLayout: React.FC = () => {
       case 'lab_technician':
         return <LabTechnicianView activeTab={activeTab} />;
       default:
-        return <AdminView activeTab={activeTab} />;
+        return <DoctorView activeTab="overview" />;
     }
   };
 

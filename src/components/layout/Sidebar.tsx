@@ -2,20 +2,18 @@ import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard,
-  Users,
   UserCheck,
   Calendar,
   CreditCard,
   Package,
   Pill,
   FlaskConical,
-  Clock,
   PlusCircle,
-  FilePlus,
   PanelLeft,
   PanelLeftClose,
   PanelLeftOpen,
   Stethoscope,
+  TestTubes,
   User,
 } from 'lucide-react';
 
@@ -46,24 +44,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const getNavItems = (): NavItem[] => {
     switch (currentRole) {
+      case 'doctor':
       case 'admin':
         return [
           { id: 'admin_overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+          { id: 'role_doctor', label: 'Doctor', icon: <Stethoscope className="w-4 h-4" /> },
           { id: 'admin_billing', label: 'Revenue & Billing', icon: <CreditCard className="w-4 h-4" /> },
           { id: 'admin_inventory', label: 'Stock & Inventory', icon: <Package className="w-4 h-4" /> },
-          { id: 'role_doctor', label: 'Doctor', icon: <Stethoscope className="w-4 h-4" /> },
           { id: 'role_receptionist', label: 'Receptionist', icon: <Calendar className="w-4 h-4" /> },
           { id: 'role_lab_technician', label: 'Lab Technician', icon: <FlaskConical className="w-4 h-4" /> },
           { id: 'role_patient', label: 'Patient', icon: <User className="w-4 h-4" /> },
-        ];
-
-      case 'doctor':
-        return [
-          { id: 'overview', label: 'Consultation Desk', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'patients', label: 'My Patients', icon: <Users className="w-4 h-4" /> },
-          { id: 'prescriptions', label: 'Write Prescription', icon: <FilePlus className="w-4 h-4" /> },
-          { id: 'lab_orders', label: 'Order Lab Tests', icon: <FlaskConical className="w-4 h-4" /> },
-          { id: 'schedule', label: 'Weekly Schedule', icon: <Clock className="w-4 h-4" /> },
         ];
 
       case 'patient':
@@ -89,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {
             id: 'samples',
             label: 'Sample Collection',
-            icon: <i className="fa-sharp fa-thin fa-vials" aria-hidden="true" />,
+            icon: <TestTubes className="w-4 h-4" />,
           },
           { id: 'results', label: 'Diagnostic Results Entry', icon: <FlaskConical className="w-4 h-4" /> },
         ];
@@ -156,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Clinic Portal
               </div>
               <div className="text-xs font-semibold text-slate-300 capitalize truncate mt-0.5">
-                {currentRole === 'admin' ? 'Admin' : currentRole.replace('_', ' ')}
+                {currentRole === 'doctor' || currentRole === 'admin' ? 'Doctor (Admin)' : currentRole.replace('_', ' ')}
               </div>
             </div>
           </div>

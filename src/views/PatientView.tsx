@@ -30,8 +30,9 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
     addAppointment,
   } = useClinic();
 
-  // Eleanor Wright's patient record
-  const currentPatient = patients.find((p) => p.mrn === 'MRN-84291') || patients[0];
+  // Active patient selection state for multi-patient testing
+  const [selectedPatientId, setSelectedPatientId] = useState<string>('pat-1');
+  const currentPatient = patients.find((p) => p.id === selectedPatientId) || patients[0];
 
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctors[0]?.id || '');
@@ -70,6 +71,37 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
 
   return (
     <div className="space-y-6">
+      {/* Patient Profile Transition Bar for Verification */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+            Switch Patient Profile:
+          </span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            Verify portal data across outpatients
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {patients.slice(0, 4).map((p) => {
+            const isSelected = p.id === currentPatient.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setSelectedPatientId(p.id)}
+                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer ${
+                  isSelected
+                    ? 'bg-teal-600 text-white font-semibold shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                {p.firstName} {p.lastName} ({p.mrn})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Patient Profile Header */}
       <div className="bg-gradient-to-r from-teal-700 to-slate-900 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">

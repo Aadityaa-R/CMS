@@ -11,22 +11,10 @@ export interface RoleMeta {
 
 export const ALL_ROLES: RoleMeta[] = [
   {
-    role: 'admin',
-    label: 'Admin',
-    department: 'Administration',
-    description: 'Operations, doctors, patient directory, and operational analytics.',
-  },
-  {
     role: 'doctor',
     label: 'Doctor',
-    department: 'Clinical Care',
-    description: 'Patient consultations, diagnostic notes, electronic prescriptions, and lab orders.',
-  },
-  {
-    role: 'patient',
-    label: 'Patient',
-    department: 'Patient Portal',
-    description: 'Personal appointments, active prescriptions, lab reports, and billing receipts.',
+    department: 'Internal Medicine & Administration',
+    description: 'Lead Physician & Clinic Administrator • Consultations, clinical governance, billing, inventory & oversight.',
   },
   {
     role: 'receptionist',
@@ -39,6 +27,12 @@ export const ALL_ROLES: RoleMeta[] = [
     label: 'Lab Technician',
     department: 'Diagnostic Laboratory',
     description: 'Sample collection, specimen testing, diagnostic results, and reference ranges.',
+  },
+  {
+    role: 'patient',
+    label: 'Patient',
+    department: 'Patient Portal',
+    description: 'Personal appointments, active prescriptions, lab reports, and billing receipts.',
   },
 ];
 
@@ -66,7 +60,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRole, setCurrentRole] = useState<UserRole>(() => {
     const savedRole = sessionStorage.getItem('cms_auth_role') as UserRole;
-    return savedRole && DEMO_USERS[savedRole] ? savedRole : 'admin';
+    return savedRole && DEMO_USERS[savedRole] ? (savedRole === 'admin' ? 'doctor' : savedRole) : 'doctor';
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -95,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return DEMO_USERS;
   });
 
-  const currentUser = userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.admin;
+  const currentUser = userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.doctor;
 
   const updateCurrentUser = (updates: Partial<User>) => {
     setUserProfiles((prev) => {
@@ -126,7 +120,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const matchUser = cred.username.toLowerCase() === cleanId;
       const matchEmail = cred.email.toLowerCase() === cleanId;
       const matchRole = cred.role.toLowerCase() === cleanId;
-      return matchUser || matchEmail || matchRole;
+      const matchAdminAlias = cred.role === 'doctor' && (cleanId === 'admin' || cleanId === 'admin@beaconclinic.com');
+      return matchUser || matchEmail || matchRole || matchAdminAlias;
     });
 
     if (!match) {
@@ -152,8 +147,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginAs = (role: UserRole) => {
-    if (DEMO_USERS[role]) {
-      setCurrentRole(role);
+    const targetRole = role === 'admin' ? 'doctor' : role;
+    if (DEMO_USERS[targetRole]) {
+      setCurrentRole(targetRole);
       setIsAuthenticated(true);
     }
   };

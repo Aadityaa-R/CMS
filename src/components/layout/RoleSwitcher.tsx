@@ -28,7 +28,7 @@ export const RoleSwitcher: React.FC = () => {
           Development Role Switcher:
         </span>
         <span className="text-slate-400 hidden sm:inline text-[11px]">
-          Select any of the 5 roles to test its dashboard and workflow:
+          Select any of the 4 clinic roles to test its dashboard and workflow:
         </span>
       </div>
 
