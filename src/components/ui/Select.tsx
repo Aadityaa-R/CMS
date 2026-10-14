@@ -83,7 +83,7 @@ export const Select: React.FC<SelectProps> = ({
         onClick={() => !disabled && setIsOpen((prev) => !prev)}
         className={`w-full relative flex items-center justify-between ${
           icon ? 'pl-9 pr-3' : 'px-3'
-        } py-2 text-xs font-medium rounded-lg border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors text-left shadow-xs focus:outline-none focus:ring-1 focus:ring-teal-500 ${
+        } py-2 text-xs font-medium rounded-lg border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors text-left shadow-xs focus:outline-none focus:ring-0 focus:border-teal-500 ${
           disabled
             ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800'
             : 'cursor-pointer'

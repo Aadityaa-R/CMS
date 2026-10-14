@@ -79,8 +79,10 @@
     @apply border-slate-600;
   }
 
-  input:focus {
-    @apply border-teal-500 outline-none ring-2 ring-teal-500/20 ring-offset-0;
+  input:focus,
+  input:focus-visible {
+    @apply border-teal-500 outline-none ring-0;
+    box-shadow: none;
   }
 
   input:disabled {
@@ -108,8 +110,10 @@
     @apply border-slate-400;
   }
 
-  textarea:focus {
-    @apply border-teal-500 outline-none ring-2 ring-teal-500/20 ring-offset-0;
+  textarea:focus,
+  textarea:focus-visible {
+    @apply border-teal-500 outline-none ring-0;
+    box-shadow: none;
   }
 
   textarea:disabled {
@@ -130,8 +134,10 @@
     @apply border-slate-400;
   }
 
-  select:focus {
-    @apply border-teal-500 outline-none ring-2 ring-teal-500/20 ring-offset-0;
+  select:focus,
+  select:focus-visible {
+    @apply border-teal-500 outline-none ring-0;
+    box-shadow: none;
   }
 
   select:disabled {

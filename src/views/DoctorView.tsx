@@ -572,7 +572,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && handleSaveAllergies()}
                           placeholder="e.g. Penicillin, Peanuts (or None)"
                           disabled={isReadOnlyView}
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition-colors shadow-xs font-medium"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors shadow-xs font-medium"
                         />
                         {!isReadOnlyView && (
                           <Button
@@ -1000,7 +1000,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         {pat.phone}
                       </td>
                       <td className="px-4 py-3.5 align-middle">
-                        <Badge variant="teal">{pat.bloodGroup}</Badge>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{pat.bloodGroup}</span>
                       </td>
                       <td className="px-4 py-3.5 align-middle">
                         {pat.allergies.length > 0 ? (

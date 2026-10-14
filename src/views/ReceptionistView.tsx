@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { StatCard } from '@/components/ui/StatCard';
-import { Badge } from '@/components/ui/Badge';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import {
@@ -829,7 +828,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                         {pat.phone}
                       </td>
                       <td className="px-4 py-3.5 align-middle">
-                        <Badge variant="teal">{pat.bloodGroup}</Badge>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{pat.bloodGroup}</span>
                       </td>
                       <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
                         {pat.emergencyContact?.name} ({pat.emergencyContact?.relationship})
