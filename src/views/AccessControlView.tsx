@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/ClinicContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
@@ -137,12 +138,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     }
   }, [activeTab]);
   const {
+    currentUser,
     staffAccessList,
     accessAuditLog,
     grantStaffAccess,
     revokeStaffAccess,
     deleteStaffAccount,
-    toggleStaffPermission,
+    updateStaffCapabilities,
     addStaffAccount,
   } = useAuth();
 
@@ -202,13 +204,129 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   const [deleteTarget, setDeleteTarget] = useState<StaffAccessRecord | null>(null);
 
   // Real-time notification banner
-  const [feedbackNotification, setFeedbackNotification] = useState<string | null>(null);
+  interface NotificationState {
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }
+  const [feedbackNotification, setFeedbackNotification] = useState<NotificationState | null>(null);
 
-  const showNotification = (msg: string) => {
-    setFeedbackNotification(msg);
+  const showNotification = (msg: string | NotificationState) => {
+    if (typeof msg === 'string') {
+      setFeedbackNotification({ message: msg, type: 'info' });
+    } else {
+      setFeedbackNotification(msg);
+    }
     setTimeout(() => {
       setFeedbackNotification(null);
     }, 4500);
+  };
+
+  // Capability action confirmation modal state
+  interface PendingCapabilityAction {
+    staffId: string;
+    staffName: string;
+    permissionId: string;
+    permissionName: string;
+    permissionDescription: string;
+    action: 'grant' | 'revoke';
+    alsoRevokePrescription?: boolean;
+  }
+
+  const [pendingCapAction, setPendingCapAction] = useState<PendingCapabilityAction | null>(null);
+  const [isCapActionLoading, setIsCapActionLoading] = useState(false);
+
+  const handleRequestCapabilityAction = (
+    staff: StaffAccessRecord,
+    perm: StaffPermission,
+    isCurrentlyGranted: boolean
+  ) => {
+    if (isCurrentlyGranted) {
+      // Revoke action
+      const isEmr = perm.id === 'perm-emr' || perm.name === 'EMR Records Access';
+      const isPrescGranted = staff.permissions.some(
+        (p) => (p.id === 'perm-presc' || p.name === 'Prescription Authoring') && p.enabled
+      );
+      const alsoRevokePrescription = isEmr && isPrescGranted;
+
+      setPendingCapAction({
+        staffId: staff.id,
+        staffName: staff.staffName,
+        permissionId: perm.id,
+        permissionName: perm.name,
+        permissionDescription: perm.description,
+        action: 'revoke',
+        alsoRevokePrescription,
+      });
+    } else {
+      // Grant action
+      setPendingCapAction({
+        staffId: staff.id,
+        staffName: staff.staffName,
+        permissionId: perm.id,
+        permissionName: perm.name,
+        permissionDescription: perm.description,
+        action: 'grant',
+        alsoRevokePrescription: false,
+      });
+    }
+  };
+
+  const handleExecuteCapabilityAction = async () => {
+    if (!pendingCapAction) return;
+
+    setIsCapActionLoading(true);
+    try {
+      // In-flight simulated request delay
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const updates: Array<{ permissionId: string; enabled: boolean }> = [
+        {
+          permissionId: pendingCapAction.permissionId,
+          enabled: pendingCapAction.action === 'grant',
+        },
+      ];
+
+      if (pendingCapAction.alsoRevokePrescription) {
+        const targetStaff = staffAccessList.find((s) => s.id === pendingCapAction.staffId);
+        const presc = targetStaff?.permissions.find(
+          (p) => p.id === 'perm-presc' || p.name === 'Prescription Authoring'
+        );
+        if (presc && presc.enabled) {
+          updates.push({
+            permissionId: presc.id,
+            enabled: false,
+          });
+        }
+      }
+
+      updateStaffCapabilities(
+        pendingCapAction.staffId,
+        updates,
+        currentUser?.name || 'Dr. Marcus Vance (Managing Director)'
+      );
+
+      if (pendingCapAction.alsoRevokePrescription) {
+        showNotification({
+          type: 'success',
+          message: `Revoked EMR Records Access and dependent Prescription Authoring for ${pendingCapAction.staffName}.`,
+        });
+      } else {
+        const actionVerb = pendingCapAction.action === 'grant' ? 'granted' : 'revoked';
+        showNotification({
+          type: 'success',
+          message: `Capability "${pendingCapAction.permissionName}" successfully ${actionVerb} for ${pendingCapAction.staffName}.`,
+        });
+      }
+
+      setPendingCapAction(null);
+    } catch {
+      showNotification({
+        type: 'error',
+        message: `Failed to update capability "${pendingCapAction.permissionName}". Operational state preserved.`,
+      });
+    } finally {
+      setIsCapActionLoading(false);
+    }
   };
 
   const handleGrant = (id: string, name: string) => {
@@ -237,11 +355,6 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     }
     setDeleteTarget(null);
     showNotification(`Account for ${targetName} has been permanently deleted and purged from the clinic directory.`);
-  };
-
-  const handleTogglePermission = (recordId: string, permId: string, permName: string) => {
-    toggleStaffPermission(recordId, permId);
-    showNotification(`Updated permission: ${permName}`);
   };
 
   const togglePersonSelection = (staffId: string) => {
@@ -440,13 +553,29 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     <div className="space-y-6">
       {/* Real-time Directive Notification Banner */}
       {feedbackNotification && (
-        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-800 dark:text-slate-100 shadow-sm animate-fadeIn">
+        <div
+          className={`p-3.5 bg-slate-50 dark:bg-slate-800/90 rounded-xl border flex items-center justify-between text-xs text-slate-800 dark:text-slate-100 shadow-sm animate-fadeIn ${
+            feedbackNotification.type === 'error'
+              ? 'border-rose-200 dark:border-rose-800'
+              : 'border-slate-200 dark:border-slate-700'
+          }`}
+        >
           <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                feedbackNotification.type === 'error'
+                  ? 'bg-rose-500'
+                  : 'bg-teal-500'
+              }`}
+            />
             <span className="font-semibold text-slate-900 dark:text-slate-100">
-              Managing Director Directive:
+              {feedbackNotification.type === 'error'
+                ? 'System Alert:'
+                : feedbackNotification.type === 'success'
+                ? 'Update Confirmed:'
+                : 'Managing Director Directive:'}
             </span>
-            <span>{feedbackNotification}</span>
+            <span>{feedbackNotification.message}</span>
           </div>
           <button
             type="button"
@@ -687,41 +816,74 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           </span>
                         </div>
 
+                        {/* Suspended Account Notice (Requirement 6) */}
+                        {isRevoked && (
+                          <div className="mb-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                            <span>Access revoked. Restore access to edit capabilities.</span>
+                          </div>
+                        )}
+
                         <div className="space-y-2 divide-y divide-slate-200/70 dark:divide-slate-700/60">
-                          {activeStaff.permissions.map((perm) => (
-                            <div
-                              key={perm.id}
-                              className="pt-2 flex items-center justify-between gap-3 text-xs"
-                            >
-                              <div className="flex-1">
-                                <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                                  {perm.name}
+                          {activeStaff.permissions.map((perm) => {
+                            const isGranted = perm.enabled;
+
+                            // Dependency Rule (Requirement 5):
+                            // Prescription Authoring cannot be granted while EMR Records Access is Not granted.
+                            const isEmrGranted = activeStaff.permissions.some(
+                              (p) => (p.id === 'perm-emr' || p.name === 'EMR Records Access') && p.enabled
+                            );
+                            const isPrescriptionAuth =
+                              perm.id === 'perm-presc' || perm.name === 'Prescription Authoring';
+                            const isGrantDisabledByDependency = !isGranted && isPrescriptionAuth && !isEmrGranted;
+
+                            const isDisabled = isRevoked || isCapActionLoading || isGrantDisabledByDependency;
+
+                            const tooltipText = isGrantDisabledByDependency
+                              ? 'Requires EMR Records Access'
+                              : isRevoked
+                              ? 'Access revoked. Restore access to edit capabilities.'
+                              : undefined;
+
+                            return (
+                              <div
+                                key={perm.id}
+                                className="pt-2.5 pb-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
+                                    {perm.name}
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                                    {perm.description}
+                                  </div>
                                 </div>
-                                <div className="text-[11px] text-slate-400 dark:text-slate-500">
-                                  {perm.description}
+
+                                <div className="flex items-center gap-3 shrink-0">
+                                  {/* 1. Status Label: plain text "Granted" or "Not granted" using app's existing badge style. Same style for both */}
+                                  <Badge variant="neutral" size="sm">
+                                    {isGranted ? 'Granted' : 'Not granted'}
+                                  </Badge>
+
+                                  {/* 2. Action Button: If Granted -> standard secondary button "Revoke"; If Not granted -> standard primary button "Grant" */}
+                                  <div className="inline-block" title={tooltipText}>
+                                    <Button
+                                      size="sm"
+                                      variant={isGranted ? 'secondary' : 'primary'}
+                                      disabled={isDisabled}
+                                      aria-label={`${isGranted ? 'Revoke' : 'Grant'} ${perm.name}`}
+                                      title={tooltipText}
+                                      onClick={() =>
+                                        handleRequestCapabilityAction(activeStaff, perm, isGranted)
+                                      }
+                                    >
+                                      {isGranted ? 'Revoke' : 'Grant'}
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
-
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={perm.enabled && !isRevoked}
-                                  disabled={isRevoked}
-                                  onChange={() =>
-                                    handleTogglePermission(activeStaff.id, perm.id, perm.name)
-                                  }
-                                  className="sr-only peer"
-                                />
-                                <div
-                                  className={`w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
-                                    isRevoked
-                                      ? 'opacity-40 cursor-not-allowed'
-                                      : 'peer-checked:bg-teal-600'
-                                  }`}
-                                />
-                              </label>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -1204,6 +1366,24 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           {log.description}
                         </p>
 
+                        {log.capability && (
+                          <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">
+                              {log.capability}
+                            </span>
+                            {log.oldState && log.newState && (
+                              <span>
+                                {log.oldState} &rarr; {log.newState}
+                              </span>
+                            )}
+                            {log.targetUserId && (
+                              <span className="text-slate-400 font-mono text-[10px]">
+                                (ID: {log.targetUserId})
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
                           <span>
                             Authorized by: <strong className="text-slate-700 dark:text-slate-300">{log.authorizedBy}</strong>
@@ -1290,6 +1470,102 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
             <p className="text-xs text-slate-600 dark:text-slate-400">
               Are you sure you want to permanently delete <strong>{deleteTarget.staffName}</strong>? This action will be logged in the Managing Director Security Audit Ledger.
+            </p>
+          </div>
+        )}
+      </Modal>
+
+      {/* Capability Confirmation Modal (Requirements 3, 4, 5) */}
+      <Modal
+        isOpen={pendingCapAction !== null}
+        onClose={() => {
+          if (!isCapActionLoading) setPendingCapAction(null);
+        }}
+        title={
+          pendingCapAction?.action === 'grant'
+            ? 'Confirm Grant Capability'
+            : pendingCapAction?.alsoRevokePrescription
+            ? 'Confirm Revoke Capability & Dependencies'
+            : 'Confirm Revoke Capability'
+        }
+        description="Administrative confirmation for workstation authority"
+        maxWidth="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPendingCapAction(null)}
+              disabled={isCapActionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={pendingCapAction?.action === 'grant' ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={handleExecuteCapabilityAction}
+              isLoading={isCapActionLoading}
+            >
+              Confirm
+            </Button>
+          </>
+        }
+      >
+        {pendingCapAction && (
+          <div className="space-y-4 text-xs">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Personnel Name:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">
+                  {pendingCapAction.staffName}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Capability:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {pendingCapAction.permissionName}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Requested Action:</span>
+                <span className="font-medium capitalize text-slate-800 dark:text-slate-200">
+                  {pendingCapAction.action === 'grant' ? 'Grant Capability' : 'Revoke Capability'}
+                </span>
+              </div>
+            </div>
+
+            {/* Operational Effect Statement */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-start gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-slate-400 mt-1 shrink-0" />
+              <div className="space-y-0.5">
+                <span className="font-semibold text-slate-900 dark:text-slate-100 block">
+                  Operational Effect:
+                </span>
+                <span className="text-slate-600 dark:text-slate-400">
+                  {pendingCapAction.action === 'grant'
+                    ? `Granting this authority allows ${pendingCapAction.staffName} to ${pendingCapAction.permissionDescription.toLowerCase()}.`
+                    : `Revoking this authority prevents ${pendingCapAction.staffName} from ${pendingCapAction.permissionDescription.toLowerCase()}.`}
+                </span>
+              </div>
+            </div>
+
+            {/* Dependency Policy Warning (Requirement 5) */}
+            {pendingCapAction.alsoRevokePrescription && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-slate-500 mt-1 shrink-0" />
+                <div className="space-y-0.5">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100 block">
+                    Dependency Policy Warning:
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Prescription Authoring requires active EMR Records Access. Revoking EMR Records Access prompts to also revoke Prescription Authoring for {pendingCapAction.staffName}. Both capabilities will be revoked upon confirmation.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <p className="text-slate-600 dark:text-slate-400">
+              Are you sure you want to proceed with this administrative change? This action will be logged in the Security Audit Ledger.
             </p>
           </div>
         )}

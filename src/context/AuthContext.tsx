@@ -59,6 +59,11 @@ interface AuthContextType {
   revokeStaffAccess: (recordId: string, reason?: string) => void;
   deleteStaffAccount: (recordId: string, reason?: string) => void;
   toggleStaffPermission: (recordId: string, permissionId: string) => void;
+  updateStaffCapabilities: (
+    recordId: string,
+    updates: Array<{ permissionId: string; enabled: boolean }>,
+    actingAdmin?: string
+  ) => void;
   addStaffAccount: (record: StaffAccessRecord, auditDescription?: string) => void;
   isRoleSuspended: (role: UserRole) => boolean;
   isStaffSuspended: (staffNameOrId: string) => boolean;
@@ -295,6 +300,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const targetPerm = record.permissions.find((p) => p.id === permissionId);
     const nextState = !targetPerm?.enabled;
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const oldState = targetPerm?.enabled ? 'Granted' : 'Not granted';
+    const newState = nextState ? 'Granted' : 'Not granted';
 
     setStaffAccessList((prev) =>
       prev.map((r) => {
@@ -315,12 +322,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp,
       targetRole: record.role,
       targetStaffName: record.staffName,
+      targetUserId: record.id,
+      capability: targetPerm?.name,
+      oldState,
+      newState,
       action: 'permission_updated',
-      description: `Permission '${targetPerm?.name}' ${nextState ? 'enabled' : 'disabled'} by Managing Director`,
+      description: `Capability '${targetPerm?.name}' changed from ${oldState} to ${newState} for ${record.staffName} (User ID: ${record.id}) by Dr. Marcus Vance (Managing Director)`,
       authorizedBy: 'Dr. Marcus Vance (Managing Director)',
     };
 
     setAccessAuditLog((prev) => [newAudit, ...prev]);
+  };
+
+  const updateStaffCapabilities = (
+    recordId: string,
+    updates: Array<{ permissionId: string; enabled: boolean }>,
+    actingAdmin?: string
+  ) => {
+    const record = staffAccessList.find((r) => r.id === recordId);
+    if (!record) return;
+
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const adminName = actingAdmin || currentUser.name || 'Dr. Marcus Vance (Managing Director)';
+
+    const newAuditEntries: AccessAuditLogEntry[] = [];
+
+    const updatedPermissions = record.permissions.map((p) => {
+      const match = updates.find((u) => u.permissionId === p.id);
+      if (match && match.enabled !== p.enabled) {
+        const oldState = p.enabled ? 'Granted' : 'Not granted';
+        const newState = match.enabled ? 'Granted' : 'Not granted';
+
+        newAuditEntries.push({
+          id: `aud-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          timestamp,
+          targetRole: record.role,
+          targetStaffName: record.staffName,
+          targetUserId: record.id,
+          capability: p.name,
+          oldState,
+          newState,
+          action: 'permission_updated',
+          description: `Capability '${p.name}' changed from ${oldState} to ${newState} for ${record.staffName} (User ID: ${record.id}) by ${adminName}`,
+          authorizedBy: adminName,
+        });
+
+        return { ...p, enabled: match.enabled };
+      }
+      return p;
+    });
+
+    setStaffAccessList((prev) =>
+      prev.map((r) => {
+        if (r.id !== recordId) return r;
+        return {
+          ...r,
+          lastUpdated: timestamp,
+          updatedBy: adminName,
+          permissions: updatedPermissions,
+        };
+      })
+    );
+
+    if (newAuditEntries.length > 0) {
+      setAccessAuditLog((prev) => [...newAuditEntries, ...prev]);
+    }
   };
 
   const addStaffAccount = (record: StaffAccessRecord, auditDescription?: string) => {
@@ -446,6 +512,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         revokeStaffAccess,
         deleteStaffAccount,
         toggleStaffPermission,
+        updateStaffCapabilities,
         addStaffAccount,
         isRoleSuspended,
         isStaffSuspended,
