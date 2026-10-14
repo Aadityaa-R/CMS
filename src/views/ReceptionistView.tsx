@@ -97,8 +97,11 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
   // Booking Form State
   const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.id || '');
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>(doctors[0]?.id || 'doc-1');
   const [bookingReason, setBookingReason] = useState('General consultation');
   const [isWalkIn, setIsWalkIn] = useState(true);
+
+  const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId) || primaryDoctor;
 
   // KPI Calculations
   const waitingCount = appointments.filter((a) => a.status === 'checked_in').length;
@@ -110,7 +113,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const handleCheckIn = (apt: Appointment) => {
     updateAppointmentStatus(apt.id, 'checked_in');
     showNotification(
-      `Patient ${apt.patientName} checked in. Token #${apt.tokenNumber} issued for Consultation Desk 1.`
+      `Patient ${apt.patientName} checked in. Token #${apt.tokenNumber} issued for ${apt.doctorName} (${apt.department}).`
     );
   };
 
@@ -157,13 +160,15 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     const pat = patients.find((p) => p.id === selectedPatientId) || patients[0];
     if (!pat) return;
 
+    const doc = doctors.find((d) => d.id === selectedDoctorId) || primaryDoctor;
+
     const newApt = addAppointment({
       patientId: pat.id,
       patientName: `${pat.firstName} ${pat.lastName}`,
       patientPhone: pat.phone,
-      doctorId: primaryDoctor.id,
-      doctorName: primaryDoctor.name,
-      department: primaryDoctor.department,
+      doctorId: doc.id,
+      doctorName: doc.name,
+      department: doc.department,
       dateTime: new Date().toISOString(),
       durationMinutes: 30,
       status: isWalkIn ? 'checked_in' : 'scheduled',
@@ -171,7 +176,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     });
 
     showNotification(
-      `Appointment ${newApt.appointmentNumber} created for ${newApt.patientName}. Assigned to ${primaryDoctor.name} (Token #${newApt.tokenNumber}).`
+      `Appointment ${newApt.appointmentNumber} created for ${newApt.patientName}. Assigned to ${doc.name} (Token #${newApt.tokenNumber}).`
     );
 
     setIsBookOpen(false);
@@ -278,7 +283,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           title="In Consultation"
           value={inConsultCount}
           unit={inConsultCount === 1 ? 'Patient' : 'Patients'}
-          subtitle="Currently with Dr. Marcus Vance"
+          subtitle="Currently with clinic doctors"
           colorScheme="slate"
         />
         <StatCard
@@ -414,7 +419,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
               >
                 <CardTitle>Waiting Lounge & Token Dispatch Desk</CardTitle>
                 <CardDescription>
-                  Arriving patients, queue tokens, and handoff to Dr. Marcus Vance
+                  Arriving patients, queue tokens, and handoff to active clinic physicians
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
@@ -424,6 +429,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                       <tr>
                         <th className="px-4 py-3.5 align-middle">Token</th>
                         <th className="px-4 py-3.5 align-middle">Patient Details</th>
+                        <th className="px-4 py-3.5 align-middle">Physician</th>
                         <th className="px-4 py-3.5 align-middle">Scheduled Time</th>
                         <th className="px-4 py-3.5 align-middle">Reason for Visit</th>
                         <th className="px-4 py-3.5 align-middle">Status</th>
@@ -445,6 +451,14 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400">
                               {apt.patientPhone}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="font-semibold text-slate-900 dark:text-slate-100">
+                              {apt.doctorName}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {apt.department}
                             </div>
                           </td>
                           <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
@@ -522,16 +536,16 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
                   <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Assigned Physician:</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">{primaryDoctor.name}</span>
+                    <span className="text-slate-500 dark:text-slate-400">Managing Director:</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">Dr. Marcus Vance (MD)</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Consultation Desk:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">Consultation Desk 1</span>
+                    <span className="text-slate-500 dark:text-slate-400">Active Physicians:</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">{doctors.length} Doctors on Duty</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Department:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">Internal Medicine</span>
+                    <span className="text-slate-500 dark:text-slate-400">Consultation Desks:</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">Desks 1, 2, and 3</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Today's Total Tokens:</span>
@@ -544,7 +558,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 <div className="p-3 bg-teal-50/50 dark:bg-teal-950/40 rounded-xl border border-teal-200/70 dark:border-teal-800/60 flex items-start gap-2.5">
                   <CheckCircle className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
                   <p className="text-[11px] text-teal-900 dark:text-teal-300">
-                    Direct patient pipeline. Arriving patients are checked in at this desk and queued for Dr. Marcus Vance in Consultation Desk 1.
+                    Direct patient triage pipeline. Arriving patients are checked in at this desk and queued across all 3 active consultation desks under MD clinical governance.
                   </p>
                 </div>
               </CardContent>
@@ -741,7 +755,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           >
             <CardTitle>Appointment Booking & Scheduling Terminal</CardTitle>
             <CardDescription>
-              Assign consultations directly to Dr. Marcus Vance in Consultation Desk 1
+              Assign consultations directly to clinic physicians across Consultation Desks 1, 2, and 3
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
@@ -914,7 +928,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         isOpen={isBookOpen}
         onClose={() => setIsBookOpen(false)}
         title="Book Outpatient Consultation"
-        description={`Scheduled with ${primaryDoctor.name} (${primaryDoctor.department}).`}
+        description={`Schedule or check in with any clinic physician (${selectedDoctor.name} • ${selectedDoctor.roomNumber}).`}
         maxWidth="md"
         footer={
           <>
@@ -947,13 +961,15 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
             }))}
           />
 
-          <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between">
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Attending Physician</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{primaryDoctor.name}</span>
-            </div>
-            <Badge variant="teal">Room 1</Badge>
-          </div>
+          <Select
+            label="Attending Physician"
+            value={selectedDoctorId}
+            onChange={(e) => setSelectedDoctorId(e.target.value)}
+            options={doctors.map((d) => ({
+              value: d.id,
+              label: `${d.name} (${d.specialization}) - ${d.roomNumber}`,
+            }))}
+          />
 
           <Input
             label="Reason for Visit / Complaint"

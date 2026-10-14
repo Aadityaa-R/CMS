@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   Stethoscope,
   User,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -42,15 +43,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const getNavItems = (): NavItem[] => {
     switch (currentRole) {
-      case 'doctor':
+      case 'md':
       case 'admin':
+        // Option 1: Clinical-First MD Work Order
         return [
           { id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> },
           { id: 'role_receptionist', label: 'Reception Desk', icon: <Calendar className="w-4 h-4" /> },
           { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
+          { id: 'access_control', label: 'Staff Access Control', icon: <ShieldCheck className="w-4 h-4" /> },
           { id: 'admin_overview', label: 'Clinic Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'admin_billing', label: 'Billing & Revenue', icon: <CreditCard className="w-4 h-4" /> },
           { id: 'admin_inventory', label: 'Supplies & Inventory', icon: <Package className="w-4 h-4" /> },
+        ];
+
+      case 'doctor':
+        // Staff Doctor working under the MD
+        return [
+          { id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> },
+          { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
+          { id: 'doctor_schedule', label: 'Schedule & Appointments', icon: <Calendar className="w-4 h-4" /> },
         ];
 
       case 'receptionist':
@@ -131,7 +142,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Clinic Operations
               </div>
               <div className="text-xs font-semibold text-slate-300 capitalize truncate mt-0.5">
-                {currentRole === 'doctor' || currentRole === 'admin' ? 'Doctor' : currentRole.replace('_', ' ')}
+                {currentRole === 'md' || currentRole === 'admin'
+                  ? 'MD'
+                  : currentRole === 'doctor'
+                  ? 'Doctor'
+                  : currentRole.replace('_', ' ')}
               </div>
             </div>
           </div>

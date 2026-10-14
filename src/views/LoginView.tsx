@@ -16,7 +16,7 @@ import {
 
 export const LoginView: React.FC = () => {
   const { login, roleCredentials } = useAuth();
-  const [identifier, setIdentifier] = useState('doctor');
+  const [identifier, setIdentifier] = useState('md');
   const [password, setPassword] = useState('Doctor@123');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -84,7 +84,7 @@ export const LoginView: React.FC = () => {
                 type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="e.g. doctor or doctor@beaconclinic.com"
+                placeholder="e.g. md or doctor or receptionist"
                 icon={<UserIcon className="w-4 h-4" />}
                 required
               />
@@ -152,13 +152,13 @@ export const LoginView: React.FC = () => {
             </Button>
           </form>
 
-          {/* Credentials Guide Table for all 3 roles */}
+          {/* Credentials Guide Table for all 4 roles */}
           {showCredentialsGuide && (
             <div className="mt-8 pt-6 border-t border-slate-200">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Authorized Role Credentials Directory (3 Roles)</span>
+                  <span>Authorized Role Credentials Directory (4 Roles)</span>
                 </h3>
                 <span className="text-[11px] text-slate-500">
                   Click 'Fill' to load credentials

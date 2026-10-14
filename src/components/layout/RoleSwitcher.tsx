@@ -4,12 +4,13 @@ import { UserRole } from '@/types';
 import { Shield, Stethoscope, User, Calendar } from 'lucide-react';
 
 export const RoleSwitcher: React.FC = () => {
-  const { currentRole, switchRole, availableRoles, currentUser } = useAuth();
+  const { currentRole, switchRole, availableRoles, currentUser, isRoleSuspended } = useAuth();
 
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
+      case 'md':
       case 'admin':
-        return <Shield className="w-3.5 h-3.5" />;
+        return <Shield className="w-3.5 h-3.5 text-teal-300" />;
       case 'doctor':
         return <Stethoscope className="w-3.5 h-3.5" />;
       case 'patient':
@@ -28,26 +29,38 @@ export const RoleSwitcher: React.FC = () => {
           Development Role Switcher:
         </span>
         <span className="text-slate-400 hidden sm:inline text-[11px]">
-          Select any of the 3 clinic roles to test its dashboard and workflow:
+          Select any of the 4 clinic roles to test workstation and clearance:
         </span>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
         {availableRoles.map((r) => {
           const isActive = currentRole === r.role;
+          const isSuspended = isRoleSuspended(r.role);
+
           return (
             <button
               key={r.role}
-              onClick={() => switchRole(r.role)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+              onClick={() => {
+                if (!isSuspended) {
+                  switchRole(r.role);
+                }
+              }}
+              disabled={isSuspended && !isActive}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
                 isActive
                   ? 'bg-teal-600 text-white shadow-sm ring-1 ring-teal-400'
+                  : isSuspended
+                  ? 'bg-slate-800/80 text-slate-400 border border-slate-700/80 cursor-not-allowed opacity-75'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
               }`}
-              title={r.description}
+              title={isSuspended ? `Access Suspended by Managing Director: ${r.description}` : r.description}
             >
               <span>{getRoleIcon(r.role)}</span>
               <span>{r.label}</span>
+              {isSuspended && (
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 ml-0.5" title="Access Revoked" />
+              )}
             </button>
           );
         })}

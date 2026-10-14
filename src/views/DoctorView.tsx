@@ -25,7 +25,7 @@ interface DoctorViewProps {
 }
 
 export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, currentRole } = useAuth();
   const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
 
   useEffect(() => {
@@ -34,6 +34,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     }
   }, [activeTab]);
   const {
+    doctors,
     appointments,
     patients,
     vitals,
@@ -41,6 +42,25 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     createPrescription,
     updateAppointmentStatus,
   } = useClinic();
+
+  const isMD = currentRole === 'md' || currentRole === 'admin' || currentUser.role === 'md';
+
+  // Active doctor queue selection (defaults to doc-1 Marcus Vance for MD, doc-2 Nathan Hayes for staff doctor)
+  const [activeDoctorId, setActiveDoctorId] = useState<string>(() => {
+    if (currentRole === 'doctor') return 'doc-2';
+    return 'doc-1';
+  });
+
+  useEffect(() => {
+    if (currentRole === 'doctor') {
+      setActiveDoctorId('doc-2');
+    } else if (currentRole === 'md' || currentRole === 'admin') {
+      setActiveDoctorId('doc-1');
+    }
+  }, [currentRole]);
+
+  const activeDoctor = doctors.find((d) => d.id === activeDoctorId) || doctors[0];
+  const doctorAppointments = appointments.filter((a) => a.doctorId === activeDoctorId);
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,12 +97,24 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   };
 
   // Active consultation patient
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>(() => {
-    const active = appointments.find((a) => a.status === 'in_consultation');
-    return active ? active.id : appointments[0]?.id || '';
-  });
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>('');
 
-  const activeAppointment = appointments.find((a) => a.id === selectedAppointmentId) || appointments[0];
+  useEffect(() => {
+    const inConsult = doctorAppointments.find((a) => a.status === 'in_consultation');
+    if (inConsult) {
+      setSelectedAppointmentId(inConsult.id);
+    } else if (doctorAppointments.length > 0) {
+      setSelectedAppointmentId(doctorAppointments[0].id);
+    } else {
+      setSelectedAppointmentId('');
+    }
+  }, [activeDoctorId]);
+
+  const activeAppointment =
+    doctorAppointments.find((a) => a.id === selectedAppointmentId) ||
+    doctorAppointments.find((a) => a.status === 'in_consultation') ||
+    doctorAppointments[0] ||
+    null;
   const activePatient = activeAppointment ? patients.find((p) => p.id === activeAppointment.patientId) : null;
   const activeVitals = activePatient ? vitals.find((v) => v.patientId === activePatient.id) : null;
 
@@ -174,8 +206,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     const newRx = createPrescription({
       patientId: patientObj.id,
       patientName: `${patientObj.firstName} ${patientObj.lastName}`,
-      doctorId: 'doc-1',
-      doctorName: currentUser.name,
+      doctorId: activeDoctor.id,
+      doctorName: activeDoctor.name,
       appointmentId: activeAppointment?.id,
       diagnosis,
       items: validItems,
@@ -187,8 +219,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
     setIsPrescriptionModalOpen(false);
   };
-
-
 
   const handleSaveConsultationNotes = (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,14 +232,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   };
 
   // Metrics
-  const totalQueue = appointments.length;
-  const inConsultation = appointments.filter((a) => a.status === 'in_consultation').length;
-  const totalPrescriptions = prescriptions.length;
+  const totalQueue = doctorAppointments.length;
+  const inConsultation = doctorAppointments.filter((a) => a.status === 'in_consultation').length;
+  const doctorPrescriptions = prescriptions.filter(
+    (r) => r.doctorId === activeDoctor.id || r.doctorName === activeDoctor.name
+  );
+  const totalPrescriptions = doctorPrescriptions.length;
 
   // Filter Helper
   const query = searchTerm.toLowerCase();
 
-  const filteredAppointments = appointments.filter((a) => {
+  const filteredAppointments = doctorAppointments.filter((a) => {
     const matchesSearch =
       a.patientName.toLowerCase().includes(query) ||
       a.appointmentNumber.toLowerCase().includes(query) ||
@@ -221,7 +254,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return true;
   });
 
-  const filteredPatients = patients.filter((p) => {
+  const doctorPatientIds = new Set(doctorAppointments.map((a) => a.patientId));
+  const doctorPatients = patients.filter((p) => doctorPatientIds.has(p.id));
+
+  const filteredPatients = doctorPatients.filter((p) => {
     const matchesSearch =
       p.firstName.toLowerCase().includes(query) ||
       p.lastName.toLowerCase().includes(query) ||
@@ -234,7 +270,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return true;
   });
 
-  const filteredPrescriptions = prescriptions.filter((r) => {
+  const filteredPrescriptions = doctorPrescriptions.filter((r) => {
     const matchesSearch =
       r.prescriptionNumber.toLowerCase().includes(query) ||
       r.patientName.toLowerCase().includes(query) ||
@@ -251,11 +287,18 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* Workstation Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Physician Consultation Desk & Clinical Care
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Consulting Physician: {currentUser.name} • Internal Medicine & General Practice
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Physician Consultation Desk & Clinical Care
+            </h2>
+            {isMD ? (
+              <Badge variant="teal">Managing Director Console</Badge>
+            ) : (
+              <Badge variant="neutral">Staff Physician Desk</Badge>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Consulting Physician: <strong className="text-slate-700 dark:text-slate-200">{activeDoctor.name}</strong> ({activeDoctor.qualification}) • {activeDoctor.department} • {activeDoctor.roomNumber}
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -269,6 +312,69 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           </Button>
         </div>
       </div>
+
+      {/* MD Attending Physician Worklist Switcher (Option 1 - Clinical Oversight) */}
+      {isMD ? (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+            <div>
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                MD Clinical Queue Inspector
+              </span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                Select an attending physician worklist to review their 3 assigned patients and active consultations
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {doctors.map((doc) => {
+              const isSelected = activeDoctorId === doc.id;
+              const docAptCount = appointments.filter((a) => a.doctorId === doc.id).length;
+              return (
+                <button
+                  key={doc.id}
+                  type="button"
+                  onClick={() => setActiveDoctorId(doc.id)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+                    isSelected
+                      ? 'bg-teal-600 text-white font-semibold shadow-xs'
+                      : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span>
+                    {doc.name} {doc.id === 'doc-1' ? '(MD)' : ''}
+                  </span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-semibold ${
+                      isSelected
+                        ? 'bg-teal-700 text-teal-100'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    {docAptCount} visits
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              Staff Consulting Station:
+            </span>
+            <span className="text-slate-600 dark:text-slate-400">
+              Active physician session for {currentUser.name} at {activeDoctor.roomNumber}
+            </span>
+          </div>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            Reporting to Dr. Marcus Vance (Managing Director)
+          </span>
+        </div>
+      )}
 
       {/* Sub-Workstation Navigation Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
@@ -314,7 +420,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           title="Consultation Queue"
           value={totalQueue}
           unit="Visits"
-          subtitle="Outpatient roster today"
+          subtitle={`Assigned to ${activeDoctor.name}`}
           colorScheme="slate"
         />
         <StatCard
@@ -328,14 +434,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           title="e-Prescriptions Logged"
           value={totalPrescriptions}
           unit="Orders"
-          subtitle="Issued clinical regimens"
+          subtitle={`Issued by ${activeDoctor.name}`}
           colorScheme="slate"
         />
         <StatCard
-          title="Registered Outpatients"
-          value={patients.length}
+          title="Assigned Patients"
+          value={doctorPatients.length}
           unit="Profiles"
-          subtitle="Electronic medical directory"
+          subtitle="Direct clinical roster"
           colorScheme="slate"
         />
       </div>
@@ -677,42 +783,48 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <CardContent className="space-y-3.5 text-xs">
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
                   <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">
-                    Primary Physician
+                    {activeDoctor.id === 'doc-1' ? 'Managing Director & Lead Physician' : 'Staff Consulting Physician'}
                   </span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
-                    Dr. Marcus Vance, MD, FACP
+                    {activeDoctor.name}, {activeDoctor.qualification}
                   </span>
                   <span className="text-teal-600 dark:text-teal-400 block text-[11px] mt-0.5">
-                    Lead Attending Physician • Internal Medicine
+                    {activeDoctor.specialization} • {activeDoctor.department}
                   </span>
                 </div>
 
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Assigned Room:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">Consultation Desk 1</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">{activeDoctor.roomNumber}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Working Hours:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">09:00 AM - 04:30 PM</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">{activeDoctor.consultationHours}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Duty Days:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">Mon - Fri</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">
+                      {activeDoctor.availableDays.length === 5 ? 'Mon - Fri' : activeDoctor.availableDays.join(', ')}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Consultation Fee:</span>
-                    <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">$120.00</span>
+                    <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                      ${activeDoctor.consultationFee.toFixed(2)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="p-3 bg-teal-50/50 dark:bg-teal-950/40 rounded-xl border border-teal-200/70 dark:border-teal-800/60">
                   <div className="flex items-center gap-1.5 text-teal-800 dark:text-teal-200 font-semibold mb-1">
                     <CheckCircle className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    <span>Clinic Staffing Scope</span>
+                    <span>Clinical Governance Scope</span>
                   </div>
                   <p className="text-[11px] text-teal-900 dark:text-teal-300">
-                    Solo clinical workstation. All registered appointments, e-prescriptions, and diagnostic investigations are managed directly by Dr. Marcus Vance.
+                    {activeDoctor.id === 'doc-1'
+                      ? 'Managing Director executive and clinical station. Dr. Marcus Vance maintains ultimate authority over clinical standards, staff access, and complex internal medicine cases.'
+                      : `${activeDoctor.name} conducts assigned outpatient sessions under the clinical governance and oversight of Managing Director Dr. Marcus Vance.`}
                   </p>
                 </div>
               </CardContent>
@@ -735,7 +847,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           >
             <CardTitle>My Outpatient Medical Directory</CardTitle>
             <CardDescription>
-              Electronic Health Records, allergy profiles, and consultation histories under Dr. Marcus Vance
+              Electronic Health Records, allergy profiles, and consultation histories under {activeDoctor.name}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
@@ -921,12 +1033,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           <CardHeader>
             <CardTitle>Consulting Desk Roster & Clinic Calendar</CardTitle>
             <CardDescription>
-              Operational schedule for Dr. Marcus Vance across weekly outpatient blocks
+              Operational schedule for {activeDoctor.name} across weekly outpatient blocks
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+              {activeDoctor.availableDays.map((day) => (
                 <div
                   key={day}
                   className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2"
@@ -936,10 +1048,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <span className="w-2 h-2 rounded-full bg-teal-500" />
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                    09:00 AM - 04:30 PM
+                    {activeDoctor.consultationHours}
                   </div>
                   <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-teal-700 dark:text-teal-400 font-semibold">
-                    Consultation Desk 1
+                    {activeDoctor.roomNumber}
                   </div>
                 </div>
               ))}
@@ -949,7 +1061,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-1">
                 Clinical Workflow Notes:
               </span>
-              Appointments are slotted in 30-minute intervals. Walk-in registrations coordinated by Front Desk are triaged directly into the consultation queue.
+              Appointments are slotted in 30-minute intervals. Walk-in registrations coordinated by Front Desk are triaged directly into {activeDoctor.name}&apos;s consultation queue ({activeDoctor.roomNumber}).
             </div>
           </CardContent>
         </Card>

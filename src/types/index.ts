@@ -1,4 +1,5 @@
 export type UserRole =
+  | 'md'
   | 'doctor'
   | 'receptionist'
   | 'patient'
@@ -224,6 +225,37 @@ export interface RoleCredential {
   department: string;
   fullName: string;
   description: string;
+}
+
+export interface StaffPermission {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+}
+
+export interface StaffAccessRecord {
+  id: string;
+  role: UserRole;
+  staffName: string;
+  staffTitle: string;
+  department: string;
+  badgeNumber: string;
+  status: 'granted' | 'revoked';
+  lastUpdated: string;
+  updatedBy: string;
+  reason?: string;
+  permissions: StaffPermission[];
+}
+
+export interface AccessAuditLogEntry {
+  id: string;
+  timestamp: string;
+  targetRole: UserRole;
+  targetStaffName: string;
+  action: 'access_granted' | 'access_revoked' | 'permission_updated' | 'security_override';
+  description: string;
+  authorizedBy: string;
 }
 
 
