@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -10,7 +10,6 @@ import { StatCard } from '@/components/ui/StatCard';
 import {
   Search,
   Filter,
-  ChevronDown,
 } from 'lucide-react';
 import { Invoice, InventoryItem, PaymentMethod } from '@/types';
 
@@ -40,36 +39,19 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
     adjustInventoryStock,
   } = useClinic();
 
-  // Search & Filter State (dedicated per view context)
+  // Search & Filter State (dedicated per view context following "No Clutter" pattern)
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'active' | 'alerts'>('all');
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const [overviewStatusFilter, setOverviewStatusFilter] = useState('');
+  const [billingStatusFilter, setBillingStatusFilter] = useState('');
+  const [inventoryFilter, setInventoryFilter] = useState('');
 
   // Reset search and filter when switching sidebar sections
   useEffect(() => {
     setSearchTerm('');
-    setFilterMode('all');
-    setIsFilterDropdownOpen(false);
+    setOverviewStatusFilter('');
+    setBillingStatusFilter('');
+    setInventoryFilter('');
   }, [currentSection]);
-
-  // Close filter dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        filterDropdownRef.current &&
-        !filterDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsFilterDropdownOpen(false);
-      }
-    };
-    if (isFilterDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isFilterDropdownOpen]);
 
   // Real-time Feedback Notification Banner State
   const [notification, setNotification] = useState<string | null>(null);
@@ -96,6 +78,16 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
   const consultationRate =
     todayAppointments > 0 ? Math.round((completedAppointments / todayAppointments) * 100) : 0;
 
+  const inConsultationCount = appointments.filter((a) => a.status === 'in_consultation').length;
+  const checkedInCount = appointments.filter((a) => a.status === 'checked_in').length;
+  const scheduledCount = appointments.filter((a) => a.status === 'scheduled').length;
+  const completedCount = completedAppointments;
+
+  // Overview priority triage appointments (in consultation or waiting)
+  const activeTriageAppointments = appointments.filter(
+    (a) => a.status === 'in_consultation' || a.status === 'checked_in'
+  );
+
   // Billing KPIs
   const totalRevenue = invoices.reduce((acc, inv) => acc + inv.paidAmount, 0);
   const pendingRevenue = invoices.reduce(
@@ -103,8 +95,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
     0
   );
   const paidInvoicesCount = invoices.filter((i) => i.status === 'paid').length;
+  const unpaidInvoicesCount = invoices.filter((i) => i.status === 'unpaid').length;
+  const partiallyPaidInvoicesCount = invoices.filter((i) => i.status === 'partially_paid').length;
   const settlementRate =
     invoices.length > 0 ? Math.round((paidInvoicesCount / invoices.length) * 100) : 0;
+
+  // Unsettled invoices requiring attention
+  const unsettledInvoices = invoices.filter(
+    (i) => i.status === 'unpaid' || i.status === 'partially_paid'
+  );
 
   // Inventory KPIs
   const lowStockItems = inventory.filter((i) => i.currentStock <= i.minStockLevel);
@@ -112,7 +111,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
     (sum, item) => sum + item.currentStock * item.unitPrice,
     0
   );
-  const totalCategoriesCount = new Set(inventory.map((i) => i.category)).size;
+  const distinctCategories = Array.from(new Set(inventory.map((i) => i.category)));
+  const optimalStockCount = inventory.length - lowStockItems.length;
 
   // Handlers
   const handleCompleteAppointment = (aptId: string, patientName: string) => {
@@ -161,7 +161,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
   // Generic Search Query
   const query = searchTerm.toLowerCase().trim();
 
-  // Filtered Appointments (Overview)
+  // Equal Authority: Section 1 (Overview)
+  const isOverviewActive = overviewStatusFilter !== '' || query !== '';
   const filteredAppointments = appointments.filter((a) => {
     const matchesSearch =
       query === '' ||
@@ -172,12 +173,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       a.tokenNumber.toString().includes(query);
 
     if (!matchesSearch) return false;
-    if (filterMode === 'active') return a.status === 'in_consultation' || a.status === 'checked_in';
-    if (filterMode === 'alerts') return a.status === 'scheduled';
+    if (overviewStatusFilter !== '') {
+      return a.status === overviewStatusFilter;
+    }
     return true;
   });
 
-  // Filtered Invoices (Billing)
+  // Equal Authority: Section 2 (Billing)
+  const isBillingActive = billingStatusFilter !== '' || query !== '';
   const filteredInvoices = invoices.filter((i) => {
     const matchesSearch =
       query === '' ||
@@ -186,12 +189,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       i.status.toLowerCase().includes(query);
 
     if (!matchesSearch) return false;
-    if (filterMode === 'active') return i.status === 'paid';
-    if (filterMode === 'alerts') return i.status === 'unpaid' || i.status === 'partially_paid';
+    if (billingStatusFilter !== '') {
+      return i.status === billingStatusFilter;
+    }
     return true;
   });
 
-  // Filtered Inventory (Inventory)
+  // Equal Authority: Section 3 (Inventory)
+  const isInventoryActive = inventoryFilter !== '' || query !== '';
   const filteredInventory = inventory.filter((item) => {
     const matchesSearch =
       query === '' ||
@@ -201,8 +206,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       item.batchNumber.toLowerCase().includes(query);
 
     if (!matchesSearch) return false;
-    if (filterMode === 'active') return item.currentStock > item.minStockLevel;
-    if (filterMode === 'alerts') return item.currentStock <= item.minStockLevel;
+    if (inventoryFilter === 'low_stock') {
+      return item.currentStock <= item.minStockLevel;
+    }
+    if (inventoryFilter === 'optimal') {
+      return item.currentStock > item.minStockLevel;
+    }
+    if (inventoryFilter !== '') {
+      return item.category === inventoryFilter;
+    }
     return true;
   });
 
@@ -213,7 +225,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
         <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-            <span className="font-medium">{notification}</span>
+            <span className="font-semibold text-teal-950 dark:text-teal-100">Managing Director Directive:</span>
+            <span>{notification}</span>
           </div>
           <button
             onClick={() => setNotification(null)}
@@ -229,17 +242,32 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       {/* ========================================================================= */}
       {currentSection === 'overview' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Header */}
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Clinic Operations & Executive Overview
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Lead Administrator: {currentUser.name} • Outpatient Queue, Attending Physicians & Today&apos;s Consultation Schedule
-            </p>
+          {/* Executive Workstation Header */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="text-[10px] font-bold text-teal-300 tracking-wider uppercase">
+                  Managing Director Console
+                </span>
+                <span>•</span>
+                <span className="text-slate-300 font-medium">Operations & Outpatient Governance</span>
+              </div>
+              <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
+                Clinic Operations & Executive Triage
+              </h2>
+              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Lead Administrator: <strong>{currentUser.name}</strong> • Real-time outpatient queue, attending physician status, and consultation clearance oversight.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="px-3.5 py-2 rounded-lg bg-white/10 border border-white/15 text-xs text-slate-200">
+                <span>Executive Operational Authority</span>
+              </div>
+            </div>
           </div>
 
-          {/* Dedicated Overview KPIs (No decorative icons) */}
+          {/* Dedicated Overview KPIs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               title="Total Registered Patients"
@@ -271,242 +299,287 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
             />
           </div>
 
-          {/* Overview Search & Filter Toolbar (Filter icon kept per directive) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-            <div className="relative flex-1 max-w-md flex items-center">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search consultations by patient, doctor, department, or token..."
-                className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-              />
-            </div>
-
-            <div className="relative" ref={filterDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors cursor-pointer"
-              >
-                <Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                <span>Scope:</span>
-                <span className="font-semibold text-teal-600 dark:text-teal-400">
-                  {filterMode === 'all'
-                    ? 'All Visits'
-                    : filterMode === 'active'
-                    ? 'In Consultation / Checked In'
-                    : 'Scheduled'}
+          {/* Consultation Governance Bar: Side-by-Side Search & Status Filter */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="shrink-0">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                  Consultation Governance
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
-              </button>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Search outpatient visits or select status to inspect consultation queue:
+                </span>
+              </div>
 
-              {isFilterDropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
-                  <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                    Filter Consultations By Status
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMode('all');
-                      setIsFilterDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
-                      filterMode === 'all'
-                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span>All Visits</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMode('active');
-                      setIsFilterDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
-                      filterMode === 'active'
-                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                      In Consultation / Checked In
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMode('alerts');
-                      setIsFilterDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
-                      filterMode === 'alerts'
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
-                      Scheduled Only
-                    </span>
-                  </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+                {/* Search Input positioned side-by-side with Status Filter */}
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search by patient, doctor, department, or token..."
+                    className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  />
                 </div>
-              )}
+
+                {/* Status Filter Dropdown using custom Select with Filter icon */}
+                <div className="w-full sm:w-60 shrink-0">
+                  <Select
+                    icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                    value={overviewStatusFilter}
+                    placeholder="Select Status"
+                    onChange={(e) => setOverviewStatusFilter(e.target.value)}
+                    options={[
+                      { value: '', label: 'Select Status' },
+                      { value: 'in_consultation', label: `In Consultation (${inConsultationCount})` },
+                      { value: 'checked_in', label: `Checked In (${checkedInCount})` },
+                      { value: 'scheduled', label: `Scheduled (${scheduledCount})` },
+                      { value: 'completed', label: `Completed (${completedCount})` },
+                    ]}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Overview Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Consultation Schedule Table */}
-            <div className="lg:col-span-2 space-y-4">
-              <Card>
-                <CardHeader
-                  action={
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      {filteredAppointments.length} Consultations
-                    </span>
-                  }
-                >
-                  <CardTitle>Today&apos;s Consultation Schedule</CardTitle>
-                  <CardDescription>
-                    Live queue across attending physicians and consultation desks
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                        <tr>
-                          <th className="px-4 py-3.5 align-middle">Token & ID</th>
-                          <th className="px-4 py-3.5 align-middle">Patient</th>
-                          <th className="px-4 py-3.5 align-middle">Attending Doctor</th>
-                          <th className="px-4 py-3.5 align-middle">Time</th>
-                          <th className="px-4 py-3.5 align-middle">Status</th>
-                          <th className="px-4 py-3.5 text-right align-middle">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {filteredAppointments.length > 0 ? (
-                          filteredAppointments.map((apt) => (
-                            <tr
-                              key={apt.id}
-                              className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                            >
-                              <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                                #{apt.tokenNumber} • {apt.appointmentNumber}
-                              </td>
-                              <td className="px-4 py-3.5 align-middle">
-                                <div className="font-semibold text-slate-900 dark:text-slate-100">
-                                  {apt.patientName}
-                                </div>
-                                <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                  {apt.patientPhone}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3.5 align-middle">
-                                <div className="font-medium text-slate-800 dark:text-slate-200">
-                                  {apt.doctorName}
-                                </div>
-                                <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                  {apt.department}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                                {new Date(apt.dateTime).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </td>
-                              <td className="px-4 py-3.5 align-middle">
-                                <div className="flex items-center gap-1.5">
-                                  <span
-                                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                      apt.status === 'completed'
-                                        ? 'bg-teal-500'
-                                        : 'bg-slate-400'
-                                    }`}
-                                  />
-                                  <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                                    {apt.status.replace('_', ' ')}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3.5 text-right align-middle">
-                                {apt.status !== 'completed' ? (
-                                  <Button
-                                    size="xs"
-                                    variant="secondary"
-                                    onClick={() => handleCompleteAppointment(apt.id, apt.patientName)}
-                                  >
-                                    Complete
-                                  </Button>
-                                ) : (
-                                  <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
-                                    Completed
-                                  </span>
-                                )}
+          {/* Main Consultation Schedule Data (Rendered first when filter or search is active) */}
+          {isOverviewActive && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+              {/* Consultation Schedule Table */}
+              <div className="lg:col-span-2 space-y-4">
+                <Card>
+                  <CardHeader
+                    action={
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        {filteredAppointments.length} Consultations
+                      </span>
+                    }
+                  >
+                    <CardTitle>Filtered Consultation Schedule</CardTitle>
+                    <CardDescription>
+                      Live queue matching active filter criteria across attending physician desks
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                          <tr>
+                            <th className="px-4 py-3.5 align-middle">Token & ID</th>
+                            <th className="px-4 py-3.5 align-middle">Patient</th>
+                            <th className="px-4 py-3.5 align-middle">Attending Doctor</th>
+                            <th className="px-4 py-3.5 align-middle">Time</th>
+                            <th className="px-4 py-3.5 align-middle">Status</th>
+                            <th className="px-4 py-3.5 text-right align-middle">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {filteredAppointments.length > 0 ? (
+                            filteredAppointments.map((apt) => (
+                              <tr
+                                key={apt.id}
+                                className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
+                              >
+                                <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
+                                  #{apt.tokenNumber} • {apt.appointmentNumber}
+                                </td>
+                                <td className="px-4 py-3.5 align-middle">
+                                  <div className="font-semibold text-slate-900 dark:text-slate-100">
+                                    {apt.patientName}
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    {apt.patientPhone}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3.5 align-middle">
+                                  <div className="font-medium text-slate-800 dark:text-slate-200">
+                                    {apt.doctorName}
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    {apt.department}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                                  {new Date(apt.dateTime).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </td>
+                                <td className="px-4 py-3.5 align-middle">
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                        apt.status === 'completed'
+                                          ? 'bg-teal-500'
+                                          : apt.status === 'in_consultation'
+                                          ? 'bg-teal-600'
+                                          : 'bg-slate-400'
+                                      }`}
+                                    />
+                                    <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
+                                      {apt.status.replace('_', ' ')}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3.5 text-right align-middle">
+                                  {apt.status !== 'completed' ? (
+                                    <Button
+                                      size="xs"
+                                      variant="secondary"
+                                      onClick={() => handleCompleteAppointment(apt.id, apt.patientName)}
+                                    >
+                                      Complete
+                                    </Button>
+                                  ) : (
+                                    <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
+                                      Completed
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                                No consultations found matching current criteria.
                               </td>
                             </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={6} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
-                              No consultations found matching current criteria.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Operational Triage Metrics */}
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Operational Triage & Clinic Metrics</CardTitle>
+                    <CardDescription>
+                      Real-time front-desk and outpatient clinical workflow status
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3.5">
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Average Outpatient Triage Time
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                        Front-desk intake to doctor consultation desk currently averages 12 minutes.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Attending Physician Roster
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                        {activeDoctors} of {doctors.length} doctors currently active across consultation suites.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Consultation Clearance Efficiency
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                        {completedAppointments} of {todayAppointments} consultations marked completed today ({consultationRate}%).
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
+          )}
 
-            {/* Clinic Operational Metrics (Decorative icons removed) */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Operational Triage & Clinic Metrics</CardTitle>
-                  <CardDescription>
-                    Real-time front-desk and outpatient clinical workflow status
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3.5">
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
-                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      Average Outpatient Triage Time
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                      Front-desk intake to doctor consultation desk currently averages 12 minutes.
-                    </p>
-                  </div>
+          {/* Persistent Downward Notification Box: Active Outpatient Triage & Clearance Queue */}
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+            <CardHeader
+              action={
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    {activeTriageAppointments.length} Active in Outpatient Queue
+                  </span>
+                </div>
+              }
+            >
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Active Consultation Triage & Clearance Queue
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Immediate physician consultation desks requiring Managing Director clearance, completion, or triage authorization.
+                </CardDescription>
+              </div>
+            </CardHeader>
 
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
-                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      Attending Physician Roster
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                      {activeDoctors} of {doctors.length} doctors currently active across consultation suites.
-                    </p>
-                  </div>
+            <CardContent className="space-y-4 pt-2">
+              {activeTriageAppointments.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                    All Active Consultations Cleared
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    No patients currently waiting or in active consultation. Select a status filter above to inspect past visits or scheduled appointments.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeTriageAppointments.map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              apt.status === 'in_consultation' ? 'bg-teal-500' : 'bg-slate-400'
+                            }`}
+                          />
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {apt.patientName}
+                          </h4>
+                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                            (Token #{apt.tokenNumber} • {apt.appointmentNumber})
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">
+                          Attending: <strong>{apt.doctorName}</strong> • {apt.department} • Time:{' '}
+                          <span className="font-mono">
+                            {new Date(apt.dateTime).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Phone: {apt.patientPhone} — Status:{' '}
+                          <span className="capitalize font-medium text-slate-700 dark:text-slate-300">
+                            {apt.status.replace('_', ' ')}
+                          </span>
+                        </p>
+                      </div>
 
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
-                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      Consultation Clearance Efficiency
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleCompleteAppointment(apt.id, apt.patientName)}
+                        >
+                          Complete Consultation
+                        </Button>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                      {completedAppointments} of {todayAppointments} consultations marked completed today ({consultationRate}%).
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -515,17 +588,32 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       {/* ========================================================================= */}
       {currentSection === 'billing' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Header */}
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Clinic Financial Audit & Invoicing Ledger
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Lead Administrator: {currentUser.name} • Patient Fee Collections, Insurance Direct Claims & Accounts Settlement
-            </p>
+          {/* Executive Workstation Header */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="text-[10px] font-bold text-teal-300 tracking-wider uppercase">
+                  Managing Director Console
+                </span>
+                <span>•</span>
+                <span className="text-slate-300 font-medium">Financial Audit & Invoicing Ledger</span>
+              </div>
+              <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
+                Clinic Financial Audit & Invoicing Ledger
+              </h2>
+              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Lead Administrator: <strong>{currentUser.name}</strong> • Patient fee collections, insurance claims, balance settlement, and executive financial governance.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="px-3.5 py-2 rounded-lg bg-white/10 border border-white/15 text-xs text-slate-200">
+                <span>Direct Settlement Authority</span>
+              </div>
+            </div>
           </div>
 
-          {/* Dedicated Billing KPIs (No decorative icons) */}
+          {/* Dedicated Billing KPIs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               title="Gross Revenue Collected"
@@ -557,197 +645,239 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
             />
           </div>
 
-          {/* Billing Search & Filter Toolbar (Filter icon kept per directive) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-            <div className="relative flex-1 max-w-md flex items-center">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search invoices by invoice #, patient name, or settlement status..."
-                className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-              />
-            </div>
-
-            <div className="relative" ref={filterDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors cursor-pointer"
-              >
-                <Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                <span>Scope:</span>
-                <span className="font-semibold text-teal-600 dark:text-teal-400">
-                  {filterMode === 'all'
-                    ? 'All Invoices'
-                    : filterMode === 'active'
-                    ? 'Paid Invoices'
-                    : 'Pending / Attention'}
+          {/* Financial Ledger Governance Bar: Side-by-Side Search & Settlement Filter */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="shrink-0">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                  Financial Ledger Governance
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
-              </button>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Search invoices or select settlement scope to inspect billing records:
+                </span>
+              </div>
 
-              {isFilterDropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
-                  <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                    Filter Invoices By Status
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMode('all');
-                      setIsFilterDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
-                      filterMode === 'all'
-                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span>All Invoices</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMode('active');
-                      setIsFilterDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
-                      filterMode === 'active'
-                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                      Paid In Full
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMode('alerts');
-                      setIsFilterDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
-                      filterMode === 'alerts'
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                      Pending / Partially Paid
-                    </span>
-                  </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+                {/* Search Input positioned side-by-side with Status Filter */}
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search by invoice #, patient, or settlement status..."
+                    className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  />
                 </div>
-              )}
+
+                {/* Status Filter Dropdown using custom Select with Filter icon */}
+                <div className="w-full sm:w-60 shrink-0">
+                  <Select
+                    icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                    value={billingStatusFilter}
+                    placeholder="Select Settlement Status"
+                    onChange={(e) => setBillingStatusFilter(e.target.value)}
+                    options={[
+                      { value: '', label: 'Select Settlement Status' },
+                      { value: 'unpaid', label: `Unpaid Invoices (${unpaidInvoicesCount})` },
+                      { value: 'partially_paid', label: `Partially Paid (${partiallyPaidInvoicesCount})` },
+                      { value: 'paid', label: `Paid In Full (${paidInvoicesCount})` },
+                    ]}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Invoices Table Card */}
-          <Card>
+          {/* Invoices Table Card (Rendered first when filter or search is active) */}
+          {isBillingActive && (
+            <Card className="animate-fadeIn">
+              <CardHeader
+                action={
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {filteredInvoices.length} Invoices Listed
+                  </span>
+                }
+              >
+                <CardTitle>Invoicing & Patient Payment Ledger</CardTitle>
+                <CardDescription>
+                  Executive oversight of patient fee collections, insurance claims, and outstanding balances
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                      <tr>
+                        <th className="px-4 py-3.5 align-middle">Invoice #</th>
+                        <th className="px-4 py-3.5 align-middle">Patient Name</th>
+                        <th className="px-4 py-3.5 align-middle">Issue Date</th>
+                        <th className="px-4 py-3.5 align-middle">Total Billed</th>
+                        <th className="px-4 py-3.5 align-middle">Amount Settled</th>
+                        <th className="px-4 py-3.5 align-middle">Balance Due</th>
+                        <th className="px-4 py-3.5 align-middle">Method</th>
+                        <th className="px-4 py-3.5 align-middle">Settlement Status</th>
+                        <th className="px-4 py-3.5 text-right align-middle">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {filteredInvoices.length > 0 ? (
+                        filteredInvoices.map((inv) => {
+                          const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
+                          return (
+                            <tr
+                              key={inv.id}
+                              className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
+                            >
+                              <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
+                                {inv.invoiceNumber}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
+                                {inv.patientName}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                                {inv.date}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
+                                ${inv.totalAmount.toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle font-mono text-teal-700 dark:text-teal-400">
+                                ${inv.paidAmount.toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle font-mono text-rose-600 dark:text-rose-400">
+                                ${balance.toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle capitalize text-slate-600 dark:text-slate-400">
+                                {inv.paymentMethod ? inv.paymentMethod.replace('_', ' ') : 'Unspecified'}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                      inv.status === 'paid'
+                                        ? 'bg-teal-500'
+                                        : 'bg-rose-500'
+                                    }`}
+                                  />
+                                  <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
+                                    {inv.status.replace('_', ' ')}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3.5 text-right align-middle">
+                                {balance > 0 ? (
+                                  <Button
+                                    size="xs"
+                                    variant="primary"
+                                    onClick={() => handleOpenPaymentModal(inv)}
+                                  >
+                                    Record Payment
+                                  </Button>
+                                ) : (
+                                  <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
+                                    Fully Paid
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={9} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
+                            No invoices found matching criteria.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Persistent Downward Notification Box: Outstanding Unsettled Balances & Claims */}
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
             <CardHeader
               action={
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {filteredInvoices.length} Invoices Listed
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-semibold text-rose-600 dark:text-rose-400">
+                    ${pendingRevenue.toFixed(2)} Pending Balance
+                  </span>
+                </div>
               }
             >
-              <CardTitle>Invoicing & Patient Payment Ledger</CardTitle>
-              <CardDescription>
-                Executive oversight of patient fee collections, insurance claims, and outstanding balances
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                    <tr>
-                      <th className="px-4 py-3.5 align-middle">Invoice #</th>
-                      <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                      <th className="px-4 py-3.5 align-middle">Issue Date</th>
-                      <th className="px-4 py-3.5 align-middle">Total Billed</th>
-                      <th className="px-4 py-3.5 align-middle">Amount Settled</th>
-                      <th className="px-4 py-3.5 align-middle">Balance Due</th>
-                      <th className="px-4 py-3.5 align-middle">Method</th>
-                      <th className="px-4 py-3.5 align-middle">Settlement Status</th>
-                      <th className="px-4 py-3.5 text-right align-middle">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredInvoices.length > 0 ? (
-                      filteredInvoices.map((inv) => {
-                        const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
-                        return (
-                          <tr
-                            key={inv.id}
-                            className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                          >
-                            <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                              {inv.invoiceNumber}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
-                              {inv.patientName}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                              {inv.date}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                              ${inv.totalAmount.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle font-mono text-teal-700 dark:text-teal-400">
-                              ${inv.paidAmount.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle font-mono text-rose-600 dark:text-rose-400">
-                              ${balance.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle capitalize text-slate-600 dark:text-slate-400">
-                              {inv.paymentMethod ? inv.paymentMethod.replace('_', ' ') : 'Unspecified'}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle">
-                              <div className="flex items-center gap-1.5">
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                    inv.status === 'paid'
-                                      ? 'bg-teal-500'
-                                      : 'bg-slate-400'
-                                  }`}
-                                />
-                                <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                                  {inv.status.replace('_', ' ')}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5 text-right align-middle">
-                              {balance > 0 ? (
-                                <Button
-                                  size="xs"
-                                  variant="primary"
-                                  onClick={() => handleOpenPaymentModal(inv)}
-                                >
-                                  Record Payment
-                                </Button>
-                              ) : (
-                                <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
-                                  Fully Paid
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={9} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                          No invoices found matching criteria.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Outstanding Unsettled Balances & Fee Clearance Box
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Patient invoices with pending balances requiring payment recording, insurance reconciliation, or Managing Director settlement.
+                </CardDescription>
               </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4 pt-2">
+              {unsettledInvoices.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                    All Patient Accounts Settled in Full
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    No outstanding fees or claims pending. Select a settlement status filter above to inspect historical invoices.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {unsettledInvoices.map((inv) => {
+                    const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
+                    return (
+                      <div
+                        key={inv.id}
+                        className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                              {inv.patientName}
+                            </h4>
+                            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                              (Invoice #{inv.invoiceNumber})
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-300">
+                            Total Billed: <span className="font-mono">${inv.totalAmount.toFixed(2)}</span> • Paid:{' '}
+                            <span className="font-mono text-teal-600 dark:text-teal-400">
+                              ${inv.paidAmount.toFixed(2)}
+                            </span>{' '}
+                            • Balance Due:{' '}
+                            <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                              ${balance.toFixed(2)}
+                            </span>
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Issued: {inv.date} — Method: {inv.paymentMethod ? inv.paymentMethod.replace('_', ' ') : 'Unspecified'} — Status:{' '}
+                            <span className="capitalize font-medium text-slate-700 dark:text-slate-300">
+                              {inv.status.replace('_', ' ')}
+                            </span>
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={() => handleOpenPaymentModal(inv)}
+                          >
+                            Record Payment
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -758,17 +888,32 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
       {/* ========================================================================= */}
       {currentSection === 'inventory' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Header */}
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Pharmaceutical & Clinical Supply Inventory
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Lead Administrator: {currentUser.name} • Essential Consumable Buffers, Reorder Thresholds & Stock Replenishment
-            </p>
+          {/* Executive Workstation Header */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="text-[10px] font-bold text-teal-300 tracking-wider uppercase">
+                  Managing Director Console
+                </span>
+                <span>•</span>
+                <span className="text-slate-300 font-medium">Supply Buffer & Pharmacy Governance</span>
+              </div>
+              <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
+                Pharmaceutical & Clinical Supply Inventory
+              </h2>
+              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Lead Administrator: <strong>{currentUser.name}</strong> • Essential consumable buffers, reorder thresholds, batch units, and clinical supply replenishment.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="px-3.5 py-2 rounded-lg bg-white/10 border border-white/15 text-xs text-slate-200">
+                <span>Supply Replenishment Clearance</span>
+              </div>
+            </div>
           </div>
 
-          {/* Dedicated Inventory KPIs (No decorative icons) */}
+          {/* Dedicated Inventory KPIs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               title="Tracked Stock Items"
@@ -793,203 +938,245 @@ export const AdminView: React.FC<AdminViewProps> = ({ activeTab = 'overview' }) 
             />
             <StatCard
               title="Therapeutic Categories"
-              value={totalCategoriesCount}
+              value={distinctCategories.length}
               unit="Categories"
               subtitle="Supply classes actively monitored"
               colorScheme="slate"
             />
           </div>
 
-          {/* Inventory Search & Filter Toolbar (Filter icon kept per directive) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-            <div className="relative flex-1 max-w-md flex items-center">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search inventory by product name, category, SKU, or batch..."
-                className="w-full text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg !pl-11 pr-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-              />
-            </div>
-
-            <div className="relative" ref={filterDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors cursor-pointer"
-              >
-                <Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                <span>Scope:</span>
-                <span className="font-semibold text-teal-600 dark:text-teal-400">
-                  {filterMode === 'all'
-                    ? 'All Supplies'
-                    : filterMode === 'active'
-                    ? 'Stock Optimal'
-                    : 'Low Stock Alerts'}
+          {/* Supply Inventory Governance Bar: Side-by-Side Search & Scope Filter */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="shrink-0">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                  Supply Inventory Governance
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
-              </button>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Search supplies or select inventory scope to inspect stock buffers:
+                </span>
+              </div>
 
-              {isFilterDropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
-                  <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                    Filter Stock By Threshold
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMode('all');
-                      setIsFilterDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
-                      filterMode === 'all'
-                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span>All Supplies</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMode('active');
-                      setIsFilterDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
-                      filterMode === 'active'
-                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                      Stock Optimal
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMode('alerts');
-                      setIsFilterDropdownOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer ${
-                      filterMode === 'alerts'
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                      Low Stock Alerts
-                    </span>
-                  </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+                {/* Search Input positioned side-by-side with Scope Filter */}
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search by product name, category, SKU, or batch..."
+                    className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  />
                 </div>
-              )}
+
+                {/* Scope Filter Dropdown using custom Select with Filter icon */}
+                <div className="w-full sm:w-60 shrink-0">
+                  <Select
+                    icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                    value={inventoryFilter}
+                    placeholder="Select Inventory Scope"
+                    onChange={(e) => setInventoryFilter(e.target.value)}
+                    options={[
+                      { value: '', label: 'Select Inventory Scope' },
+                      { value: 'low_stock', label: `Low Buffer Alerts (${lowStockItems.length})` },
+                      { value: 'optimal', label: `Stock Optimal (${optimalStockCount})` },
+                      ...distinctCategories.map((cat) => ({
+                        value: cat,
+                        label: `${cat} (${inventory.filter((i) => i.category === cat).length})`,
+                      })),
+                    ]}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Stock Inventory Table Card */}
-          <Card>
+          {/* Stock Inventory Table Card (Rendered first when filter or search is active) */}
+          {isInventoryActive && (
+            <Card className="animate-fadeIn">
+              <CardHeader
+                action={
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {filteredInventory.length} Tracked Stock Items
+                  </span>
+                }
+              >
+                <CardTitle>Pharmaceutical & Clinical Supply Ledger</CardTitle>
+                <CardDescription>
+                  Essential consumable buffers, reorder thresholds, unit costs, and inventory replenishment
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                      <tr>
+                        <th className="px-4 py-3.5 align-middle">Item Description</th>
+                        <th className="px-4 py-3.5 align-middle">SKU / Code</th>
+                        <th className="px-4 py-3.5 align-middle">Category</th>
+                        <th className="px-4 py-3.5 align-middle">Current Stock</th>
+                        <th className="px-4 py-3.5 align-middle">Min Safe Level</th>
+                        <th className="px-4 py-3.5 align-middle">Unit Price</th>
+                        <th className="px-4 py-3.5 align-middle">Inventory Status</th>
+                        <th className="px-4 py-3.5 text-right align-middle">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {filteredInventory.length > 0 ? (
+                        filteredInventory.map((item) => {
+                          const isLow = item.currentStock <= item.minStockLevel;
+                          return (
+                            <tr
+                              key={item.id}
+                              className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
+                            >
+                              <td className="px-4 py-3.5 align-middle">
+                                <div className="font-semibold text-slate-900 dark:text-slate-100">
+                                  {item.name}
+                                </div>
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  Batch: {item.batchNumber}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3.5 align-middle font-mono text-slate-700 dark:text-slate-300">
+                                {item.sku}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
+                                {item.category}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle font-mono font-bold text-slate-900 dark:text-slate-100">
+                                {item.currentStock} {item.unit}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle font-mono text-slate-600 dark:text-slate-400">
+                                {item.minStockLevel} {item.unit}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle font-mono text-slate-800 dark:text-slate-200">
+                                ${item.unitPrice.toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3.5 align-middle">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                      isLow ? 'bg-rose-500' : 'bg-teal-500'
+                                    }`}
+                                  />
+                                  <span
+                                    className={`text-xs font-semibold ${
+                                      isLow
+                                        ? 'text-rose-600 dark:text-rose-400'
+                                        : 'text-teal-700 dark:text-teal-300'
+                                    }`}
+                                  >
+                                    {isLow ? 'Low Buffer Alert' : 'Stock Optimal'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3.5 text-right align-middle">
+                                <Button
+                                  size="xs"
+                                  variant={isLow ? 'primary' : 'secondary'}
+                                  onClick={() => handleOpenRestockModal(item)}
+                                >
+                                  Restock Supply
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
+                            No inventory stock items matching criteria.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Persistent Downward Notification Box: Critical Supply Buffer & Reorder Alerts */}
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
             <CardHeader
               action={
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {filteredInventory.length} Tracked Stock Items
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                    {lowStockItems.length} Items Below Safe Threshold
+                  </span>
+                </div>
               }
             >
-              <CardTitle>Pharmaceutical & Clinical Supply Ledger</CardTitle>
-              <CardDescription>
-                Essential consumable buffers, reorder thresholds, unit costs, and inventory replenishment
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                    <tr>
-                      <th className="px-4 py-3.5 align-middle">Item Description</th>
-                      <th className="px-4 py-3.5 align-middle">SKU / Code</th>
-                      <th className="px-4 py-3.5 align-middle">Category</th>
-                      <th className="px-4 py-3.5 align-middle">Current Stock</th>
-                      <th className="px-4 py-3.5 align-middle">Min Safe Level</th>
-                      <th className="px-4 py-3.5 align-middle">Unit Price</th>
-                      <th className="px-4 py-3.5 align-middle">Inventory Status</th>
-                      <th className="px-4 py-3.5 text-right align-middle">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredInventory.length > 0 ? (
-                      filteredInventory.map((item) => {
-                        const isLow = item.currentStock <= item.minStockLevel;
-                        return (
-                          <tr
-                            key={item.id}
-                            className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                          >
-                            <td className="px-4 py-3.5 align-middle">
-                              <div className="font-semibold text-slate-900 dark:text-slate-100">
-                                {item.name}
-                              </div>
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                Batch: {item.batchNumber}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5 align-middle font-mono text-slate-700 dark:text-slate-300">
-                              {item.sku}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
-                              {item.category}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle font-mono font-bold text-slate-900 dark:text-slate-100">
-                              {item.currentStock} {item.unit}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle font-mono text-slate-600 dark:text-slate-400">
-                              {item.minStockLevel} {item.unit}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle font-mono text-slate-800 dark:text-slate-200">
-                              ${item.unitPrice.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3.5 align-middle">
-                              <div className="flex items-center gap-1.5">
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                    isLow ? 'bg-rose-500' : 'bg-teal-500'
-                                  }`}
-                                />
-                                <span
-                                  className={`text-xs font-semibold ${
-                                    isLow
-                                      ? 'text-rose-600 dark:text-rose-400'
-                                      : 'text-teal-700 dark:text-teal-300'
-                                  }`}
-                                >
-                                  {isLow ? 'Low Buffer Alert' : 'Stock Optimal'}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5 text-right align-middle">
-                              <Button
-                                size="xs"
-                                variant={isLow ? 'primary' : 'secondary'}
-                                onClick={() => handleOpenRestockModal(item)}
-                              >
-                                Restock Supply
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={8} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                          No inventory stock items matching criteria.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Critical Supply Buffer & Reorder Alerts Box
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Pharmaceuticals and medical consumables below safe minimum reorder thresholds requiring Managing Director replenishment.
+                </CardDescription>
               </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4 pt-2">
+              {lowStockItems.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                    All Supply Buffers Optimal
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    All tracked pharmaceuticals, medical disposables, and emergency supplies are above minimum safety thresholds.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {lowStockItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {item.name}
+                          </h4>
+                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                            (SKU: {item.sku} • Batch: {item.batchNumber})
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">
+                          Category: <strong>{item.category}</strong> • Current Stock:{' '}
+                          <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                            {item.currentStock} {item.unit}
+                          </span>{' '}
+                          • Min Safe Threshold:{' '}
+                          <span className="font-mono text-slate-700 dark:text-slate-300">
+                            {item.minStockLevel} {item.unit}
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Unit Valuation: ${item.unitPrice.toFixed(2)} — Buffer Deficit:{' '}
+                          <span className="font-mono text-rose-600 dark:text-rose-400">
+                            {item.minStockLevel - item.currentStock} {item.unit} needed
+                          </span>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => handleOpenRestockModal(item)}
+                        >
+                          Restock Supply
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
