@@ -36,6 +36,27 @@ const formatAppointmentStatus = (status: string) => {
   }
 };
 
+export const NORMAL_VITAL_RANGES = {
+  systolicBp: { min: 90, max: 139 },
+  diastolicBp: { min: 60, max: 89 },
+  heartRateBpm: { min: 60, max: 100 },
+  oxygenSaturationPct: { min: 95, max: 100 },
+  temperatureCelsius: { min: 36.0, max: 37.9 },
+};
+
+const getVitalLabel = (
+  baseLabel: string,
+  value: string,
+  range: { min: number; max: number }
+): string => {
+  if (!value.trim()) return baseLabel;
+  const num = Number(value);
+  if (isNaN(num)) return baseLabel;
+  if (num < range.min) return `${baseLabel} Low`;
+  if (num > range.max) return `${baseLabel} High`;
+  return baseLabel;
+};
+
 export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }) => {
   const { currentUser, currentRole } = useAuth();
   const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
@@ -114,6 +135,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     null;
   const activePatient = activeAppointment ? patients.find((p) => p.id === activeAppointment.patientId) : null;
   const activeVitals = activePatient ? vitals.find((v) => v.patientId === activePatient.id) : null;
+
+  const consultationApt =
+    (activeAppointment && activeAppointment.status === 'in_consultation' ? activeAppointment : null) ||
+    doctorAppointments.find((a) => a.status === 'in_consultation') ||
+    null;
+  const summaryPatient = consultationApt
+    ? patients.find((p) => p.id === consultationApt.patientId) || null
+    : null;
 
   // Clinical Triage Vitals Input State
   const [vitalsForm, setVitalsForm] = useState({
@@ -544,10 +573,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           <button
             key={tab.id}
             onClick={() => setSelectedTab(tab.id)}
-            className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap transition-colors ${
+            className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap ${
               selectedTab === tab.id
-                ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 border-b-2 border-transparent -mb-px'
+                ? 'font-bold text-slate-900 dark:text-slate-100 border-b border-teal-600 -mb-px'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             {tab.label}
@@ -680,7 +709,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                         <Input
-                          label="BP Systolic (mmHg)"
+                          label={getVitalLabel('BP Systolic (mmHg)', vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp)}
                           inputMode="numeric"
                           placeholder="120"
                           value={vitalsForm.systolicBp}
@@ -688,10 +717,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.systolicBp}
+                          helperText={activePatient?.previousVitals?.systolicBp !== undefined ? `Last visit: ${activePatient.previousVitals.systolicBp}` : undefined}
                           className="text-xs py-1.5"
                         />
                         <Input
-                          label="BP Diastolic (mmHg)"
+                          label={getVitalLabel('BP Diastolic (mmHg)', vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp)}
                           inputMode="numeric"
                           placeholder="80"
                           value={vitalsForm.diastolicBp}
@@ -699,10 +729,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.diastolicBp}
+                          helperText={activePatient?.previousVitals?.diastolicBp !== undefined ? `Last visit: ${activePatient.previousVitals.diastolicBp}` : undefined}
                           className="text-xs py-1.5"
                         />
                         <Input
-                          label="Heart Rate (bpm)"
+                          label={getVitalLabel('Heart Rate (bpm)', vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm)}
                           inputMode="numeric"
                           placeholder="72"
                           value={vitalsForm.heartRateBpm}
@@ -710,10 +741,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.heartRateBpm}
+                          helperText={activePatient?.previousVitals?.heartRateBpm !== undefined ? `Last visit: ${activePatient.previousVitals.heartRateBpm}` : undefined}
                           className="text-xs py-1.5"
                         />
                         <Input
-                          label="O2 Saturation (%)"
+                          label={getVitalLabel('O2 Saturation (%)', vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct)}
                           inputMode="numeric"
                           placeholder="98"
                           value={vitalsForm.oxygenSaturationPct}
@@ -721,10 +753,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.oxygenSaturationPct}
+                          helperText={activePatient?.previousVitals?.oxygenSaturationPct !== undefined ? `Last visit: ${activePatient.previousVitals.oxygenSaturationPct}` : undefined}
                           className="text-xs py-1.5"
                         />
                         <Input
-                          label="Temperature (°C)"
+                          label={getVitalLabel('Temperature (°C)', vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius)}
                           inputMode="decimal"
                           placeholder="36.8"
                           value={vitalsForm.temperatureCelsius}
@@ -732,6 +765,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.temperatureCelsius}
+                          helperText={activePatient?.previousVitals?.temperatureCelsius !== undefined ? `Last visit: ${activePatient.previousVitals.temperatureCelsius}` : undefined}
                           className="text-xs py-1.5"
                         />
                       </div>
@@ -888,15 +922,15 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                      <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider whitespace-nowrap">
                         <tr>
-                          <th scope="col" className="px-4 py-3 align-middle">Queue (#)</th>
-                          <th scope="col" className="px-4 py-3 align-middle">Time</th>
-                          <th scope="col" className="px-4 py-3 align-middle">Patient</th>
-                          <th scope="col" className="px-4 py-3 align-middle">Appointment ID</th>
+                          <th scope="col" className="px-4 py-3 align-middle w-[56px]">#</th>
+                          <th scope="col" className="px-4 py-3 align-middle w-[80px]">Time</th>
+                          <th scope="col" className="px-4 py-3 align-middle w-[180px]">Patient</th>
+                          <th scope="col" className="px-4 py-3 align-middle w-[140px]">Appt ID</th>
                           <th scope="col" className="px-4 py-3 align-middle">Complaint</th>
-                          <th scope="col" className="px-4 py-3 align-middle">Status</th>
-                          <th scope="col" className="px-4 py-3 text-right align-middle">Actions</th>
+                          <th scope="col" className="px-4 py-3 align-middle w-[140px]">Status</th>
+                          <th scope="col" className="px-4 py-3 text-right align-middle whitespace-nowrap">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -911,31 +945,31 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 className={isCurrent ? 'bg-teal-50/50 dark:bg-teal-950/30' : ''}
                               >
                                 <td
-                                  className={`px-4 py-3 align-middle text-slate-700 dark:text-slate-300 ${
+                                  className={`px-4 py-3 align-middle text-slate-700 dark:text-slate-300 w-[56px] ${
                                     isCurrent ? 'border-l-2 border-teal-500' : 'border-l-2 border-transparent'
                                   }`}
                                 >
                                   #{apt.tokenNumber}
                                 </td>
-                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap w-[80px]">
                                   {new Date(apt.dateTime).toLocaleTimeString([], {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                   })}
                                 </td>
-                                <td className="px-4 py-3 align-middle font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                                <td className="px-4 py-3 align-middle font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap w-[180px]">
                                   {apt.patientName}
                                 </td>
-                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
                                   {apt.appointmentNumber}
                                 </td>
                                 <td
-                                  className="px-4 py-3 align-middle text-slate-600 dark:text-slate-300 max-w-xs"
+                                  className="px-4 py-3 align-middle text-slate-600 dark:text-slate-300"
                                   title={apt.reasonForVisit}
                                 >
                                   <span className="line-clamp-2">{apt.reasonForVisit}</span>
                                 </td>
-                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
                                   {formatAppointmentStatus(apt.status)}
                                 </td>
                                 <td className="px-4 py-3 text-right align-middle whitespace-nowrap">
@@ -949,7 +983,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                         <Button
                                           size="xs"
                                           variant="outline"
-                                          className="w-32 whitespace-nowrap"
+                                          className="whitespace-nowrap"
                                           onClick={() => setSelectedAppointmentId(apt.id)}
                                           aria-label={`View file for ${apt.patientName}`}
                                         >
@@ -965,7 +999,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                             <Button
                                               size="xs"
                                               variant="outline"
-                                              className="w-32 whitespace-nowrap"
+                                              className="whitespace-nowrap"
                                               onClick={() => handleStartConsultation(apt)}
                                               aria-label={`Start consultation for ${apt.patientName}`}
                                             >
@@ -1003,47 +1037,75 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               </Card>
             </div>
 
-            {/* Right Column: Active Doctor Schedule Card */}
+            {/* Right Column: Patient Summary Card */}
             <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Consulting Physician Profile</CardTitle>
+                  <CardTitle>Patient Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 text-xs">
-                  <div>
-                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold tracking-wider">
-                      {activeDoctor.id === 'doc-1' ? 'Managing Director & Lead Physician' : 'Staff Consulting Physician'}
-                    </span>
-                    <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm mt-0.5">
-                      {activeDoctor.name}, {activeDoctor.qualification}
-                    </div>
-                    <div className="text-slate-600 dark:text-slate-400 text-xs mt-0.5">
-                      {activeDoctor.specialization} • {activeDoctor.department}
-                    </div>
-                  </div>
+                <CardContent className="space-y-3 text-xs">
+                  {summaryPatient ? (
+                    <>
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                          {summaryPatient.lastVisitDate || 'None recorded'}
+                        </span>
+                      </div>
 
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Assigned Room:</span>
-                      <span className="font-medium text-slate-900 dark:text-slate-100">{activeDoctor.roomNumber}</span>
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                          {summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
+                            ? summaryPatient.chronicConditions.join(', ')
+                            : 'None recorded'}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                          {(() => {
+                            const patientRx = prescriptions.filter(
+                              (rx) => rx.patientId === summaryPatient.id
+                            );
+                            const activeRxMeds = Array.from(
+                              new Set(patientRx.flatMap((rx) => rx.items.map((i) => i.medicineName)))
+                            );
+                            if (activeRxMeds.length > 0) return activeRxMeds.join(', ');
+                            if (summaryPatient.currentMedications && summaryPatient.currentMedications.length > 0) {
+                              return summaryPatient.currentMedications.join(', ');
+                            }
+                            return 'None recorded';
+                          })()}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Previous Visit Vitals:</span>
+                        <div className="text-right">
+                          {summaryPatient.previousVitals ? (
+                            <>
+                              <span className="font-medium text-slate-900 dark:text-slate-100 block">
+                                BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp}, HR {summaryPatient.previousVitals.heartRateBpm}, O2 {summaryPatient.previousVitals.oxygenSaturationPct}%, Temp {summaryPatient.previousVitals.temperatureCelsius} C
+                              </span>
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                                Recorded {summaryPatient.previousVitals.recordedAt}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
+                              None recorded
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-6 text-center text-slate-400 dark:text-slate-500">
+                      No active consultation
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Working Hours:</span>
-                      <span className="font-medium text-slate-900 dark:text-slate-100">{activeDoctor.consultationHours}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Duty Days:</span>
-                      <span className="font-medium text-slate-900 dark:text-slate-100">
-                        {activeDoctor.availableDays.length === 5 ? 'Mon - Fri' : activeDoctor.availableDays.join(', ')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Consultation Fee:</span>
-                      <span className="font-medium text-slate-900 dark:text-slate-100">
-                        ${activeDoctor.consultationFee.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

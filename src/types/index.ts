@@ -24,6 +24,15 @@ export interface EmergencyContact {
   phone: string;
 }
 
+export interface PreviousVitals {
+  recordedAt: string;
+  systolicBp?: number;
+  diastolicBp?: number;
+  heartRateBpm?: number;
+  oxygenSaturationPct?: number;
+  temperatureCelsius?: number;
+}
+
 export interface Patient {
   id: string;
   mrn: string; // Medical Record Number
@@ -41,6 +50,9 @@ export interface Patient {
   emergencyContact: EmergencyContact;
   registeredDate: string;
   status: 'active' | 'inactive';
+  lastVisitDate?: string;
+  currentMedications?: string[];
+  previousVitals?: PreviousVitals;
 }
 
 export interface Doctor {
