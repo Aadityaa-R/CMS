@@ -14,7 +14,6 @@ import {
   Filter,
   FilePlus,
   Plus,
-  CheckCircle,
 } from 'lucide-react';
 import { Appointment, PrescriptionItem } from '@/types';
 
@@ -110,32 +109,94 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     temperatureCelsius: '',
   });
 
+  const [savedVitalsSnapshot, setSavedVitalsSnapshot] = useState({
+    systolicBp: '',
+    diastolicBp: '',
+    heartRateBpm: '',
+    oxygenSaturationPct: '',
+    temperatureCelsius: '',
+  });
+  const [vitalsSavedMessage, setVitalsSavedMessage] = useState(false);
+
+  // Conclude Visit Modal State
+  const [isConcludeModalOpen, setIsConcludeModalOpen] = useState(false);
+
   useEffect(() => {
-    if (activeVitals) {
-      setVitalsForm({
-        systolicBp: activeVitals.systolicBp ? String(activeVitals.systolicBp) : '',
-        diastolicBp: activeVitals.diastolicBp ? String(activeVitals.diastolicBp) : '',
-        heartRateBpm: activeVitals.heartRateBpm ? String(activeVitals.heartRateBpm) : '',
-        oxygenSaturationPct: activeVitals.oxygenSaturationPct ? String(activeVitals.oxygenSaturationPct) : '',
-        temperatureCelsius: activeVitals.temperatureCelsius ? String(activeVitals.temperatureCelsius) : '',
-      });
-    } else {
-      setVitalsForm({
-        systolicBp: '',
-        diastolicBp: '',
-        heartRateBpm: '',
-        oxygenSaturationPct: '',
-        temperatureCelsius: '',
-      });
-    }
+    const initial = activeVitals
+      ? {
+          systolicBp: activeVitals.systolicBp ? String(activeVitals.systolicBp) : '',
+          diastolicBp: activeVitals.diastolicBp ? String(activeVitals.diastolicBp) : '',
+          heartRateBpm: activeVitals.heartRateBpm ? String(activeVitals.heartRateBpm) : '',
+          oxygenSaturationPct: activeVitals.oxygenSaturationPct ? String(activeVitals.oxygenSaturationPct) : '',
+          temperatureCelsius: activeVitals.temperatureCelsius ? String(activeVitals.temperatureCelsius) : '',
+        }
+      : {
+          systolicBp: '',
+          diastolicBp: '',
+          heartRateBpm: '',
+          oxygenSaturationPct: '',
+          temperatureCelsius: '',
+        };
+    setVitalsForm(initial);
+    setSavedVitalsSnapshot(initial);
+    setVitalsSavedMessage(false);
   }, [activePatient?.id, activeVitals?.id, activeVitals?.recordedAt]);
 
   const handleVitalChange = (field: keyof typeof vitalsForm, value: string) => {
+    // Numbers only: digits, and for temperature allow at most one dot
+    if (field === 'temperatureCelsius') {
+      if (!/^\d*\.?\d*$/.test(value)) return;
+    } else {
+      if (!/^\d*$/.test(value)) return;
+    }
     setVitalsForm((prev) => ({ ...prev, [field]: value }));
+    setVitalsSavedMessage(false);
   };
 
+  const vitalErrors: { [key in keyof typeof vitalsForm]?: string } = {};
+
+  if (vitalsForm.systolicBp.trim() !== '') {
+    const val = Number(vitalsForm.systolicBp);
+    if (isNaN(val) || val < 50 || val > 250) {
+      vitalErrors.systolicBp = 'Range: 50–250';
+    }
+  }
+  if (vitalsForm.diastolicBp.trim() !== '') {
+    const val = Number(vitalsForm.diastolicBp);
+    if (isNaN(val) || val < 30 || val > 150) {
+      vitalErrors.diastolicBp = 'Range: 30–150';
+    }
+  }
+  if (vitalsForm.heartRateBpm.trim() !== '') {
+    const val = Number(vitalsForm.heartRateBpm);
+    if (isNaN(val) || val < 20 || val > 250) {
+      vitalErrors.heartRateBpm = 'Range: 20–250';
+    }
+  }
+  if (vitalsForm.oxygenSaturationPct.trim() !== '') {
+    const val = Number(vitalsForm.oxygenSaturationPct);
+    if (isNaN(val) || val < 50 || val > 100) {
+      vitalErrors.oxygenSaturationPct = 'Range: 50–100';
+    }
+  }
+  if (vitalsForm.temperatureCelsius.trim() !== '') {
+    const val = Number(vitalsForm.temperatureCelsius);
+    if (isNaN(val) || val < 30 || val > 45) {
+      vitalErrors.temperatureCelsius = 'Range: 30–45';
+    }
+  }
+
+  const hasVitalErrors = Object.keys(vitalErrors).length > 0;
+
+  const hasVitalsChanged =
+    vitalsForm.systolicBp !== savedVitalsSnapshot.systolicBp ||
+    vitalsForm.diastolicBp !== savedVitalsSnapshot.diastolicBp ||
+    vitalsForm.heartRateBpm !== savedVitalsSnapshot.heartRateBpm ||
+    vitalsForm.oxygenSaturationPct !== savedVitalsSnapshot.oxygenSaturationPct ||
+    vitalsForm.temperatureCelsius !== savedVitalsSnapshot.temperatureCelsius;
+
   const handleSaveVitals = () => {
-    if (!activePatient) return;
+    if (!activePatient || !hasVitalsChanged || hasVitalErrors || isReadOnlyView) return;
     saveVitals(activePatient.id, {
       systolicBp: vitalsForm.systolicBp ? Number(vitalsForm.systolicBp) : 120,
       diastolicBp: vitalsForm.diastolicBp ? Number(vitalsForm.diastolicBp) : 80,
@@ -145,27 +206,50 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       recordedBy: currentUser?.id || 'usr-1',
       recordedByName: currentUser?.name || 'Dr. Marcus Vance',
     });
+    setSavedVitalsSnapshot({ ...vitalsForm });
+    setVitalsSavedMessage(true);
     showNotification(`Triage vitals updated for ${activePatient.firstName} ${activePatient.lastName}.`);
   };
 
-  // Allergy Warning Input State
+  // Allergy State & Handlers
   const [allergyInput, setAllergyInput] = useState('');
+  const [allergyDraft, setAllergyDraft] = useState('');
+  const [isEditingAllergies, setIsEditingAllergies] = useState(false);
 
   useEffect(() => {
     if (activePatient) {
-      setAllergyInput(activePatient.allergies.join(', '));
+      const formatted = activePatient.allergies.join(', ');
+      setAllergyInput(formatted);
+      setAllergyDraft(formatted);
+      setIsEditingAllergies(false);
     } else {
       setAllergyInput('');
+      setAllergyDraft('');
+      setIsEditingAllergies(false);
     }
   }, [activePatient?.id, activePatient?.allergies]);
 
+  const hasAllergyChanged = allergyDraft.trim() !== allergyInput.trim();
+
+  const handleStartEditAllergies = () => {
+    setAllergyDraft(allergyInput);
+    setIsEditingAllergies(true);
+  };
+
+  const handleCancelEditAllergies = () => {
+    setAllergyDraft(allergyInput);
+    setIsEditingAllergies(false);
+  };
+
   const handleSaveAllergies = () => {
-    if (!activePatient) return;
-    const allergies = allergyInput
+    if (!activePatient || !hasAllergyChanged) return;
+    const allergies = allergyDraft
       .split(',')
       .map((a) => a.trim())
       .filter((a) => a.length > 0 && a.toLowerCase() !== 'none');
     updatePatient(activePatient.id, { allergies });
+    setAllergyInput(allergies.join(', '));
+    setIsEditingAllergies(false);
     showNotification(`Allergy record updated for ${activePatient.firstName} ${activePatient.lastName}.`);
   };
 
@@ -484,40 +568,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <div className="lg:col-span-2 space-y-4">
               {activePatient && activeAppointment ? (
                 <Card>
-                  <CardHeader
-                    action={
-                      !isReadOnlyView ? (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            icon={<FilePlus className="w-3.5 h-3.5" />}
-                            onClick={() => handleOpenPrescriptionModal(activePatient.id)}
-                          >
-                            Prescribe
-                          </Button>
-                          {activeAppointment.status === 'in_consultation' ? (
-                            <Button
-                              size="xs"
-                              variant="primary"
-                              icon={<CheckCircle className="w-3.5 h-3.5" />}
-                              onClick={() => handleConcludeConsultation(activeAppointment.id, activePatient.firstName)}
-                            >
-                              Conclude Visit
-                            </Button>
-                          ) : (
-                            <Button
-                              size="xs"
-                              variant="secondary"
-                              onClick={() => handleStartConsultation(activeAppointment)}
-                            >
-                              Start Consultation
-                            </Button>
-                          )}
-                        </div>
-                      ) : null
-                    }
-                  >
+                  <CardHeader>
                     <CardTitle>
                       Active Consultation Desk: {activePatient.firstName} {activePatient.lastName}
                     </CardTitle>
@@ -526,45 +577,73 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Safety Alert (Editable Allergy Warning) */}
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`w-2 h-2 rounded-full shrink-0 ${
-                            allergyInput.trim() && allergyInput.toLowerCase().trim() !== 'none'
-                              ? 'bg-rose-500'
-                              : 'bg-slate-400'
-                          }`}
-                        />
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          Allergy Warning:
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-1 sm:max-w-md">
-                        <input
-                          type="text"
-                          value={allergyInput}
-                          onChange={(e) => setAllergyInput(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveAllergies()}
-                          placeholder="e.g. Penicillin, Peanuts (or None)"
-                          disabled={isReadOnlyView}
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors shadow-xs font-medium"
-                        />
-                        {!isReadOnlyView && (
-                          <Button
-                            size="xs"
-                            variant="secondary"
-                            onClick={handleSaveAllergies}
-                          >
-                            Save
-                          </Button>
-                        )}
-                      </div>
+                    {/* Allergies */}
+                    <div>
+                      {!isEditingAllergies ? (
+                        <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                          <span>
+                            Allergies:{' '}
+                            {allergyInput.trim() && allergyInput.toLowerCase().trim() !== 'none' ? (
+                              <span className="font-bold text-slate-900 dark:text-slate-100">
+                                {allergyInput}
+                              </span>
+                            ) : (
+                              <span>None recorded</span>
+                            )}
+                          </span>
+                          {!isReadOnlyView && (
+                            <button
+                              type="button"
+                              onClick={handleStartEditAllergies}
+                              className="text-xs text-teal-600 dark:text-teal-400 hover:underline font-medium cursor-pointer"
+                            >
+                              {allergyInput.trim() && allergyInput.toLowerCase().trim() !== 'none' ? 'Edit' : 'Add'}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <div className="flex-1 sm:max-w-md">
+                            <Input
+                              value={allergyDraft}
+                              onChange={(e) => setAllergyDraft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (hasAllergyChanged) handleSaveAllergies();
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  handleCancelEditAllergies();
+                                }
+                              }}
+                              placeholder="e.g. Penicillin, Peanuts"
+                              className="text-xs py-1"
+                              autoFocus
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="xs"
+                              variant="secondary"
+                              onClick={handleSaveAllergies}
+                              disabled={!hasAllergyChanged}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={handleCancelEditAllergies}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Consultation Chief Complaint */}
-                    <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+                    <div className="text-xs space-y-1">
                       <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
                         Chief Complaint & Reason for Visit
                       </span>
@@ -572,93 +651,118 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         {activeAppointment.reasonForVisit}
                       </p>
                       {activeAppointment.notes && (
-                        <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">
+                        <p className="text-slate-500 dark:text-slate-400 text-[11px]">
                           Intake Note: {activeAppointment.notes}
                         </p>
                       )}
                     </div>
 
-                    {/* Clinical Triage Vitals (Editable Input Controls) */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
-                          Clinical Triage Vitals
-                        </span>
-                        {!isReadOnlyView && (
-                          <Button
-                            size="xs"
-                            variant="secondary"
-                            onClick={handleSaveVitals}
-                          >
-                            Save Vitals
-                          </Button>
-                        )}
-                      </div>
+                    {/* Clinical Triage Vitals */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                        Clinical Triage Vitals
+                      </span>
 
                       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                         <Input
                           label="BP Systolic (mmHg)"
-                          type="number"
+                          inputMode="numeric"
                           placeholder="120"
                           value={vitalsForm.systolicBp}
                           onChange={(e) => handleVitalChange('systolicBp', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
-                          className="font-mono text-xs py-1.5"
+                          error={vitalErrors.systolicBp}
+                          className="text-xs py-1.5"
                         />
                         <Input
                           label="BP Diastolic (mmHg)"
-                          type="number"
+                          inputMode="numeric"
                           placeholder="80"
                           value={vitalsForm.diastolicBp}
                           onChange={(e) => handleVitalChange('diastolicBp', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
-                          className="font-mono text-xs py-1.5"
+                          error={vitalErrors.diastolicBp}
+                          className="text-xs py-1.5"
                         />
                         <Input
                           label="Heart Rate (bpm)"
-                          type="number"
+                          inputMode="numeric"
                           placeholder="72"
                           value={vitalsForm.heartRateBpm}
                           onChange={(e) => handleVitalChange('heartRateBpm', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
-                          className="font-mono text-xs py-1.5"
+                          error={vitalErrors.heartRateBpm}
+                          className="text-xs py-1.5"
                         />
                         <Input
                           label="O2 Saturation (%)"
-                          type="number"
+                          inputMode="numeric"
                           placeholder="98"
                           value={vitalsForm.oxygenSaturationPct}
                           onChange={(e) => handleVitalChange('oxygenSaturationPct', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
-                          className="font-mono text-xs py-1.5"
+                          error={vitalErrors.oxygenSaturationPct}
+                          className="text-xs py-1.5"
                         />
                         <Input
                           label="Temperature (°C)"
-                          type="number"
-                          step="0.1"
+                          inputMode="decimal"
                           placeholder="36.8"
                           value={vitalsForm.temperatureCelsius}
                           onChange={(e) => handleVitalChange('temperatureCelsius', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVitals()}
+                          onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
-                          className="font-mono text-xs py-1.5"
+                          error={vitalErrors.temperatureCelsius}
+                          className="text-xs py-1.5"
                         />
                       </div>
+
+                      {!isReadOnlyView && (
+                        <div className="flex items-center gap-3 pt-1">
+                          <Button
+                            size="xs"
+                            variant="secondary"
+                            onClick={handleSaveVitals}
+                            disabled={!hasVitalsChanged || hasVitalErrors || !vitalsForm.systolicBp.trim() || !vitalsForm.diastolicBp.trim() || !vitalsForm.heartRateBpm.trim() || !vitalsForm.oxygenSaturationPct.trim() || !vitalsForm.temperatureCelsius.trim()}
+                          >
+                            Save Vitals
+                          </Button>
+                          {vitalsSavedMessage && (
+                            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                              Vitals saved
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    {/* Consultation Notes Action */}
+                    {/* Action Row */}
                     {!isReadOnlyView && (
-                      <div className="pt-2 flex justify-end">
+                      <div className="pt-2 flex items-center justify-end gap-2.5">
                         <Button
-                          size="xs"
+                          size="sm"
                           variant="outline"
                           onClick={() => setIsNotesModalOpen(true)}
                         >
                           Record Consultation Notes
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenPrescriptionModal(activePatient.id)}
+                        >
+                          Prescribe
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => setIsConcludeModalOpen(true)}
+                        >
+                          Conclude Visit
                         </Button>
                       </div>
                     )}
@@ -1111,6 +1215,18 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         }
       >
         <form onSubmit={handleSavePrescription} className="space-y-4" noValidate>
+          <div className="text-xs text-slate-600 dark:text-slate-400">
+            Allergies:{' '}
+            <span className="font-semibold text-slate-900 dark:text-slate-100">
+              {(() => {
+                const prescPatient = patients.find((p) => p.id === prescPatientId) || activePatient;
+                return prescPatient?.allergies && prescPatient.allergies.length > 0
+                  ? prescPatient.allergies.join(', ')
+                  : 'None recorded';
+              })()}
+            </span>
+          </div>
+
           {prescriptionError && (
             <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
               {prescriptionError}
@@ -1250,6 +1366,50 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           />
         </form>
       </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: CONCLUDE VISIT CONFIRMATION                                      */}
+      {/* ========================================================================= */}
+      {activePatient && activeAppointment && (
+        <Modal
+          isOpen={isConcludeModalOpen}
+          onClose={() => setIsConcludeModalOpen(false)}
+          title={`Conclude visit for ${activePatient.firstName} ${activePatient.lastName}?`}
+          maxWidth="sm"
+          footer={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsConcludeModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  handleConcludeConsultation(activeAppointment.id, activePatient.firstName);
+                  setIsConcludeModalOpen(false);
+                }}
+              >
+                Conclude
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+            <p>
+              Are you sure you want to conclude the consultation for {activePatient.firstName} {activePatient.lastName}?
+            </p>
+            {hasVitalsChanged && (
+              <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                Vitals have unsaved changes.
+              </p>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
