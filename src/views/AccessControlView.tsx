@@ -119,6 +119,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     deleteStaffAccount,
     updateStaffCapabilities,
     addStaffAccount,
+    addAuditLogEntry,
   } = useAuth();
 
   const { addDoctor, doctors = [] } = useClinic();
@@ -551,11 +552,24 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     (addFormRole === 'doctor' &&
       (!addFormFee.trim() || isNaN(Number(addFormFee)) || Number(addFormFee) < 0));
 
-  const handleRejectPending = (id: string, name: string, reason?: string) => {
-    setPendingApprovals((prev) => prev.filter((p) => p.id !== id));
+  const handleRejectPending = (req: PendingStaffApproval, reason?: string) => {
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    addAuditLogEntry({
+      timestamp,
+      targetRole: req.role,
+      targetStaffName: req.staffName,
+      targetUserId: req.badgeNumber,
+      action: 'clearance_rejected',
+      description:
+        reason && reason.trim()
+          ? `Onboarding clearance rejected by Managing Director: ${reason.trim()}`
+          : 'Onboarding clearance rejected by Managing Director',
+      authorizedBy: 'Dr. Marcus Vance (Managing Director)',
+    });
+    setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id));
     showNotification({
       type: 'info',
-      message: `Rejected onboarding application for ${name}${reason && reason.trim() ? `: ${reason.trim()}` : ''}.`,
+      message: `Rejected onboarding application for ${req.staffName}${reason && reason.trim() ? `: ${reason.trim()}` : ''}.`,
     });
   };
 
@@ -667,6 +681,78 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
   const isRoleOrSearchActive = true;
 
+  // Security Ledger Filter & Search State
+  const [ledgerSearchTerm, setLedgerSearchTerm] = useState('');
+  const [selectedActionFilter, setSelectedActionFilter] = useState('');
+
+  const formatActionLabel = (action: string): string => {
+    switch (action) {
+      case 'access_granted':
+        return 'Access Granted';
+      case 'access_revoked':
+        return 'Access Revoked';
+      case 'permission_updated':
+        return 'Permission Updated';
+      case 'clearance_rejected':
+        return 'Clearance Rejected';
+      case 'account_deleted':
+        return 'Account Deleted';
+      case 'security_override':
+        return 'Security Override';
+      default:
+        return action
+          .split('_')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ');
+    }
+  };
+
+  const actionFilterOptions = [
+    { value: '', label: 'All actions' },
+    { value: 'access_granted', label: 'Access Granted' },
+    { value: 'access_revoked', label: 'Access Revoked' },
+    { value: 'permission_updated', label: 'Permission Updated' },
+    { value: 'clearance_rejected', label: 'Clearance Rejected' },
+    { value: 'account_deleted', label: 'Account Deleted' },
+    { value: 'security_override', label: 'Security Override' },
+  ];
+
+  const sortedAuditLog = React.useMemo(() => {
+    return [...accessAuditLog].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  }, [accessAuditLog]);
+
+  const filteredAuditLog = React.useMemo(() => {
+    const query = ledgerSearchTerm.trim().toLowerCase();
+    return sortedAuditLog.filter((log) => {
+      if (selectedActionFilter && log.action !== selectedActionFilter) {
+        return false;
+      }
+      if (!query) return true;
+      const subjectMatch = log.targetStaffName?.toLowerCase().includes(query);
+      const actionMatch =
+        log.action.toLowerCase().includes(query) ||
+        formatActionLabel(log.action).toLowerCase().includes(query);
+      const detailsMatch = log.description?.toLowerCase().includes(query);
+      return Boolean(subjectMatch || actionMatch || detailsMatch);
+    });
+  }, [sortedAuditLog, ledgerSearchTerm, selectedActionFilter]);
+
+  const ledgerSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
+    const seen = new Set<string>();
+    const list: SearchSuggestion[] = [];
+    accessAuditLog.forEach((log) => {
+      if (log.targetStaffName && !seen.has(log.targetStaffName.toLowerCase())) {
+        seen.add(log.targetStaffName.toLowerCase());
+        list.push({
+          label: log.targetStaffName,
+          category: 'Subject',
+          sublabel: `${log.targetRole} • ${formatActionLabel(log.action)}`,
+        });
+      }
+    });
+    return list;
+  }, [accessAuditLog]);
+
   // Pagination State (10 records per page)
   const [auditPage, setAuditPage] = useState(1);
   const [sectionPages, setSectionPages] = useState<Record<string, number>>({});
@@ -683,10 +769,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   useEffect(() => {
     setAuditPage(1);
     setSectionPages({});
-  }, [searchTerm, selectedRoleFilter]);
+  }, [searchTerm, selectedRoleFilter, ledgerSearchTerm, selectedActionFilter]);
 
   const auditPageSize = 10;
-  const paginatedAuditLog = accessAuditLog.slice((auditPage - 1) * auditPageSize, auditPage * auditPageSize);
+  const paginatedAuditLog = filteredAuditLog.slice((auditPage - 1) * auditPageSize, auditPage * auditPageSize);
 
   useEffect(() => {
     if (approvalsPage > 1 && (approvalsPage - 1) * 10 >= pendingApprovals.length) {
@@ -1459,105 +1545,91 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           <Card>
             <CardHeader
               action={
-                <span className="text-xs text-slate-400 font-mono">
-                  Immutable Ledger
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {filteredAuditLog.length} {filteredAuditLog.length === 1 ? 'Entry' : 'Entries'}
                 </span>
               }
             >
-              <div>
-                <CardTitle>Managing Director Security Audit Ledger</CardTitle>
-                <CardDescription className="mt-0.5">
-                  Chronological record of access grants, workstation suspensions, account deletions, and permission updates.
-                </CardDescription>
-              </div>
+              <CardTitle>Managing Director Security Audit Ledger</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-6 space-y-4 py-2">
-                {paginatedAuditLog.map((log) => {
-                  const isRevokeOrDelete =
-                    log.action === 'access_revoked' || log.action === 'account_deleted';
-                  const isGranted = log.action === 'access_granted';
-
-                  return (
-                    <div key={log.id} className="relative group">
-                      {/* Timeline Node Dot */}
-                      <span
-                        className={`absolute -left-[1.95rem] top-2 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 transition-transform group-hover:scale-125 ${
-                          isRevokeOrDelete
-                            ? 'bg-rose-500'
-                            : isGranted
-                            ? 'bg-teal-500'
-                            : 'bg-slate-400 dark:bg-slate-500'
-                        }`}
-                      />
-
-                      {/* Log Card */}
-                      <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-2xs">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span
-                              className={`text-xs font-semibold uppercase tracking-wider ${
-                                isRevokeOrDelete
-                                  ? 'text-rose-600 dark:text-rose-400'
-                                  : isGranted
-                                  ? 'text-teal-600 dark:text-teal-400'
-                                  : 'text-slate-600 dark:text-slate-400'
-                              }`}
-                            >
-                              {log.action.replace(/_/g, ' ')}
-                            </span>
-                            <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">
-                              {log.targetStaffName}
-                            </span>
-                            <span className="text-[11px] text-slate-400 capitalize">
-                              ({log.targetRole})
-                            </span>
-                          </div>
-
-                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0">
-                            {log.timestamp}
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">
-                          {log.description}
-                        </p>
-
-                        {log.capability && (
-                          <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400">
-                            <span className="font-mono text-slate-600 dark:text-slate-400 font-medium">
-                              {log.capability}
-                            </span>
-                            {log.oldState && log.newState && (
-                              <span>
-                                {log.oldState} &rarr; {log.newState}
-                              </span>
-                            )}
-                            {log.targetUserId && (
-                              <span className="text-slate-400 font-mono text-[10px]">
-                                (ID: {log.targetUserId})
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
-                          <span>
-                            Authorized by: <strong className="text-slate-700 dark:text-slate-300">{log.authorizedBy}</strong>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+            <CardContent className="p-5 pt-3.5">
+              <div className="mb-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                <div className="relative w-full sm:w-80">
+                  <InteractiveSearchBar
+                    value={ledgerSearchTerm}
+                    onChange={setLedgerSearchTerm}
+                    suggestions={ledgerSearchSuggestions}
+                    placeholder="Search ledger"
+                  />
+                </div>
+                <div className="w-full sm:w-56 shrink-0">
+                  <Select
+                    value={selectedActionFilter}
+                    placeholder="All actions"
+                    onChange={(e) => {
+                      setSelectedActionFilter(e.target.value);
+                    }}
+                    options={actionFilterOptions}
+                  />
+                </div>
               </div>
-              <Pagination
-                currentPage={auditPage}
-                totalItems={accessAuditLog.length}
-                pageSize={auditPageSize}
-                onPageChange={setAuditPage}
-                className="mt-4"
-              />
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Details</TableHead>
+                      <TableHead>Authorized By</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAuditLog.length > 0 ? (
+                      paginatedAuditLog.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {log.timestamp}
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {formatActionLabel(log.action)}
+                          </TableCell>
+                          <TableCell className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                            {log.targetStaffName}
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300 capitalize whitespace-nowrap">
+                            {log.targetRole}
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300 max-w-md">
+                            <div className="line-clamp-2" title={log.description}>
+                              {log.description}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {log.authorizedBy || 'Dr. Marcus Vance (Managing Director)'}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                          No ledger entries found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              {filteredAuditLog.length > auditPageSize && (
+                <Pagination
+                  currentPage={auditPage}
+                  totalItems={filteredAuditLog.length}
+                  pageSize={auditPageSize}
+                  onPageChange={setAuditPage}
+                  className="mt-4"
+                />
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1967,7 +2039,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               size="sm"
               onClick={() => {
                 if (!rejectTarget) return;
-                handleRejectPending(rejectTarget.id, rejectTarget.staffName, rejectReason);
+                handleRejectPending(rejectTarget, rejectReason);
                 setRejectTarget(null);
                 setRejectReason('');
               }}
