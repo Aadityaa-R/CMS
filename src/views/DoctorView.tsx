@@ -413,16 +413,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* Workstation Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Physician Consultation Desk & Clinical Care
-            </h2>
-            {isMD ? (
-              <span className="text-xs font-semibold text-teal-700 dark:text-teal-400">Managing Director Console</span>
-            ) : (
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Staff Physician Desk</span>
-            )}
-          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            Physician Consultation Desk & Clinical Care
+          </h2>
         </div>
       </div>
 

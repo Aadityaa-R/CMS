@@ -729,12 +729,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       {/* Executive Workstation Header */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="text-[10px] font-bold text-teal-300 tracking-wider uppercase">
-              Managing Director Console
-            </span>
-            <span>•</span>
-            <span className="text-slate-300 font-medium">Supreme Administrative Authority</span>
+          <div className="text-xs text-teal-300 font-medium">
+            Supreme Administrative Authority
           </div>
           <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
             Administrative & Security Governance
