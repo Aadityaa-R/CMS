@@ -436,7 +436,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       </div>
 
       {/* Sub-Workstation Navigation Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex items-center gap-6 overflow-x-auto border-b border-slate-200 dark:border-slate-800">
         {[
           { id: 'overview', label: 'Consultation Desk' },
           { id: 'patients', label: 'Patients' },
@@ -445,10 +445,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           <button
             key={tab.id}
             onClick={() => setSelectedTab(tab.id)}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+            className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap transition-colors ${
               selectedTab === tab.id
-                ? 'bg-teal-600 text-white font-semibold shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 border-b-2 border-transparent -mb-px'
             }`}
           >
             {tab.label}
@@ -677,22 +677,19 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                          MD Clinical Queue Inspector
-                        </span>
-                      </div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                        MD Clinical Queue Inspector
+                      </span>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
                       {/* Search Input with Interactive Dropdown and Autofill */}
-                      <div className="relative w-full sm:w-72">
+                      <div className="relative w-full sm:w-80">
                         <InteractiveSearchBar
                           value={searchTerm}
                           onChange={setSearchTerm}
                           suggestions={doctorSearchSuggestions}
-                          placeholder="Search by patient name"
+                          placeholder="Search patients"
                         />
                       </div>
 
@@ -729,12 +726,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
-                      <div className="relative w-full sm:w-72">
+                      <div className="relative w-full sm:w-80">
                         <InteractiveSearchBar
                           value={searchTerm}
                           onChange={setSearchTerm}
                           suggestions={doctorSearchSuggestions}
-                          placeholder="Search by patient name"
+                          placeholder="Search patients"
                         />
                       </div>
 
@@ -774,8 +771,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     {filteredAppointments.length > 0 ? (
                       paginatedAppointments.map((apt) => {
                         const isCurrent = apt.id === selectedAppointmentId;
-                        const isLive = apt.status === 'in_consultation';
-                        const isWaiting = apt.status === 'checked_in';
 
                         return (
                           <div
@@ -786,51 +781,43 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
                             }`}
                           >
-                            <div className="flex items-center gap-3">
-                              <span
-                                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                                  isLive
-                                    ? 'bg-teal-500'
-                                    : isWaiting
-                                    ? 'bg-teal-600'
-                                    : 'bg-slate-400'
-                                }`}
-                              />
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                                    {apt.patientName}
-                                  </h4>
-                                  <span className="text-[11px] font-mono font-bold text-teal-600 dark:text-teal-400">
-                                    #{apt.tokenNumber} • {apt.appointmentNumber}
-                                  </span>
-                                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                                    {new Date(apt.dateTime).toLocaleTimeString([], {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                                  Complaint: <strong>{apt.reasonForVisit}</strong>
-                                </p>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                  Phone: {apt.patientPhone} — Status:{' '}
-                                  <span className="capitalize font-medium text-slate-700 dark:text-slate-300">
-                                    {apt.status.replace('_', ' ')}
-                                  </span>
-                                </p>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                  {apt.patientName}
+                                </h4>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                  #{apt.tokenNumber}&nbsp;&nbsp;{apt.appointmentNumber}&nbsp;&nbsp;{new Date(apt.dateTime).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
                               </div>
+                              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                                Complaint: <strong>{apt.reasonForVisit}</strong>
+                              </p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Phone: {apt.patientPhone} — Status:{' '}
+                                <span className="capitalize font-medium text-slate-700 dark:text-slate-300">
+                                  {apt.status.replace('_', ' ')}
+                                </span>
+                              </p>
                             </div>
 
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <Button
-                                size="xs"
-                                variant={isCurrent ? 'secondary' : 'outline'}
-                                onClick={() => setSelectedAppointmentId(apt.id)}
-                              >
-                                {isCurrent ? 'Viewing' : 'Inspect File'}
-                              </Button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {isCurrent ? (
+                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                  Viewing
+                                </span>
+                              ) : (
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  onClick={() => setSelectedAppointmentId(apt.id)}
+                                >
+                                  Inspect File
+                                </Button>
+                              )}
                               {!isReadOnlyView && (
                                 apt.status !== 'completed' ? (
                                   <Button
@@ -841,7 +828,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                     Engage
                                   </Button>
                                 ) : (
-                                  <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
+                                  <span className="text-xs text-slate-500 dark:text-slate-400">
                                     Completed
                                   </span>
                                 )
@@ -872,20 +859,20 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <CardHeader>
                   <CardTitle>Consulting Physician Profile</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3.5 text-xs">
-                  <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">
+                <CardContent className="space-y-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold tracking-wider">
                       {activeDoctor.id === 'doc-1' ? 'Managing Director & Lead Physician' : 'Staff Consulting Physician'}
                     </span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                    <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm mt-0.5">
                       {activeDoctor.name}, {activeDoctor.qualification}
-                    </span>
-                    <span className="text-teal-600 dark:text-teal-400 block text-[11px] mt-0.5">
+                    </div>
+                    <div className="text-slate-600 dark:text-slate-400 text-xs mt-0.5">
                       {activeDoctor.specialization} • {activeDoctor.department}
-                    </span>
+                    </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
                     <div className="flex justify-between">
                       <span className="text-slate-500 dark:text-slate-400">Assigned Room:</span>
                       <span className="font-medium text-slate-900 dark:text-slate-100">{activeDoctor.roomNumber}</span>
@@ -902,7 +889,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500 dark:text-slate-400">Consultation Fee:</span>
-                      <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
                         ${activeDoctor.consultationFee.toFixed(2)}
                       </span>
                     </div>

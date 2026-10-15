@@ -85,6 +85,11 @@ Every feature and line of code in this project strictly adheres to the governing
 - **Zero Native Select Elements**: Never use standard HTML `<select>`. Always use the custom design-system dropdown `src/components/ui/Select.tsx` with chevron icons, custom backdrop handling, and keyboard support.
 - **Zero Native Date Inputs**: Never use standard HTML `<input type="date">`. Always use the custom design-system calendar `src/components/ui/DatePicker.tsx`.
 - **Zero Number Spinner Arrows**: All numeric input fields must suppress increment and decrement arrow marks via CSS utility classes (`[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`).
+- **Zero Pills, Chips, Badges, or Rounded Boxes Around Text**: Never wrap text in rounded boxes, pill backgrounds, or filled chip badges. Content must be displayed as clean, unboxed plain text rows with natural typographic hierarchy.
+- **Zero Focus Glows & Animated Effects**: Suppress focus rings, glows, and animated focus effects (`ring-0`, `shadow-none`). Only allow static keyboard-only 1px outline in the existing accent color.
+- **Plain-Text Navigation Tabs**: Active tabs must be styled with bold text and a static thin underline (`border-b-2 border-teal-600`), without filled rounded backgrounds or shadow effects. Inactive tabs are plain text.
+- **Plain-Text Queue & Worklist Metadata**: Worklist metadata (token number, appointment ID, time) must render as standard plain text in the default font and neutral text color (no teal, no monospace). Status dots must be removed in favor of plain text (`Status: ...`). Workstation state indicators like "Viewing" must render as plain text, not button shapes.
+- **Flattened Content Containers**: Card contents must not contain nested bordered boxes (`p-3 bg-slate-50 border rounded-xl`). Information must be organized into plain text rows directly inside the card with subtle divider rules where appropriate.
 - **Frameless Seamless Layout**: Removed panel divider borders and header shadows for a clean, borderless clinical layout.
 - **Restricted Palette**: Monochromatic slate base with calm clinical accents (teal, emerald, amber, rose). Maximum of 3 accent colors simultaneously.
 
@@ -116,6 +121,7 @@ The table below outlines the evolution of the codebase from initial repository s
 
 | Commit Hash | Commit Message / Feature Description | User Intent & Key Actions |
 | :--- | :--- | :--- |
+| `978327a` | `style: polish DoctorView tabs, worklist metadata, and physician profile layout` | User requested: "Fix 1b on DoctorView.tsx". Widen search bar with Search patients placeholder, converted tabs to plain text with static thin underline, rendered worklist metadata as plain text without colored dots, rendered Viewing state as plain text, removed inspector dot, and flattened physician profile card boxes into clean plain text rows. |
 | `e89a1c4` | `Remove stat cards and subtitles from Doctor Consultation Desk and fix search placeholder` | User requested: "Fix 1 of the Doctor Consultation Desk page (DoctorView.tsx)". Purged 4-card metric row from Doctor Consultation Desk, stripped explanatory subtitles under Consulting Physician Profile and Worklist, removed instruction sentence from MD Clinical Queue Inspector, and expanded search bar width with complete placeholder. |
 | `85df7e5` | `style: replace native html5 form validation bubbles with custom design system ui` | User requested: "make this to the custom ui we are using dont just use the native". Replaced browser-native validation bubbles with design system UI, added form-level noValidate, and added global invalid event listener. |
 | `03f78f7` | `style: remove managing director console heading across views` | User requested: "remove the managing director console heading". Stripped managing director console heading across workstation views. |
