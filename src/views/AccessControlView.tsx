@@ -9,7 +9,8 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
-import { Filter, UserCog, UserPlus, History, ArrowLeft, X } from 'lucide-react';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Filter, ArrowLeft, X } from 'lucide-react';
 import { UserRole, StaffAccessRecord, StaffPermission } from '@/types';
 
 interface AccessControlViewProps {
@@ -194,6 +195,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   const [addFormSpecialization, setAddFormSpecialization] = useState('');
   const [addFormFee, setAddFormFee] = useState('120');
   const [addFormError, setAddFormError] = useState('');
+  const [addFormTouched, setAddFormTouched] = useState<{ [key: string]: boolean }>({});
 
   const resetAddForm = () => {
     setAddFormRole('doctor');
@@ -204,6 +206,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     setAddFormSpecialization('');
     setAddFormFee('120');
     setAddFormError('');
+    setAddFormTouched({});
   };
 
   // State to track which person has their control panel open
@@ -218,6 +221,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
   // State for permanent deletion confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<StaffAccessRecord | null>(null);
+
+  // Modals & pagination for Add New Users tab (Direct Provision & Approvals)
+  const [isProvisionConfirmOpen, setIsProvisionConfirmOpen] = useState(false);
+  const [approveTarget, setApproveTarget] = useState<PendingStaffApproval | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<PendingStaffApproval | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [approvalsPage, setApprovalsPage] = useState(1);
 
   // Real-time notification banner
   interface NotificationState {
@@ -438,7 +448,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         pendingCapAction !== null ||
         isDiscardModalOpen ||
         deleteTarget !== null ||
-        isAddModalOpen;
+        isAddModalOpen ||
+        isProvisionConfirmOpen ||
+        approveTarget !== null ||
+        rejectTarget !== null;
 
       if (e.key === 'Escape') {
         if (isAnyModalOpen) {
@@ -479,7 +492,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         pendingCapAction !== null ||
         isDiscardModalOpen ||
         deleteTarget !== null ||
-        isAddModalOpen;
+        isAddModalOpen ||
+        isProvisionConfirmOpen ||
+        approveTarget !== null ||
+        rejectTarget !== null;
 
       if (isAnyModalOpen) return;
 
@@ -498,7 +514,17 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       window.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('focusin', handleFocusIn);
     };
-  }, [selectedStaffId, pendingCapAction, isDiscardModalOpen, deleteTarget, isAddModalOpen, hasUnsavedChanges]);
+  }, [
+    selectedStaffId,
+    pendingCapAction,
+    isDiscardModalOpen,
+    deleteTarget,
+    isAddModalOpen,
+    hasUnsavedChanges,
+    isProvisionConfirmOpen,
+    approveTarget,
+    rejectTarget,
+  ]);
 
   // Handlers for Onboarding Approvals
   const handleApprovePending = (req: PendingStaffApproval) => {
@@ -542,14 +568,32 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     }
 
     setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id));
-    showNotification(
-      `Approved and granted clearance for ${req.staffName} (${req.role === 'doctor' ? 'Doctor' : 'Receptionist'}).`
-    );
+    showNotification({
+      type: 'success',
+      message: `Approved and granted clearance for ${req.staffName} (${req.role === 'doctor' ? 'Doctor' : 'Receptionist'}).`,
+    });
   };
 
-  const handleRejectPending = (id: string, name: string) => {
+  const isBadgeDuplicate = Boolean(
+    addFormBadge.trim() &&
+      staffAccessList.some(
+        (s) => s.badgeNumber.toLowerCase() === addFormBadge.trim().toLowerCase()
+      )
+  );
+
+  const isProvisionDisabled =
+    !addFormName.trim() ||
+    !addFormDepartment.trim() ||
+    isBadgeDuplicate ||
+    (addFormRole === 'doctor' &&
+      (!addFormFee.trim() || isNaN(Number(addFormFee)) || Number(addFormFee) < 0));
+
+  const handleRejectPending = (id: string, name: string, reason?: string) => {
     setPendingApprovals((prev) => prev.filter((p) => p.id !== id));
-    showNotification(`Rejected onboarding application for ${name}.`);
+    showNotification({
+      type: 'info',
+      message: `Rejected onboarding application for ${name}${reason && reason.trim() ? `: ${reason.trim()}` : ''}.`,
+    });
   };
 
   const handleDirectAddSubmit = (e?: React.FormEvent) => {
@@ -560,6 +604,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     }
     if (!addFormDepartment.trim()) {
       setAddFormError('Please enter the department.');
+      return;
+    }
+    if (isBadgeDuplicate) {
       return;
     }
 
@@ -574,11 +621,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       (addFormRole === 'doctor' ? 'Staff Consulting Physician' : 'Front Desk Workstation Coordinator');
 
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const savedName = addFormName.trim();
+    const savedRole = addFormRole;
 
     const newRecord: StaffAccessRecord = {
       id: `acc-${addFormRole}-${Date.now()}`,
       role: addFormRole,
-      staffName: addFormName.trim(),
+      staffName: savedName,
       staffTitle: assignedTitle,
       department: addFormDepartment.trim(),
       badgeNumber: assignedBadge,
@@ -594,17 +643,17 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
     addStaffAccount(
       newRecord,
-      `Directly provisioned new ${addFormRole === 'doctor' ? 'Doctor' : 'Receptionist'} account for ${addFormName.trim()}`
+      `Directly provisioned new ${addFormRole === 'doctor' ? 'Doctor' : 'Receptionist'} account for ${savedName}`
     );
 
     if (addFormRole === 'doctor' && addDoctor) {
       addDoctor({
-        name: addFormName.trim(),
+        name: savedName,
         specialization: addFormSpecialization.trim() || 'General Medicine',
         qualification: 'MD / MBBS',
         department: addFormDepartment.trim(),
         phone: '+1 (555) 018-9922',
-        email: `${addFormName.toLowerCase().replace(/[^a-z]/g, '')}@metropolitanclinic.com`,
+        email: `${savedName.toLowerCase().replace(/[^a-z]/g, '')}@metropolitanclinic.com`,
         consultationFee: Number(addFormFee) || 120,
         availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
         consultationHours: '09:00 - 17:00',
@@ -615,9 +664,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
     setIsAddModalOpen(false);
     resetAddForm();
-    showNotification(
-      `Directly provisioned and granted clearance for ${addFormName.trim()} (${addFormRole === 'doctor' ? 'Doctor' : 'Receptionist'}).`
-    );
+    showNotification({
+      type: 'success',
+      message: `Directly provisioned and granted clearance for ${savedName} (${savedRole === 'doctor' ? 'Doctor' : 'Receptionist'}).`,
+    });
   };
 
   // Counts for role options
@@ -671,6 +721,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
   const auditPageSize = 10;
   const paginatedAuditLog = accessAuditLog.slice((auditPage - 1) * auditPageSize, auditPage * auditPageSize);
+
+  useEffect(() => {
+    if (approvalsPage > 1 && (approvalsPage - 1) * 10 >= pendingApprovals.length) {
+      setApprovalsPage(Math.max(1, Math.ceil(pendingApprovals.length / 10)));
+    }
+  }, [pendingApprovals.length, approvalsPage]);
+
+  const paginatedApprovals = pendingApprovals.slice((approvalsPage - 1) * 10, approvalsPage * 10);
 
   const searchSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
@@ -726,45 +784,29 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         </div>
       )}
 
-      {/* Executive Workstation Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Workstation Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="text-xs text-teal-300 font-medium">
-            Supreme Administrative Authority
-          </div>
-          <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Administrative & Security Governance
           </h2>
         </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="px-3.5 py-2 rounded-lg bg-white/10 border border-white/15 text-xs text-slate-200">
-            <span>MD Non-Revocable Authority</span>
-          </div>
-        </div>
       </div>
 
-      {/* Administrative Sub-Modules Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+      {/* Sub-Workstation Navigation Tabs */}
+      <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800">
         {[
           {
             id: 'add_users' as const,
-            label: 'Add New Users',
-            icon: <UserPlus className="w-4 h-4" />,
-            badge: pendingApprovals.length > 0 ? `${pendingApprovals.length} pending` : undefined,
-            badgeColor: 'amber',
+            label: `Add New Users (${pendingApprovals.length} pending)`,
           },
           {
             id: 'edit_users' as const,
-            label: 'Edit Users',
-            icon: <UserCog className="w-4 h-4" />,
-            badge: `${filteredStaff.length}`,
+            label: `Edit Users (${staffAccessList.length})`,
           },
           {
             id: 'ledger' as const,
-            label: 'Security Ledger',
-            icon: <History className="w-4 h-4" />,
-            badge: `${accessAuditLog.length}`,
+            label: `Security Ledger (${accessAuditLog.length})`,
           },
         ].map((tab) => {
           const isActive = selectedSubTab === tab.id;
@@ -776,27 +818,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 setSelectedSubTab(tab.id);
                 setSelectedStaffId(null);
               }}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 ${
                 isActive
-                  ? 'bg-teal-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              {tab.icon}
-              <span>{tab.label}</span>
-              {tab.badge && (
-                <span
-                  className={`text-[11px] font-mono font-medium ${
-                    isActive
-                      ? 'text-teal-200'
-                      : tab.badgeColor === 'amber'
-                      ? 'text-amber-600 dark:text-amber-400 font-semibold'
-                      : 'text-slate-500 dark:text-slate-400'
-                  }`}
-                >
-                  ({tab.badge})
-                </span>
-              )}
+              {tab.label}
             </button>
           );
         })}
@@ -1254,28 +1282,23 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           {/* Direct Staff Member Provisioning Card */}
           <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
             <CardHeader>
-              <div>
-                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <UserPlus className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                  Directly Provision Staff Member
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Directly register and authorize a new physician or receptionist into the clinic access directory.
-                </CardDescription>
-              </div>
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                Directly Provision Staff Member
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleDirectAddSubmit} className="space-y-4" noValidate>
-                {addFormError && (
-                  <div className="p-3 bg-rose-50 dark:bg-rose-950/60 rounded-lg border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-xs text-rose-800 dark:text-rose-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                    <span>{addFormError}</span>
-                  </div>
-                )}
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    Target Role <span className="text-rose-500">*</span>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (isProvisionDisabled) return;
+                  setIsProvisionConfirmOpen(true);
+                }}
+                className="space-y-4"
+                noValidate
+              >
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Target Role
                   </label>
                   <Select
                     value={addFormRole}
@@ -1289,14 +1312,19 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
-                    label="Full Name"
+                    label={<>Full Name <span className="text-rose-500">*</span></>}
                     placeholder={addFormRole === 'doctor' ? 'e.g. Dr. Julian Bashir' : 'e.g. Sarah Jenkins'}
                     value={addFormName}
                     onChange={(e) => {
                       setAddFormName(e.target.value);
                       if (addFormError) setAddFormError('');
                     }}
-                    error={!addFormName.trim() && addFormError ? 'Full name is required' : undefined}
+                    onBlur={() => setAddFormTouched((prev) => ({ ...prev, name: true }))}
+                    error={
+                      (addFormTouched.name && !addFormName.trim()) || (addFormError && !addFormName.trim())
+                        ? 'Please enter the staff member full name.'
+                        : undefined
+                    }
                   />
                   <Input
                     label="Professional Title"
@@ -1308,25 +1336,31 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
-                    label="Department"
+                    label={<>Department <span className="text-rose-500">*</span></>}
                     placeholder={addFormRole === 'doctor' ? 'e.g. Cardiology & Triage' : 'e.g. Front Desk & Admissions'}
                     value={addFormDepartment}
                     onChange={(e) => {
                       setAddFormDepartment(e.target.value);
                       if (addFormError) setAddFormError('');
                     }}
-                    error={!addFormDepartment.trim() && addFormError ? 'Department is required' : undefined}
+                    onBlur={() => setAddFormTouched((prev) => ({ ...prev, department: true }))}
+                    error={
+                      (addFormTouched.department && !addFormDepartment.trim()) || (addFormError && !addFormDepartment.trim())
+                        ? 'Please enter the department.'
+                        : undefined
+                    }
                   />
                   <Input
                     label="Badge / Staff ID Number"
                     placeholder={addFormRole === 'doctor' ? 'e.g. DOC-105' : 'e.g. REC-304'}
                     value={addFormBadge}
                     onChange={(e) => setAddFormBadge(e.target.value)}
+                    error={isBadgeDuplicate ? 'Badge ID already in use' : undefined}
                   />
                 </div>
 
                 {addFormRole === 'doctor' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100 dark:border-slate-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Input
                       label="Clinical Specialization"
                       placeholder="e.g. Internal Medicine"
@@ -1339,18 +1373,24 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       placeholder="120"
                       value={addFormFee}
                       onChange={(e) => setAddFormFee(e.target.value)}
+                      onBlur={() => setAddFormTouched((prev) => ({ ...prev, fee: true }))}
+                      error={
+                        (addFormTouched.fee || addFormFee.trim()) &&
+                        (!addFormFee.trim() || isNaN(Number(addFormFee)) || Number(addFormFee) < 0)
+                          ? 'Please enter a valid consultation fee'
+                          : undefined
+                      }
                     />
                   </div>
                 )}
 
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                    <span className="text-slate-600 dark:text-slate-300">
-                      This account will be instantly initialized with active clearance status and standard workstation permissions.
-                    </span>
-                  </div>
-                  <Button type="submit" variant="primary" size="sm" className="shrink-0">
+                <div className="flex justify-end pt-1">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    disabled={isProvisionDisabled}
+                  >
                     Provision & Grant Clearance
                   </Button>
                 </div>
@@ -1358,7 +1398,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             </CardContent>
           </Card>
 
-          {/* Onboarding & Role Clearance Approvals Notification Box */}
+          {/* Onboarding & Role Clearance Approvals */}
           <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
             <CardHeader
               action={
@@ -1367,70 +1407,96 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 </span>
               }
             >
-              <div>
-                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Onboarding & Role Clearance Approvals
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Review and authorize onboarding requests for Doctor and Receptionist workstations.
-                </CardDescription>
-              </div>
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                Onboarding & Role Clearance Approvals
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 pt-2">
-              {pendingApprovals.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
-                    No Pending Onboarding Clearances
-                  </p>
-                  <p className="text-slate-500 dark:text-slate-400">
-                    All candidates have been authorized and processed. Use the direct provisioning form above to add personnel immediately.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {pendingApprovals.map((req) => (
-                    <div
-                      key={req.id}
-                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                            {req.staffName}
-                          </h4>
-                          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                            ({req.role === 'doctor' ? 'Doctor Workstation' : 'Receptionist Terminal'})
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-300">
-                          {req.staffTitle} • {req.department} • Badge: <span className="font-mono">{req.badgeNumber}</span>
-                          {req.specialization ? ` • ${req.specialization}` : ''}
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Applied: {req.requestedAt} — <span className="italic">{req.notes}</span>
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRejectPending(req.id, req.staffName)}
-                        >
-                          Reject
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={() => handleApprovePending(req)}
-                        >
-                          Approve Clearance
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Applicant</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Badge ID</TableHead>
+                      <TableHead>Applied</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedApprovals.length > 0 ? (
+                      paginatedApprovals.map((req) => (
+                        <TableRow key={req.id}>
+                          <TableCell>
+                            <div className="font-bold text-slate-900 dark:text-slate-100">{req.staffName}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">{req.staffTitle}</div>
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300">
+                            {req.role === 'doctor' ? 'Doctor' : 'Receptionist'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-slate-700 dark:text-slate-300">{req.department}</div>
+                            {req.specialization && (
+                              <div className="text-xs text-slate-500 dark:text-slate-400">{req.specialization}</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300">
+                            {req.badgeNumber}
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-slate-400 text-xs whitespace-nowrap">
+                            {req.requestedAt}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 max-w-xs" title={req.notes}>
+                              {req.notes}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                className="min-w-[64px]"
+                                aria-label={`Approve ${req.staffName}`}
+                                onClick={() => setApproveTarget(req)}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                className="min-w-[64px]"
+                                aria-label={`Reject ${req.staffName}`}
+                                onClick={() => {
+                                  setRejectTarget(req);
+                                  setRejectReason('');
+                                }}
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                          No pending clearances
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              {pendingApprovals.length > 10 && (
+                <Pagination
+                  currentPage={approvalsPage}
+                  totalItems={pendingApprovals.length}
+                  pageSize={10}
+                  onPageChange={setApprovalsPage}
+                />
               )}
             </CardContent>
           </Card>
@@ -1855,6 +1921,126 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             </span>
           </div>
         </form>
+      </Modal>
+
+      {/* Confirm Provision Dialog */}
+      <Modal
+        isOpen={isProvisionConfirmOpen}
+        onClose={() => setIsProvisionConfirmOpen(false)}
+        title="Confirm Provisioning"
+        maxWidth="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsProvisionConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                handleDirectAddSubmit();
+                setIsProvisionConfirmOpen(false);
+              }}
+            >
+              Provision
+            </Button>
+          </>
+        }
+      >
+        <p className="text-xs text-slate-700 dark:text-slate-300">
+          Provision {addFormName.trim()} as {addFormRole === 'doctor' ? 'Doctor' : 'Receptionist'}? The account becomes active immediately with standard workstation permissions.
+        </p>
+      </Modal>
+
+      {/* Approve Clearance Confirmation Modal */}
+      <Modal
+        isOpen={approveTarget !== null}
+        onClose={() => setApproveTarget(null)}
+        title="Confirm Clearance Approval"
+        maxWidth="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setApproveTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                if (!approveTarget) return;
+                handleApprovePending(approveTarget);
+                setApproveTarget(null);
+              }}
+            >
+              Approve
+            </Button>
+          </>
+        }
+      >
+        {approveTarget && (
+          <p className="text-xs text-slate-700 dark:text-slate-300">
+            Approve onboarding clearance for <strong>{approveTarget.staffName}</strong> as {approveTarget.role === 'doctor' ? 'Doctor' : 'Receptionist'}? The account becomes active immediately with standard workstation permissions.
+          </p>
+        )}
+      </Modal>
+
+      {/* Reject Clearance Confirmation Modal */}
+      <Modal
+        isOpen={rejectTarget !== null}
+        onClose={() => {
+          setRejectTarget(null);
+          setRejectReason('');
+        }}
+        title="Confirm Clearance Rejection"
+        maxWidth="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setRejectTarget(null);
+                setRejectReason('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                if (!rejectTarget) return;
+                handleRejectPending(rejectTarget.id, rejectTarget.staffName, rejectReason);
+                setRejectTarget(null);
+                setRejectReason('');
+              }}
+            >
+              Reject
+            </Button>
+          </>
+        }
+      >
+        {rejectTarget && (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-700 dark:text-slate-300">
+              Reject onboarding application for <strong>{rejectTarget.staffName}</strong>?
+            </p>
+            <Input
+              label="Reason (optional)"
+              placeholder="Enter reason for rejection..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
+          </div>
+        )}
       </Modal>
     </div>
   );

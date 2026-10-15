@@ -1,7 +1,7 @@
 import React from 'react';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'label'> {
+  label?: React.ReactNode;
   error?: string;
   helperText?: string;
   icon?: React.ReactNode;
@@ -16,7 +16,7 @@ export const Input: React.FC<InputProps> = ({
   id,
   ...props
 }) => {
-  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  const inputId = id || (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
   return (
     <div className="w-full">
