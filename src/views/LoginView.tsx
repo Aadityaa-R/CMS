@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
 import {
   Building2,
   Lock,
@@ -179,10 +178,10 @@ export const LoginView: React.FC = () => {
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {roleCredentials.map((c) => (
                       <tr key={c.username} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-3 py-2 font-medium text-slate-900">
-                          <Badge size="sm" variant="teal">
+                        <td className="px-3 py-2 font-medium">
+                          <span className="font-medium text-teal-700 dark:text-teal-400">
                             {c.label}
-                          </Badge>
+                          </span>
                         </td>
                         <td className="px-3 py-2 font-mono text-[11px] text-slate-700">
                           {c.username}

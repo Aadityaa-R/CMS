@@ -790,7 +790,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               <span>{tab.label}</span>
               {tab.badge && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-medium ${
+                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium ${
                     isActive
                       ? 'bg-teal-700/80 text-white'
                       : tab.badgeColor === 'amber'
@@ -871,7 +871,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${avatarStyle}`}
+                          className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${avatarStyle}`}
                         >
                           {getInitials(activeStaff.staffName)}
                         </div>
@@ -884,7 +884,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               ({activeStaff.badgeNumber})
                             </span>
                             <span
-                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
                                 isRevoked
                                   ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                                   : 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
@@ -1166,7 +1166,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                           <div className="flex items-start justify-between gap-2.5">
                                             <div className="flex items-center gap-3 min-w-0">
                                               <div
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarStyle}`}
+                                                className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${avatarStyle}`}
                                               >
                                                 {getInitials(staff.staffName)}
                                               </div>
@@ -1183,7 +1183,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                                   />
                                                 </div>
                                                 <span
-                                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block mt-0.5 ${
+                                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md inline-block mt-0.5 ${
                                                     isRevoked
                                                       ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                                                       : 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
@@ -1480,7 +1480,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           <div className="flex items-center gap-2 flex-wrap">
                             {/* Action Badge */}
                             <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
                                 isRevokeOrDelete
                                   ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                                   : isGranted
