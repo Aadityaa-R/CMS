@@ -14,6 +14,20 @@ export interface User {
   department?: string;
   title?: string;
   badgeNumber?: string;
+  isOriginalAdmin?: boolean;
+  capabilities?: string[];
+  patientId?: string;
+}
+
+export interface PatientAssignment {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  doctorName?: string;
+  from: string;
+  to: string | null;
+  transferredBy: string;
+  reason: string;
 }
 
 export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
@@ -243,6 +257,8 @@ export interface StaffAccessRecord {
   updatedBy: string;
   reason?: string;
   permissions: StaffPermission[];
+  isOriginalAdmin?: boolean;
+  capabilities?: string[];
 }
 
 export interface AccessAuditLogEntry {

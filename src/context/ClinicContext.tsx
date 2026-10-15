@@ -10,6 +10,7 @@ import {
   LabTestStatus,
   Invoice,
   PaymentMethod,
+  PatientAssignment,
 } from '@/types';
 import {
   INITIAL_PATIENTS,
@@ -19,6 +20,7 @@ import {
   INITIAL_PRESCRIPTIONS,
   INITIAL_LAB_TESTS,
   INITIAL_INVOICES,
+  INITIAL_PATIENT_ASSIGNMENTS,
 } from '@/data/mockData';
 
 interface ClinicContextType {
@@ -29,10 +31,18 @@ interface ClinicContextType {
   prescriptions: Prescription[];
   labTests: LabTest[];
   invoices: Invoice[];
+  patientAssignments: PatientAssignment[];
 
   // Patient Actions
   addPatient: (data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>) => Patient;
   updatePatient: (id: string, data: Partial<Patient>) => void;
+  transferPatient: (
+    patientId: string,
+    toDoctorId: string,
+    reason: string,
+    actingUserId: string,
+    actingUserName: string
+  ) => void;
 
   // Doctor Actions
   addDoctor: (data: Omit<Doctor, 'id'>) => Doctor;
@@ -77,6 +87,56 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(INITIAL_PRESCRIPTIONS);
   const [labTests, setLabTests] = useState<LabTest[]>(INITIAL_LAB_TESTS);
   const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
+  const [patientAssignments, setPatientAssignments] = useState<PatientAssignment[]>(INITIAL_PATIENT_ASSIGNMENTS);
+
+  const transferPatient = (
+    patientId: string,
+    toDoctorId: string,
+    reason: string,
+    actingUserId: string,
+    actingUserName: string
+  ) => {
+    const timestamp = new Date().toISOString();
+    const targetDoctor = doctors.find((d) => d.id === toDoctorId);
+    const doctorName = targetDoctor ? targetDoctor.name : 'Attending Physician';
+    const department = targetDoctor ? targetDoctor.department : 'General Medicine';
+
+    // 1. Close current active assignment and create new one
+    setPatientAssignments((prev) => {
+      const closed = prev.map((a) =>
+        a.patientId === patientId && a.to === null ? { ...a, to: timestamp } : a
+      );
+      const newAsgn: PatientAssignment = {
+        id: `asgn-${Date.now()}`,
+        patientId,
+        doctorId: toDoctorId,
+        doctorName,
+        from: timestamp,
+        to: null,
+        transferredBy: actingUserName ? `${actingUserName} (${actingUserId})` : actingUserId,
+        reason,
+      };
+      return [...closed, newAsgn];
+    });
+
+    // 2. Reassign open appointments (scheduled, checked_in, in_consultation) to receiving doctor
+    setAppointments((prev) =>
+      prev.map((apt) => {
+        if (
+          apt.patientId === patientId &&
+          (apt.status === 'scheduled' || apt.status === 'checked_in' || apt.status === 'in_consultation')
+        ) {
+          return {
+            ...apt,
+            doctorId: toDoctorId,
+            doctorName,
+            department,
+          };
+        }
+        return apt;
+      })
+    );
+  };
 
   const addPatient = (data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>): Patient => {
     const newId = `pat-${patients.length + 1}`;
@@ -314,6 +374,8 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         prescriptions,
         labTests,
         invoices,
+        patientAssignments,
+        transferPatient,
         addPatient,
         updatePatient,
         addDoctor,

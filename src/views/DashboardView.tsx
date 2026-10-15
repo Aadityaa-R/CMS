@@ -704,16 +704,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onNavigate?.('role_receptionist', 'booking')}
+              onClick={() => onNavigate?.('doctor', 'overview')}
             >
-              New Appointment
+              Consultation Desk
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onNavigate?.('role_receptionist', 'registration')}
+              onClick={() => onNavigate?.('role_patient', 'overview')}
             >
-              Register Patient
+              Patient Directory
             </Button>
             <Button
               variant="outline"

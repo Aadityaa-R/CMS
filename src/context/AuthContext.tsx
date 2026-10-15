@@ -106,14 +106,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionStorage.removeItem('cms_staff_access_v3');
       sessionStorage.removeItem('cms_staff_access_v4');
       sessionStorage.removeItem('cms_staff_access_v5');
+      sessionStorage.removeItem('cms_staff_access_v6');
 
-      const saved = sessionStorage.getItem('cms_staff_access_v6');
+      const saved = sessionStorage.getItem('cms_staff_access_v7');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (
           Array.isArray(parsed) &&
           parsed.length >= 10 &&
-          !parsed.some((r: StaffAccessRecord) => r.staffName === 'Outpatient Services Portal')
+          parsed.some((r: StaffAccessRecord) => r.id === 'acc-doc-1')
         ) {
           return parsed;
         }
@@ -128,7 +129,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [accessAuditLog, setAccessAuditLog] = useState<AccessAuditLogEntry[]>(() => {
     try {
       sessionStorage.removeItem('cms_access_audit_log_v5');
-      const saved = sessionStorage.getItem('cms_access_audit_log_v6');
+      sessionStorage.removeItem('cms_access_audit_log_v6');
+      const saved = sessionStorage.getItem('cms_access_audit_log_v7');
       if (saved) return JSON.parse(saved);
     } catch {
       // Fallback
@@ -150,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('cms_staff_access_v6', JSON.stringify(staffAccessList));
+      sessionStorage.setItem('cms_staff_access_v7', JSON.stringify(staffAccessList));
     } catch {
       // Fallback
     }
@@ -158,7 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('cms_access_audit_log_v6', JSON.stringify(accessAuditLog));
+      sessionStorage.setItem('cms_access_audit_log_v7', JSON.stringify(accessAuditLog));
     } catch {
       // Fallback
     }
@@ -176,7 +178,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return DEMO_USERS;
   });
 
-  const currentUser = DEMO_USERS[activeUserKey] || userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.md;
+  const baseUser = DEMO_USERS[activeUserKey] || userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.md;
+  const currentStaffRecord = staffAccessList.find(
+    (s) => s.id === baseUser.id || s.badgeNumber === baseUser.badgeNumber || s.staffName === baseUser.name
+  );
+  const currentUser: User = {
+    ...baseUser,
+    isOriginalAdmin: baseUser.isOriginalAdmin || currentStaffRecord?.isOriginalAdmin || false,
+    capabilities: currentStaffRecord
+      ? currentStaffRecord.permissions.filter((p) => p.enabled).map((p) => p.id)
+      : baseUser.capabilities || [],
+  };
 
   const updateCurrentUser = (updates: Partial<User>) => {
     setUserProfiles((prev) => {
@@ -354,7 +366,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const newAuditEntries: AccessAuditLogEntry[] = [];
 
-    const updatedPermissions = record.permissions.map((p) => {
+    const existingPerms = [...record.permissions];
+    for (const update of updates) {
+      if (!existingPerms.some((p) => p.id === update.permissionId)) {
+        if (update.permissionId === 'perm-admin') {
+          existingPerms.unshift({
+            id: 'perm-admin',
+            name: 'Administrative Access',
+            description: 'Clinic configuration, staff access control, and master ledger management',
+            enabled: false,
+          });
+        }
+      }
+    }
+
+    const updatedPermissions = existingPerms.map((p) => {
       const match = updates.find((u) => u.permissionId === p.id);
       if (match && match.enabled !== p.enabled) {
         const oldState = p.enabled ? 'Granted' : 'Not granted';

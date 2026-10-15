@@ -13,6 +13,12 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Filter, ArrowLeft, X } from 'lucide-react';
 import { UserRole, StaffAccessRecord, StaffPermission } from '@/types';
 import { PendingStaffApproval, INITIAL_PENDING_APPROVALS } from '@/data/mockData';
+import {
+  isAdmin,
+  canGrantAdmin,
+  canRevokeAdmin,
+  canDeleteStaff,
+} from '@/lib/permissions';
 
 interface AccessControlViewProps {
   activeTab?: 'add_users' | 'edit_users' | 'ledger' | string;
@@ -77,6 +83,7 @@ const ROLE_SECTIONS: RoleSectionMeta[] = [
 ];
 
 const DEFAULT_DOCTOR_PERMISSIONS: StaffPermission[] = [
+  { id: 'perm-admin', name: 'Administrative Access', description: 'Promote to clinic administrator with staff management and security ledger authority', enabled: false },
   { id: 'perm-consult', name: 'Consultation Workstation', description: 'Conduct patient visits and clinical assessments', enabled: true },
   { id: 'perm-emr', name: 'EMR Records Access', description: 'Review medical records, chronic history, and vitals', enabled: true },
   { id: 'perm-presc', name: 'Prescription Authoring', description: 'Generate and sign electronic outpatient prescriptions', enabled: true },
@@ -84,10 +91,9 @@ const DEFAULT_DOCTOR_PERMISSIONS: StaffPermission[] = [
 ];
 
 const DEFAULT_RECEPTIONIST_PERMISSIONS: StaffPermission[] = [
-  { id: 'perm-terminal', name: 'Terminal Workstation Login', description: 'Access front desk reception desk terminal', enabled: true },
-  { id: 'perm-checkin', name: 'Patient Check-In & Tokens', description: 'Check in waiting patients and issue queue tokens', enabled: true },
   { id: 'perm-register', name: 'Patient Registration', description: 'Enroll new outpatients and generate medical record numbers', enabled: true },
-  { id: 'perm-book', name: 'Appointment Booking', description: 'Schedule consultations with clinic physicians', enabled: true },
+  { id: 'perm-checkin', name: 'Patient Check-in', description: 'Check in waiting patients and issue queue tokens', enabled: true },
+  { id: 'perm-payment', name: 'Payment Recording', description: 'Record patient billing payments and issue settlement receipts', enabled: true },
 ];
 
 const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
@@ -231,6 +237,18 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     isCurrentlyGranted: boolean
   ) => {
     if (isCurrentlyGranted) {
+      // Check if revoking administrative access
+      if (perm.id === 'perm-admin' || perm.name === 'Administrative Access') {
+        const check = canRevokeAdmin(currentUser, staff, staffAccessList);
+        if (!check.allowed) {
+          showNotification({
+            type: 'error',
+            message: check.reason || 'Administrative access cannot be revoked.',
+          });
+          return;
+        }
+      }
+
       // Revoke action
       const isEmr = perm.id === 'perm-emr' || perm.name === 'EMR Records Access';
       const isPrescGranted = staff.permissions.some(
@@ -249,6 +267,16 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       });
     } else {
       // Grant action
+      if (perm.id === 'perm-admin' || perm.name === 'Administrative Access') {
+        if (!canGrantAdmin(currentUser, staff)) {
+          showNotification({
+            type: 'error',
+            message: 'Administrative access can only be granted to active consulting physicians.',
+          });
+          return;
+        }
+      }
+
       setPendingCapAction({
         staffId: staff.id,
         staffName: staff.staffName,
@@ -325,16 +353,44 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   };
 
   const handleRevoke = (id: string, name: string) => {
+    const target = staffAccessList.find((s) => s.id === id);
+    if (target && isAdmin(target)) {
+      const check = canRevokeAdmin(currentUser, target, staffAccessList);
+      if (!check.allowed) {
+        showNotification({
+          type: 'error',
+          message: check.reason || 'Administrative access cannot be revoked.',
+        });
+        return;
+      }
+    }
     revokeStaffAccess(id, 'Station credentials suspended by Managing Director executive order');
     showNotification(`Access revoked for ${name}. Workstation credentials suspended.`);
   };
 
   const handlePromptDelete = (staff: StaffAccessRecord) => {
+    const check = canDeleteStaff(currentUser, staff, staffAccessList);
+    if (!check.allowed) {
+      showNotification({
+        type: 'error',
+        message: check.reason || 'Account cannot be deleted.',
+      });
+      return;
+    }
     setDeleteTarget(staff);
   };
 
   const handleConfirmDelete = () => {
     if (!deleteTarget) return;
+    const check = canDeleteStaff(currentUser, deleteTarget, staffAccessList);
+    if (!check.allowed) {
+      showNotification({
+        type: 'error',
+        message: check.reason || 'Account cannot be deleted.',
+      });
+      setDeleteTarget(null);
+      return;
+    }
     const targetName = deleteTarget.staffName;
     const targetId = deleteTarget.id;
 
@@ -1015,6 +1071,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                             <Button
                               size="sm"
                               variant="outline"
+                              disabled={isAdmin(activeStaff) && !canRevokeAdmin(currentUser, activeStaff, staffAccessList).allowed}
+                              title={
+                                isAdmin(activeStaff) && !canRevokeAdmin(currentUser, activeStaff, staffAccessList).allowed
+                                  ? canRevokeAdmin(currentUser, activeStaff, staffAccessList).reason
+                                  : undefined
+                              }
                               onClick={() => handleRevoke(activeStaff.id, activeStaff.staffName)}
                             >
                               Revoke Access
@@ -1025,6 +1087,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                             size="sm"
                             variant="outline"
                             className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                            disabled={!canDeleteStaff(currentUser, activeStaff, staffAccessList).allowed}
+                            title={
+                              !canDeleteStaff(currentUser, activeStaff, staffAccessList).allowed
+                                ? canDeleteStaff(currentUser, activeStaff, staffAccessList).reason
+                                : undefined
+                            }
                             onClick={() => handlePromptDelete(activeStaff)}
                           >
                             Delete Account
@@ -1050,65 +1118,105 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                         )}
 
                         <div className="space-y-2 divide-y divide-slate-200/70 dark:divide-slate-700/60">
-                          {activeStaff.permissions.map((perm) => {
-                            const isGranted = perm.enabled;
+                          {(() => {
+                            let permissionsToDisplay = activeStaff.permissions;
+                            if (activeStaff.role === 'doctor') {
+                              const hasAdmin = permissionsToDisplay.some(
+                                (p) => p.id === 'perm-admin' || p.name === 'Administrative Access'
+                              );
+                              if (!hasAdmin) {
+                                permissionsToDisplay = [
+                                  {
+                                    id: 'perm-admin',
+                                    name: 'Administrative Access',
+                                    description: 'Clinic configuration, staff access control, and master ledger management',
+                                    enabled: Boolean(activeStaff.isOriginalAdmin || activeStaff.id === 'acc-doc-1'),
+                                  },
+                                  ...permissionsToDisplay,
+                                ];
+                              }
+                            } else if (activeStaff.role === 'receptionist') {
+                              const defaultIds = ['perm-register', 'perm-checkin', 'perm-payment'];
+                              const list = [...permissionsToDisplay];
+                              for (const def of DEFAULT_RECEPTIONIST_PERMISSIONS) {
+                                if (!list.some((p) => p.id === def.id || p.name.toLowerCase() === def.name.toLowerCase())) {
+                                  list.push(def);
+                                }
+                              }
+                              permissionsToDisplay = list.filter((p) => defaultIds.includes(p.id));
+                            }
 
-                            // Dependency Rule (Requirement 5):
-                            // Prescription Authoring cannot be granted while EMR Records Access is Not granted.
-                            const isEmrGranted = activeStaff.permissions.some(
-                              (p) => (p.id === 'perm-emr' || p.name === 'EMR Records Access') && p.enabled
-                            );
-                            const isPrescriptionAuth =
-                              perm.id === 'perm-presc' || perm.name === 'Prescription Authoring';
-                            const isGrantDisabledByDependency = !isGranted && isPrescriptionAuth && !isEmrGranted;
+                            return permissionsToDisplay.map((perm) => {
+                              const isGranted = perm.enabled;
 
-                            const isDisabled = isRevoked || isCapActionLoading || isGrantDisabledByDependency;
+                              // Dependency Rule (Requirement 5):
+                              // Prescription Authoring cannot be granted while EMR Records Access is Not granted.
+                              const isEmrGranted = activeStaff.permissions.some(
+                                (p) => (p.id === 'perm-emr' || p.name === 'EMR Records Access') && p.enabled
+                              );
+                              const isPrescriptionAuth =
+                                perm.id === 'perm-presc' || perm.name === 'Prescription Authoring';
+                              const isGrantDisabledByDependency = !isGranted && isPrescriptionAuth && !isEmrGranted;
 
-                            const tooltipText = isGrantDisabledByDependency
-                              ? 'Requires EMR Records Access'
-                              : isRevoked
-                              ? 'Access revoked. Restore access to edit capabilities.'
-                              : undefined;
+                              // Admin Revocation Protection Rule
+                              const isAdminPerm = perm.id === 'perm-admin' || perm.name === 'Administrative Access';
+                              const adminRevokeCheck =
+                                isAdminPerm && isGranted
+                                  ? canRevokeAdmin(currentUser, activeStaff, staffAccessList)
+                                  : { allowed: true };
+                              const isRevokeBlockedByProtection = isGranted && !adminRevokeCheck.allowed;
 
-                            return (
-                              <div
-                                key={perm.id}
-                                className="pt-2.5 pb-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                                    {perm.name}
+                              const isDisabled =
+                                isRevoked || isCapActionLoading || isGrantDisabledByDependency || isRevokeBlockedByProtection;
+
+                              const tooltipText = isRevokeBlockedByProtection
+                                ? adminRevokeCheck.reason
+                                : isGrantDisabledByDependency
+                                ? 'Requires EMR Records Access'
+                                : isRevoked
+                                ? 'Access revoked. Restore access to edit capabilities.'
+                                : undefined;
+
+                              return (
+                                <div
+                                  key={perm.id}
+                                  className="pt-2.5 pb-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
+                                      {perm.name}
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                                      {perm.description}
+                                    </div>
                                   </div>
-                                  <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                                    {perm.description}
+
+                                  <div className="flex items-center gap-3 shrink-0">
+                                    {/* 1. Status Label: plain text "Granted" or "Not granted" using app's existing badge style. Same style for both */}
+                                    <Badge variant="neutral" size="sm">
+                                      {isGranted ? 'Granted' : 'Not granted'}
+                                    </Badge>
+
+                                    {/* 2. Action Button: If Granted -> standard secondary button "Revoke"; If Not granted -> standard primary button "Grant" */}
+                                    <div className="inline-block" title={tooltipText}>
+                                      <Button
+                                        size="sm"
+                                        variant={isGranted ? 'secondary' : 'primary'}
+                                        disabled={isDisabled}
+                                        aria-label={`${isGranted ? 'Revoke' : 'Grant'} ${perm.name}`}
+                                        title={tooltipText}
+                                        onClick={() =>
+                                          handleRequestCapabilityAction(activeStaff, perm, isGranted)
+                                        }
+                                      >
+                                        {isGranted ? 'Revoke' : 'Grant'}
+                                      </Button>
+                                    </div>
                                   </div>
                                 </div>
-
-                                <div className="flex items-center gap-3 shrink-0">
-                                  {/* 1. Status Label: plain text "Granted" or "Not granted" using app's existing badge style. Same style for both */}
-                                  <Badge variant="neutral" size="sm">
-                                    {isGranted ? 'Granted' : 'Not granted'}
-                                  </Badge>
-
-                                  {/* 2. Action Button: If Granted -> standard secondary button "Revoke"; If Not granted -> standard primary button "Grant" */}
-                                  <div className="inline-block" title={tooltipText}>
-                                    <Button
-                                      size="sm"
-                                      variant={isGranted ? 'secondary' : 'primary'}
-                                      disabled={isDisabled}
-                                      aria-label={`${isGranted ? 'Revoke' : 'Grant'} ${perm.name}`}
-                                      title={tooltipText}
-                                      onClick={() =>
-                                        handleRequestCapabilityAction(activeStaff, perm, isGranted)
-                                      }
-                                    >
-                                      {isGranted ? 'Revoke' : 'Grant'}
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            });
+                          })()}
                         </div>
                       </div>
 

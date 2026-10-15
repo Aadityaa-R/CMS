@@ -16,7 +16,14 @@ import {
   FilePlus,
   Plus,
 } from 'lucide-react';
-import { Appointment, Prescription, PrescriptionItem } from '@/types';
+import { Appointment, Prescription, PrescriptionItem, Patient } from '@/types';
+import {
+  canViewPatient,
+  canViewPrescription,
+  canTransferPatient,
+  getAssignedDoctorId,
+  isAdmin,
+} from '@/lib/permissions';
 
 interface DoctorViewProps {
   activeTab?: string;
@@ -76,7 +83,7 @@ export const deduplicateList = (items?: (string | null | undefined)[]): string[]
 };
 
 export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }) => {
-  const { currentUser, currentRole } = useAuth();
+  const { currentUser, currentRole, addAuditLogEntry } = useAuth();
   const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
 
   useEffect(() => {
@@ -91,14 +98,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     patients,
     vitals,
     prescriptions,
+    patientAssignments = [],
     createPrescription,
     updateAppointmentStatus,
     updateAppointmentNotes,
+    transferPatient,
     saveVitals,
     updatePatient,
   } = useClinic();
 
-  const isMD = currentRole === 'md' || currentRole === 'admin' || currentUser.role === 'md';
+  const isMD = isAdmin(currentUser) || currentRole === 'md' || currentRole === 'admin';
 
   // Active doctor queue selection (defaults to doc-1 Marcus Vance for MD, doc-2 Nathan Hayes for staff doctor)
   const [activeDoctorId, setActiveDoctorId] = useState<string>(() => {
@@ -471,9 +480,68 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     setNotesError('');
   };
 
-  const doctorPrescriptions = prescriptions.filter(
-    (r) => r.doctorId === activeDoctor.id || r.doctorName === activeDoctor.name
-  );
+  // Transfer Modal State
+  const [transferTargetPatient, setTransferTargetPatient] = useState<Patient | null>(null);
+  const [targetDoctorId, setTargetDoctorId] = useState<string>('');
+  const [transferReason, setTransferReason] = useState<string>('');
+  const [transferError, setTransferError] = useState<string>('');
+
+  const handleOpenTransferModal = (pat: Patient) => {
+    setTransferTargetPatient(pat);
+    const currentDocId = getAssignedDoctorId(pat.id, patientAssignments);
+    const availableDocs = doctors.filter((d) => d.id !== currentDocId && d.status === 'active');
+    setTargetDoctorId(availableDocs[0]?.id || '');
+    setTransferReason('');
+    setTransferError('');
+  };
+
+  const handleConfirmTransfer = () => {
+    if (!transferTargetPatient) return;
+    if (!targetDoctorId) {
+      setTransferError('Please select a receiving physician.');
+      return;
+    }
+    if (!transferReason.trim()) {
+      setTransferError('Transfer reason is required for clinical continuity.');
+      return;
+    }
+
+    const currentDocId = getAssignedDoctorId(transferTargetPatient.id, patientAssignments);
+    const oldDoc = doctors.find((d) => d.id === currentDocId);
+    const newDoc = doctors.find((d) => d.id === targetDoctorId);
+    const oldDocName = oldDoc ? oldDoc.name : 'Unassigned';
+    const newDocName = newDoc ? newDoc.name : 'Receiving Physician';
+
+    transferPatient(
+      transferTargetPatient.id,
+      targetDoctorId,
+      transferReason.trim(),
+      currentUser.id,
+      currentUser.name
+    );
+
+    addAuditLogEntry({
+      targetRole: 'patient',
+      targetStaffName: `${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`,
+      targetUserId: transferTargetPatient.id,
+      action: 'permission_updated',
+      description: `Patient care transferred from ${oldDocName} to ${newDocName}. Reason: ${transferReason.trim()}`,
+      authorizedBy: currentUser.name,
+    });
+
+    showNotification(
+      `Patient ${transferTargetPatient.firstName} ${transferTargetPatient.lastName} transferred to ${newDocName}.`
+    );
+
+    setTransferTargetPatient(null);
+    setTargetDoctorId('');
+    setTransferReason('');
+    setTransferError('');
+  };
+
+  const doctorPrescriptions = useMemo(() => {
+    return prescriptions.filter((r) => canViewPrescription(currentUser, r, patientAssignments));
+  }, [prescriptions, currentUser, patientAssignments]);
 
   // Filter Helper with Equal Authority
   const query = searchTerm.toLowerCase().trim();
@@ -492,8 +560,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return true;
   });
 
-  const doctorPatientIds = new Set(doctorAppointments.map((a) => a.patientId));
-  const doctorPatients = patients.filter((p) => doctorPatientIds.has(p.id));
+  const doctorPatients = useMemo(() => {
+    if (isAdmin(currentUser)) {
+      return patients;
+    }
+    return patients.filter((p) => canViewPatient(currentUser, p.id, patientAssignments));
+  }, [patients, currentUser, patientAssignments]);
 
   // Dedicated Patients Medical Directory Search State
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
@@ -1089,7 +1161,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                               size="xs"
                                               variant="outline"
                                               className="whitespace-nowrap"
-                                              onClick={() => handleStartConsultation(apt)}
+                                              disabled={apt.status === 'scheduled'}
+                                              title={apt.status === 'scheduled' ? 'Patient has not been checked in' : undefined}
+                                              onClick={() => {
+                                                if (apt.status !== 'scheduled') {
+                                                  handleStartConsultation(apt);
+                                                }
+                                              }}
                                               aria-label={`Start consultation for ${apt.patientName}`}
                                             >
                                               Start Consultation
@@ -1218,74 +1296,110 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <TableHead>Blood Group</TableHead>
                     <TableHead>Allergies</TableHead>
                     <TableHead>Chronic Conditions</TableHead>
+                    {isAdmin(currentUser) && <TableHead>Assigned Doctor</TableHead>}
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPatients.length > 0 ? (
-                    paginatedPatients.map((pat) => (
-                      <TableRow key={pat.id}>
-                        <TableCell className="text-slate-700 dark:text-slate-300">
-                          {pat.mrn}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-bold text-slate-900 dark:text-slate-100">
-                            {pat.firstName} {pat.lastName}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {pat.email}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-slate-700 dark:text-slate-300 capitalize">
-                          {pat.age} yrs • {pat.gender}
-                        </TableCell>
-                        <TableCell className="text-slate-700 dark:text-slate-300">
-                          {pat.phone}
-                        </TableCell>
-                        <TableCell className="text-slate-700 dark:text-slate-300">
-                          {pat.bloodGroup}
-                        </TableCell>
-                        <TableCell className="text-slate-600 dark:text-slate-400">
-                          {pat.allergies && pat.allergies.length > 0 ? deduplicateList(pat.allergies).join(', ') : 'None recorded'}
-                        </TableCell>
-                        <TableCell className="text-slate-600 dark:text-slate-400">
-                          {pat.chronicConditions && pat.chronicConditions.length > 0 ? deduplicateList(pat.chronicConditions).join(', ') : 'None recorded'}
-                        </TableCell>
-                        <TableCell className="text-right whitespace-nowrap">
-                          {!isReadOnlyView ? (
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                className="whitespace-nowrap"
-                                onClick={() => {
-                                  const apt = appointments.find((a) => a.patientId === pat.id);
-                                  if (apt) {
-                                    setSelectedAppointmentId(apt.id);
-                                    setSelectedTab('overview');
-                                  }
-                                }}
-                                aria-label={`Admit ${pat.firstName} ${pat.lastName} to desk`}
-                              >
-                                Admit to Desk
-                              </Button>
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                className="whitespace-nowrap"
-                                onClick={() => handleOpenPrescriptionModal(pat.id)}
-                                aria-label={`Prescribe for ${pat.firstName} ${pat.lastName}`}
-                              >
-                                Prescribe
-                              </Button>
+                    paginatedPatients.map((pat) => {
+                      const assignedDocId = getAssignedDoctorId(pat.id, patientAssignments);
+                      const assignedDoc = doctors.find((d) => d.id === assignedDocId);
+                      const activeApt = appointments.find(
+                        (a) => a.patientId === pat.id && (a.status === 'in_consultation' || a.status === 'checked_in' || a.status === 'scheduled')
+                      );
+                      const isScheduled = activeApt?.status === 'scheduled';
+                      const canAdmit = Boolean(activeApt && !isScheduled);
+                      const admitTitle = !activeApt
+                        ? 'No active appointment'
+                        : isScheduled
+                        ? 'Patient has not been checked in'
+                        : undefined;
+                      const canTransfer = canTransferPatient(currentUser, pat.id, patientAssignments);
+
+                      return (
+                        <TableRow key={pat.id}>
+                          <TableCell className="text-slate-700 dark:text-slate-300">
+                            {pat.mrn}
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-bold text-slate-900 dark:text-slate-100">
+                              {pat.firstName} {pat.lastName}
                             </div>
-                          ) : null}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {pat.email}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300 capitalize">
+                            {pat.age} yrs • {pat.gender}
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300">
+                            {pat.phone}
+                          </TableCell>
+                          <TableCell className="text-slate-700 dark:text-slate-300">
+                            {pat.bloodGroup}
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-slate-400">
+                            {pat.allergies && pat.allergies.length > 0 ? deduplicateList(pat.allergies).join(', ') : 'None recorded'}
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-slate-400">
+                            {pat.chronicConditions && pat.chronicConditions.length > 0 ? deduplicateList(pat.chronicConditions).join(', ') : 'None recorded'}
+                          </TableCell>
+                          {isAdmin(currentUser) && (
+                            <TableCell className="text-slate-700 dark:text-slate-300">
+                              {assignedDoc ? assignedDoc.name : <span className="italic text-slate-400">Unassigned</span>}
+                            </TableCell>
+                          )}
+                          <TableCell className="text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              {canTransfer && (
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className="whitespace-nowrap"
+                                  onClick={() => handleOpenTransferModal(pat)}
+                                  aria-label={`Transfer ${pat.firstName} ${pat.lastName}`}
+                                >
+                                  Transfer
+                                </Button>
+                              )}
+                              {!isReadOnlyView ? (
+                                <>
+                                  <Button
+                                    size="xs"
+                                    variant="outline"
+                                    className="whitespace-nowrap"
+                                    disabled={!canAdmit}
+                                    title={admitTitle}
+                                    onClick={() => {
+                                      if (activeApt && canAdmit) {
+                                        setSelectedAppointmentId(activeApt.id);
+                                        setSelectedTab('overview');
+                                      }
+                                    }}
+                                    aria-label={`Admit ${pat.firstName} ${pat.lastName} to desk`}
+                                  >
+                                    Admit to Desk
+                                  </Button>
+                                  <Button
+                                    size="xs"
+                                    variant="outline"
+                                    className="whitespace-nowrap"
+                                    onClick={() => handleOpenPrescriptionModal(pat.id)}
+                                    aria-label={`Prescribe for ${pat.firstName} ${pat.lastName}`}
+                                  >
+                                    Prescribe
+                                  </Button>
+                                </>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                      <TableCell colSpan={isAdmin(currentUser) ? 9 : 8} className="py-8 text-center text-slate-500 dark:text-slate-400">
                         No patients found
                       </TableCell>
                     </TableRow>
@@ -1740,6 +1854,76 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           </div>
         )}
       </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL 5: TRANSFER PATIENT CARE                                            */}
+      {/* ========================================================================= */}
+      {transferTargetPatient && (
+        <Modal
+          isOpen={!!transferTargetPatient}
+          onClose={() => setTransferTargetPatient(null)}
+          title={`Transfer Care: ${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`}
+          maxWidth="md"
+          footer={
+            <div className="flex justify-end gap-2 w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTransferTargetPatient(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleConfirmTransfer}
+              >
+                Confirm Transfer
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            {transferError && (
+              <div className="p-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 rounded text-xs">
+                {transferError}
+              </div>
+            )}
+            <div>
+              <span className="text-slate-500 dark:text-slate-400 block text-[11px] mb-1">Current Assigned Physician</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {doctors.find((d) => d.id === getAssignedDoctorId(transferTargetPatient.id, patientAssignments))?.name || 'Unassigned'}
+              </span>
+            </div>
+            <div>
+              <label className="text-slate-700 dark:text-slate-300 block font-medium mb-1.5">
+                Receiving Physician
+              </label>
+              <Select
+                value={targetDoctorId}
+                onChange={(e) => setTargetDoctorId(e.target.value)}
+                options={doctors
+                  .filter((d) => d.status === 'active' && d.id !== getAssignedDoctorId(transferTargetPatient.id, patientAssignments))
+                  .map((d) => ({
+                    value: d.id,
+                    label: `${d.name} (${d.specialization})`,
+                  }))}
+              />
+            </div>
+            <div>
+              <label className="text-slate-700 dark:text-slate-300 block font-medium mb-1.5">
+                Clinical Transfer Reason
+              </label>
+              <Textarea
+                rows={3}
+                value={transferReason}
+                onChange={(e) => setTransferReason(e.target.value)}
+                placeholder="Document clinical indication or continuity rationale for this transfer..."
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

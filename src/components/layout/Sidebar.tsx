@@ -38,7 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed = true,
   onToggleCollapse,
 }) => {
-  const { currentRole } = useAuth();
+  const { currentRole, currentUser } = useAuth();
 
   const getNavItems = (): NavItem[] => {
     switch (currentRole) {
@@ -54,13 +54,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           { id: 'admin_billing', label: 'Billing & Revenue', icon: <CreditCard className="w-4 h-4" /> },
         ];
 
-      case 'doctor':
+      case 'doctor': {
         // Staff Doctor working under the MD
-        return [
+        const items: NavItem[] = [
           { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> },
           { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
         ];
+        if (currentUser && (currentUser.role === 'admin' || currentUser.isOriginalAdmin || currentUser.capabilities?.includes('perm-admin') || currentUser.capabilities?.includes('administrativeAccess'))) {
+          items.push({ id: 'access_control', label: 'Administrative', icon: <ShieldCheck className="w-4 h-4" /> });
+        }
+        return items;
+      }
 
       case 'receptionist':
         return [

@@ -13,9 +13,10 @@ import { PatientView } from '@/views/PatientView';
 import { ReceptionistView } from '@/views/ReceptionistView';
 import { AccessControlView } from '@/views/AccessControlView';
 import { Button } from '@/components/ui/Button';
+import { isAdmin } from '@/lib/permissions';
 
 export const AppLayout: React.FC = () => {
-  const { currentRole, isAuthenticated, isRoleSuspended, logout } = useAuth();
+  const { currentRole, currentUser, isAuthenticated, isRoleSuspended, logout } = useAuth();
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [activeSubTab, setActiveSubTab] = useState<string | undefined>(undefined);
@@ -27,6 +28,14 @@ export const AppLayout: React.FC = () => {
     setActiveTab('dashboard');
     setActiveSubTab(undefined);
   }, [currentRole]);
+
+  // If a doctor was viewing access_control and their admin capability was revoked, return immediately to dashboard
+  useEffect(() => {
+    if (currentRole === 'doctor' && activeTab === 'access_control' && !isAdmin(currentUser)) {
+      setActiveTab('dashboard');
+      setActiveSubTab(undefined);
+    }
+  }, [currentRole, activeTab, currentUser]);
 
   // If user signed out, display login screen
   if (!isAuthenticated) {
@@ -94,6 +103,11 @@ export const AppLayout: React.FC = () => {
           return <DoctorView activeTab={activeSubTab || 'overview'} />;
         case 'role_patient':
           return <PatientView activeTab={activeSubTab || 'overview'} />;
+        case 'access_control':
+          if (isAdmin(currentUser)) {
+            return <AccessControlView activeTab={activeSubTab || 'add_users'} />;
+          }
+          return <DashboardView onNavigate={handleNavigate} />;
         default:
           return <DashboardView onNavigate={handleNavigate} />;
       }
