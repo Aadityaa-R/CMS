@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import {
   CheckCircle2,
   Filter,
@@ -473,19 +474,40 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   const doctorPatientIds = new Set(doctorAppointments.map((a) => a.patientId));
   const doctorPatients = patients.filter((p) => doctorPatientIds.has(p.id));
 
+  // Dedicated Patients Medical Directory Search State
+  const [patientSearchTerm, setPatientSearchTerm] = useState('');
+  const patientQuery = patientSearchTerm.toLowerCase().trim();
+
   const filteredPatients = doctorPatients.filter((p) => {
+    const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
     const matchesSearch =
-      query === '' ||
-      p.firstName.toLowerCase().includes(query) ||
-      p.lastName.toLowerCase().includes(query) ||
-      p.mrn.toLowerCase().includes(query) ||
-      p.phone.includes(query);
+      patientQuery === '' ||
+      p.firstName.toLowerCase().includes(patientQuery) ||
+      p.lastName.toLowerCase().includes(patientQuery) ||
+      fullName.includes(patientQuery) ||
+      p.mrn.toLowerCase().includes(patientQuery) ||
+      p.phone.toLowerCase().includes(patientQuery);
 
     if (!matchesSearch) return false;
-    if (filterMode === 'active') return p.status === 'active';
-    if (filterMode === 'urgent') return p.allergies.length > 0;
     return true;
   });
+
+  const handlePatientSearchChange = (term: string) => {
+    setPatientSearchTerm(term);
+    setPatientsPage(1);
+  };
+
+  const patientSearchSuggestions = useMemo<SearchSuggestion[]>(() => {
+    const list: SearchSuggestion[] = [];
+    doctorPatients.forEach((p) => {
+      list.push({
+        label: `${p.firstName} ${p.lastName}`,
+        category: 'Patient',
+        sublabel: `${p.mrn} • ${p.phone}`,
+      });
+    });
+    return list;
+  }, [doctorPatients]);
 
   const filteredPrescriptions = doctorPrescriptions.filter((r) => {
     const matchesSearch =
@@ -508,9 +530,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   useEffect(() => {
     setWorklistPage(1);
-    setPatientsPage(1);
     setPrescriptionsPage(1);
   }, [searchTerm, filterMode, activeDoctorId]);
+
+  useEffect(() => {
+    setPatientsPage(1);
+  }, [patientSearchTerm, activeDoctorId]);
 
   const paginatedAppointments = filteredAppointments.slice(
     (worklistPage - 1) * pageSize,
@@ -921,58 +946,58 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider whitespace-nowrap">
-                        <tr>
-                          <th scope="col" className="px-4 py-3 align-middle w-[56px]">#</th>
-                          <th scope="col" className="px-4 py-3 align-middle w-[80px]">Time</th>
-                          <th scope="col" className="px-4 py-3 align-middle w-[180px]">Patient</th>
-                          <th scope="col" className="px-4 py-3 align-middle w-[140px]">Appt ID</th>
-                          <th scope="col" className="px-4 py-3 align-middle">Complaint</th>
-                          <th scope="col" className="px-4 py-3 align-middle w-[140px]">Status</th>
-                          <th scope="col" className="px-4 py-3 text-right align-middle whitespace-nowrap">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[56px]">#</TableHead>
+                          <TableHead className="w-[80px]">Time</TableHead>
+                          <TableHead className="w-[180px]">Patient</TableHead>
+                          <TableHead className="w-[140px]">Appt ID</TableHead>
+                          <TableHead>Complaint</TableHead>
+                          <TableHead className="w-[140px]">Status</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {filteredAppointments.length > 0 ? (
                           paginatedAppointments.map((apt) => {
                             const isCurrent = apt.id === selectedAppointmentId;
                             const isInConsultation = apt.status === 'in_consultation';
 
                             return (
-                              <tr
+                              <TableRow
                                 key={apt.id}
                                 className={isCurrent ? 'bg-teal-50/50 dark:bg-teal-950/30' : ''}
                               >
-                                <td
-                                  className={`px-4 py-3 align-middle text-slate-700 dark:text-slate-300 w-[56px] ${
+                                <TableCell
+                                  className={`text-slate-700 dark:text-slate-300 w-[56px] ${
                                     isCurrent ? 'border-l-2 border-teal-500' : 'border-l-2 border-transparent'
                                   }`}
                                 >
                                   #{apt.tokenNumber}
-                                </td>
-                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap w-[80px]">
+                                </TableCell>
+                                <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[80px]">
                                   {new Date(apt.dateTime).toLocaleTimeString([], {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                   })}
-                                </td>
-                                <td className="px-4 py-3 align-middle font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap w-[180px]">
+                                </TableCell>
+                                <TableCell className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap w-[180px]">
                                   {apt.patientName}
-                                </td>
-                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
+                                </TableCell>
+                                <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
                                   {apt.appointmentNumber}
-                                </td>
-                                <td
-                                  className="px-4 py-3 align-middle text-slate-600 dark:text-slate-300"
+                                </TableCell>
+                                <TableCell
+                                  className="text-slate-600 dark:text-slate-300"
                                   title={apt.reasonForVisit}
                                 >
                                   <span className="line-clamp-2">{apt.reasonForVisit}</span>
-                                </td>
-                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
+                                </TableCell>
+                                <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
                                   {formatAppointmentStatus(apt.status)}
-                                </td>
-                                <td className="px-4 py-3 text-right align-middle whitespace-nowrap">
+                                </TableCell>
+                                <TableCell className="text-right whitespace-nowrap">
                                   <div className="flex items-center justify-end gap-2">
                                     {isInConsultation && isCurrent ? (
                                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -1010,22 +1035,22 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                       </>
                                     )}
                                   </div>
-                                </td>
-                              </tr>
+                                </TableCell>
+                              </TableRow>
                             );
                           })
                         ) : (
-                          <tr>
-                            <td
+                          <TableRow>
+                            <TableCell
                               colSpan={7}
                               className="p-8 text-center text-xs text-slate-400 dark:text-slate-500"
                             >
                               No consultations found matching active search criteria on this worklist.
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                   <Pagination
                     currentPage={worklistPage}
@@ -1126,96 +1151,103 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             }
           >
             <CardTitle>Patients Medical Directory</CardTitle>
-            <CardDescription>
-              Electronic Health Records, allergy profiles, and consultation histories under {activeDoctor.name}
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="w-full sm:w-80">
+                <InteractiveSearchBar
+                  value={patientSearchTerm}
+                  onChange={handlePatientSearchChange}
+                  suggestions={patientSearchSuggestions}
+                  placeholder="Search patients"
+                />
+              </div>
+            </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">MRN</th>
-                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                    <th className="px-4 py-3.5 align-middle">Demographics</th>
-                    <th className="px-4 py-3.5 align-middle">Phone</th>
-                    <th className="px-4 py-3.5 align-middle">Blood Group</th>
-                    <th className="px-4 py-3.5 align-middle">Allergies</th>
-                    <th className="px-4 py-3.5 align-middle">Chronic Conditions</th>
-                    <th className="px-4 py-3.5 text-right align-middle">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {paginatedPatients.map((pat) => (
-                    <tr
-                      key={pat.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                    >
-                      <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                        {pat.mrn}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle">
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">
-                          {pat.firstName} {pat.lastName}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                          {pat.email}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 capitalize">
-                        {pat.age} yrs • {pat.gender}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                        {pat.phone}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle">
-                        <span className="font-medium text-slate-800 dark:text-slate-200">{pat.bloodGroup}</span>
-                      </td>
-                      <td className="px-4 py-3.5 align-middle">
-                        {pat.allergies.length > 0 ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                            <span className="text-slate-700 dark:text-slate-300 text-xs">
-                              {pat.allergies.join(', ')}
-                            </span>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>MRN</TableHead>
+                    <TableHead>Patient Name</TableHead>
+                    <TableHead>Demographics</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Blood Group</TableHead>
+                    <TableHead>Allergies</TableHead>
+                    <TableHead>Chronic Conditions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPatients.length > 0 ? (
+                    paginatedPatients.map((pat) => (
+                      <TableRow key={pat.id}>
+                        <TableCell className="text-slate-700 dark:text-slate-300">
+                          {pat.mrn}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-bold text-slate-900 dark:text-slate-100">
+                            {pat.firstName} {pat.lastName}
                           </div>
-                        ) : (
-                          <span className="text-slate-400 dark:text-slate-500 italic">None Recorded</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400">
-                        {pat.chronicConditions.length > 0 ? pat.chronicConditions.join(', ') : 'None'}
-                      </td>
-                      <td className="px-4 py-3.5 text-right align-middle space-x-1.5">
-                        {!isReadOnlyView ? (
-                          <>
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              onClick={() => {
-                                const apt = appointments.find((a) => a.patientId === pat.id);
-                                if (apt) {
-                                  setSelectedAppointmentId(apt.id);
-                                  setSelectedTab('overview');
-                                }
-                              }}
-                            >
-                              Admit to Desk
-                            </Button>
-                            <Button
-                              size="xs"
-                              variant="secondary"
-                              onClick={() => handleOpenPrescriptionModal(pat.id)}
-                            >
-                              Prescribe
-                            </Button>
-                          </>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            {pat.email}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-slate-700 dark:text-slate-300 capitalize">
+                          {pat.age} yrs • {pat.gender}
+                        </TableCell>
+                        <TableCell className="text-slate-700 dark:text-slate-300">
+                          {pat.phone}
+                        </TableCell>
+                        <TableCell className="text-slate-700 dark:text-slate-300">
+                          {pat.bloodGroup}
+                        </TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">
+                          {pat.allergies && pat.allergies.length > 0 ? pat.allergies.join(', ') : 'None recorded'}
+                        </TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">
+                          {pat.chronicConditions && pat.chronicConditions.length > 0 ? pat.chronicConditions.join(', ') : 'None recorded'}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {!isReadOnlyView ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                className="whitespace-nowrap"
+                                onClick={() => {
+                                  const apt = appointments.find((a) => a.patientId === pat.id);
+                                  if (apt) {
+                                    setSelectedAppointmentId(apt.id);
+                                    setSelectedTab('overview');
+                                  }
+                                }}
+                                aria-label={`Admit ${pat.firstName} ${pat.lastName} to desk`}
+                              >
+                                Admit to Desk
+                              </Button>
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                className="whitespace-nowrap"
+                                onClick={() => handleOpenPrescriptionModal(pat.id)}
+                                aria-label={`Prescribe for ${pat.firstName} ${pat.lastName}`}
+                              >
+                                Prescribe
+                              </Button>
+                            </div>
+                          ) : null}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={8} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                        No patients found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
             <Pagination
               currentPage={patientsPage}
@@ -1240,48 +1272,53 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">Rx #</th>
-                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                    <th className="px-4 py-3.5 align-middle">Issue Date</th>
-                    <th className="px-4 py-3.5 align-middle">Diagnosis</th>
-                    <th className="px-4 py-3.5 align-middle">Prescribed Regimen</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {paginatedPrescriptions.map((rx) => (
-                    <tr
-                      key={rx.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                    >
-                      <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
-                        {rx.prescriptionNumber}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
-                        {rx.patientName}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                        {rx.date}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-800 dark:text-slate-200 font-medium">
-                        {rx.diagnosis}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle">
-                        <div className="space-y-1">
-                          {rx.items.map((item) => (
-                            <div key={item.id} className="text-slate-700 dark:text-slate-300">
-                              <span className="font-semibold text-slate-900 dark:text-slate-100">{item.medicineName}</span>{' '}
-                              <span className="text-slate-500">({item.dosage} • {item.frequency})</span>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Rx #</TableHead>
+                    <TableHead>Patient Name</TableHead>
+                    <TableHead>Issue Date</TableHead>
+                    <TableHead>Diagnosis</TableHead>
+                    <TableHead>Prescribed Regimen</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPrescriptions.length > 0 ? (
+                    paginatedPrescriptions.map((rx) => (
+                      <TableRow key={rx.id}>
+                        <TableCell className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                          {rx.prescriptionNumber}
+                        </TableCell>
+                        <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
+                          {rx.patientName}
+                        </TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                          {rx.date}
+                        </TableCell>
+                        <TableCell className="text-slate-800 dark:text-slate-200 font-medium">
+                          {rx.diagnosis}
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {rx.items.map((item) => (
+                              <div key={item.id} className="text-slate-700 dark:text-slate-300">
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">{item.medicineName}</span>{' '}
+                                <span className="text-slate-500">({item.dosage} • {item.frequency})</span>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                        No e-prescriptions recorded
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
             <Pagination
               currentPage={prescriptionsPage}
