@@ -24,24 +24,24 @@ export const Badge: React.FC<BadgeProps> = ({
   className = '',
 }) => {
   const sizeClasses = {
-    sm: 'text-[11px] px-2 py-0.5',
-    md: 'text-xs px-2.5 py-1',
+    sm: 'text-[11px]',
+    md: 'text-xs',
   };
 
   const variantClasses = {
-    success: 'bg-teal-50 text-teal-700 border border-teal-200/60 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800/60',
-    warning: 'bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-    amber: 'bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-    danger: 'bg-rose-50 text-rose-700 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/60',
-    info: 'bg-teal-50 text-teal-700 border border-teal-200/60 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800/60',
-    neutral: 'bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-    teal: 'bg-teal-50 text-teal-700 border border-teal-200/60 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800/60',
-    purple: 'bg-teal-50 text-teal-700 border border-teal-200/60 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800/60',
+    success: 'text-teal-700 dark:text-teal-400 font-semibold',
+    warning: 'text-amber-700 dark:text-amber-400 font-semibold',
+    amber: 'text-amber-700 dark:text-amber-400 font-semibold',
+    danger: 'text-rose-700 dark:text-rose-400 font-semibold',
+    info: 'text-teal-700 dark:text-teal-400 font-semibold',
+    neutral: 'text-slate-600 dark:text-slate-400 font-medium',
+    teal: 'text-teal-700 dark:text-teal-400 font-semibold',
+    purple: 'text-teal-700 dark:text-teal-400 font-semibold',
   };
 
   return (
     <span
-      className={`inline-flex items-center font-medium rounded-md ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
+      className={`inline-flex items-center ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
     >
       {children}
     </span>

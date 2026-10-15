@@ -426,8 +426,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 }`}
               >
                 <span>All Today</span>
-                <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
-                  {appointments.length}
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                  ({appointments.length})
                 </span>
               </button>
 
@@ -447,8 +447,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                   <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
                   Waiting Lounge
                 </span>
-                <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
-                  {waitingCount}
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                  ({waitingCount})
                 </span>
               </button>
 
@@ -637,8 +637,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                             {rec.staffTitle}
                           </span>
                         </div>
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                          {rec.badgeNumber}
+                        <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                          ({rec.badgeNumber})
                         </span>
                       </div>
                     ))}

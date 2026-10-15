@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { StatCard } from '@/components/ui/StatCard';
-import { Badge } from '@/components/ui/Badge';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import {
@@ -419,9 +418,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               Physician Consultation Desk & Clinical Care
             </h2>
             {isMD ? (
-              <Badge variant="teal">Managing Director Console</Badge>
+              <span className="text-xs font-semibold text-teal-700 dark:text-teal-400">Managing Director Console</span>
             ) : (
-              <Badge variant="neutral">Staff Physician Desk</Badge>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Staff Physician Desk</span>
             )}
           </div>
         </div>

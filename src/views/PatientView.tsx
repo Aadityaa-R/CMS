@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Badge } from '@/components/ui/Badge';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Pagination } from '@/components/ui/Pagination';
@@ -418,7 +417,9 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                       <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                                         Electronic Health Record: {pat.firstName} {pat.lastName}
                                       </h3>
-                                      <Badge variant="teal">{pat.status.toUpperCase()}</Badge>
+                                      <span className="text-xs font-semibold text-teal-700 dark:text-teal-400 uppercase">
+                                        {pat.status}
+                                      </span>
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                       MRN: <strong className="font-mono text-slate-700 dark:text-slate-300">{pat.mrn}</strong> • Registered: {pat.registeredDate} • Address: {pat.address}

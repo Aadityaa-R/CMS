@@ -153,8 +153,8 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Notifications</span>
-                    <span className="text-[10px] bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 font-semibold px-2 py-0.5 rounded-md border border-teal-200/50 dark:border-teal-800/50">
-                      0 Unread
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                      (0 Unread)
                     </span>
                   </div>
                   <span className="text-[11px] text-teal-600 dark:text-teal-400 font-medium">All caught up</span>
@@ -234,7 +234,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                     )}
                     <span>Theme: {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono font-medium border border-slate-200 dark:border-slate-700">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                     {theme === 'dark' ? 'Dark' : 'Light'}
                   </span>
                 </button>

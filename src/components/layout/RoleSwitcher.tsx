@@ -69,8 +69,8 @@ export const RoleSwitcher: React.FC = () => {
       <div className="hidden lg:flex items-center gap-2 border-l border-slate-800 pl-3 text-slate-300 text-[11px]">
         <span className="text-slate-400">Logged in:</span>
         <span className="font-semibold text-white">{currentUser.name}</span>
-        <span className="px-1.5 py-0.5 rounded bg-slate-800 text-teal-400 border border-slate-700">
-          {currentUser.badgeNumber || currentUser.department}
+        <span className="text-teal-400 font-medium font-mono">
+          ({currentUser.badgeNumber || currentUser.department})
         </span>
       </div>
     </div>

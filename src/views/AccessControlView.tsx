@@ -790,15 +790,15 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               <span>{tab.label}</span>
               {tab.badge && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium ${
+                  className={`text-[11px] font-mono font-medium ${
                     isActive
-                      ? 'bg-teal-700/80 text-white'
+                      ? 'text-teal-200'
                       : tab.badgeColor === 'amber'
-                      ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                      : 'text-slate-500 dark:text-slate-400'
                   }`}
                 >
-                  {tab.badge}
+                  ({tab.badge})
                 </span>
               )}
             </button>
@@ -848,7 +848,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                       <span>Administrative Personnel Control</span>
                       <span>•</span>
-                      <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300">
+                      <span className="font-mono text-slate-700 dark:text-slate-300 font-medium">
                         {activeStaff.badgeNumber}
                       </span>
                     </div>
@@ -884,13 +884,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               ({activeStaff.badgeNumber})
                             </span>
                             <span
-                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                              className={`text-xs font-semibold ${
                                 isRevoked
-                                  ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                                  : 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
+                                  ? 'text-rose-600 dark:text-rose-400'
+                                  : 'text-teal-600 dark:text-teal-400'
                               }`}
                             >
-                              {isRevoked ? 'Suspended' : 'Active'}
+                              • {isRevoked ? 'Suspended' : 'Active'}
                             </span>
                           </div>
                           <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1183,10 +1183,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                                   />
                                                 </div>
                                                 <span
-                                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md inline-block mt-0.5 ${
+                                                  className={`text-xs font-medium inline-block mt-0.5 ${
                                                     isRevoked
-                                                      ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                                                      : 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
+                                                      ? 'text-rose-600 dark:text-rose-400'
+                                                      : 'text-teal-600 dark:text-teal-400'
                                                   }`}
                                                 >
                                                   {isRevoked ? 'Suspended' : 'Active'}
@@ -1202,8 +1202,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                             </div>
                                             <div className="flex items-center justify-between text-[11px]">
                                               <span className="truncate">{staff.department}</span>
-                                              <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-700 dark:text-slate-300 shrink-0">
-                                                {staff.badgeNumber}
+                                              <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
+                                                ({staff.badgeNumber})
                                               </span>
                                             </div>
                                           </div>
@@ -1478,14 +1478,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-2xs">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
                           <div className="flex items-center gap-2 flex-wrap">
-                            {/* Action Badge */}
                             <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                              className={`text-xs font-semibold uppercase tracking-wider ${
                                 isRevokeOrDelete
-                                  ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                  ? 'text-rose-600 dark:text-rose-400'
                                   : isGranted
-                                  ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
-                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                                  ? 'text-teal-600 dark:text-teal-400'
+                                  : 'text-slate-600 dark:text-slate-400'
                               }`}
                             >
                               {log.action.replace(/_/g, ' ')}
@@ -1509,7 +1508,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                         {log.capability && (
                           <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400">
-                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">
+                            <span className="font-mono text-slate-600 dark:text-slate-400 font-medium">
                               {log.capability}
                             </span>
                             {log.oldState && log.newState && (
