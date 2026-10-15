@@ -21,6 +21,21 @@ interface DoctorViewProps {
   activeTab?: string;
 }
 
+const formatAppointmentStatus = (status: string) => {
+  switch (status) {
+    case 'in_consultation':
+      return 'In Consultation';
+    case 'checked_in':
+      return 'Checked In';
+    case 'scheduled':
+      return 'Scheduled';
+    case 'completed':
+      return 'Completed';
+    default:
+      return status.replace(/_/g, ' ');
+  }
+};
+
 export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }) => {
   const { currentUser, currentRole } = useAuth();
   const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
@@ -520,7 +535,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       </div>
 
       {/* Sub-Workstation Navigation Tabs */}
-      <div className="flex items-center gap-6 overflow-x-auto border-b border-slate-200 dark:border-slate-800">
+      <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800">
         {[
           { id: 'overview', label: 'Consultation Desk' },
           { id: 'patients', label: 'Patients' },
@@ -722,7 +737,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
 
                       {!isReadOnlyView && (
-                        <div className="flex items-center gap-3 pt-1">
+                        <div className="flex items-center gap-3">
                           <Button
                             size="xs"
                             variant="secondary"
@@ -742,7 +757,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                     {/* Action Row */}
                     {!isReadOnlyView && (
-                      <div className="pt-2 flex items-center justify-end gap-2.5">
+                      <div className="flex items-center justify-end gap-2.5">
                         <Button
                           size="sm"
                           variant="outline"
@@ -808,7 +823,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             const count = appointments.filter((a) => a.doctorId === doc.id).length;
                             return {
                               value: doc.id,
-                              label: `${doc.name} ${doc.id === 'doc-1' ? '(MD)' : ''} (${count} visits)`,
+                              label: `${doc.name} (${count} visits)`,
                             };
                           })}
                         />
@@ -857,7 +872,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 </div>
               )}
 
-              {/* Waiting Consultations Worklist (Interactive Inspector Cards) */}
+              {/* Waiting Consultations Worklist (Table View) */}
               <Card>
                 <CardHeader
                   action={
@@ -871,81 +886,112 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredAppointments.length > 0 ? (
-                      paginatedAppointments.map((apt) => {
-                        const isCurrent = apt.id === selectedAppointmentId;
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                        <tr>
+                          <th scope="col" className="px-4 py-3 align-middle">Queue (#)</th>
+                          <th scope="col" className="px-4 py-3 align-middle">Time</th>
+                          <th scope="col" className="px-4 py-3 align-middle">Patient</th>
+                          <th scope="col" className="px-4 py-3 align-middle">Appointment ID</th>
+                          <th scope="col" className="px-4 py-3 align-middle">Complaint</th>
+                          <th scope="col" className="px-4 py-3 align-middle">Status</th>
+                          <th scope="col" className="px-4 py-3 text-right align-middle">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {filteredAppointments.length > 0 ? (
+                          paginatedAppointments.map((apt) => {
+                            const isCurrent = apt.id === selectedAppointmentId;
+                            const isInConsultation = apt.status === 'in_consultation';
 
-                        return (
-                          <div
-                            key={apt.id}
-                            className={`p-4 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                              isCurrent
-                                ? 'bg-teal-50/50 dark:bg-teal-950/30 border-l-2 border-teal-500'
-                                : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
-                            }`}
-                          >
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                                  {apt.patientName}
-                                </h4>
-                                <span className="text-xs text-slate-500 dark:text-slate-400">
-                                  #{apt.tokenNumber}&nbsp;&nbsp;{apt.appointmentNumber}&nbsp;&nbsp;{new Date(apt.dateTime).toLocaleTimeString([], {
+                            return (
+                              <tr
+                                key={apt.id}
+                                className={isCurrent ? 'bg-teal-50/50 dark:bg-teal-950/30' : ''}
+                              >
+                                <td
+                                  className={`px-4 py-3 align-middle text-slate-700 dark:text-slate-300 ${
+                                    isCurrent ? 'border-l-2 border-teal-500' : 'border-l-2 border-transparent'
+                                  }`}
+                                >
+                                  #{apt.tokenNumber}
+                                </td>
+                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                  {new Date(apt.dateTime).toLocaleTimeString([], {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                   })}
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                                Complaint: <strong>{apt.reasonForVisit}</strong>
-                              </p>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                Phone: {apt.patientPhone} — Status:{' '}
-                                <span className="capitalize font-medium text-slate-700 dark:text-slate-300">
-                                  {apt.status.replace('_', ' ')}
-                                </span>
-                              </p>
-                            </div>
-
-                            <div className="flex items-center gap-2 shrink-0">
-                              {isCurrent ? (
-                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                  Viewing
-                                </span>
-                              ) : (
-                                <Button
-                                  size="xs"
-                                  variant="outline"
-                                  onClick={() => setSelectedAppointmentId(apt.id)}
+                                </td>
+                                <td className="px-4 py-3 align-middle font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                                  {apt.patientName}
+                                </td>
+                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                  {apt.appointmentNumber}
+                                </td>
+                                <td
+                                  className="px-4 py-3 align-middle text-slate-600 dark:text-slate-300 max-w-xs"
+                                  title={apt.reasonForVisit}
                                 >
-                                  Inspect File
-                                </Button>
-                              )}
-                              {!isReadOnlyView && (
-                                apt.status !== 'completed' ? (
-                                  <Button
-                                    size="xs"
-                                    variant="primary"
-                                    onClick={() => handleStartConsultation(apt)}
-                                  >
-                                    Engage
-                                  </Button>
-                                ) : (
-                                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                                    Completed
-                                  </span>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500">
-                        No consultations found matching active search criteria on this worklist.
-                      </div>
-                    )}
+                                  <span className="line-clamp-2">{apt.reasonForVisit}</span>
+                                </td>
+                                <td className="px-4 py-3 align-middle text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                  {formatAppointmentStatus(apt.status)}
+                                </td>
+                                <td className="px-4 py-3 text-right align-middle whitespace-nowrap">
+                                  <div className="flex items-center justify-end gap-2">
+                                    {isInConsultation && isCurrent ? (
+                                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                        Current patient
+                                      </span>
+                                    ) : (
+                                      <>
+                                        <Button
+                                          size="xs"
+                                          variant="outline"
+                                          className="w-32 whitespace-nowrap"
+                                          onClick={() => setSelectedAppointmentId(apt.id)}
+                                          aria-label={`View file for ${apt.patientName}`}
+                                        >
+                                          View File
+                                        </Button>
+                                        {isInConsultation ? (
+                                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                            Current patient
+                                          </span>
+                                        ) : (
+                                          !isReadOnlyView &&
+                                          apt.status !== 'completed' && (
+                                            <Button
+                                              size="xs"
+                                              variant="outline"
+                                              className="w-32 whitespace-nowrap"
+                                              onClick={() => handleStartConsultation(apt)}
+                                              aria-label={`Start consultation for ${apt.patientName}`}
+                                            >
+                                              Start Consultation
+                                            </Button>
+                                          )
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={7}
+                              className="p-8 text-center text-xs text-slate-400 dark:text-slate-500"
+                            >
+                              No consultations found matching active search criteria on this worklist.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                   <Pagination
                     currentPage={worklistPage}
