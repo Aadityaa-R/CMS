@@ -6,6 +6,7 @@ import { Sidebar } from './Sidebar';
 import { LoginView } from '@/views/LoginView';
 
 // Role views
+import { DashboardView } from '@/views/DashboardView';
 import { AdminView } from '@/views/AdminView';
 import { DoctorView } from '@/views/DoctorView';
 import { PatientView } from '@/views/PatientView';
@@ -16,19 +17,15 @@ import { Button } from '@/components/ui/Button';
 export const AppLayout: React.FC = () => {
   const { currentRole, isAuthenticated, isRoleSuspended, logout } = useAuth();
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<string>('doctor');
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeSubTab, setActiveSubTab] = useState<string | undefined>(undefined);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
 
-  // Whenever the active role changes upon login, reset the active module tab
+  // Whenever the active role changes upon login, reset the active module tab to dashboard
   useEffect(() => {
-    setActiveTab(
-      currentRole === 'md' || currentRole === 'admin'
-        ? 'doctor'
-        : currentRole === 'doctor'
-        ? 'doctor'
-        : 'overview'
-    );
+    setActiveTab('dashboard');
+    setActiveSubTab(undefined);
   }, [currentRole]);
 
   // If user signed out, display login screen
@@ -60,46 +57,55 @@ export const AppLayout: React.FC = () => {
     );
   }
 
+  const handleNavigate = (tab: string, subTab?: string) => {
+    setActiveTab(tab);
+    setActiveSubTab(subTab);
+  };
+
   const renderActiveView = () => {
+    if (activeTab === 'dashboard') {
+      return <DashboardView onNavigate={handleNavigate} />;
+    }
+
     if (currentRole === 'md' || currentRole === 'admin') {
       switch (activeTab) {
         case 'doctor':
         case 'role_doctor':
-          return <DoctorView activeTab="overview" />;
+          return <DoctorView activeTab={activeSubTab || 'overview'} />;
         case 'role_receptionist':
         case 'receptionist':
-          return <ReceptionistView activeTab="overview" />;
+          return <ReceptionistView activeTab={activeSubTab || 'overview'} />;
         case 'role_patient':
         case 'patient':
-          return <PatientView />;
+          return <PatientView activeTab={activeSubTab || 'overview'} />;
         case 'access_control':
-          return <AccessControlView />;
+          return <AccessControlView activeTab={activeSubTab || 'add_users'} />;
         case 'admin_billing':
         case 'billing':
           return <AdminView activeTab="billing" />;
         default:
-          return <DoctorView activeTab="overview" />;
+          return <DashboardView onNavigate={handleNavigate} />;
       }
     }
 
     if (currentRole === 'doctor') {
       switch (activeTab) {
         case 'doctor':
-          return <DoctorView activeTab="overview" />;
+          return <DoctorView activeTab={activeSubTab || 'overview'} />;
         case 'role_patient':
-          return <PatientView />;
+          return <PatientView activeTab={activeSubTab || 'overview'} />;
         default:
-          return <DoctorView activeTab="overview" />;
+          return <DashboardView onNavigate={handleNavigate} />;
       }
     }
 
     switch (currentRole) {
       case 'receptionist':
-        return <ReceptionistView activeTab={activeTab} />;
+        return <ReceptionistView activeTab={activeSubTab || activeTab} />;
       case 'patient':
-        return <PatientView />;
+        return <PatientView activeTab={activeSubTab || activeTab} />;
       default:
-        return <DoctorView activeTab="overview" />;
+        return <DashboardView onNavigate={handleNavigate} />;
     }
   };
 
@@ -109,7 +115,10 @@ export const AppLayout: React.FC = () => {
         {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
         <Sidebar
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            setActiveSubTab(undefined);
+          }}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           isCollapsed={isSidebarCollapsed}
@@ -119,7 +128,7 @@ export const AppLayout: React.FC = () => {
         {/* Content Shell */}
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           {/* Header with profile & logout - pinned at top */}
-          <Navbar />
+          <Navbar onNavigate={handleNavigate} />
 
           {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
           <main className="flex-1 overflow-y-auto w-full p-4 sm:p-6">

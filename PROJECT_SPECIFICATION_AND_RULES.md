@@ -74,6 +74,8 @@ Every feature and line of code in this project strictly adheres to the governing
   - Removed the 4-card metric grid (`REGISTERED OUTPATIENTS`, `ACTIVE IN CARE`, `ALLERGY RISK FLAGGED`, `CHRONIC CARE TRACKED`) from the Patient Directory view.
   - Removed KPI summary cards from `AccessControlView.tsx`.
   - Removed the 4-card metric grid (`Consultation Queue`, `Active Consultation`, `e-Prescriptions Logged`, `Assigned Patients`) from the Doctor Consultation Desk (`DoctorView.tsx`).
+- **Dashboard Front Page Exception**:
+  - The front page (role-aware landing DashboardView) may display exactly ONE outlined summary card containing role-scoped plain label/value figures in a 4-column (2-column on 1366x768) responsive grid without icons, without colored numbers, and without badge wrappers. The legacy multi-card `StatCard` component stays deleted from clinical workstations.
 
 ### 2.7 Receptionist Multi-Staffing
 - **Rule**: Provide full multi-receptionist operational support.
@@ -127,6 +129,7 @@ The table below outlines the evolution of the codebase from initial repository s
 
 | Commit Hash | Commit Message / Feature Description | User Intent & Key Actions |
 | :--- | :--- | :--- |
+| `51e5c7c` | `feat: add role-aware dashboard as default landing page with seed history and svg charts` | User requested: "Build a role-aware Dashboard as the front page (landing page after login) of the Clinic Management System. Borrow the layout idea only (greeting, summary figures, two charts, three lists); do not copy any third-party styling or assets. Frontend-first with seed data." Implemented pure aggregation layer in src/lib/dashboardMetrics.ts with 37 unit tests covering presets, day/week bucketing, and role scoping. Extended mockData with 30-day historical seed data (appointments, visits, invoices, and patients). Role-scoped summary figures: MD (8 figures with revenue), Staff Doctor (5 figures, isolated to own visits), Receptionist (4 figures, front desk only), Patient (3 figures). Rendered exactly ONE outlined summary card in 4-column responsive grid without icons or colored numbers. Built inline SVG charts for MD & Staff Doctor (Patients & Visits grouped bars with hatch pattern; Fees & Payments line chart with dashed collected series; Visits trend line) with Day/Week/Month underline tabs, static gridlines, and screen-reader accessibility tables. Built 3 role-scoped semantic Table list cards (Today's Appointments, Follow-ups Due, Pending Clearances / Upcoming Appointments / Recent Prescriptions) with 10-records-per-page Pagination. Configured Dashboard as top item in Sidebar for every role and default landing page upon login and clinic brand click. |
 | `ae1a4f7` | `style: replace person cards with shared table and align Edit Users tab with design system` | User requested: "Fix 9 on the Administrative module, Edit Users tab". Aligned Clearance Governance bar with Physician Queue Inspector layout, removing instruction sentence, setting search placeholder to "Search by name or ID" (filtering name, badge ID, and MRN with instant page 1 reset), and defaulting role filter dropdown to "All roles". Cleaned role section cards (Doctor / Physician Access, Receptionist Workstation, Patient Portal Access) by removing explanatory subtitles, preserving titles and "N Personnel" counts, and converting "Directly Add Doctor" and "Directly Add Receptionist" buttons to standard outline variant. Replaced person card grids with shared semantic Table component matching Physician module: Doctors and Receptionists columns (Name with bold text and muted title, Department with muted specialization second line, ID, Status, Permissions, Actions); Patients columns (Name bold, MRN, Status, Permissions, Actions, removing redundant portal and outpatient labels). Rendered Status as plain text ("Active", "Revoked") without colored dots, and Permissions as plain text ("4 of 4 granted", "5 of 5 granted"). Removed avatar initial squares, role color tints, green dots, and all monospace text. Configured "Manage Access" as compact outline button with persona-specific aria-label, preserving original handler and focus restoration to opener. Added 10-per-page Pagination (hidden at 10 or fewer items), hiding sections with no matches, and displaying plain-text "No personnel found" empty state when zero matches exist across all sections. Completed data check reporting clinic-wide scope of Patient Portal Access and separate identities of David Kim (receptionist vs outpatient). |
 | `bf56822` | `style: align search bar layout, deduplicate patient conditions, and clean worklist edges` | User requested: "Fix 7b on DoctorView.tsx and the seed data". Flush-aligned the search bar's left edge with the table's left edge (`leftEdgeDiff: 0`) on Patients and e-Prescriptions tabs, with consistent 14px vertical spacing between card header, search bar, and table header. Removed Eleanor Wright's duplicate condition ('Essential Hypertension') from `INITIAL_PATIENTS` in `mockData.ts` while preserving 'Mild Hypertension'. Added `deduplicateList` helper to normalize and deduplicate chronic conditions, allergies, and current medications across `DoctorView.tsx`. Cleaned worklist table cell borders by removing `border-l-2` from the `#` column while maintaining row-level in-consultation background highlight. |
 | `cdeb2e2` | `style: align Administrative header, tabs, direct provision card, and approvals table with design system` | User requested: "Fix 8 on the Administrative module (page header, tab row, and the Add New Users tab, including the approvals section)". Removed gradient banner, eyebrow text "Supreme Administrative Authority", and "MD Non-Revocable Authority" label from page header, retaining only the page title "Administrative & Security Governance" matching the Physician page title style. Converted tab row to plain-text underline tabs matching Physician tabs with 2px static accent underline sitting on the bottom border (`border-b-2 border-teal-600 -mb-px`), plain-text counts without amber or monospace ("Add New Users (2 pending)", "Edit Users (13)", "Security Ledger (4)"), and static keyboard-only 1px outline without mouse-click focus rings. Redesigned Directly Provision Staff Member form card: removed title icon and subtitle, normalized row gaps by eliminating stray horizontal line, added required markers (`*`) on Full Name and Department, removed boxed notice and teal dot, placed right-aligned unboxed Provision & Grant Clearance button disabled until valid, implemented inline plain-text validation with touch tracking, duplicate Badge ID check ("Badge ID already in use"), numeric fee without spinner arrows, and Modal confirmation dialog before account provisioning. Converted Onboarding & Role Clearance Approvals section from boxed rows to shared semantic Table (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableBody`, `TableCell`) with 7 columns: Applicant (bold name, muted title second line), Role ("Doctor" or "Receptionist"), Department (specialization as muted second line where present), Badge ID (standard font, no monospace), Applied (standard font, no monospace), Notes (2-line clamp with full text in title attribute, plain text, no italics), and Actions (compact outline Approve and Reject buttons of equal size with applicant aria-labels). Added Modal confirm dialogs for Approve and Reject (with optional reason input), plain-text "No pending clearances" empty state, and 10-per-page Pagination (hidden when 10 or fewer). Updated `src/components/ui/Input.tsx` to accept `React.ReactNode` labels. |
@@ -214,6 +217,9 @@ c:\Users\raadi\Downloads\CMS\
 │   │   ├── ClinicContext.tsx       # Domain CRUD state: patients, appointments, vitals, prescriptions, invoices
 │   │   └── ThemeContext.tsx        # Dark / light theme management
 │   │
+│   ├── lib/
+│   │   └── dashboardMetrics.ts     # Pure metric aggregation, role scoping, and date bucketing
+│   │
 │   ├── components/
 │   │   ├── layout/
 │   │   │   ├── AppLayout.tsx       # Main layout orchestrator (Navbar, Sidebar, dynamic view router)
@@ -236,6 +242,7 @@ c:\Users\raadi\Downloads\CMS\
 │   │       └── Textarea.tsx        # Multiline text input for clinical notes and complaints
 │   │
 │   └── views/
+│       ├── DashboardView.tsx       # Role-aware landing dashboard (summary card, SVG charts, paginated lists)
 │       ├── LoginView.tsx           # Common login portal with credentials directory table
 │       ├── DoctorView.tsx          # Doctor Consultation Desk, Queue Inspector, Vitals, Rx Authoring, Patient Directory
 │       ├── ReceptionistView.tsx    # Waiting Lounge, Token Dispatch, Patient Check-In, Walk-In Registration
@@ -261,6 +268,25 @@ The system defines 4 operational roles across 5 test personas:
 ---
 
 ## 6. MODULE WORKSTATION SPECIFICATIONS
+
+### 6.0 Role-Aware Landing Dashboard (`DashboardView.tsx`)
+- **Default Landing Page**: Appears immediately upon login for all 4 roles and when clicking the clinic brand in the top navigation bar.
+- **Header & Controls**: Dynamic greeting based on time of day ("Good morning/afternoon/evening, <name>") with zero subtitle paragraphs. Date range selector using custom `Select.tsx` with 4 presets (`Today`, `Last 7 days`, `This month` [default], `Last 30 days`). Outline quick action buttons scoped per role.
+- **Summary Figures Card**: Exactly ONE outlined summary card displaying role-scoped metrics in a 4-column responsive grid (2-column on 1366x768). Large bold values with small muted labels underneath. No icons, no colored numbers.
+  - MD: 8 figures (New Patients, Visits, Appointments, Missed Appointments, Billed, Collected, Outstanding, Pending Clearances).
+  - Staff Doctor: 5 figures (New Patients, Visits, Appointments, Missed Appointments, Follow-ups Due). Zero billing figures.
+  - Receptionist: 4 figures (Appointments Today, Checked In, New Registrations, Outstanding Payments). Zero clinical data.
+  - Patient: 3 figures (Next Appointment, Active Prescriptions, Balance Due).
+- **Inline SVG Charts Row**: Rendered for MD and Staff Doctor only. Zero animation on load or hover, low-contrast static gridlines, screen-reader accessibility tables and SVG `<title>` elements.
+  - Card 1: "Patients and Visits" grouped bar chart with solid teal bars for New Patients and slate diagonal hatched bars for Visits (`url(#bar-hatch)`). Day / Week / Month tab switcher in Physician static underline style.
+  - Card 2 (MD): "Fees and Payments" trend chart with solid teal line for Billed and dashed slate line (`strokeDasharray="5,4"`) for Collected. Day / Week / Month tab switcher.
+  - Card 2 (Staff Doctor): "Visits" trend chart with solid teal line for doctor's own visits. Day / Week / Month tab switcher.
+- **Semantic Tables Lists Row**:
+  - MD: 3 cards (Today's Appointments, Follow-ups Due, Pending Clearances with "Review" action linking to Access Control).
+  - Staff Doctor: 2 cards (Today's Appointments [own], Follow-ups Due [own]).
+  - Receptionist: 2 cards (Today's Appointments with inline "Check In" action, Follow-ups Due).
+  - Patient: 2 cards (Upcoming Appointments, Recent Prescriptions).
+  - All lists use shared `Table.tsx` components with 10-records-per-page `Pagination.tsx` when exceeding 10 items.
 
 ### 6.1 Doctor Consultation Desk (`DoctorView.tsx`)
 - **Active Consultation Desk**: Displays current patient MRN, age, blood group, chief complaint, clinical notes, and interactive plain-text allergy management.
@@ -333,3 +359,4 @@ This runs `tsc && vite build`. A valid build completes with **0 TypeScript error
 - [x] Both receptionists (Priya Sharma and David Kim) can authenticate and operate the front desk.
 - [x] Managing Director supervisory read-only inspection renders without "View Only" boxes or enabled buttons.
 - [x] Vitals and allergy warnings are interactively editable with context persistence.
+- [x] Role-aware Dashboard serves as default landing page with summary card, inline SVG charts, and paginated lists.

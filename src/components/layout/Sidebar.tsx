@@ -46,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case 'admin':
         // Option 1: Clinical-First MD Work Order
         return [
+          { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> },
           { id: 'role_receptionist', label: 'Reception Desk', icon: <Calendar className="w-4 h-4" /> },
           { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
@@ -56,12 +57,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case 'doctor':
         // Staff Doctor working under the MD
         return [
+          { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> },
           { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
         ];
 
       case 'receptionist':
         return [
+          { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'overview', label: 'Front Desk Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'checkin', label: 'Patient Check-In', icon: <UserCheck className="w-4 h-4" /> },
           { id: 'registration', label: 'Register New Patient', icon: <PlusCircle className="w-4 h-4" /> },
@@ -70,6 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       case 'patient':
         return [
+          { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'overview', label: 'My Health Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
           { id: 'appointments', label: 'My Appointments', icon: <Calendar className="w-4 h-4" /> },
           { id: 'prescriptions', label: 'My Prescriptions', icon: <Pill className="w-4 h-4" /> },
@@ -77,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ];
 
       default:
-        return [{ id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> }];
+        return [{ id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> }];
     }
   };
 

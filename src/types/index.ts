@@ -254,7 +254,13 @@ export interface AccessAuditLogEntry {
   capability?: string;
   oldState?: string;
   newState?: string;
-  action: 'access_granted' | 'access_revoked' | 'permission_updated' | 'security_override' | 'account_deleted';
+  action:
+    | 'access_granted'
+    | 'access_revoked'
+    | 'permission_updated'
+    | 'security_override'
+    | 'account_deleted'
+    | 'clearance_rejected';
   description: string;
   authorizedBy: string;
 }

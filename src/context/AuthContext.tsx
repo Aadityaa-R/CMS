@@ -65,6 +65,13 @@ interface AuthContextType {
     actingAdmin?: string
   ) => void;
   addStaffAccount: (record: StaffAccessRecord, auditDescription?: string) => void;
+  addAuditLogEntry: (
+    entry: Omit<AccessAuditLogEntry, 'id' | 'timestamp' | 'authorizedBy'> & {
+      id?: string;
+      timestamp?: string;
+      authorizedBy?: string;
+    }
+  ) => void;
   isRoleSuspended: (role: UserRole) => boolean;
   isStaffSuspended: (staffNameOrId: string) => boolean;
   login: (identifier: string, password: string) => LoginResult;
@@ -414,6 +421,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAccessAuditLog((prev) => [newAudit, ...prev]);
   };
 
+  const addAuditLogEntry = (
+    entry: Omit<AccessAuditLogEntry, 'id' | 'timestamp' | 'authorizedBy'> & {
+      id?: string;
+      timestamp?: string;
+      authorizedBy?: string;
+    }
+  ) => {
+    const timestamp = entry.timestamp || new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const newAudit: AccessAuditLogEntry = {
+      id: entry.id || `aud-${Date.now()}`,
+      timestamp,
+      targetRole: entry.targetRole,
+      targetStaffName: entry.targetStaffName,
+      targetUserId: entry.targetUserId,
+      capability: entry.capability,
+      oldState: entry.oldState,
+      newState: entry.newState,
+      action: entry.action,
+      description: entry.description,
+      authorizedBy: entry.authorizedBy || 'Dr. Marcus Vance (Managing Director)',
+    };
+    setAccessAuditLog((prev) => [newAudit, ...prev]);
+  };
+
   const login = (identifier: string, password: string): LoginResult => {
     const cleanId = identifier.trim().toLowerCase();
     const cleanPass = password.trim();
@@ -514,6 +545,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleStaffPermission,
         updateStaffCapabilities,
         addStaffAccount,
+        addAuditLogEntry,
         isRoleSuspended,
         isStaffSuspended,
         login,
