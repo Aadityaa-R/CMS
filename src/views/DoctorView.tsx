@@ -16,7 +16,7 @@ import {
   FilePlus,
   Plus,
 } from 'lucide-react';
-import { Appointment, PrescriptionItem } from '@/types';
+import { Appointment, Prescription, PrescriptionItem } from '@/types';
 
 interface DoctorViewProps {
   activeTab?: string;
@@ -509,18 +509,62 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return list;
   }, [doctorPatients]);
 
+  // Dedicated e-Prescriptions Master Ledger Search State
+  const [prescriptionSearchTerm, setPrescriptionSearchTerm] = useState('');
+  const rxQuery = prescriptionSearchTerm.toLowerCase().trim();
+
   const filteredPrescriptions = doctorPrescriptions.filter((r) => {
     const matchesSearch =
-      query === '' ||
-      r.prescriptionNumber.toLowerCase().includes(query) ||
-      r.patientName.toLowerCase().includes(query) ||
-      r.diagnosis.toLowerCase().includes(query);
+      rxQuery === '' ||
+      r.patientName.toLowerCase().includes(rxQuery) ||
+      r.prescriptionNumber.toLowerCase().includes(rxQuery) ||
+      r.diagnosis.toLowerCase().includes(rxQuery) ||
+      r.items.some((item) => {
+        const drug = typeof (item as unknown) === 'string' ? (item as unknown as string) : item.medicineName;
+        return drug ? drug.toLowerCase().includes(rxQuery) : false;
+      });
 
     if (!matchesSearch) return false;
-    if (filterMode === 'active') return r.status === 'pending';
-    if (filterMode === 'urgent') return r.status === 'pending';
     return true;
   });
+
+  const handlePrescriptionSearchChange = (term: string) => {
+    setPrescriptionSearchTerm(term);
+    setPrescriptionsPage(1);
+  };
+
+  const prescriptionSearchSuggestions = useMemo<SearchSuggestion[]>(() => {
+    const list: SearchSuggestion[] = [];
+    const seen = new Set<string>();
+    doctorPrescriptions.forEach((r) => {
+      if (!seen.has(r.patientName.toLowerCase())) {
+        seen.add(r.patientName.toLowerCase());
+        list.push({
+          label: r.patientName,
+          category: 'Patient',
+          sublabel: `${r.prescriptionNumber} • ${r.diagnosis}`,
+        });
+      }
+      r.items.forEach((item) => {
+        const drug = typeof (item as unknown) === 'string' ? (item as unknown as string) : item.medicineName;
+        if (drug && !seen.has(drug.toLowerCase())) {
+          seen.add(drug.toLowerCase());
+          list.push({
+            label: drug,
+            category: 'Medication',
+            sublabel: `Rx #${r.prescriptionNumber}`,
+          });
+        }
+      });
+    });
+    return list;
+  }, [doctorPrescriptions]);
+
+  // View Prescription Modal State
+  const [viewingPrescription, setViewingPrescription] = useState<Prescription | null>(null);
+  const viewingPatient = viewingPrescription
+    ? patients.find((p) => p.id === viewingPrescription.patientId) || null
+    : null;
 
   // Pagination State (10 records per page)
   const [worklistPage, setWorklistPage] = useState(1);
@@ -530,12 +574,15 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   useEffect(() => {
     setWorklistPage(1);
-    setPrescriptionsPage(1);
   }, [searchTerm, filterMode, activeDoctorId]);
 
   useEffect(() => {
     setPatientsPage(1);
   }, [patientSearchTerm, activeDoctorId]);
+
+  useEffect(() => {
+    setPrescriptionsPage(1);
+  }, [prescriptionSearchTerm, activeDoctorId]);
 
   const paginatedAppointments = filteredAppointments.slice(
     (worklistPage - 1) * pageSize,
@@ -1264,13 +1311,26 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {selectedTab === 'prescriptions' && (
         <Card>
-          <CardHeader>
+          <CardHeader
+            action={
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {filteredPrescriptions.length} Prescriptions
+              </span>
+            }
+          >
             <CardTitle>e-Prescription Master Ledger</CardTitle>
-            <CardDescription>
-              Electronic medication orders, therapeutic dosing, and pharmaceutical fulfillment records
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="w-full sm:w-80">
+                <InteractiveSearchBar
+                  value={prescriptionSearchTerm}
+                  onChange={handlePrescriptionSearchChange}
+                  suggestions={prescriptionSearchSuggestions}
+                  placeholder="Search prescriptions"
+                />
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -1280,19 +1340,20 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <TableHead>Issue Date</TableHead>
                     <TableHead>Diagnosis</TableHead>
                     <TableHead>Prescribed Regimen</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPrescriptions.length > 0 ? (
                     paginatedPrescriptions.map((rx) => (
                       <TableRow key={rx.id}>
-                        <TableCell className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                        <TableCell className="text-slate-700 dark:text-slate-300">
                           {rx.prescriptionNumber}
                         </TableCell>
                         <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
                           {rx.patientName}
                         </TableCell>
-                        <TableCell className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                        <TableCell className="text-slate-600 dark:text-slate-400">
                           {rx.date}
                         </TableCell>
                         <TableCell className="text-slate-800 dark:text-slate-200 font-medium">
@@ -1300,20 +1361,51 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {rx.items.map((item) => (
-                              <div key={item.id} className="text-slate-700 dark:text-slate-300">
-                                <span className="font-semibold text-slate-900 dark:text-slate-100">{item.medicineName}</span>{' '}
-                                <span className="text-slate-500">({item.dosage} • {item.frequency})</span>
-                              </div>
-                            ))}
+                            {rx.items && rx.items.length > 0 ? (
+                              rx.items.map((item, idx) => {
+                                if (typeof (item as unknown) === 'string') {
+                                  return (
+                                    <div key={idx} className="text-slate-700 dark:text-slate-300">
+                                      <span className="font-bold text-slate-900 dark:text-slate-100">{item as unknown as string}</span>
+                                    </div>
+                                  );
+                                }
+                                const details = [item.dosage, item.frequency].filter(Boolean).join(', ');
+                                return (
+                                  <div key={item.id || idx} className="text-slate-700 dark:text-slate-300">
+                                    <span className="font-bold text-slate-900 dark:text-slate-100">
+                                      {item.medicineName}
+                                    </span>
+                                    {details && (
+                                      <span className="text-slate-500 dark:text-slate-400">  {details}</span>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <span className="text-slate-500 dark:text-slate-400">None</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end">
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              className="whitespace-nowrap"
+                              onClick={() => setViewingPrescription(rx)}
+                              aria-label={`View prescription ${rx.prescriptionNumber}`}
+                            >
+                              View
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-8 text-center text-slate-500 dark:text-slate-400">
-                        No e-prescriptions recorded
+                      <TableCell colSpan={6} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                        No prescriptions found
                       </TableCell>
                     </TableRow>
                   )}
@@ -1555,6 +1647,102 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           </div>
         </Modal>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: VIEW PRESCRIPTION DETAILS                                        */}
+      {/* ========================================================================= */}
+      <Modal
+        isOpen={!!viewingPrescription}
+        onClose={() => setViewingPrescription(null)}
+        title="Electronic Prescription Record"
+        maxWidth="lg"
+        footer={
+          <div className="flex justify-end w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setViewingPrescription(null)}
+            >
+              Close
+            </Button>
+          </div>
+        }
+      >
+        {viewingPrescription && (
+          <div className="space-y-4 text-xs">
+            <div className="grid grid-cols-2 gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Prescription Number</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{viewingPrescription.prescriptionNumber}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Issue Date</span>
+                <span className="text-slate-900 dark:text-slate-100">{viewingPrescription.date}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Patient Name & MRN</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {viewingPrescription.patientName} {viewingPatient?.mrn ? `(${viewingPatient.mrn})` : ''}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Issuing Physician</span>
+                <span className="text-slate-900 dark:text-slate-100">{viewingPrescription.doctorName}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between items-baseline gap-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Diagnosis:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100 text-right">{viewingPrescription.diagnosis}</span>
+              </div>
+              <div className="flex justify-between items-baseline gap-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Allergies:</span>
+                <span className="text-slate-700 dark:text-slate-300 text-right">
+                  {viewingPatient?.allergies && viewingPatient.allergies.length > 0
+                    ? viewingPatient.allergies.join(', ')
+                    : 'None recorded'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-2 text-xs">
+                Prescribed Regimen
+              </span>
+              <div className="space-y-2.5">
+                {viewingPrescription.items.map((item, idx) => {
+                  if (typeof (item as unknown) === 'string') {
+                    return (
+                      <div key={idx} className="text-slate-700 dark:text-slate-300 font-bold text-slate-900 dark:text-slate-100">
+                        {item as unknown as string}
+                      </div>
+                    );
+                  }
+                  const details = [item.dosage, item.frequency, item.duration].filter(Boolean).join(', ');
+                  return (
+                    <div key={item.id || idx} className="text-slate-700 dark:text-slate-300">
+                      <div className="font-bold text-slate-900 dark:text-slate-100">
+                        {item.medicineName}
+                      </div>
+                      {details && (
+                        <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
+                          {details}
+                        </div>
+                      )}
+                      {item.instructions && (
+                        <div className="text-slate-600 dark:text-slate-400 text-[11px] mt-0.5">
+                          {item.instructions}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
