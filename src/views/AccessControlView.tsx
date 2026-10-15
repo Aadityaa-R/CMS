@@ -12,6 +12,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { Filter, ArrowLeft, X } from 'lucide-react';
 import { UserRole, StaffAccessRecord, StaffPermission } from '@/types';
+import { PendingStaffApproval, INITIAL_PENDING_APPROVALS } from '@/data/mockData';
 
 interface AccessControlViewProps {
   activeTab?: 'add_users' | 'edit_users' | 'ledger' | string;
@@ -89,44 +90,6 @@ const DEFAULT_RECEPTIONIST_PERMISSIONS: StaffPermission[] = [
   { id: 'perm-book', name: 'Appointment Booking', description: 'Schedule consultations with clinic physicians', enabled: true },
 ];
 
-interface PendingStaffApproval {
-  id: string;
-  role: 'doctor' | 'receptionist';
-  staffName: string;
-  staffTitle: string;
-  department: string;
-  badgeNumber: string;
-  specialization?: string;
-  consultationFee?: number;
-  requestedAt: string;
-  notes: string;
-}
-
-const INITIAL_PENDING_APPROVALS: PendingStaffApproval[] = [
-  {
-    id: 'pend-doc-1',
-    role: 'doctor',
-    staffName: 'Dr. Clara Oswald',
-    staffTitle: 'Staff Consulting Physician',
-    department: 'Pediatric & Family Medicine',
-    badgeNumber: 'DOC-104',
-    specialization: 'Pediatrics & Adolescent Care',
-    consultationFee: 110,
-    requestedAt: '2026-10-14 09:30',
-    notes: 'Board certified in Pediatrics; credential verification completed by HR.',
-  },
-  {
-    id: 'pend-rec-1',
-    role: 'receptionist',
-    staffName: 'Samuel Vance',
-    staffTitle: 'Front Desk Admitting Specialist',
-    department: 'Reception & Triage',
-    badgeNumber: 'REC-303',
-    requestedAt: '2026-10-14 10:15',
-    notes: 'Completed clinic terminal intake training; clearance pending MD authorization.',
-  },
-];
-
 const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
   if (!container) return [];
   const selector =
@@ -158,7 +121,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     addStaffAccount,
   } = useAuth();
 
-  const { addDoctor } = useClinic();
+  const { addDoctor, doctors = [] } = useClinic();
 
   // Active role filter: '' (unselected) | 'doc' | 'receptionist' | 'patient'
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('');
@@ -675,15 +638,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   const receptionistCount = staffAccessList.filter((s) => s.role === 'receptionist').length;
   const patientCount = staffAccessList.filter((s) => s.role === 'patient').length;
 
-  // Filter staff by search query
+  // Filter staff by search query (name, ID and MRN)
   const filteredStaff = staffAccessList.filter((staff) => {
     const query = searchTerm.toLowerCase().trim();
+    if (!query) return true;
     return (
-      query === '' ||
       staff.staffName.toLowerCase().includes(query) ||
-      staff.department.toLowerCase().includes(query) ||
       staff.badgeNumber.toLowerCase().includes(query) ||
-      staff.role.toLowerCase().includes(query)
+      staff.id.toLowerCase().includes(query)
     );
   });
 
@@ -697,13 +659,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     ? ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter)
     : ROLE_SECTIONS;
 
-  // When searching, display ONLY sections that contain matching personnel!
+  // Hide a section that has no matches
   const displayedSections = candidateSections.filter((section) => {
     const staffInRole = getStaffForRole(section.role);
-    if (searchTerm.trim() !== '') {
-      return staffInRole.length > 0;
-    }
-    return true;
+    return staffInRole.length > 0;
   });
 
   const isRoleOrSearchActive = true;
@@ -711,7 +670,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   // Pagination State (10 records per page)
   const [auditPage, setAuditPage] = useState(1);
   const [sectionPages, setSectionPages] = useState<Record<string, number>>({});
-  const getSectionPage = (key: string) => sectionPages[key] || 1;
+  const getSectionPage = (key: string, total: number = 0) => {
+    const page = sectionPages[key] || 1;
+    if (total > 0) {
+      const maxPage = Math.max(1, Math.ceil(total / 10));
+      return Math.min(page, maxPage);
+    }
+    return page;
+  };
   const setSectionPage = (key: string, page: number) => setSectionPages((prev) => ({ ...prev, [key]: page }));
 
   useEffect(() => {
@@ -732,14 +698,22 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
   const searchSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
-    const seenNames = new Set<string>();
+    const seen = new Set<string>();
     staffAccessList.forEach((staff) => {
-      if (staff.staffName && !seenNames.has(staff.staffName.toLowerCase())) {
-        seenNames.add(staff.staffName.toLowerCase());
+      if (staff.staffName && !seen.has(staff.staffName.toLowerCase())) {
+        seen.add(staff.staffName.toLowerCase());
         list.push({
           label: staff.staffName,
-          category: staff.role.toUpperCase(),
+          category: staff.role === 'patient' ? 'Patient' : staff.role === 'doctor' ? 'Doctor' : 'Receptionist',
           sublabel: `${staff.badgeNumber} • ${staff.department}`,
+        });
+      }
+      if (staff.badgeNumber && !seen.has(staff.badgeNumber.toLowerCase())) {
+        seen.add(staff.badgeNumber.toLowerCase());
+        list.push({
+          label: staff.badgeNumber,
+          category: staff.role === 'patient' ? 'MRN' : 'ID',
+          sublabel: `${staff.staffName} • ${staff.role === 'patient' ? 'Patient' : staff.role === 'doctor' ? 'Doctor' : 'Receptionist'}`,
         });
       }
     });
@@ -1069,23 +1043,20 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                  <div className="shrink-0">
+                  <div className="min-w-0">
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
                       Clearance Governance
                     </span>
-                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      Search personnel or select role to inspect access controls:
-                    </span>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 lg:max-w-xl lg:justify-end">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
                     {/* Search Input with Interactive Dropdown and Autofill */}
-                    <div className="relative flex-1 min-w-[200px]">
+                    <div className="relative w-full sm:w-80">
                       <InteractiveSearchBar
                         value={searchTerm}
                         onChange={setSearchTerm}
                         suggestions={searchSuggestions}
-                        placeholder="Search by staff name..."
+                        placeholder="Search by name or ID"
                       />
                     </div>
 
@@ -1094,14 +1065,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       <Select
                         icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
                         value={selectedRoleFilter}
-                        placeholder="Select Role"
+                        placeholder="All roles"
                         onChange={(e) => {
                           const newRole = e.target.value as RoleFilterKey;
                           setSelectedRoleFilter(newRole);
                           setSelectedStaffId(null);
                         }}
                         options={[
-                          { value: '', label: 'Select Role' },
+                          { value: '', label: 'All roles' },
                           { value: 'doc', label: `Doctors (${docCount})` },
                           { value: 'receptionist', label: `Receptionists (${receptionistCount})` },
                           { value: 'patient', label: `Patients (${patientCount})` },
@@ -1116,20 +1087,15 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               {isRoleOrSearchActive && (
                 <div className="space-y-6">
                   {displayedSections.length === 0 ? (
-                    <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
-                      {searchTerm.trim() !== '' ? (
-                        <span>
-                          No personnel found matching &ldquo;<strong>{searchTerm}</strong>&rdquo; within the selected criteria. Try refining your search query.
-                        </span>
-                      ) : (
-                        <span>No personnel found matching the selected role.</span>
-                      )}
+                    <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                      No personnel found
                     </div>
                   ) : (
                     displayedSections.map((sectionMeta) => {
                       const staffInSection = getStaffForRole(sectionMeta.role);
-                      const sectionPage = getSectionPage(sectionMeta.key);
+                      const sectionPage = getSectionPage(sectionMeta.key, staffInSection.length);
                       const paginatedStaff = staffInSection.slice((sectionPage - 1) * 10, sectionPage * 10);
+                      const isPatientSection = sectionMeta.key === 'patient';
 
                       return (
                         <Card key={sectionMeta.key} className="border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -1141,7 +1107,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                 </span>
                                 {(sectionMeta.key === 'doc' || sectionMeta.key === 'receptionist') && (
                                   <Button
-                                    variant="primary"
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => {
                                       resetAddForm();
@@ -1159,111 +1125,94 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
                                 {sectionMeta.title}
                               </CardTitle>
-                              <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                {sectionMeta.description}
-                              </CardDescription>
                             </div>
                           </CardHeader>
 
-                          <CardContent className="space-y-4 pt-2">
-                            {staffInSection.length === 0 ? (
-                              <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                                No personnel found matching the current search criteria.
-                              </div>
-                            ) : (
-                              <div className="space-y-4">
-                                {/* Responsive Staff Card Grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    {!isPatientSection ? (
+                                      <>
+                                        <TableHead>Department</TableHead>
+                                        <TableHead>ID</TableHead>
+                                      </>
+                                    ) : (
+                                      <TableHead>MRN</TableHead>
+                                    )}
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Permissions</TableHead>
+                                    <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
                                   {paginatedStaff.map((staff) => {
-                                    const isRevoked = staff.status === 'revoked';
-                                    const enabledCount = staff.permissions.filter((p) => p.enabled && !isRevoked).length;
+                                    const specialization =
+                                      (staff as { specialization?: string }).specialization ||
+                                      doctors.find((d) => d.name.toLowerCase() === staff.staffName.toLowerCase())
+                                        ?.specialization;
+                                    const grantedCount = staff.permissions.filter((p) => p.enabled).length;
                                     const totalCount = staff.permissions.length;
-                                    const avatarStyle = getRoleAvatarStyles(staff.role);
 
                                     return (
-                                      <div
-                                        key={staff.id}
-                                        className="rounded-xl border p-4 flex flex-col justify-between transition-all duration-200 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900 shadow-xs"
-                                      >
-                                        <div className="space-y-3">
-                                          {/* Header: Avatar, Name, Status Badge */}
-                                          <div className="flex items-start justify-between gap-2.5">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                              <div
-                                                className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${avatarStyle}`}
-                                              >
-                                                {getInitials(staff.staffName)}
-                                              </div>
-                                              <div className="min-w-0">
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                                                    {staff.staffName}
-                                                  </h4>
-                                                  <span
-                                                    className={`w-2 h-2 rounded-full shrink-0 ${
-                                                      isRevoked ? 'bg-rose-500' : 'bg-teal-500'
-                                                    }`}
-                                                    title={isRevoked ? 'Suspended' : 'Active'}
-                                                  />
-                                                </div>
-                                                <span
-                                                  className={`text-xs font-medium inline-block mt-0.5 ${
-                                                    isRevoked
-                                                      ? 'text-rose-600 dark:text-rose-400'
-                                                      : 'text-teal-600 dark:text-teal-400'
-                                                  }`}
-                                                >
-                                                  {isRevoked ? 'Suspended' : 'Active'}
-                                                </span>
-                                              </div>
-                                            </div>
+                                      <TableRow key={staff.id}>
+                                        <TableCell>
+                                          <div className="font-bold text-slate-900 dark:text-slate-100">
+                                            {staff.staffName}
                                           </div>
-
-                                          {/* Title, Department, Badge */}
-                                          <div className="text-xs space-y-1 text-slate-500 dark:text-slate-400">
-                                            <div className="text-slate-700 dark:text-slate-300 font-medium truncate">
+                                          {!isPatientSection && (
+                                            <div className="text-xs text-slate-500 dark:text-slate-400">
                                               {staff.staffTitle}
                                             </div>
-                                            <div className="flex items-center justify-between text-[11px]">
-                                              <span className="truncate">{staff.department}</span>
-                                              <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
-                                                ({staff.badgeNumber})
-                                              </span>
+                                          )}
+                                        </TableCell>
+                                        {!isPatientSection && (
+                                          <TableCell>
+                                            <div className="text-slate-700 dark:text-slate-300">
+                                              {staff.department}
                                             </div>
-                                          </div>
-
-                                          {/* Permission count */}
-                                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                                            <span className="text-slate-400 dark:text-slate-500">Permissions:</span>
-                                            <span className="font-medium text-slate-700 dark:text-slate-300">
-                                              {enabledCount}/{totalCount} enabled
-                                            </span>
-                                          </div>
-                                        </div>
-
-                                        {/* Footer Action */}
-                                        <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800">
+                                            {specialization && (
+                                              <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                {specialization}
+                                              </div>
+                                            )}
+                                          </TableCell>
+                                        )}
+                                        <TableCell className="text-slate-700 dark:text-slate-300">
+                                          {staff.badgeNumber}
+                                        </TableCell>
+                                        <TableCell className="text-slate-700 dark:text-slate-300">
+                                          {staff.status === 'revoked' ? 'Revoked' : 'Active'}
+                                        </TableCell>
+                                        <TableCell className="text-slate-700 dark:text-slate-300">
+                                          {grantedCount} of {totalCount} granted
+                                        </TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">
                                           <Button
-                                            size="sm"
+                                            size="xs"
                                             variant="outline"
-                                            className="w-full text-xs"
+                                            aria-label={`Manage access for ${staff.staffName}`}
                                             onClick={(e) => togglePersonSelection(staff.id, e.currentTarget)}
                                           >
                                             Manage Access
                                           </Button>
-                                        </div>
-                                      </div>
+                                        </TableCell>
+                                      </TableRow>
                                     );
                                   })}
-                                </div>
-                              </div>
+                                </TableBody>
+                              </Table>
+                            </div>
+                            {staffInSection.length > 10 && (
+                              <Pagination
+                                currentPage={sectionPage}
+                                totalItems={staffInSection.length}
+                                pageSize={10}
+                                onPageChange={(p) => setSectionPage(sectionMeta.key, p)}
+                              />
                             )}
-                            <Pagination
-                              currentPage={sectionPage}
-                              totalItems={staffInSection.length}
-                              pageSize={10}
-                              onPageChange={(p) => setSectionPage(sectionMeta.key, p)}
-                            />
                           </CardContent>
                         </Card>
                       );
