@@ -93,6 +93,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     prescriptions,
     createPrescription,
     updateAppointmentStatus,
+    updateAppointmentNotes,
     saveVitals,
     updatePatient,
   } = useClinic();
@@ -461,6 +462,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       return;
     }
 
+    updateAppointmentNotes(activeAppointment.id, clinicalNotesText.trim());
     showNotification(
       `Consultation notes recorded for ${activeAppointment.patientName}. Appended to permanent EMR.`
     );
@@ -886,7 +888,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setIsNotesModalOpen(true)}
+                          onClick={() => {
+                            setClinicalNotesText(activeAppointment.notes || '');
+                            setIsNotesModalOpen(true);
+                          }}
                         >
                           Record Consultation Notes
                         </Button>
@@ -957,15 +962,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   </div>
                 </div>
               ) : (
-                /* Staff Doctor Station Governance Bar */
+                /* Doctor Clinical Queue Inspector */
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="min-w-0">
                       <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                        Staff Consultation Station
-                      </span>
-                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        Active physician session for {currentUser.name} at {activeDoctor.roomNumber}:
+                        Doctor Clinical Queue Inspector
                       </span>
                     </div>
 
@@ -979,11 +981,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         />
                       </div>
 
-                      <div className="w-full sm:w-56">
+                      <div className="w-full sm:w-64">
                         <Select
                           icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
                           value={filterMode}
-                          placeholder="Select Scope"
+                          placeholder="Filter Scope"
                           onChange={(e) => setFilterMode(e.target.value as 'all' | 'active' | 'urgent')}
                           options={[
                             { value: 'all', label: 'All Items' },

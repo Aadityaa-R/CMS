@@ -41,6 +41,7 @@ interface ClinicContextType {
   // Appointment Actions
   addAppointment: (data: Omit<Appointment, 'id' | 'appointmentNumber' | 'tokenNumber'>) => Appointment;
   updateAppointmentStatus: (id: string, status: AppointmentStatus) => void;
+  updateAppointmentNotes: (id: string, notes: string) => void;
 
   // Vitals Actions
   recordVitals: (data: Omit<VitalSigns, 'id' | 'recordedAt'>) => VitalSigns;
@@ -128,6 +129,12 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateAppointmentStatus = (id: string, status: AppointmentStatus) => {
     setAppointments((prev) =>
       prev.map((apt) => (apt.id === id ? { ...apt, status } : apt))
+    );
+  };
+
+  const updateAppointmentNotes = (id: string, notes: string) => {
+    setAppointments((prev) =>
+      prev.map((apt) => (apt.id === id ? { ...apt, notes } : apt))
     );
   };
 
@@ -313,6 +320,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateDoctorStatus,
         addAppointment,
         updateAppointmentStatus,
+        updateAppointmentNotes,
         recordVitals,
         saveVitals,
         createPrescription,
