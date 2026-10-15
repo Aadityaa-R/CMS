@@ -650,7 +650,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
           </>
         }
       >
-        <form onSubmit={handleRegisterSubmit} className="space-y-4">
+        <form onSubmit={handleRegisterSubmit} className="space-y-4" noValidate>
           {regError && (
             <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
               {regError}
@@ -661,16 +661,22 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             <Input
               label="First Name"
               value={regFirstName}
-              onChange={(e) => setRegFirstName(e.target.value)}
+              onChange={(e) => {
+                setRegFirstName(e.target.value);
+                if (regError) setRegError('');
+              }}
               placeholder="e.g. Eleanor"
-              required
+              error={!regFirstName.trim() && regError ? 'First name is required' : undefined}
             />
             <Input
               label="Last Name"
               value={regLastName}
-              onChange={(e) => setRegLastName(e.target.value)}
+              onChange={(e) => {
+                setRegLastName(e.target.value);
+                if (regError) setRegError('');
+              }}
               placeholder="e.g. Vance"
-              required
+              error={!regLastName.trim() && regError ? 'Last name is required' : undefined}
             />
           </div>
 
@@ -678,9 +684,12 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             <Input
               label="Contact Telephone"
               value={regPhone}
-              onChange={(e) => setRegPhone(e.target.value)}
+              onChange={(e) => {
+                setRegPhone(e.target.value);
+                if (regError) setRegError('');
+              }}
               placeholder="e.g. +1 (555) 234-5678"
-              required
+              error={!regPhone.trim() && regError ? 'Telephone is required' : undefined}
             />
             <Input
               label="Email Address"

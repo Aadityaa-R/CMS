@@ -1265,7 +1265,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               </div>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleDirectAddSubmit} className="space-y-4">
+              <form onSubmit={handleDirectAddSubmit} className="space-y-4" noValidate>
                 {addFormError && (
                   <div className="p-3 bg-rose-50 dark:bg-rose-950/60 rounded-lg border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-xs text-rose-800 dark:text-rose-200">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
@@ -1290,10 +1290,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
                     label="Full Name"
-                    required
                     placeholder={addFormRole === 'doctor' ? 'e.g. Dr. Julian Bashir' : 'e.g. Sarah Jenkins'}
                     value={addFormName}
-                    onChange={(e) => setAddFormName(e.target.value)}
+                    onChange={(e) => {
+                      setAddFormName(e.target.value);
+                      if (addFormError) setAddFormError('');
+                    }}
+                    error={!addFormName.trim() && addFormError ? 'Full name is required' : undefined}
                   />
                   <Input
                     label="Professional Title"
@@ -1306,10 +1309,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
                     label="Department"
-                    required
                     placeholder={addFormRole === 'doctor' ? 'e.g. Cardiology & Triage' : 'e.g. Front Desk & Admissions'}
                     value={addFormDepartment}
-                    onChange={(e) => setAddFormDepartment(e.target.value)}
+                    onChange={(e) => {
+                      setAddFormDepartment(e.target.value);
+                      if (addFormError) setAddFormError('');
+                    }}
+                    error={!addFormDepartment.trim() && addFormError ? 'Department is required' : undefined}
                   />
                   <Input
                     label="Badge / Staff ID Number"
@@ -1764,11 +1770,11 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           </>
         }
       >
-        <form onSubmit={handleDirectAddSubmit} className="space-y-4">
+        <form onSubmit={handleDirectAddSubmit} className="space-y-4" noValidate>
           {addFormError && (
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-2 text-xs">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 rounded-lg border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-xs text-rose-800 dark:text-rose-200">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-              <span className="text-slate-800 dark:text-slate-200">{addFormError}</span>
+              <span>{addFormError}</span>
             </div>
           )}
 
@@ -1789,10 +1795,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Full Name"
-              required
               placeholder={addFormRole === 'doctor' ? 'e.g. Dr. Julian Bashir' : 'e.g. Sarah Jenkins'}
               value={addFormName}
-              onChange={(e) => setAddFormName(e.target.value)}
+              onChange={(e) => {
+                setAddFormName(e.target.value);
+                if (addFormError) setAddFormError('');
+              }}
+              error={!addFormName.trim() && addFormError ? 'Full name is required' : undefined}
             />
             <Input
               label="Professional Title"
@@ -1805,10 +1814,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Department"
-              required
               placeholder={addFormRole === 'doctor' ? 'e.g. Cardiology & Triage' : 'e.g. Front Desk & Admissions'}
               value={addFormDepartment}
-              onChange={(e) => setAddFormDepartment(e.target.value)}
+              onChange={(e) => {
+                setAddFormDepartment(e.target.value);
+                if (addFormError) setAddFormError('');
+              }}
+              error={!addFormDepartment.trim() && addFormError ? 'Department is required' : undefined}
             />
             <Input
               label="Badge / Staff ID Number"

@@ -35,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
   const [profileBadgeNumber, setProfileBadgeNumber] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profileFeedback, setProfileFeedback] = useState(false);
+  const [profileError, setProfileError] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
@@ -71,6 +72,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
     setProfileBadgeNumber(currentUser.badgeNumber || '');
     setProfileEmail(currentUser.email);
     setProfileFeedback(false);
+    setProfileError('');
     setIsProfileModalOpen(true);
   };
 
@@ -80,11 +82,20 @@ export const Navbar: React.FC<NavbarProps> = () => {
     setProfileDepartment(currentUser.department || '');
     setProfileBadgeNumber(currentUser.badgeNumber || '');
     setProfileEmail(currentUser.email);
+    setProfileError('');
     setIsEditingProfile(true);
   };
 
   const handleSaveProfile = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!profileName.trim()) {
+      setProfileError('Full name is required.');
+      return;
+    }
+    if (!profileEmail.trim()) {
+      setProfileError('Email address is required.');
+      return;
+    }
     updateCurrentUser({
       name: profileName.trim() || currentUser.name,
       title: profileTitle.trim() || currentUser.title,
@@ -93,6 +104,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
       email: profileEmail.trim() || currentUser.email,
     });
     setIsEditingProfile(false);
+    setProfileError('');
     setProfileFeedback(true);
     setTimeout(() => {
       setProfileFeedback(false);
@@ -311,13 +323,21 @@ export const Navbar: React.FC<NavbarProps> = () => {
         }
       >
         {isEditingProfile ? (
-          <form onSubmit={handleSaveProfile} className="space-y-3.5">
+          <form onSubmit={handleSaveProfile} className="space-y-3.5" noValidate>
+            {profileError && (
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+                {profileError}
+              </div>
+            )}
             <Input
               label="Full Name"
               value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
+              onChange={(e) => {
+                setProfileName(e.target.value);
+                if (profileError) setProfileError('');
+              }}
               placeholder="e.g. Dr. Marcus Vance, MD"
-              required
+              error={!profileName.trim() && profileError ? 'Full name is required' : undefined}
             />
             <div className="grid grid-cols-2 gap-3">
               <Input
@@ -344,9 +364,12 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 label="Email Address"
                 type="email"
                 value={profileEmail}
-                onChange={(e) => setProfileEmail(e.target.value)}
+                onChange={(e) => {
+                  setProfileEmail(e.target.value);
+                  if (profileError) setProfileError('');
+                }}
                 placeholder="e.g. marcus.vance@beaconhealth.com"
-                required
+                error={!profileEmail.trim() && profileError ? 'Email address is required' : undefined}
               />
             </div>
           </form>

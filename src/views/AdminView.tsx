@@ -36,6 +36,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
+  const [paymentError, setPaymentError] = useState('');
 
   // Billing KPIs
   const totalRevenue = invoices.reduce((acc, inv) => acc + inv.paidAmount, 0);
@@ -60,11 +61,16 @@ export const AdminView: React.FC<AdminViewProps> = () => {
     const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
     setPaymentAmount(balance);
     setPaymentMethod(inv.paymentMethod || 'card');
+    setPaymentError('');
   };
 
   const handleRecordPayment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedInvoice || paymentAmount <= 0) return;
+    if (!selectedInvoice) return;
+    if (paymentAmount <= 0 || isNaN(paymentAmount)) {
+      setPaymentError('Payment amount must be greater than $0.00.');
+      return;
+    }
 
     recordPayment(selectedInvoice.id, paymentAmount, paymentMethod);
     showNotification(
@@ -73,6 +79,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
 
     setSelectedInvoice(null);
     setPaymentAmount(0);
+    setPaymentError('');
   };
 
   // Generic Search Query
@@ -460,7 +467,13 @@ export const AdminView: React.FC<AdminViewProps> = () => {
         }
       >
         {selectedInvoice && (
-          <form onSubmit={handleRecordPayment} className="space-y-4">
+          <form onSubmit={handleRecordPayment} className="space-y-4" noValidate>
+            {paymentError && (
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+                {paymentError}
+              </div>
+            )}
+
             <div className="p-3.5 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 text-xs grid grid-cols-2 gap-2">
               <div>
                 <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-semibold">
@@ -501,8 +514,11 @@ export const AdminView: React.FC<AdminViewProps> = () => {
               type="number"
               step="0.01"
               value={paymentAmount}
-              onChange={(e) => setPaymentAmount(Number(e.target.value))}
-              required
+              onChange={(e) => {
+                setPaymentAmount(Number(e.target.value));
+                if (paymentError) setPaymentError('');
+              }}
+              error={paymentError || undefined}
             />
 
             <Select

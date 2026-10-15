@@ -185,10 +185,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       dispensed: false,
     },
   ]);
+  const [prescriptionError, setPrescriptionError] = useState('');
 
   // Consultation Notes Modal State
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [clinicalNotesText, setClinicalNotesText] = useState('');
+  const [notesError, setNotesError] = useState('');
 
   // Handlers
   const handleStartConsultation = (apt: Appointment) => {
@@ -251,6 +253,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     const pId = targetPatientId || activePatient?.id || patients[0]?.id || '';
     setPrescPatientId(pId);
     setDiagnosis('');
+    setPrescriptionError('');
     setPrescriptionItems([
       {
         id: 'item-1',
@@ -267,11 +270,22 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   const handleSavePrescription = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!diagnosis.trim()) {
+      setPrescriptionError('Clinical diagnosis is required.');
+      return;
+    }
+
     const patientObj = patients.find((p) => p.id === prescPatientId);
-    if (!patientObj || !diagnosis.trim()) return;
+    if (!patientObj) {
+      setPrescriptionError('Please select a valid patient.');
+      return;
+    }
 
     const validItems = prescriptionItems.filter((i) => i.medicineName.trim().length > 0);
-    if (validItems.length === 0) return;
+    if (validItems.length === 0) {
+      setPrescriptionError('At least one medicine name is required.');
+      return;
+    }
 
     const newRx = createPrescription({
       patientId: patientObj.id,
@@ -288,17 +302,24 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     );
 
     setIsPrescriptionModalOpen(false);
+    setPrescriptionError('');
   };
 
   const handleSaveConsultationNotes = (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeAppointment) return;
 
+    if (!clinicalNotesText.trim()) {
+      setNotesError('Consultation assessment and clinical plan notes are required.');
+      return;
+    }
+
     showNotification(
       `Consultation notes recorded for ${activeAppointment.patientName}. Appended to permanent EMR.`
     );
     setIsNotesModalOpen(false);
     setClinicalNotesText('');
+    setNotesError('');
   };
 
   // Metrics
@@ -1145,12 +1166,21 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           </>
         }
       >
-        <form onSubmit={handleSavePrescription} className="space-y-4">
+        <form onSubmit={handleSavePrescription} className="space-y-4" noValidate>
+          {prescriptionError && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+              {prescriptionError}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <Select
               label="Select Patient"
               value={prescPatientId}
-              onChange={(e) => setPrescPatientId(e.target.value)}
+              onChange={(e) => {
+                setPrescPatientId(e.target.value);
+                if (prescriptionError) setPrescriptionError('');
+              }}
               options={patients.map((p) => ({
                 value: p.id,
                 label: `${p.firstName} ${p.lastName} (${p.mrn})`,
@@ -1159,9 +1189,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <Input
               label="Primary Clinical Diagnosis"
               value={diagnosis}
-              onChange={(e) => setDiagnosis(e.target.value)}
+              onChange={(e) => {
+                setDiagnosis(e.target.value);
+                if (prescriptionError) setPrescriptionError('');
+              }}
               placeholder="e.g. Essential Hypertension, Bronchitis"
-              required
+              error={!diagnosis.trim() && prescriptionError ? 'Clinical diagnosis is required' : undefined}
             />
           </div>
 
@@ -1192,21 +1225,18 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     value={item.medicineName}
                     onChange={(e) => handleUpdateMedication(idx, 'medicineName', e.target.value)}
                     placeholder="e.g. Amlodipine Besylate"
-                    required
                   />
                   <Input
                     label="Dosage"
                     value={item.dosage}
                     onChange={(e) => handleUpdateMedication(idx, 'dosage', e.target.value)}
                     placeholder="e.g. 5 mg"
-                    required
                   />
                   <Input
                     label="Frequency"
                     value={item.frequency}
                     onChange={(e) => handleUpdateMedication(idx, 'frequency', e.target.value)}
                     placeholder="e.g. Once daily"
-                    required
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -1257,14 +1287,22 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           </>
         }
       >
-        <form onSubmit={handleSaveConsultationNotes} className="space-y-4">
+        <form onSubmit={handleSaveConsultationNotes} className="space-y-4" noValidate>
+          {notesError && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+              {notesError}
+            </div>
+          )}
           <Textarea
             label="Physician Assessment & Clinical Plan"
             value={clinicalNotesText}
-            onChange={(e) => setClinicalNotesText(e.target.value)}
+            onChange={(e) => {
+              setClinicalNotesText(e.target.value);
+              if (notesError) setNotesError('');
+            }}
             placeholder="Document physical examination findings, treatment response, and follow-up plan..."
             rows={4}
-            required
+            error={!clinicalNotesText.trim() && notesError ? 'Notes are required' : undefined}
           />
         </form>
       </Modal>

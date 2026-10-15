@@ -99,11 +99,13 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const [regGender, setRegGender] = useState<'male' | 'female' | 'other'>('female');
   const [regBlood, setRegBlood] = useState<BloodGroup>('O+');
   const [regAllergies, setRegAllergies] = useState('');
+  const [regError, setRegError] = useState('');
 
   // Booking Form State
   const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.id || '');
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>(doctors[0]?.id || 'doc-1');
   const [bookingReason, setBookingReason] = useState('General consultation');
+  const [bookingError, setBookingError] = useState('');
   const [isWalkIn, setIsWalkIn] = useState(true);
 
   const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId) || primaryDoctor;
@@ -124,19 +126,26 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
   const handleRegisterPatient = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regFirstName || !regLastName || !regPhone) return;
+    if (!regFirstName.trim() || !regLastName.trim()) {
+      setRegError('First name and last name are required.');
+      return;
+    }
+    if (!regPhone.trim()) {
+      setRegError('Contact phone number is required.');
+      return;
+    }
 
     const birthYear = new Date(regDob).getFullYear();
     const calculatedAge = Math.max(1, new Date().getFullYear() - birthYear);
 
     const newPat = addPatient({
-      firstName: regFirstName,
-      lastName: regLastName,
+      firstName: regFirstName.trim(),
+      lastName: regLastName.trim(),
       gender: regGender,
       dob: regDob,
       age: calculatedAge,
-      phone: regPhone,
-      email: `${regFirstName.toLowerCase()}.${regLastName.toLowerCase()}@patient.com`,
+      phone: regPhone.trim(),
+      email: `${regFirstName.toLowerCase().trim()}.${regLastName.toLowerCase().trim()}@patient.com`,
       address: 'Beacon City Center',
       bloodGroup: regBlood,
       allergies: regAllergies ? regAllergies.split(',').map((s) => s.trim()).filter(Boolean) : [],
@@ -144,7 +153,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       emergencyContact: {
         name: 'Emergency Contact',
         relationship: 'Family',
-        phone: regPhone,
+        phone: regPhone.trim(),
       },
     });
 
@@ -154,6 +163,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
     setSelectedPatientId(newPat.id);
     setIsRegisterOpen(false);
+    setRegError('');
     setRegFirstName('');
     setRegLastName('');
     setRegPhone('');
@@ -162,6 +172,10 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
   const handleBookAppointment = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!bookingReason.trim()) {
+      setBookingError('Please enter a reason for the consultation.');
+      return;
+    }
     const pat = patients.find((p) => p.id === selectedPatientId) || patients[0];
     if (!pat) return;
 
@@ -977,21 +991,33 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           </>
         }
       >
-        <form onSubmit={handleRegisterPatient} className="space-y-4">
+        <form onSubmit={handleRegisterPatient} className="space-y-4" noValidate>
+          {regError && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+              {regError}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="First Name"
               value={regFirstName}
-              onChange={(e) => setRegFirstName(e.target.value)}
+              onChange={(e) => {
+                setRegFirstName(e.target.value);
+                if (regError) setRegError('');
+              }}
               placeholder="e.g. John"
-              required
+              error={!regFirstName.trim() && regError ? 'First name is required' : undefined}
             />
             <Input
               label="Last Name"
               value={regLastName}
-              onChange={(e) => setRegLastName(e.target.value)}
+              onChange={(e) => {
+                setRegLastName(e.target.value);
+                if (regError) setRegError('');
+              }}
               placeholder="e.g. Doe"
-              required
+              error={!regLastName.trim() && regError ? 'Last name is required' : undefined}
             />
           </div>
 
@@ -1010,7 +1036,6 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
               label="Date of Birth"
               value={regDob}
               onChange={setRegDob}
-              required
             />
             <Select
               label="Blood Group"
@@ -1033,9 +1058,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
             <Input
               label="Contact Phone"
               value={regPhone}
-              onChange={(e) => setRegPhone(e.target.value)}
+              onChange={(e) => {
+                setRegPhone(e.target.value);
+                if (regError) setRegError('');
+              }}
               placeholder="+1 (555) 000-0000"
-              required
+              error={!regPhone.trim() && regError ? 'Contact phone is required' : undefined}
             />
             <Input
               label="Known Allergies"
@@ -1077,7 +1105,13 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           </>
         }
       >
-        <form onSubmit={handleBookAppointment} className="space-y-4">
+        <form onSubmit={handleBookAppointment} className="space-y-4" noValidate>
+          {bookingError && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+              {bookingError}
+            </div>
+          )}
+
           <Select
             label="Select Registered Patient"
             value={selectedPatientId}
@@ -1101,9 +1135,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           <Input
             label="Reason for Visit / Complaint"
             value={bookingReason}
-            onChange={(e) => setBookingReason(e.target.value)}
+            onChange={(e) => {
+              setBookingReason(e.target.value);
+              if (bookingError) setBookingError('');
+            }}
             placeholder="e.g. Follow-up consultation, fever check"
-            required
+            error={!bookingReason.trim() && bookingError ? 'Reason for visit is required' : undefined}
           />
 
           <div className="flex items-center gap-2 pt-1 text-xs text-slate-700 dark:text-slate-300">
