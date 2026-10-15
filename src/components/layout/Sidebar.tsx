@@ -110,8 +110,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="button"
                 onClick={onToggleCollapse}
                 className="w-10 h-10 flex items-center justify-center rounded-lg text-teal-400 hover:text-teal-300 hover:bg-slate-800/70 transition-colors duration-200 cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0"
-                title={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
-                aria-label={isCollapsed ? 'Open side panel' : 'Collapse side panel'}
+                title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
                 {isCollapsed ? (
                   <PanelLeftOpen className="w-4 h-4 text-teal-400 hover:text-teal-300 transition-colors" />
@@ -123,6 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div
                 className="w-7 h-7 flex items-center justify-center text-teal-400 shrink-0"
                 title="Clinic Portal"
+                aria-label="Clinic Portal"
               >
                 <PanelLeft className="w-4 h-4 text-teal-400" />
               </div>
@@ -174,7 +175,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'
                 }`}
               >
-                <span className={`w-7 h-7 flex items-center justify-center shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`}>
+                <span
+                  title={item.label}
+                  aria-label={item.label}
+                  className={`w-7 h-7 flex items-center justify-center shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`}
+                >
                   {item.icon}
                 </span>
                 <span

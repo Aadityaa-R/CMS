@@ -36,9 +36,9 @@ export const Input: React.FC<InputProps> = ({
         )}
         <input
           id={inputId}
-          className={`w-full rounded-lg border bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+          className={`w-full rounded-lg border bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
             icon ? '!pl-11 pr-3.5' : 'px-3'
-          } py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors disabled:bg-slate-50 disabled:text-slate-500 ${
+          } py-2 text-sm text-slate-900 placeholder-slate-500 shadow-sm focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors disabled:bg-slate-50 disabled:text-slate-500 ${
             error
               ? 'border-rose-300 focus:border-rose-500'
               : 'border-slate-300 hover:border-slate-400 dark:border-slate-700'
@@ -48,7 +48,7 @@ export const Input: React.FC<InputProps> = ({
       </div>
       {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
       {helperText && !error && (
-        <p className="mt-1 text-xs text-slate-500">{helperText}</p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
       )}
     </div>
   );

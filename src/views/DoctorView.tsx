@@ -45,7 +45,7 @@ export const NORMAL_VITAL_RANGES = {
   temperatureCelsius: { min: 36.0, max: 37.9 },
 };
 
-const getVitalLabel = (
+export const getVitalLabel = (
   baseLabel: string,
   value: string,
   range: { min: number; max: number }
@@ -647,7 +647,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             onClick={() => setSelectedTab(tab.id)}
             className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap ${
               selectedTab === tab.id
-                ? 'font-bold text-slate-900 dark:text-slate-100 border-b border-teal-600 -mb-px'
+                ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
@@ -891,7 +891,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 </Card>
               ) : (
                 <Card>
-                  <CardContent className="p-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+                  <CardContent className="p-12 text-center text-slate-500 dark:text-slate-400 text-xs">
                     No active consultation selected. Choose a patient from the queue below.
                   </CardContent>
                 </Card>
@@ -1000,7 +1000,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           <TableHead className="w-[80px]">Time</TableHead>
                           <TableHead className="w-[180px]">Patient</TableHead>
                           <TableHead className="w-[140px]">Appt ID</TableHead>
-                          <TableHead>Complaint</TableHead>
+                          <TableHead className="w-full">Complaint</TableHead>
                           <TableHead className="w-[140px]">Status</TableHead>
                           <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                         </TableRow>
@@ -1021,7 +1021,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                     isCurrent ? 'border-l-2 border-teal-500' : 'border-l-2 border-transparent'
                                   }`}
                                 >
-                                  #{apt.tokenNumber}
+                                  {apt.tokenNumber}
                                 </TableCell>
                                 <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[80px]">
                                   {new Date(apt.dateTime).toLocaleTimeString([], {
@@ -1036,7 +1036,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                   {apt.appointmentNumber}
                                 </TableCell>
                                 <TableCell
-                                  className="text-slate-600 dark:text-slate-300"
+                                  className="text-slate-600 dark:text-slate-300 w-full"
                                   title={apt.reasonForVisit}
                                 >
                                   <span className="line-clamp-2">{apt.reasonForVisit}</span>
@@ -1090,7 +1090,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           <TableRow>
                             <TableCell
                               colSpan={7}
-                              className="p-8 text-center text-xs text-slate-400 dark:text-slate-500"
+                              className="p-8 text-center text-xs text-slate-500 dark:text-slate-400"
                             >
                               No consultations found matching active search criteria on this worklist.
                             </TableCell>
@@ -1152,29 +1152,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           })()}
                         </span>
                       </div>
-
-                      <div className="flex justify-between items-baseline gap-2">
-                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Previous Visit Vitals:</span>
-                        <div className="text-right">
-                          {summaryPatient.previousVitals ? (
-                            <>
-                              <span className="font-medium text-slate-900 dark:text-slate-100 block">
-                                BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp}, HR {summaryPatient.previousVitals.heartRateBpm}, O2 {summaryPatient.previousVitals.oxygenSaturationPct}%, Temp {summaryPatient.previousVitals.temperatureCelsius} C
-                              </span>
-                              <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
-                                Recorded {summaryPatient.previousVitals.recordedAt}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="font-medium text-slate-900 dark:text-slate-100">
-                              None recorded
-                            </span>
-                          )}
-                        </div>
-                      </div>
                     </>
                   ) : (
-                    <div className="p-6 text-center text-slate-400 dark:text-slate-500">
+                    <div className="p-6 text-center text-slate-500 dark:text-slate-400">
                       No active consultation
                     </div>
                   )}
@@ -1200,7 +1180,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <CardTitle>Patients Medical Directory</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
               <div className="w-full sm:w-80">
                 <InteractiveSearchBar
                   value={patientSearchTerm}
@@ -1321,7 +1301,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <CardTitle>e-Prescription Master Ledger</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
               <div className="w-full sm:w-80">
                 <InteractiveSearchBar
                   value={prescriptionSearchTerm}

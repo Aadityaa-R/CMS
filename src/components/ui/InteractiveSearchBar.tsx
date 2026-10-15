@@ -126,7 +126,7 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
   return (
     <div className={`relative w-full ${className}`}>
       <div className="relative flex items-center w-full">
-        <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-20" />
+        <Search className="w-4 h-4 text-slate-500 dark:text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-20" />
 
         {/* Input */}
         <input
@@ -141,7 +141,7 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onScroll={handleScroll}
-          className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-8 py-2 text-xs leading-5 font-sans text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors shadow-xs"
+          className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-8 py-2 text-xs leading-5 font-sans text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors shadow-xs"
         />
 
         {/* Inline Ghost Text Completion */}
@@ -152,7 +152,7 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
             aria-hidden="true"
           >
             <span className="opacity-0">{value}</span>
-            <span className="text-slate-400/80 dark:text-slate-500 font-normal">
+            <span className="text-slate-500/80 dark:text-slate-400 font-normal">
               {completionSuffix}
             </span>
           </div>

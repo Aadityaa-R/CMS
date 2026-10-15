@@ -63,7 +63,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         </span>
         <span>records</span>
         {totalPages > 1 && (
-          <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-1">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-1">
             (Page {currentPage} of {totalPages})
           </span>
         )}

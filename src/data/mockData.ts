@@ -136,7 +136,7 @@ export const INITIAL_PATIENTS: Patient[] = [
     address: '742 Evergreen Terrace, Springfield',
     bloodGroup: 'A+',
     allergies: ['Penicillin', 'Peanuts'],
-    chronicConditions: ['Essential Hypertension'],
+    chronicConditions: ['Mild Hypertension', 'Essential Hypertension'],
     lastVisitDate: '12 Aug 2026',
     currentMedications: ['Amlodipine Besylate 5mg', 'Hydrochlorothiazide 12.5mg'],
     previousVitals: {
@@ -222,7 +222,7 @@ export const INITIAL_PATIENTS: Patient[] = [
     address: '509 Harbor View Blvd, Lakewood',
     bloodGroup: 'AB-',
     allergies: ['Aspirin', 'Iodine contrast'],
-    chronicConditions: ['Dyslipidemia', 'Coronary Artery Disease'],
+    chronicConditions: ['Coronary Artery Disease', 'Osteoarthritis', 'Dyslipidemia'],
     lastVisitDate: '05 Sep 2026',
     currentMedications: ['Atorvastatin 40mg', 'Aspirin 81mg'],
     previousVitals: {
