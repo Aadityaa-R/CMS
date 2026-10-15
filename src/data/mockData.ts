@@ -136,7 +136,7 @@ export const INITIAL_PATIENTS: Patient[] = [
     address: '742 Evergreen Terrace, Springfield',
     bloodGroup: 'A+',
     allergies: ['Penicillin', 'Peanuts'],
-    chronicConditions: ['Mild Hypertension', 'Essential Hypertension'],
+    chronicConditions: ['Mild Hypertension'],
     lastVisitDate: '12 Aug 2026',
     currentMedications: ['Amlodipine Besylate 5mg', 'Hydrochlorothiazide 12.5mg'],
     previousVitals: {

@@ -58,6 +58,23 @@ export const getVitalLabel = (
   return baseLabel;
 };
 
+export const deduplicateList = (items?: (string | null | undefined)[]): string[] => {
+  if (!items || !Array.isArray(items)) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of items) {
+    if (!raw) continue;
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const lower = trimmed.toLowerCase();
+    if (!seen.has(lower)) {
+      seen.add(lower);
+      result.push(trimmed);
+    }
+  }
+  return result;
+};
+
 export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }) => {
   const { currentUser, currentRole } = useAuth();
   const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
@@ -263,7 +280,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   useEffect(() => {
     if (activePatient) {
-      const formatted = activePatient.allergies.join(', ');
+      const formatted = deduplicateList(activePatient.allergies).join(', ');
       setAllergyInput(formatted);
       setAllergyDraft(formatted);
       setIsEditingAllergies(false);
@@ -288,10 +305,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   const handleSaveAllergies = () => {
     if (!activePatient || !hasAllergyChanged) return;
-    const allergies = allergyDraft
-      .split(',')
-      .map((a) => a.trim())
-      .filter((a) => a.length > 0 && a.toLowerCase() !== 'none');
+    const allergies = deduplicateList(
+      allergyDraft
+        .split(',')
+        .map((a) => a.trim())
+        .filter((a) => a.length > 0 && a.toLowerCase() !== 'none')
+    );
     updatePatient(activePatient.id, { allergies });
     setAllergyInput(allergies.join(', '));
     setIsEditingAllergies(false);
@@ -1016,11 +1035,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 key={apt.id}
                                 className={isCurrent ? 'bg-teal-50/50 dark:bg-teal-950/30' : ''}
                               >
-                                <TableCell
-                                  className={`text-slate-700 dark:text-slate-300 w-[56px] ${
-                                    isCurrent ? 'border-l-2 border-teal-500' : 'border-l-2 border-transparent'
-                                  }`}
-                                >
+                                <TableCell className="text-slate-700 dark:text-slate-300 w-[56px]">
                                   {apt.tokenNumber}
                                 </TableCell>
                                 <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[80px]">
@@ -1129,7 +1144,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
                         <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
                           {summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
-                            ? summaryPatient.chronicConditions.join(', ')
+                            ? deduplicateList(summaryPatient.chronicConditions).join(', ')
                             : 'None recorded'}
                         </span>
                       </div>
@@ -1141,12 +1156,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             const patientRx = prescriptions.filter(
                               (rx) => rx.patientId === summaryPatient.id
                             );
-                            const activeRxMeds = Array.from(
-                              new Set(patientRx.flatMap((rx) => rx.items.map((i) => i.medicineName)))
+                            const activeRxMeds = deduplicateList(
+                              patientRx.flatMap((rx) => rx.items.map((i) => i.medicineName))
                             );
                             if (activeRxMeds.length > 0) return activeRxMeds.join(', ');
                             if (summaryPatient.currentMedications && summaryPatient.currentMedications.length > 0) {
-                              return summaryPatient.currentMedications.join(', ');
+                              return deduplicateList(summaryPatient.currentMedications).join(', ');
                             }
                             return 'None recorded';
                           })()}
@@ -1179,8 +1194,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           >
             <CardTitle>Patients Medical Directory</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
+          <CardContent className="p-5 pt-3.5">
+            <div className="mb-3.5">
               <div className="w-full sm:w-80">
                 <InteractiveSearchBar
                   value={patientSearchTerm}
@@ -1229,10 +1244,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           {pat.bloodGroup}
                         </TableCell>
                         <TableCell className="text-slate-600 dark:text-slate-400">
-                          {pat.allergies && pat.allergies.length > 0 ? pat.allergies.join(', ') : 'None recorded'}
+                          {pat.allergies && pat.allergies.length > 0 ? deduplicateList(pat.allergies).join(', ') : 'None recorded'}
                         </TableCell>
                         <TableCell className="text-slate-600 dark:text-slate-400">
-                          {pat.chronicConditions && pat.chronicConditions.length > 0 ? pat.chronicConditions.join(', ') : 'None recorded'}
+                          {pat.chronicConditions && pat.chronicConditions.length > 0 ? deduplicateList(pat.chronicConditions).join(', ') : 'None recorded'}
                         </TableCell>
                         <TableCell className="text-right whitespace-nowrap">
                           {!isReadOnlyView ? (
@@ -1300,8 +1315,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           >
             <CardTitle>e-Prescription Master Ledger</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
+          <CardContent className="p-5 pt-3.5">
+            <div className="mb-3.5">
               <div className="w-full sm:w-80">
                 <InteractiveSearchBar
                   value={prescriptionSearchTerm}
@@ -1680,7 +1695,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <span className="text-slate-500 dark:text-slate-400 shrink-0">Allergies:</span>
                 <span className="text-slate-700 dark:text-slate-300 text-right">
                   {viewingPatient?.allergies && viewingPatient.allergies.length > 0
-                    ? viewingPatient.allergies.join(', ')
+                    ? deduplicateList(viewingPatient.allergies).join(', ')
                     : 'None recorded'}
                 </span>
               </div>
