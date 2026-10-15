@@ -73,6 +73,7 @@ Every feature and line of code in this project strictly adheres to the governing
 - **Enforced Actions**:
   - Removed the 4-card metric grid (`REGISTERED OUTPATIENTS`, `ACTIVE IN CARE`, `ALLERGY RISK FLAGGED`, `CHRONIC CARE TRACKED`) from the Patient Directory view.
   - Removed KPI summary cards from `AccessControlView.tsx`.
+  - Removed the 4-card metric grid (`Consultation Queue`, `Active Consultation`, `e-Prescriptions Logged`, `Assigned Patients`) from the Doctor Consultation Desk (`DoctorView.tsx`).
 
 ### 2.7 Receptionist Multi-Staffing
 - **Rule**: Provide full multi-receptionist operational support.
@@ -115,6 +116,10 @@ The table below outlines the evolution of the codebase from initial repository s
 
 | Commit Hash | Commit Message / Feature Description | User Intent & Key Actions |
 | :--- | :--- | :--- |
+| `e89a1c4` | `Remove stat cards and subtitles from Doctor Consultation Desk and fix search placeholder` | User requested: "Fix 1 of the Doctor Consultation Desk page (DoctorView.tsx)". Purged 4-card metric row from Doctor Consultation Desk, stripped explanatory subtitles under Consulting Physician Profile and Worklist, removed instruction sentence from MD Clinical Queue Inspector, and expanded search bar width with complete placeholder. |
+| `85df7e5` | `style: replace native html5 form validation bubbles with custom design system ui` | User requested: "make this to the custom ui we are using dont just use the native". Replaced browser-native validation bubbles with design system UI, added form-level noValidate, and added global invalid event listener. |
+| `03f78f7` | `style: remove managing director console heading across views` | User requested: "remove the managing director console heading". Stripped managing director console heading across workstation views. |
+| `051358c` | `style: eliminate bubble and badge enclosures across all views in favor of clean typography` | User requested: "remove the bubble like structure from everywhere". Eliminated bubble-like structures and badge enclosures across views. |
 | `8cd4be1` | `Remove visual tab and enter pill from search bar while preserving keyboard autofill` | User requested: "remove the small dialoge box with tab or enter also". Stripped visual pill button element from `InteractiveSearchBar.tsx` while keeping keyboard autofill. |
 | `852a2f8` | `Add inline Tab and Enter autofill to search bar without popup dialogue box` | User requested: "and make it such that it autofill when clicked on either tab or enter and remove the symbol saying autofil". Implemented inline ghost completion and pure keyboard completion. |
 | `c0fa0fe` | `Remove suggestion dropdown dialogue box from interactive search bar` | User requested: "for the search interactive option remove that dialoge box". Removed suggestion dropdown menu from `InteractiveSearchBar.tsx`. |

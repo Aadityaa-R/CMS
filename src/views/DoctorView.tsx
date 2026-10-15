@@ -7,7 +7,6 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
-import { StatCard } from '@/components/ui/StatCard';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import {
@@ -322,13 +321,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     setNotesError('');
   };
 
-  // Metrics
-  const totalQueue = doctorAppointments.length;
-  const inConsultation = doctorAppointments.filter((a) => a.status === 'in_consultation').length;
   const doctorPrescriptions = prescriptions.filter(
     (r) => r.doctorId === activeDoctor.id || r.doctorName === activeDoctor.name
   );
-  const totalPrescriptions = doctorPrescriptions.length;
 
   // Filter Helper with Equal Authority
   const query = searchTerm.toLowerCase().trim();
@@ -478,37 +473,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </div>
       )}
 
-      {/* KPI Stats Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard
-          title="Consultation Queue"
-          value={totalQueue}
-          unit="Visits"
-          subtitle={`Assigned to ${activeDoctor.name}`}
-          colorScheme="slate"
-        />
-        <StatCard
-          title="Active Consultation"
-          value={inConsultation}
-          unit={inConsultation === 1 ? 'Patient' : 'Patients'}
-          subtitle="Currently at desk"
-          colorScheme="teal"
-        />
-        <StatCard
-          title="e-Prescriptions Logged"
-          value={totalPrescriptions}
-          unit="Orders"
-          subtitle={`Issued by ${activeDoctor.name}`}
-          colorScheme="slate"
-        />
-        <StatCard
-          title="Assigned Patients"
-          value={doctorPatients.length}
-          unit="Profiles"
-          subtitle="Direct clinical roster"
-          colorScheme="slate"
-        />
-      </div>
 
       {/* ========================================================================= */}
       {/* SUB-MODULE 1: CONSULTATION DESK (`overview`)                              */}
@@ -719,19 +683,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           MD Clinical Queue Inspector
                         </span>
                       </div>
-                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5 block">
-                        Search consultation queue or select attending physician to inspect worklist:
-                      </span>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
                       {/* Search Input with Interactive Dropdown and Autofill */}
-                      <div className="relative w-full sm:w-60">
+                      <div className="relative w-full sm:w-72">
                         <InteractiveSearchBar
                           value={searchTerm}
                           onChange={setSearchTerm}
                           suggestions={doctorSearchSuggestions}
-                          placeholder="Search by patient name..."
+                          placeholder="Search by patient name"
                         />
                       </div>
 
@@ -768,12 +729,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
-                      <div className="relative w-full sm:w-60">
+                      <div className="relative w-full sm:w-72">
                         <InteractiveSearchBar
                           value={searchTerm}
                           onChange={setSearchTerm}
                           suggestions={doctorSearchSuggestions}
-                          placeholder="Search by patient name..."
+                          placeholder="Search by patient name"
                         />
                       </div>
 
@@ -807,9 +768,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   <CardTitle>
                     {activeDoctor.name}&apos;s Consultation Worklist
                   </CardTitle>
-                  <CardDescription>
-                    Ordered queue of checked-in, in-progress, and scheduled consultations
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -913,7 +871,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Card>
                 <CardHeader>
                   <CardTitle>Consulting Physician Profile</CardTitle>
-                  <CardDescription>Clinical credentials & schedule</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3.5 text-xs">
                   <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
