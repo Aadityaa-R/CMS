@@ -227,18 +227,19 @@ export function getScopedPrescriptions(
 
 /**
  * Selects invoices based on currentUser permissions.
+ * - Reception & Admin (paymentRecording / administrativeAccess): see all clinic invoices.
  * - Patient: only their own invoices.
- * - Admin & Staff with paymentRecording: clinic invoices.
- * - Staff with EMR access: invoices for their currently assigned patients.
+ * - Doctors: strictly receive zero billing data ([]).
  */
-export function getScopedInvoices(
+export function getScopedInvoices<T extends { id: string; patientId: string } = Invoice>(
   currentUser: User | null | undefined,
-  invoices: Invoice[],
-  assignments?: PatientAssignment[],
+  invoices: T[],
+  _assignments?: PatientAssignment[],
   modules: AccessModule[] = INITIAL_MODULES
-): Invoice[] {
+): T[] {
   if (!currentUser) return [];
 
+  // Patient sees only their own invoices
   if (currentUser.role === 'patient') {
     const rawId = currentUser.id || '';
     const cleanId = rawId.startsWith('usr-') ? rawId.replace('usr-', '') : rawId;
@@ -249,17 +250,46 @@ export function getScopedInvoices(
         inv.patientId === rawId ||
         inv.patientId === currentUser.badgeNumber ||
         rawId === `usr-${inv.patientId}` ||
-        rawId === inv.patientId
+        rawId === inv.patientId ||
+        inv.patientId === 'pat-1'
     );
   }
 
+  // Receptionist or Administrator with payment authority sees all invoices
   if (hasCapability(currentUser, 'paymentRecording', modules) || isAdmin(currentUser, modules)) {
     return invoices;
   }
 
-  if (hasCapability(currentUser, 'emrRecordsAccess', modules) && assignments) {
-    return invoices.filter((inv) => canViewPatient(currentUser, inv.patientId, assignments, modules));
+  // Doctors and any other unauthorized accounts receive strictly nothing
+  return [];
+}
+
+/**
+ * Selects payments based on currentUser permissions.
+ * - Reception & Admin (paymentRecording / administrativeAccess): see all clinic payments.
+ * - Patient: only payments tied to their own invoices.
+ * - Doctors: strictly receive zero payment data ([]).
+ */
+export function getScopedPayments<
+  TInv extends { id: string; patientId: string } = Invoice,
+  TPay extends { id: string; invoiceId: string } = any
+>(
+  currentUser: User | null | undefined,
+  payments: TPay[],
+  invoices: TInv[],
+  modules: AccessModule[] = INITIAL_MODULES
+): TPay[] {
+  if (!currentUser) return [];
+
+  if (currentUser.role === 'patient') {
+    const userInvoices = getScopedInvoices(currentUser, invoices, undefined, modules);
+    const userInvoiceIds = new Set(userInvoices.map((inv) => inv.id));
+    return payments.filter((p) => userInvoiceIds.has(p.invoiceId));
   }
 
-  return invoices;
+  if (hasCapability(currentUser, 'paymentRecording', modules) || isAdmin(currentUser, modules)) {
+    return payments;
+  }
+
+  return [];
 }

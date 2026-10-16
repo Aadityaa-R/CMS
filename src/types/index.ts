@@ -347,6 +347,12 @@ export interface AccessAuditLogEntry {
     | 'capability_granted'
     | 'capability_revoked'
     | 'account_provisioned'
+    | 'payment_recorded'
+    | 'portal_payment'
+    | 'charge_added'
+    | 'discount_applied'
+    | 'invoice_voided'
+    | 'payment_reversed'
     | string;
   description?: string;
   details?: string;

@@ -21,13 +21,13 @@ import {
   INITIAL_PATIENTS,
   INITIAL_APPOINTMENTS,
   INITIAL_PRESCRIPTIONS,
-  INITIAL_INVOICES,
   INITIAL_MODULES,
   INITIAL_PENDING_APPROVALS,
   INITIAL_PATIENT_ASSIGNMENTS,
   INITIAL_ACCESS_AUDIT_LOG,
 } from './mockData';
 import { INITIAL_SHIFTS, INITIAL_ATTENDANCE_RECORDS, INITIAL_LEAVE_REQUESTS } from './attendanceSeed';
+import { INITIAL_SEED_INVOICES, INITIAL_SEED_PAYMENTS } from './billingSeed';
 
 // Active in-memory registry of repositories per collection
 const repositories: Partial<Record<CollectionName, Repository<any>>> = {};
@@ -209,7 +209,7 @@ export async function seedInitialData(force = false): Promise<void> {
   await repoPatients.replaceAll(INITIAL_PATIENTS);
   await repoAppointments.replaceAll(INITIAL_APPOINTMENTS);
   await repoPrescriptions.replaceAll(INITIAL_PRESCRIPTIONS);
-  await repoInvoices.replaceAll(INITIAL_INVOICES);
+  await repoInvoices.replaceAll(INITIAL_SEED_INVOICES);
   await repoAssignments.replaceAll(INITIAL_PATIENT_ASSIGNMENTS);
   await repoRoles.replaceAll(INITIAL_MODULES);
   await repoApprovals.replaceAll(INITIAL_PENDING_APPROVALS);
@@ -219,7 +219,7 @@ export async function seedInitialData(force = false): Promise<void> {
   await repoShifts.replaceAll(INITIAL_SHIFTS);
   await repoLedger.replaceAll(INITIAL_ACCESS_AUDIT_LOG);
   await repoVisits.replaceAll([]);
-  await repoPayments.replaceAll([]);
+  await repoPayments.replaceAll(INITIAL_SEED_PAYMENTS);
 
   setStorageSettings({
     mode: 'browser',

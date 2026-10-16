@@ -1,0 +1,1531 @@
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useClinic } from '@/context/ClinicContext';
+import { useBilling } from '@/context/BillingContext';
+import {
+  formatCurrency,
+  dollarsToCents,
+  centsToDollars,
+  invoiceTotal,
+  amountPaid,
+  balanceDue,
+  deriveStatus,
+} from '@/lib/billing';
+import {
+  canRecordPayment,
+  canVoidInvoice,
+  canApplyDiscount,
+  canReversePayment,
+  canAddCharge,
+  isAdmin,
+} from '@/lib/permissions';
+import { getScopedInvoices, getScopedPayments } from '@/lib/selectors';
+import { Invoice, Payment, PaymentMethod, Receipt } from '@/types/billing';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
+import { Pagination } from '@/components/ui/Pagination';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableTruncate,
+} from '@/components/ui/Table';
+import { Printer } from 'lucide-react';
+
+export const BillingView: React.FC = () => {
+  const { currentUser } = useAuth();
+  const { modules, patients } = useClinic();
+  const {
+    invoices: allInvoices,
+    payments: allPayments,
+    recordPayment,
+    reversePayment,
+    addCharge,
+    applyDiscount,
+    voidInvoice,
+    getReceipt,
+    getDailyCollections,
+  } = useBilling();
+
+  // Active top-level tab
+  const [activeTab, setActiveTab] = useState<'invoices' | 'payments'>('invoices');
+
+  // Notification Banner
+  const [notification, setNotification] = useState<string | null>(null);
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  // Scope invoices and payments based on user permissions
+  const scopedInvoices = useMemo(() => {
+    return getScopedInvoices(currentUser, allInvoices, undefined, modules);
+  }, [currentUser, allInvoices, modules]);
+
+  const scopedPayments = useMemo(() => {
+    return getScopedPayments(currentUser, allPayments, allInvoices, modules);
+  }, [currentUser, allPayments, allInvoices, modules]);
+
+  // Daily collections summary
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const isAdministrator = isAdmin(currentUser, modules);
+  const collectionsSummary = useMemo(() => {
+    return isAdministrator
+      ? getDailyCollections(undefined, todayStr)
+      : getDailyCollections(currentUser?.id, todayStr);
+  }, [isAdministrator, getDailyCollections, currentUser?.id, todayStr, allPayments]);
+
+  // =========================================================================
+  // INVOICES TAB STATE & FILTERS
+  // =========================================================================
+  const [invoiceSearchTerm, setInvoiceSearchTerm] = useState('');
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('');
+  const [invoicesPage, setInvoicesPage] = useState(1);
+  const pageSize = 10;
+
+  const invoiceSuggestions = useMemo<SearchSuggestion[]>(() => {
+    const list: SearchSuggestion[] = [];
+    const seen = new Set<string>();
+    scopedInvoices.forEach((inv) => {
+      if (inv.patientName && !seen.has(inv.patientName.toLowerCase())) {
+        seen.add(inv.patientName.toLowerCase());
+        list.push({
+          label: inv.patientName,
+          category: 'Patient',
+          sublabel: `Invoice ${inv.number}`,
+        });
+      }
+      if (!seen.has(inv.number.toLowerCase())) {
+        seen.add(inv.number.toLowerCase());
+        list.push({
+          label: inv.number,
+          category: 'Invoice',
+          sublabel: inv.patientName || 'Patient invoice',
+        });
+      }
+    });
+    return list;
+  }, [scopedInvoices]);
+
+  const filteredInvoices = useMemo(() => {
+    const query = invoiceSearchTerm.toLowerCase().trim();
+    return scopedInvoices.filter((inv) => {
+      const currentStatus = deriveStatus(inv, allPayments);
+      if (invoiceStatusFilter && currentStatus !== invoiceStatusFilter) {
+        return false;
+      }
+      if (!query) return true;
+      const matchNumber = inv.number.toLowerCase().includes(query);
+      const matchPatient = (inv.patientName || '').toLowerCase().includes(query);
+      const matchPatientId = inv.patientId.toLowerCase().includes(query);
+      return matchNumber || matchPatient || matchPatientId;
+    });
+  }, [scopedInvoices, invoiceSearchTerm, invoiceStatusFilter, allPayments]);
+
+  const paginatedInvoices = useMemo(() => {
+    const start = (invoicesPage - 1) * pageSize;
+    return filteredInvoices.slice(start, start + pageSize);
+  }, [filteredInvoices, invoicesPage, pageSize]);
+
+  // =========================================================================
+  // PAYMENTS TAB STATE & FILTERS
+  // =========================================================================
+  const [paymentDateFilter, setPaymentDateFilter] = useState('');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
+  const [paymentsPage, setPaymentsPage] = useState(1);
+
+  const filteredPayments = useMemo(() => {
+    return scopedPayments.filter((p) => {
+      if (paymentDateFilter) {
+        const paymentDate = p.receivedAt.split('T')[0];
+        if (paymentDate !== paymentDateFilter) return false;
+      }
+      if (paymentMethodFilter && p.method !== paymentMethodFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [scopedPayments, paymentDateFilter, paymentMethodFilter]);
+
+  const paginatedPayments = useMemo(() => {
+    const start = (paymentsPage - 1) * pageSize;
+    return filteredPayments.slice(start, start + pageSize);
+  }, [filteredPayments, paymentsPage, pageSize]);
+
+  // =========================================================================
+  // MODAL 1: RECORD PAYMENT
+  // =========================================================================
+  const [paymentTargetInvoice, setPaymentTargetInvoice] = useState<Invoice | null>(null);
+  const [paymentAmountDollars, setPaymentAmountDollars] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentNote, setPaymentNote] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+  const [paymentConfirming, setPaymentConfirming] = useState(false);
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+
+  const openRecordPaymentModal = (inv: Invoice) => {
+    const due = balanceDue(inv, allPayments);
+    setPaymentTargetInvoice(inv);
+    setPaymentAmountDollars(centsToDollars(due).toFixed(2));
+    setPaymentMethod('card');
+    setPaymentReference('');
+    setPaymentNote('');
+    setPaymentError('');
+    setPaymentConfirming(false);
+  };
+
+  const closeRecordPaymentModal = () => {
+    setPaymentTargetInvoice(null);
+    setPaymentConfirming(false);
+    setPaymentError('');
+  };
+
+  const handleProceedToConfirmPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPaymentError('');
+    if (!paymentTargetInvoice) return;
+
+    const parsedDollars = parseFloat(paymentAmountDollars);
+    if (isNaN(parsedDollars) || parsedDollars <= 0) {
+      setPaymentError('Payment amount must be greater than zero.');
+      return;
+    }
+
+    const amountInCents = dollarsToCents(parsedDollars);
+    const due = balanceDue(paymentTargetInvoice, allPayments);
+    if (amountInCents > due) {
+      setPaymentError(`Payment amount cannot exceed balance due (${formatCurrency(due)}).`);
+      return;
+    }
+
+    setPaymentConfirming(true);
+  };
+
+  const handleExecutePayment = async () => {
+    if (!paymentTargetInvoice) return;
+    setIsSubmittingPayment(true);
+    setPaymentError('');
+
+    const parsedDollars = parseFloat(paymentAmountDollars);
+    const amountInCents = dollarsToCents(parsedDollars);
+    const idempotencyKey = `PAY-${paymentTargetInvoice.id}-${Date.now()}`;
+
+    const res = await recordPayment({
+      invoiceId: paymentTargetInvoice.id,
+      amount: amountInCents,
+      method: paymentMethod,
+      reference: paymentReference.trim() || undefined,
+      note: paymentNote.trim() || undefined,
+      idempotencyKey,
+    });
+
+    setIsSubmittingPayment(false);
+
+    if (!res.success || !res.data) {
+      setPaymentError(res.error || 'Failed to record payment.');
+      setPaymentConfirming(false);
+      return;
+    }
+
+    const recordedPayment = res.data;
+    showNotification(
+      `Payment of ${formatCurrency(amountInCents)} recorded. Receipt #${recordedPayment.receiptNumber} generated.`
+    );
+    closeRecordPaymentModal();
+    // Open receipt modal immediately
+    handleOpenReceipt(recordedPayment.id);
+  };
+
+  // =========================================================================
+  // MODAL 2: VIEW INVOICE & ADMINISTRATIVE ACTIONS
+  // =========================================================================
+  const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
+
+  // Administrative sub-forms on View Invoice
+  const [isAddingCharge, setIsAddingCharge] = useState(false);
+  const [chargeDescription, setChargeDescription] = useState('');
+  const [chargeAmountDollars, setChargeAmountDollars] = useState('');
+  const [chargeError, setChargeError] = useState('');
+
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+  const [discountAmountDollars, setDiscountAmountDollars] = useState('');
+  const [discountReason, setDiscountReason] = useState('');
+  const [discountError, setDiscountError] = useState('');
+
+  const [isVoidingInvoice, setIsVoidingInvoice] = useState(false);
+  const [voidReason, setVoidReason] = useState('');
+  const [voidError, setVoidError] = useState('');
+
+  const activeViewingInvoice = useMemo(() => {
+    if (!viewingInvoice) return null;
+    return allInvoices.find((i) => i.id === viewingInvoice.id) || viewingInvoice;
+  }, [viewingInvoice, allInvoices]);
+
+  const viewingInvoicePayments = useMemo(() => {
+    if (!activeViewingInvoice) return [];
+    return allPayments.filter((p) => p.invoiceId === activeViewingInvoice.id);
+  }, [activeViewingInvoice, allPayments]);
+
+  const handleOpenViewInvoice = (inv: Invoice) => {
+    setViewingInvoice(inv);
+    setIsAddingCharge(false);
+    setIsApplyingDiscount(false);
+    setIsVoidingInvoice(false);
+    setChargeError('');
+    setDiscountError('');
+    setVoidError('');
+  };
+
+  const handleAddChargeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeViewingInvoice) return;
+    setChargeError('');
+
+    if (!chargeDescription.trim()) {
+      setChargeError('Description is required.');
+      return;
+    }
+
+    const parsedDollars = parseFloat(chargeAmountDollars);
+    if (isNaN(parsedDollars) || parsedDollars <= 0) {
+      setChargeError('Charge amount must be greater than zero.');
+      return;
+    }
+
+    const cents = dollarsToCents(parsedDollars);
+    const res = await addCharge(activeViewingInvoice.id, chargeDescription.trim(), cents);
+    if (!res.success) {
+      setChargeError(res.error || 'Failed to add charge.');
+      return;
+    }
+
+    showNotification(`Charge of ${formatCurrency(cents)} added to Invoice ${activeViewingInvoice.number}.`);
+    setIsAddingCharge(false);
+    setChargeDescription('');
+    setChargeAmountDollars('');
+  };
+
+  const handleApplyDiscountSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeViewingInvoice) return;
+    setDiscountError('');
+
+    if (!discountReason.trim()) {
+      setDiscountError('Mandatory reason required for discounts.');
+      return;
+    }
+
+    const parsedDollars = parseFloat(discountAmountDollars);
+    if (isNaN(parsedDollars) || parsedDollars <= 0) {
+      setDiscountError('Discount amount must be greater than zero.');
+      return;
+    }
+
+    const cents = dollarsToCents(parsedDollars);
+    const res = await applyDiscount(activeViewingInvoice.id, cents, discountReason.trim());
+    if (!res.success) {
+      setDiscountError(res.error || 'Failed to apply discount.');
+      return;
+    }
+
+    showNotification(`Discount of ${formatCurrency(cents)} applied to Invoice ${activeViewingInvoice.number}.`);
+    setIsApplyingDiscount(false);
+    setDiscountAmountDollars('');
+    setDiscountReason('');
+  };
+
+  const handleVoidInvoiceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeViewingInvoice) return;
+    setVoidError('');
+
+    if (!voidReason.trim()) {
+      setVoidError('Mandatory reason required for voiding an invoice.');
+      return;
+    }
+
+    const res = await voidInvoice(activeViewingInvoice.id, voidReason.trim());
+    if (!res.success) {
+      setVoidError(res.error || 'Failed to void invoice.');
+      return;
+    }
+
+    showNotification(`Invoice ${activeViewingInvoice.number} has been voided.`);
+    setIsVoidingInvoice(false);
+    setVoidReason('');
+  };
+
+  // =========================================================================
+  // MODAL 3: PAYMENT REVERSAL (ADMINISTRATIVE ONLY)
+  // =========================================================================
+  const [reversalTargetPayment, setReversalTargetPayment] = useState<Payment | null>(null);
+  const [reversalReason, setReversalReason] = useState('');
+  const [reversalError, setReversalError] = useState('');
+  const [isSubmittingReversal, setIsSubmittingReversal] = useState(false);
+
+  const openReversalModal = (p: Payment) => {
+    setReversalTargetPayment(p);
+    setReversalReason('');
+    setReversalError('');
+  };
+
+  const closeReversalModal = () => {
+    setReversalTargetPayment(null);
+    setReversalReason('');
+    setReversalError('');
+  };
+
+  const handleExecuteReversal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reversalTargetPayment) return;
+    setReversalError('');
+
+    if (!reversalReason.trim()) {
+      setReversalError('Mandatory administrative reason required for payment reversals.');
+      return;
+    }
+
+    setIsSubmittingReversal(true);
+    const res = await reversePayment(reversalTargetPayment.id, reversalReason.trim());
+    setIsSubmittingReversal(false);
+
+    if (!res.success) {
+      setReversalError(res.error || 'Failed to reverse payment.');
+      return;
+    }
+
+    showNotification(`Payment ${reversalTargetPayment.receiptNumber} successfully reversed.`);
+    closeReversalModal();
+  };
+
+  // =========================================================================
+  // MODAL 4: RECEIPT VIEW & PRINT
+  // =========================================================================
+  const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
+
+  const handleOpenReceipt = (paymentId: string) => {
+    const rc = getReceipt(paymentId);
+    if (rc) {
+      setViewingReceipt(rc);
+    } else {
+      showNotification('Receipt record could not be loaded.');
+    }
+  };
+
+  const handlePrintReceipt = () => {
+    window.print();
+  };
+
+  return (
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Toast Notification */}
+      {notification && (
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs rounded-lg">
+          {notification}
+        </div>
+      )}
+
+      {/* Header & Title */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            Billing
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Front desk cashiering, invoice oversight, and payment settlements.
+          </p>
+        </div>
+
+        {/* Underline Tabs */}
+        <div className="flex space-x-6 border-b border-transparent">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('invoices');
+              setInvoicesPage(1);
+            }}
+            className={`pb-2 text-xs font-semibold tracking-wider uppercase transition-colors ${
+              activeTab === 'invoices'
+                ? 'border-b-2 border-emerald-600 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Invoices ({scopedInvoices.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('payments');
+              setPaymentsPage(1);
+            }}
+            className={`pb-2 text-xs font-semibold tracking-wider uppercase transition-colors ${
+              activeTab === 'payments'
+                ? 'border-b-2 border-emerald-600 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Payments ({scopedPayments.length})
+          </button>
+        </div>
+      </div>
+
+      {/* Daily Collections Plain-Text Summary Card */}
+      <Card>
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-600 dark:text-slate-400">
+            <div>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {isAdministrator
+                  ? "Today's Clinic-Wide Collections"
+                  : `Today's Shift Collections (${currentUser?.name || 'Operator'})`}
+                :
+              </span>{' '}
+              <span className="font-bold text-slate-900 dark:text-slate-100">
+                {formatCurrency(collectionsSummary.total)}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-500 dark:text-slate-400">
+              <span>Cash: {formatCurrency(collectionsSummary.cash)}</span>
+              <span>Card: {formatCurrency(collectionsSummary.card)}</span>
+              <span>UPI: {formatCurrency(collectionsSummary.upi)}</span>
+              {isAdministrator && <span>Portal: {formatCurrency(collectionsSummary.portal)}</span>}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ========================================================================= */}
+      {/* TAB 1: INVOICES                                                           */}
+      {/* ========================================================================= */}
+      {activeTab === 'invoices' && (
+        <Card>
+          <CardHeader
+            action={
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {filteredInvoices.length} Invoices Listed
+              </span>
+            }
+          >
+            <CardTitle>Invoices</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-5 pt-3 space-y-4">
+            {/* Filter controls */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <InteractiveSearchBar
+                  value={invoiceSearchTerm}
+                  onChange={(val) => {
+                    setInvoiceSearchTerm(val);
+                    setInvoicesPage(1);
+                  }}
+                  suggestions={invoiceSuggestions}
+                  placeholder="Search by invoice number or patient name..."
+                />
+              </div>
+              <div className="w-full sm:w-56">
+                <Select
+                  value={invoiceStatusFilter}
+                  onChange={(e) => {
+                    setInvoiceStatusFilter(e.target.value);
+                    setInvoicesPage(1);
+                  }}
+                  options={[
+                    { value: '', label: 'All Statuses' },
+                    { value: 'unpaid', label: 'Unpaid' },
+                    { value: 'partially_paid', label: 'Partially Paid' },
+                    { value: 'paid', label: 'Paid' },
+                    { value: 'void', label: 'Void' },
+                  ]}
+                />
+              </div>
+            </div>
+
+            {/* Invoices Table */}
+            <div className="overflow-x-auto overflow-y-hidden max-w-full">
+              <Table stackBelow="lg">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-36">Invoice #</TableHead>
+                    <TableHead hideBelow="sm" className="w-28 whitespace-nowrap">Date</TableHead>
+                    <TableHead className="w-48">Patient</TableHead>
+                    <TableHead hideBelow="md" className="w-28 text-right whitespace-nowrap">Total</TableHead>
+                    <TableHead hideBelow="md" className="w-28 text-right whitespace-nowrap">Paid</TableHead>
+                    <TableHead className="w-28 text-right whitespace-nowrap">Balance</TableHead>
+                    <TableHead className="w-28 whitespace-nowrap">Status</TableHead>
+                    <TableHead isActions className="w-44 text-right whitespace-nowrap">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedInvoices.length > 0 ? (
+                    paginatedInvoices.map((inv) => {
+                      const total = invoiceTotal(inv);
+                      const paid = amountPaid(allPayments, inv.id);
+                      const due = balanceDue(inv, allPayments);
+                      const currentStatus = deriveStatus(inv, allPayments);
+                      const matchedPatient = patients.find((p) => p.id === inv.patientId);
+                      const mrn = matchedPatient?.mrn || inv.patientId;
+
+                      const statusLabel =
+                        currentStatus === 'paid'
+                          ? 'Paid'
+                          : currentStatus === 'partially_paid'
+                          ? 'Partially Paid'
+                          : currentStatus === 'void'
+                          ? 'Void'
+                          : 'Unpaid';
+
+                      const canRecord =
+                        canRecordPayment(currentUser, modules) &&
+                        due > 0 &&
+                        currentStatus !== 'void';
+
+                      return (
+                        <TableRow key={inv.id}>
+                          <TableCell isPrimary label="Invoice #" className="w-36">
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
+                              {inv.number}
+                            </span>
+                          </TableCell>
+                          <TableCell hideBelow="sm" label="Date" className="w-28 text-slate-600 dark:text-slate-400">
+                            {inv.issuedAt ? inv.issuedAt.split('T')[0] : '2026-10-16'}
+                          </TableCell>
+                          <TableCell label="Patient" className="w-48">
+                            <div className="font-medium text-slate-900 dark:text-slate-100">
+                              {inv.patientName || 'Registered Patient'}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {mrn}
+                            </div>
+                          </TableCell>
+                          <TableCell hideBelow="md" label="Total" className="w-28 text-right text-slate-700 dark:text-slate-300">
+                            {formatCurrency(total)}
+                          </TableCell>
+                          <TableCell hideBelow="md" label="Paid" className="w-28 text-right text-slate-700 dark:text-slate-300">
+                            {formatCurrency(paid)}
+                          </TableCell>
+                          <TableCell label="Balance" className="w-28 text-right font-medium text-slate-900 dark:text-slate-100">
+                            {formatCurrency(due)}
+                          </TableCell>
+                          <TableCell label="Status" className="w-28">
+                            <span
+                              className={
+                                currentStatus === 'paid'
+                                  ? 'text-emerald-700 dark:text-emerald-400 font-medium'
+                                  : currentStatus === 'void'
+                                  ? 'text-slate-400 dark:text-slate-500 line-through'
+                                  : currentStatus === 'partially_paid'
+                                  ? 'text-slate-700 dark:text-slate-300 font-medium'
+                                  : 'text-slate-700 dark:text-slate-300 font-medium'
+                              }
+                            >
+                              {statusLabel}
+                            </span>
+                          </TableCell>
+                          <TableCell isActions label="Actions" className="w-44 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                onClick={() => handleOpenViewInvoice(inv)}
+                              >
+                                View
+                              </Button>
+                              {canRecord && (
+                                <Button
+                                  size="xs"
+                                  variant="primary"
+                                  onClick={() => openRecordPaymentModal(inv)}
+                                >
+                                  Record Payment
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={8} className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                        No invoices found matching criteria.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <Pagination
+              currentPage={invoicesPage}
+              totalItems={filteredInvoices.length}
+              pageSize={pageSize}
+              onPageChange={setInvoicesPage}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: PAYMENTS                                                           */}
+      {/* ========================================================================= */}
+      {activeTab === 'payments' && (
+        <Card>
+          <CardHeader
+            action={
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {filteredPayments.length} Payments Recorded
+              </span>
+            }
+          >
+            <CardTitle>Payments</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-5 pt-3 space-y-4">
+            {/* Filter controls */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="w-full sm:w-60">
+                <DatePicker
+                  value={paymentDateFilter}
+                  onChange={(val) => {
+                    setPaymentDateFilter(val);
+                    setPaymentsPage(1);
+                  }}
+                  placeholder="Filter by date..."
+                />
+              </div>
+              <div className="w-full sm:w-56">
+                <Select
+                  value={paymentMethodFilter}
+                  onChange={(e) => {
+                    setPaymentMethodFilter(e.target.value);
+                    setPaymentsPage(1);
+                  }}
+                  options={[
+                    { value: '', label: 'All Methods' },
+                    { value: 'cash', label: 'Cash' },
+                    { value: 'card', label: 'Card' },
+                    { value: 'upi', label: 'UPI' },
+                    { value: 'portal', label: 'Portal' },
+                  ]}
+                />
+              </div>
+              {paymentDateFilter && (
+                <div className="flex items-center">
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => setPaymentDateFilter('')}
+                  >
+                    Clear Date
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Payments Table */}
+            <div className="overflow-x-auto overflow-y-hidden max-w-full">
+              <Table stackBelow="lg">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-36">Receipt #</TableHead>
+                    <TableHead hideBelow="sm" className="w-32 whitespace-nowrap">Date & Time</TableHead>
+                    <TableHead className="w-32 whitespace-nowrap">Invoice #</TableHead>
+                    <TableHead className="w-44">Patient</TableHead>
+                    <TableHead hideBelow="md" className="w-24 whitespace-nowrap">Method</TableHead>
+                    <TableHead className="w-28 text-right whitespace-nowrap">Amount</TableHead>
+                    <TableHead hideBelow="md" className="w-24 whitespace-nowrap">Type</TableHead>
+                    <TableHead hideBelow="lg" className="w-36">Received By</TableHead>
+                    <TableHead isActions className="w-40 text-right whitespace-nowrap">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedPayments.length > 0 ? (
+                    paginatedPayments.map((p) => {
+                      const matchedInvoice = allInvoices.find((i) => i.id === p.invoiceId);
+                      const patientName = matchedInvoice?.patientName || 'Registered Patient';
+                      const receiver =
+                        typeof p.receivedBy === 'object' ? p.receivedBy.name : p.receivedBy || 'Staff';
+
+                      const isReversed =
+                        p.kind === 'reversal' ||
+                        allPayments.some((other) => other.reversesPaymentId === p.id);
+
+                      const canReverse =
+                        canReversePayment(currentUser, modules) &&
+                        p.kind === 'payment' &&
+                        !isReversed;
+
+                      return (
+                        <TableRow key={p.id}>
+                          <TableCell isPrimary label="Receipt #" className="w-36">
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
+                              {p.receiptNumber}
+                            </span>
+                          </TableCell>
+                          <TableCell hideBelow="sm" label="Date & Time" className="w-32 text-slate-600 dark:text-slate-400">
+                            {p.receivedAt ? p.receivedAt.replace('T', ' ').slice(0, 16) : '2026-10-16'}
+                          </TableCell>
+                          <TableCell label="Invoice #" className="w-32 text-slate-700 dark:text-slate-300">
+                            {matchedInvoice?.number || p.invoiceId}
+                          </TableCell>
+                          <TableCell label="Patient" className="w-44 font-medium text-slate-900 dark:text-slate-100">
+                            {patientName}
+                          </TableCell>
+                          <TableCell hideBelow="md" label="Method" className="w-24 uppercase text-slate-600 dark:text-slate-400">
+                            {p.method}
+                          </TableCell>
+                          <TableCell label="Amount" className="w-28 text-right font-medium text-slate-900 dark:text-slate-100">
+                            <span className={p.kind === 'reversal' ? 'text-rose-600 dark:text-rose-400' : ''}>
+                              {p.kind === 'reversal' ? `-${formatCurrency(p.amount)}` : formatCurrency(p.amount)}
+                            </span>
+                          </TableCell>
+                          <TableCell hideBelow="md" label="Type" className="w-24">
+                            <span
+                              className={
+                                p.kind === 'reversal'
+                                  ? 'text-rose-600 dark:text-rose-400 font-medium'
+                                  : isReversed
+                                  ? 'text-slate-400 dark:text-slate-500 line-through'
+                                  : 'text-slate-700 dark:text-slate-300'
+                              }
+                            >
+                              {p.kind === 'reversal' ? 'Reversal' : isReversed ? 'Reversed' : 'Payment'}
+                            </span>
+                          </TableCell>
+                          <TableCell hideBelow="lg" label="Received By" className="w-36 text-slate-600 dark:text-slate-400">
+                            <TableTruncate>{receiver}</TableTruncate>
+                          </TableCell>
+                          <TableCell isActions label="Actions" className="w-40 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                onClick={() => handleOpenReceipt(p.id)}
+                              >
+                                View Receipt
+                              </Button>
+                              {canReverse && (
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  onClick={() => openReversalModal(p)}
+                                >
+                                  Reverse
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={9} className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                        No payments found matching criteria.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <Pagination
+              currentPage={paymentsPage}
+              totalItems={filteredPayments.length}
+              pageSize={pageSize}
+              onPageChange={setPaymentsPage}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1: RECORD PAYMENT                                                   */}
+      {/* ========================================================================= */}
+      {paymentTargetInvoice && (
+        <Modal
+          isOpen={Boolean(paymentTargetInvoice)}
+          onClose={closeRecordPaymentModal}
+          title={`Record Payment: ${paymentTargetInvoice.number}`}
+          description={`Record settlement for ${paymentTargetInvoice.patientName || 'Registered Patient'}.`}
+          maxWidth="md"
+          footer={
+            paymentConfirming ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPaymentConfirming(false)}
+                  disabled={isSubmittingPayment}
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleExecutePayment}
+                  disabled={isSubmittingPayment}
+                >
+                  {isSubmittingPayment ? 'Processing...' : 'Confirm and Record Payment'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={closeRecordPaymentModal}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleProceedToConfirmPayment}
+                >
+                  Continue
+                </Button>
+              </>
+            )
+          }
+        >
+          {paymentError && (
+            <div className="p-3 mb-4 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+              {paymentError}
+            </div>
+          )}
+
+          {/* Invoice Summary */}
+          <div className="p-3 mb-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1.5">
+            <div className="flex justify-between">
+              <span className="text-slate-500 dark:text-slate-400">Patient:</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {paymentTargetInvoice.patientName || 'Registered Patient'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 dark:text-slate-400">Total Invoice Amount:</span>
+              <span className="text-slate-900 dark:text-slate-100">
+                {formatCurrency(invoiceTotal(paymentTargetInvoice))}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 dark:text-slate-400">Balance Due:</span>
+              <span className="font-bold text-slate-900 dark:text-slate-100">
+                {formatCurrency(balanceDue(paymentTargetInvoice, allPayments))}
+              </span>
+            </div>
+          </div>
+
+          {paymentConfirming ? (
+            <div className="space-y-3 py-2 text-xs text-slate-700 dark:text-slate-300">
+              <p>
+                Please verify payment details before recording. This entry will be permanently logged.
+              </p>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg space-y-1">
+                <div>
+                  <strong>Amount:</strong> ${paymentAmountDollars}
+                </div>
+                <div>
+                  <strong>Method:</strong> {paymentMethod.toUpperCase()}
+                </div>
+                {paymentReference && (
+                  <div>
+                    <strong>Reference:</strong> {paymentReference}
+                  </div>
+                )}
+                <div>
+                  <strong>Received By:</strong> {currentUser?.name || 'Front Desk Staff'}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleProceedToConfirmPayment} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Payment Amount ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={paymentAmountDollars}
+                  onChange={(e) => setPaymentAmountDollars(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-slate-500"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+
+              <Select
+                label="Payment Method"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                options={[
+                  { value: 'cash', label: 'Cash' },
+                  { value: 'card', label: 'Card' },
+                  { value: 'upi', label: 'UPI' },
+                ]}
+              />
+
+              <Input
+                label="Transaction / Reference ID (Optional for Cash)"
+                value={paymentReference}
+                onChange={(e) => setPaymentReference(e.target.value)}
+                placeholder="e.g. TXN-984210 or UPI-Ref"
+              />
+
+              <Input
+                label="Notes (Optional)"
+                value={paymentNote}
+                onChange={(e) => setPaymentNote(e.target.value)}
+                placeholder="Front desk intake comments..."
+              />
+
+              <div className="pt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                Operator: <strong>{currentUser?.name || 'Front Desk Staff'}</strong> ({currentUser?.role || 'Staff'})
+              </div>
+            </form>
+          )}
+        </Modal>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 2: VIEW INVOICE                                                     */}
+      {/* ========================================================================= */}
+      {activeViewingInvoice && (
+        <Modal
+          isOpen={Boolean(activeViewingInvoice)}
+          onClose={() => setViewingInvoice(null)}
+          title={`Invoice ${activeViewingInvoice.number}`}
+          description={`Issued on ${activeViewingInvoice.issuedAt ? activeViewingInvoice.issuedAt.split('T')[0] : '2026-10-16'}`}
+          maxWidth="lg"
+          footer={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setViewingInvoice(null)}
+            >
+              Close
+            </Button>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            {/* Header info */}
+            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div>
+                <span className="text-slate-500 dark:text-slate-400">Patient:</span>{' '}
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {activeViewingInvoice.patientName || 'Registered Patient'}
+                </span>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  ID: {activeViewingInvoice.patientId}
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-slate-500 dark:text-slate-400">Attending:</span>{' '}
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {activeViewingInvoice.doctorName || 'Consulting Physician'}
+                </span>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Status:{' '}
+                  <span className="font-semibold uppercase">
+                    {deriveStatus(activeViewingInvoice, allPayments)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Line Items Table */}
+            <div>
+              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
+                Line Items
+              </div>
+              <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <tr>
+                      <th className="p-2.5">Description</th>
+                      <th className="p-2.5 w-24">Kind</th>
+                      <th className="p-2.5 w-28 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                    {activeViewingInvoice.items.map((it) => (
+                      <tr key={it.id}>
+                        <td className="p-2.5 text-slate-900 dark:text-slate-100">{it.description}</td>
+                        <td className="p-2.5 uppercase text-[10px] text-slate-500 dark:text-slate-400">{it.kind}</td>
+                        <td className="p-2.5 text-right font-medium text-slate-900 dark:text-slate-100">
+                          {it.kind === 'discount' ? `-${formatCurrency(it.amount)}` : formatCurrency(it.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Total breakdown */}
+            <div className="flex justify-end pt-1">
+              <div className="w-64 space-y-1 text-xs">
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Total Amount:</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    {formatCurrency(invoiceTotal(activeViewingInvoice))}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Settled Payments:</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    {formatCurrency(amountPaid(allPayments, activeViewingInvoice.id))}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-slate-200 dark:border-slate-700 pt-1 text-sm font-bold text-slate-900 dark:text-slate-100">
+                  <span>Outstanding Due:</span>
+                  <span>{formatCurrency(balanceDue(activeViewingInvoice, allPayments))}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Administrative Mutations (Add Charge / Apply Discount / Void) */}
+            {isAdministrator && (
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Administrative Controls
+                  </span>
+                  <div className="flex space-x-2">
+                    {canAddCharge(currentUser, modules) &&
+                      activeViewingInvoice.status !== 'void' &&
+                      balanceDue(activeViewingInvoice, allPayments) > 0 && (
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => {
+                            setIsAddingCharge((prev) => !prev);
+                            setIsApplyingDiscount(false);
+                            setIsVoidingInvoice(false);
+                          }}
+                        >
+                          Add Charge
+                        </Button>
+                      )}
+
+                    {canApplyDiscount(currentUser, modules) &&
+                      activeViewingInvoice.status !== 'void' &&
+                      balanceDue(activeViewingInvoice, allPayments) > 0 && (
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => {
+                            setIsApplyingDiscount((prev) => !prev);
+                            setIsAddingCharge(false);
+                            setIsVoidingInvoice(false);
+                          }}
+                        >
+                          Apply Discount
+                        </Button>
+                      )}
+
+                    {canVoidInvoice(currentUser, modules) &&
+                      activeViewingInvoice.status !== 'void' &&
+                      amountPaid(allPayments, activeViewingInvoice.id) === 0 && (
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => {
+                            setIsVoidingInvoice((prev) => !prev);
+                            setIsAddingCharge(false);
+                            setIsApplyingDiscount(false);
+                          }}
+                        >
+                          Void Invoice
+                        </Button>
+                      )}
+                  </div>
+                </div>
+
+                {/* Subform: Add Charge */}
+                {isAddingCharge && (
+                  <form
+                    onSubmit={handleAddChargeSubmit}
+                    className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5"
+                  >
+                    <div className="font-semibold text-slate-800 dark:text-slate-200">Add Line Charge</div>
+                    {chargeError && (
+                      <div className="p-2 text-xs bg-rose-50 dark:bg-rose-950 text-rose-800 dark:text-rose-200 rounded">
+                        {chargeError}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2">
+                        <Input
+                          label="Description"
+                          value={chargeDescription}
+                          onChange={(e) => setChargeDescription(e.target.value)}
+                          placeholder="e.g. Specialized Dressing or Procedure Fee"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Amount ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          value={chargeAmountDollars}
+                          onChange={(e) => setChargeAmountDollars(e.target.value)}
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 pt-1">
+                      <Button size="xs" variant="outline" onClick={() => setIsAddingCharge(false)}>
+                        Cancel
+                      </Button>
+                      <Button size="xs" variant="primary" type="submit">
+                        Save Charge
+                      </Button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Subform: Apply Discount */}
+                {isApplyingDiscount && (
+                  <form
+                    onSubmit={handleApplyDiscountSubmit}
+                    className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5"
+                  >
+                    <div className="font-semibold text-slate-800 dark:text-slate-200">Apply Administrative Discount</div>
+                    {discountError && (
+                      <div className="p-2 text-xs bg-rose-50 dark:bg-rose-950 text-rose-800 dark:text-rose-200 rounded">
+                        {discountError}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Amount ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          value={discountAmountDollars}
+                          onChange={(e) => setDiscountAmountDollars(e.target.value)}
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          label="Reason (Mandatory)"
+                          value={discountReason}
+                          onChange={(e) => setDiscountReason(e.target.value)}
+                          placeholder="e.g. Senior citizen concession or clinical waiver"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 pt-1">
+                      <Button size="xs" variant="outline" onClick={() => setIsApplyingDiscount(false)}>
+                        Cancel
+                      </Button>
+                      <Button size="xs" variant="primary" type="submit">
+                        Apply Discount
+                      </Button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Subform: Void Invoice */}
+                {isVoidingInvoice && (
+                  <form
+                    onSubmit={handleVoidInvoiceSubmit}
+                    className="p-3 bg-rose-50/50 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-900 space-y-2.5"
+                  >
+                    <div className="font-semibold text-rose-800 dark:text-rose-300">Void Invoice Confirmation</div>
+                    <p className="text-xs text-rose-700 dark:text-rose-400">
+                      Voiding marks this invoice as cancelled and permanently clears any outstanding balance.
+                    </p>
+                    {voidError && (
+                      <div className="p-2 text-xs bg-rose-100 dark:bg-rose-950 text-rose-900 dark:text-rose-200 rounded">
+                        {voidError}
+                      </div>
+                    )}
+                    <Input
+                      label="Mandatory Reason"
+                      value={voidReason}
+                      onChange={(e) => setVoidReason(e.target.value)}
+                      placeholder="e.g. Visit created in error / duplicate booking"
+                    />
+                    <div className="flex justify-end space-x-2 pt-1">
+                      <Button size="xs" variant="outline" onClick={() => setIsVoidingInvoice(false)}>
+                        Cancel
+                      </Button>
+                      <Button size="xs" variant="primary" type="submit">
+                        Confirm Void
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* Payments list for this invoice */}
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
+                Payment History ({viewingInvoicePayments.length})
+              </div>
+              {viewingInvoicePayments.length > 0 ? (
+                <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      <tr>
+                        <th className="p-2">Receipt #</th>
+                        <th className="p-2">Date</th>
+                        <th className="p-2">Method</th>
+                        <th className="p-2 text-right">Amount</th>
+                        <th className="p-2">Type</th>
+                        <th className="p-2 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                      {viewingInvoicePayments.map((p) => {
+                        const isReversed =
+                          p.kind === 'reversal' ||
+                          allPayments.some((o) => o.reversesPaymentId === p.id);
+                        return (
+                          <tr key={p.id}>
+                            <td className="p-2 font-medium text-slate-900 dark:text-slate-100">{p.receiptNumber}</td>
+                            <td className="p-2 text-slate-600 dark:text-slate-400">
+                              {p.receivedAt ? p.receivedAt.split('T')[0] : '2026-10-16'}
+                            </td>
+                            <td className="p-2 uppercase text-slate-600 dark:text-slate-400">{p.method}</td>
+                            <td className="p-2 text-right font-medium text-slate-900 dark:text-slate-100">
+                              {p.kind === 'reversal' ? `-${formatCurrency(p.amount)}` : formatCurrency(p.amount)}
+                            </td>
+                            <td className="p-2">
+                              <span
+                                className={
+                                  p.kind === 'reversal'
+                                    ? 'text-rose-600 dark:text-rose-400'
+                                    : isReversed
+                                    ? 'line-through text-slate-400'
+                                    : 'text-slate-700 dark:text-slate-300'
+                                }
+                              >
+                                {p.kind === 'reversal' ? 'Reversal' : isReversed ? 'Reversed' : 'Settled'}
+                              </span>
+                            </td>
+                            <td className="p-2 text-right">
+                              <div className="flex items-center justify-end space-x-1.5">
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  onClick={() => handleOpenReceipt(p.id)}
+                                >
+                                  Receipt
+                                </Button>
+                                {canReversePayment(currentUser, modules) &&
+                                  p.kind === 'payment' &&
+                                  !isReversed && (
+                                    <Button
+                                      size="xs"
+                                      variant="outline"
+                                      onClick={() => openReversalModal(p)}
+                                    >
+                                      Reverse
+                                    </Button>
+                                  )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-slate-500 dark:text-slate-400 text-xs py-2">
+                  No payments recorded for this invoice yet.
+                </div>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: PAYMENT REVERSAL                                                 */}
+      {/* ========================================================================= */}
+      {reversalTargetPayment && (
+        <Modal
+          isOpen={Boolean(reversalTargetPayment)}
+          onClose={closeReversalModal}
+          title={`Reverse Payment: ${reversalTargetPayment.receiptNumber}`}
+          description="Administrative payment reversal. This entry will be logged to security audit ledger."
+          maxWidth="sm"
+          footer={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={closeReversalModal}
+                disabled={isSubmittingReversal}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleExecuteReversal}
+                disabled={isSubmittingReversal}
+              >
+                {isSubmittingReversal ? 'Processing...' : 'Confirm Reversal'}
+              </Button>
+            </>
+          }
+        >
+          <form onSubmit={handleExecuteReversal} className="space-y-3 text-xs">
+            {reversalError && (
+              <div className="p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-lg">
+                {reversalError}
+              </div>
+            )}
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+              <div>
+                <strong>Amount:</strong> {formatCurrency(reversalTargetPayment.amount)}
+              </div>
+              <div>
+                <strong>Original Method:</strong> {reversalTargetPayment.method.toUpperCase()}
+              </div>
+            </div>
+            <p className="text-slate-600 dark:text-slate-400">
+              Reversing this payment restores the invoice balance and creates an official negative payment entry.
+            </p>
+            <Textarea
+              label="Mandatory Reason for Reversal"
+              value={reversalReason}
+              onChange={(e) => setReversalReason(e.target.value)}
+              placeholder="e.g. Card entered twice in error by front desk cashier"
+              rows={3}
+              required
+            />
+          </form>
+        </Modal>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: OFFICIAL RECEIPT (DEMOGRAPHICS ONLY, ZERO CLINICAL DATA)         */}
+      {/* ========================================================================= */}
+      {viewingReceipt && (
+        <Modal
+          isOpen={Boolean(viewingReceipt)}
+          onClose={() => setViewingReceipt(null)}
+          title="Payment Receipt"
+          description={viewingReceipt.receiptNumber}
+          maxWidth="sm"
+          footer={
+            <div className="flex justify-between w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                icon={<Printer className="w-3.5 h-3.5" />}
+                onClick={handlePrintReceipt}
+              >
+                Print Receipt
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setViewingReceipt(null)}
+              >
+                Done
+              </Button>
+            </div>
+          }
+        >
+          {/* Printable Receipt Card */}
+          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-xs">
+            <div className="text-center pb-2 border-b border-slate-200 dark:border-slate-800">
+              <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                {viewingReceipt.clinicName}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                Official Payment Receipt
+              </div>
+              <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
+                {viewingReceipt.receiptNumber}
+              </div>
+            </div>
+
+            <div className="space-y-1.5 text-slate-600 dark:text-slate-400">
+              <div className="flex justify-between">
+                <span>Date & Time:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">
+                  {viewingReceipt.receivedAt.replace('T', ' ').slice(0, 16)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Patient Name:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">
+                  {viewingReceipt.patientName}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>MRN:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">
+                  {viewingReceipt.patientMrn}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Invoice #:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">
+                  {viewingReceipt.invoiceNumber}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Payment Method:</span>
+                <span className="font-medium uppercase text-slate-900 dark:text-slate-100">
+                  {viewingReceipt.method}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Cashier / Operator:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">
+                  {viewingReceipt.receivedBy}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-sm">
+              <span className="font-bold text-slate-900 dark:text-slate-100">Total Settled:</span>
+              <span className="font-bold text-slate-900 dark:text-slate-100">
+                {viewingReceipt.formattedAmount}
+              </span>
+            </div>
+
+            <div className="text-center pt-2 text-[10px] text-slate-400 dark:text-slate-500">
+              Demographic and payment settlement record only.
+              <br />
+              No clinical diagnosis, prescription, or vitals are disclosed on receipts.
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+};

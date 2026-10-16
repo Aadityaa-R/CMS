@@ -3,6 +3,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { ClinicProvider } from '@/context/ClinicContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AttendanceProvider } from '@/context/AttendanceContext';
+import { BillingProvider } from '@/context/BillingContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { seedInitialData, isStorageCorrupted, resetDemoData } from '@/data/storage';
 import { Button } from '@/components/ui/Button';
@@ -65,7 +66,9 @@ export const App: React.FC = () => {
       <AuthProvider>
         <ClinicProvider>
           <AttendanceProvider>
-            <AppLayout />
+            <BillingProvider>
+              <AppLayout />
+            </BillingProvider>
           </AttendanceProvider>
         </ClinicProvider>
       </AuthProvider>

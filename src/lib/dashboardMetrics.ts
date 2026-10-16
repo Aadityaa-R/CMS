@@ -3,7 +3,6 @@ import {
   Doctor,
   Appointment,
   AppointmentStatus,
-  Invoice,
   Prescription,
   User,
   UserRole,
@@ -93,7 +92,8 @@ export interface PatientPrescriptionRow {
 export interface CalculateDashboardMetricsOptions {
   patients: Patient[];
   appointments: Appointment[];
-  invoices: Invoice[];
+  invoices: any[];
+  payments?: any[];
   prescriptions: Prescription[];
   doctors?: Doctor[];
   users?: User[];
@@ -241,6 +241,47 @@ function formatMonth(d: Date): string {
   return `${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function getInvBilled(inv: any): number {
+  if (inv.items && Array.isArray(inv.items)) {
+    let cents = 0;
+    for (const it of inv.items) {
+      if (it.kind === 'consultation' || it.kind === 'charge') cents += it.amount;
+      else if (it.kind === 'discount') cents -= it.amount;
+    }
+    return Math.max(0, cents) / 100;
+  }
+  return inv.totalAmount || 0;
+}
+
+function getInvPaid(inv: any, payments: any[] = []): number {
+  if (payments && payments.length > 0) {
+    let cents = 0;
+    for (const p of payments) {
+      if (p.invoiceId === inv.id) {
+        if (p.kind === 'payment') cents += p.amount;
+        else if (p.kind === 'reversal') cents -= p.amount;
+      }
+    }
+    return Math.max(0, cents) / 100;
+  }
+  if (typeof inv.paidAmount === 'number') {
+    return inv.paidAmount;
+  }
+  return 0;
+}
+
+function getInvOutstanding(inv: any, payments: any[] = []): number {
+  if (inv.status === 'void') return 0;
+  const billed = getInvBilled(inv);
+  const paid = getInvPaid(inv, payments);
+  return Math.max(0, billed - paid);
+}
+
+function getInvDate(inv: any): string {
+  if (inv.issuedAt) return inv.issuedAt.split('T')[0];
+  return inv.date || '';
+}
+
 export function calculateDashboardMetrics(
   options: CalculateDashboardMetricsOptions
 ): DashboardMetricsResult {
@@ -248,6 +289,7 @@ export function calculateDashboardMetrics(
     patients,
     appointments,
     invoices,
+    payments = [],
     prescriptions,
     doctors = [],
     pendingClearances = [],
@@ -332,19 +374,21 @@ export function calculateDashboardMetrics(
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 
   // Range invoices (MD, Receptionist, Patient)
-  const scopedInvoices = isPatient
+  const scopedInvoices = isStaffDoctor
+    ? []
+    : isPatient
     ? invoices.filter((i) => i.patientId === patientId)
     : invoices;
 
   const rangeInvoices = scopedInvoices.filter((i) =>
-    isDateInRange(i.date, startDate, endDate)
+    isDateInRange(getInvDate(i), startDate, endDate)
   );
 
-  const billedTotal = rangeInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-  const collectedTotal = rangeInvoices.reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
+  const billedTotal = rangeInvoices.reduce((sum, inv) => sum + getInvBilled(inv), 0);
+  const collectedTotal = rangeInvoices.reduce((sum, inv) => sum + getInvPaid(inv, payments), 0);
   const outstandingTotal = scopedInvoices
     .filter((i) => i.status === 'unpaid' || i.status === 'partially_paid')
-    .reduce((sum, inv) => sum + Math.max(0, (inv.totalAmount || 0) - (inv.paidAmount || 0)), 0);
+    .reduce((sum, inv) => sum + getInvOutstanding(inv, payments), 0);
 
   // Summary figures per role
   const summaryFigures: SummaryFigure[] = [];
@@ -455,9 +499,9 @@ export function calculateDashboardMetrics(
       });
 
       if (isMD) {
-        const dayInvoices = invoices.filter((i) => parseDateOnly(i.date) === dateKey);
-        const dayBilled = dayInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
-        const dayCollected = dayInvoices.reduce((sum, i) => sum + (i.paidAmount || 0), 0);
+        const dayInvoices = invoices.filter((i) => parseDateOnly(getInvDate(i)) === dateKey);
+        const dayBilled = dayInvoices.reduce((sum, i) => sum + getInvBilled(i), 0);
+        const dayCollected = dayInvoices.reduce((sum, i) => sum + getInvPaid(i, payments), 0);
         const dayOutstanding = Math.max(0, dayBilled - dayCollected);
 
         feesAndPayments.push({
@@ -519,9 +563,9 @@ export function calculateDashboardMetrics(
       });
 
       if (isMD) {
-        const weekInvoices = invoices.filter((i) => isDateInRange(i.date, weekStart, weekEnd));
-        const weekBilled = weekInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
-        const weekCollected = weekInvoices.reduce((sum, i) => sum + (i.paidAmount || 0), 0);
+        const weekInvoices = invoices.filter((i) => isDateInRange(getInvDate(i), weekStart, weekEnd));
+        const weekBilled = weekInvoices.reduce((sum, i) => sum + getInvBilled(i), 0);
+        const weekCollected = weekInvoices.reduce((sum, i) => sum + getInvPaid(i, payments), 0);
         feesAndPayments.push({
           dateKey,
           label,
@@ -579,10 +623,10 @@ export function calculateDashboardMetrics(
 
       if (isMD) {
         const monthInvoices = invoices.filter((i) =>
-          isDateInRange(i.date, monthStart, monthEnd)
+          isDateInRange(getInvDate(i), monthStart, monthEnd)
         );
-        const monthBilled = monthInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
-        const monthCollected = monthInvoices.reduce((sum, i) => sum + (i.paidAmount || 0), 0);
+        const monthBilled = monthInvoices.reduce((sum, i) => sum + getInvBilled(i), 0);
+        const monthCollected = monthInvoices.reduce((sum, i) => sum + getInvPaid(i, payments), 0);
         feesAndPayments.push({
           dateKey,
           label,

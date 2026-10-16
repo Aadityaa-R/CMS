@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
+import { useBilling } from '@/context/BillingContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select, SelectOption } from '@/components/ui/Select';
@@ -623,12 +624,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const {
     patients,
     appointments,
-    invoices,
     prescriptions,
     doctors,
     patientAssignments = [],
     updateAppointmentStatus,
   } = useClinic();
+  const { invoices: billingInvoices, payments: billingPayments } = useBilling();
 
   const [dateRange, setDateRange] = useState<DateRangePreset>('this_month');
   const [chartBucket1, setChartBucket1] = useState<ChartBucketType>('day');
@@ -645,7 +646,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     return calculateDashboardMetrics({
       patients,
       appointments,
-      invoices,
+      invoices: billingInvoices,
+      payments: billingPayments,
       prescriptions,
       doctors,
       users: Object.values(DEMO_USERS),
@@ -660,7 +662,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   }, [
     patients,
     appointments,
-    invoices,
+    billingInvoices,
+    billingPayments,
     prescriptions,
     doctors,
     currentRole,
@@ -678,7 +681,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     return calculateDashboardMetrics({
       patients,
       appointments,
-      invoices,
+      invoices: billingInvoices,
+      payments: billingPayments,
       prescriptions,
       doctors,
       users: Object.values(DEMO_USERS),
@@ -696,7 +700,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     metrics1,
     patients,
     appointments,
-    invoices,
+    billingInvoices,
+    billingPayments,
     prescriptions,
     doctors,
     currentRole,

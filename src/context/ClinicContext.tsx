@@ -31,6 +31,7 @@ import {
 } from '@/lib/permissions';
 import { isDoctorAvailable } from '@/lib/availability';
 import { getNextTokenNumberForDate } from '@/lib/reception';
+import { buildInvoiceForVisit } from '@/lib/billing';
 import {
   INITIAL_PATIENTS,
   INITIAL_DOCTORS,
@@ -843,6 +844,39 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (actor && !canCheckIn(actor, modules) && !isAdmin(actor, modules)) {
         console.error('Unauthorized: only receptionists can check in patients.');
         return;
+      }
+    }
+
+    if (status === 'completed') {
+      const apt = appointments.find((a) => a.id === id);
+      if (apt && apt.status !== 'completed') {
+        const doc = doctors.find((d) => d.id === apt.doctorId);
+        const repoInvoices = getRepository<any>('invoices');
+        repoInvoices
+          .list()
+          .then((existingInvoices: any[]) => {
+            const alreadyExists = existingInvoices.some(
+              (inv) => inv.visitId === apt.id || inv.appointmentId === apt.id
+            );
+            if (!alreadyExists) {
+              const newInvoice = buildInvoiceForVisit(apt, doc, existingInvoices, new Date());
+              repoInvoices
+                .create(newInvoice)
+                .then(() => {
+                  try {
+                    window.dispatchEvent(
+                      new StorageEvent('storage', {
+                        key: `${STORAGE_KEY_PREFIX}invoices`,
+                      })
+                    );
+                  } catch {
+                    // ignore
+                  }
+                })
+                .catch(() => {});
+            }
+          })
+          .catch(() => {});
       }
     }
 

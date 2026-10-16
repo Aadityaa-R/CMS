@@ -7,14 +7,14 @@ import { LoginView } from '@/views/LoginView';
 
 // Role views
 import { DashboardView } from '@/views/DashboardView';
-import { AdminView } from '@/views/AdminView';
 import { DoctorView } from '@/views/DoctorView';
 import { PatientView } from '@/views/PatientView';
 import { ReceptionistView } from '@/views/ReceptionistView';
 import { AccessControlView } from '@/views/AccessControlView';
 import { AttendanceView } from '@/views/AttendanceView';
+import { BillingView } from '@/views/BillingView';
 import { Button } from '@/components/ui/Button';
-import { isAdmin, hasCapability } from '@/lib/permissions';
+import { isAdmin, hasCapability, canViewBilling } from '@/lib/permissions';
 import { useClinic } from '@/context/ClinicContext';
 
 export const AppLayout: React.FC = () => {
@@ -137,8 +137,8 @@ export const AppLayout: React.FC = () => {
     }
 
     if (activeTab === 'admin_billing' || activeTab === 'billing') {
-      if (isAdmin(currentUser, modules)) {
-        return <AdminView activeTab="billing" />;
+      if (canViewBilling(currentUser, modules)) {
+        return <BillingView />;
       }
       return <DashboardView onNavigate={handleNavigate} />;
     }

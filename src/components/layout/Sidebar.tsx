@@ -30,7 +30,7 @@ interface NavItem {
 }
 
 import { useClinic } from '@/context/ClinicContext';
-import { hasCapability } from '@/lib/permissions';
+import { hasCapability, canViewBilling } from '@/lib/permissions';
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
@@ -74,6 +74,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       hasCapability(currentUser, 'paymentRecording', modules)
     ) {
       items.push({ id: 'role_receptionist', label: 'Reception', icon: <UserCheck className="w-4 h-4" /> });
+    }
+
+    if (canViewBilling(currentUser, modules)) {
+      items.push({ id: 'billing', label: 'Billing', icon: <CreditCard className="w-4 h-4" /> });
     }
 
     if (hasCapability(currentUser, 'administrativeAccess', modules)) {

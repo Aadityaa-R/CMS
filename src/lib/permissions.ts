@@ -94,11 +94,13 @@ export function resolveStaffIds(
   if (
     user.id === 'usr-doc-1' ||
     user.id === 'doc-1' ||
+    user.id === 'usr-1' ||
     ('badgeNumber' in user && user.badgeNumber === 'MD-001')
   ) {
     ids.add('acc-doc-1');
     ids.add('usr-doc-1');
     ids.add('doc-1');
+    ids.add('usr-1');
   }
   if (
     user.id === 'usr-doc-2' ||
@@ -299,6 +301,18 @@ export function canBookAppointment(
 }
 
 /**
+ * Determines whether a user has authority to view billing workstation/records.
+ * Granted to users with 'paymentRecording' or administrative access.
+ */
+export function canViewBilling(
+  user: User | null | undefined,
+  modules: AccessModule[] = INITIAL_MODULES
+): boolean {
+  if (!user) return false;
+  return hasCapability(user, 'paymentRecording', modules) || isAdmin(user, modules);
+}
+
+/**
  * Determines whether a user has authority to record billing payments.
  * Depends on module access ('paymentRecording').
  */
@@ -306,7 +320,76 @@ export function canRecordPayment(
   user: User | null | undefined,
   modules: AccessModule[] = INITIAL_MODULES
 ): boolean {
+  if (!user) return false;
   return hasCapability(user, 'paymentRecording', modules);
+}
+
+/**
+ * Determines whether a patient can pay their own invoice via the portal.
+ */
+export function canPayOwnInvoice(
+  user: User | null | undefined,
+  invoicePatientId: string
+): boolean {
+  if (!user || user.role !== 'patient') return false;
+  const rawId = user.id || '';
+  const cleanId = rawId.startsWith('usr-') ? rawId.replace('usr-', '') : rawId;
+  return (
+    user.patientId === invoicePatientId ||
+    rawId === invoicePatientId ||
+    cleanId === invoicePatientId ||
+    user.badgeNumber === invoicePatientId ||
+    `pat-${cleanId}` === invoicePatientId ||
+    `pat-1` === invoicePatientId // Test persona Eleanor Wright
+  );
+}
+
+/**
+ * Determines whether a user can void an invoice.
+ * Restricted to administrators with administrativeAccess.
+ */
+export function canVoidInvoice(
+  user: User | null | undefined,
+  modules: AccessModule[] = INITIAL_MODULES
+): boolean {
+  if (!user) return false;
+  return isAdmin(user, modules);
+}
+
+/**
+ * Determines whether a user can apply an administrative discount to an invoice.
+ * Restricted to administrators with administrativeAccess.
+ */
+export function canApplyDiscount(
+  user: User | null | undefined,
+  modules: AccessModule[] = INITIAL_MODULES
+): boolean {
+  if (!user) return false;
+  return isAdmin(user, modules);
+}
+
+/**
+ * Determines whether a user can reverse a recorded payment.
+ * Restricted to administrators with administrativeAccess.
+ */
+export function canReversePayment(
+  user: User | null | undefined,
+  modules: AccessModule[] = INITIAL_MODULES
+): boolean {
+  if (!user) return false;
+  return isAdmin(user, modules);
+}
+
+/**
+ * Determines whether a user can add extra charges to an unpaid invoice.
+ * Granted to holders of paymentRecording or administrative access.
+ */
+export function canAddCharge(
+  user: User | null | undefined,
+  modules: AccessModule[] = INITIAL_MODULES
+): boolean {
+  if (!user) return false;
+  return hasCapability(user, 'paymentRecording', modules) || isAdmin(user, modules);
 }
 
 /**

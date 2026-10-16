@@ -298,6 +298,40 @@ Every feature and line of code in this project strictly adheres to the governing
   - Reset demo data action requires typing `RESET` to restore baseline seeded state.
   - All data operations (export, import, reset, mode change) log immutable entries to the security audit ledger.
 
+### 2.16 Billing, Invoicing & Payments Architecture (Milestone M6)
+- **Monetary Storage & Formatting**:
+  - Money is stored strictly as integer minor units (cents) throughout all types, state, calculation engines, and persistence.
+  - Conversion to formatted display currency (`$X.XX`) occurs exclusively at presentation time using pure formatting functions.
+  - No real payment gateway integration; no credit card numbers or banking secrets are ever collected, processed, or persisted.
+- **Automated Invoice Generation on Visit Conclusion**:
+  - When an attending physician concludes an outpatient consultation, an invoice is generated automatically through the billing engine using that doctor's stored consultation fee.
+  - Invoices are linked idempotently to the appointment/visit (`visitId` / `appointmentId`), ensuring exactly one invoice per completed visit.
+  - If a doctor record lacks a designated consultation fee, the engine falls back to `DEFAULT_CONSULTATION_FEE_CENTS = 10000` ($100.00).
+  - Doctors receive zero billing data back and have no visibility into invoices, keeping the clinical workstation strictly isolated from financial records.
+- **Billing Entity Models**:
+  - **Invoice**: `id`, `number` (`INV-YYYY-XXXX`, sequential), `patientId`, `visitId`, `appointmentId`, `doctorId`, `issuedAt` (ISO timestamp), `items: InvoiceItem[]`, `status` (`unpaid`, `partially_paid`, `paid`, `void`), `createdBy` (`{ id, name }`).
+  - **InvoiceItem**: `id`, `description`, `amount` (cents), `kind` (`consultation`, `charge`, `discount`).
+  - **Payment**: `id`, `invoiceId`, `amount` (cents), `method` (`cash`, `card`, `upi`, `portal`), `kind` (`payment`, `reversal`), `reversesPaymentId`, `receivedAt` (ISO timestamp), `receivedBy` (`{ id, name }` or `"Patient portal"`), `reference` (short reference for card/upi/portal), `note`, `reason` (mandatory for reversals), `receiptNumber` (`RCT-YYYY-XXXX`, sequential).
+- **Pure Calculation Engine & Ledger Integrity**:
+  - `invoiceTotal(invoice)` calculates net total: consultation + charges minus discounts.
+  - `amountPaid(payments, invoiceId)` calculates settled amount: sum of payments minus reversals for that invoice.
+  - `balanceDue(invoice, payments)` calculates remaining outstanding amount (`max(0, invoiceTotal - amountPaid)`).
+  - `deriveStatus(invoice, payments)` computes `void`, `paid` (balance = 0), `partially_paid` (paid > 0 and balance > 0), or `unpaid` (paid = 0).
+  - Payments are immutable and cannot be edited or deleted. Corrections require an administrative reversal with a mandatory plain-text reason. Reversals cannot reverse another reversal and cannot over-reverse original payments.
+  - Adding charges (`addCharge`) is allowed for any holder of `paymentRecording` on unpaid or partially paid invoices.
+  - Applying discounts (`applyDiscount`) and voiding invoices (`voidInvoice`) require `administrativeAccess` with a mandatory reason. Invoices with recorded payments cannot be voided.
+  - Idempotency key tracking in `applyPayment` prevents double submissions from creating duplicate transactions.
+- **Receipts & Clinical Scoping**:
+  - Receipts (`makeReceipt`) include clinic branding, receipt number, patient name, MRN, invoice number, amount, payment method, date/time, and receiving operator.
+  - Receipts strictly contain zero clinical information, diagnoses, medications, or vitals.
+- **Permissions & Workstation Access**:
+  - Sidebar displays "Billing" navigation item for users with `paymentRecording` or `administrativeAccess`.
+  - Viewing invoices and recording payments requires `paymentRecording` (or `administrativeAccess`).
+  - Voiding invoices, applying discounts, and reversing payments require `administrativeAccess`.
+  - Scoping: Receptionists and administrators see all clinic invoices; patients see only their own invoices, payments, and receipts; physicians receive an empty list (`[]`).
+  - Reception workstation displays plain-text `"Outstanding balance: $X.XX"` with an invoice link on check-in workflows without blocking intake.
+  - Patient portal includes an Invoices section with balance due, responsive table, and simulated "Pay Now" modal (Card or UPI) producing immediate portal receipts.
+
 ---
 
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
@@ -445,7 +479,8 @@ c:\Users\raadi\Downloads\CMS\
 │       ├── ReceptionistView.tsx    # Waiting Lounge, Token Dispatch, Patient Check-In, Walk-In Registration
 │       ├── PatientView.tsx         # Outpatient Portal (Appointments, Prescriptions, Diagnostic Reports, Invoices)
 │       ├── AccessControlView.tsx   # Administrative Console (Add Users, Edit Users, Security Ledger)
-│       └── AdminView.tsx           # Billing & Financial Management (Invoice Ledger, Payment Settlements)
+│       ├── AdminView.tsx           # Billing & Financial Management (Invoice Ledger, Payment Settlements)
+│       └── BillingView.tsx         # Billing Workstation (Invoices, Payments, Receipts, Collections)
 ```
 
 ---
@@ -534,6 +569,28 @@ The system defines 4 operational roles across 5 test personas:
 - **Active Prescriptions**: Medication list with dosages and doctor instructions.
 - **Billing History**: Invoices and receipts with status indicators.
 - **Pagination**: 10-records-per-page pagination on all lists.
+
+### 6.6 Billing Workstation (`BillingView.tsx`)
+- **Workstation Header**: Clean header "Billing" without subtitle paragraphs. Accessible to accounts with `paymentRecording` or `administrativeAccess`.
+- **Navigation Tabs**: Physician-style plain-text tabs with static 2px accent underline sitting on the bottom border (`border-b-2 border-teal-600 -mb-px`): "Invoices" and "Payments".
+- **Invoices Tab**:
+  - Top collections summary lines showing today's collections for the signed-in operator (Cash, Card, UPI, Portal, and Total), plus clinic-wide collections for administrators.
+  - Active filter totals row ("Billed $X.XX, Collected $Y.YY, Outstanding $Z.ZZ").
+  - Search by patient name, MRN, or invoice number.
+  - Status filter dropdown (`Select.tsx`: All, Unpaid, Partially paid, Paid, Void).
+  - Shared Table (`stackBelow="lg"`) with 10 rows per page (`Pagination`).
+  - Actions: outline "View", and outline "Record Payment" for rows with an outstanding balance (requires `paymentRecording`).
+- **Record Payment Modal**:
+  - Invoice summary lines, amount input (prefilled with balance due, numeric, no spinners), payment method dropdown (Cash, Card, UPI), short reference input for Card and UPI, non-editable operator attribution ("Received by <signed-in staff name>").
+  - Confirmation dialog with disabled submission state while processing.
+  - On success: displays receipt modal with "Print" action (scoped print styles) and "Close".
+- **View Invoice Modal**:
+  - Invoice header, line items table, and payments history table (Date, Amount, Method, Received By, Receipt Number) with "View Receipt" action.
+  - Holders of `paymentRecording` can click "Add Charge" (description, amount).
+  - Administrators also have "Apply Discount" (amount, reason), "Void Invoice" (reason; only if zero payments recorded), and "Reverse" payment (reason; cannot over-reverse).
+- **Payments Tab**:
+  - Full audit log of all payments and reversals (Date, Receipt, Invoice, Patient, Amount, Method, Received By).
+  - Filterable by payment method and date range with custom `DatePicker`. 10 records per page with `Pagination`.
 
 ---
 

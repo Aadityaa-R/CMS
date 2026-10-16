@@ -32,8 +32,21 @@ import {
   Activity,
   ChevronDown,
   ChevronUp,
+  Printer,
 } from 'lucide-react';
-import { BloodGroup, Invoice } from '@/types';
+import { BloodGroup } from '@/types';
+import { useBilling } from '@/context/BillingContext';
+import {
+  Invoice as BillingInvoice,
+  Receipt as BillingReceipt,
+} from '@/types/billing';
+import {
+  formatCurrency,
+  invoiceTotal,
+  amountPaid,
+  balanceDue,
+  deriveStatus,
+} from '@/lib/billing';
 
 interface PatientViewProps {
   activeTab?: string;
@@ -46,11 +59,9 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
     appointments: rawAppointments,
     prescriptions: rawPrescriptions,
     vitals: rawVitals,
-    invoices: rawInvoices = [],
     patientAssignments = [],
     addPatient,
     updatePatient,
-    recordPayment,
   } = useClinic();
 
   const patients = React.useMemo(() => {
@@ -74,15 +85,74 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
     return rawVitals;
   }, [currentUser, patients, rawVitals]);
 
-  const invoices = React.useMemo(() => {
-    return getScopedInvoices(currentUser, rawInvoices, patientAssignments);
-  }, [currentUser, rawInvoices, patientAssignments]);
+  const {
+    invoices: billingInvoices,
+    payments: billingPayments,
+    recordPortalPayment,
+    getReceipt,
+  } = useBilling();
 
-  const handlePayInvoice = (inv: Invoice) => {
-    const due = Math.max(0, inv.totalAmount - inv.paidAmount);
-    if (due <= 0) return;
-    recordPayment(inv.id, due, 'card');
-    showNotification(`Payment of $${due.toFixed(2)} recorded for Invoice ${inv.invoiceNumber}.`);
+  const patientInvoices = React.useMemo(() => {
+    return getScopedInvoices(currentUser, billingInvoices, patientAssignments);
+  }, [currentUser, billingInvoices, patientAssignments]);
+
+  const totalPatientBalanceDue = React.useMemo(() => {
+    return patientInvoices.reduce((acc, inv) => acc + balanceDue(inv, billingPayments), 0);
+  }, [patientInvoices, billingPayments]);
+
+  // Patient Portal Payment Modal State
+  const [payTargetInvoice, setPayTargetInvoice] = useState<BillingInvoice | null>(null);
+  const [payMethod, setPayMethod] = useState<'card' | 'upi'>('card');
+  const [payCardRef, setPayCardRef] = useState('');
+  const [payUpiId, setPayUpiId] = useState('');
+  const [payError, setPayError] = useState('');
+  const [isPaying, setIsPaying] = useState(false);
+  const [patientReceipt, setPatientReceipt] = useState<BillingReceipt | null>(null);
+  const [patientViewingInvoice, setPatientViewingInvoice] = useState<BillingInvoice | null>(null);
+
+  const handleOpenPayModal = (inv: BillingInvoice) => {
+    setPayTargetInvoice(inv);
+    setPayMethod('card');
+    setPayCardRef('');
+    setPayUpiId('');
+    setPayError('');
+  };
+
+  const handleExecutePortalPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payTargetInvoice) return;
+    setIsPaying(true);
+    setPayError('');
+
+    const due = balanceDue(payTargetInvoice, billingPayments);
+    const reference =
+      payMethod === 'card'
+        ? payCardRef.trim() || `CARD-SIM-${Date.now().toString().slice(-4)}`
+        : payUpiId.trim() || `UPI-SIM-${Date.now().toString().slice(-6)}`;
+    const idempotencyKey = `PORTAL-${payTargetInvoice.id}-${Date.now()}`;
+
+    const res = await recordPortalPayment({
+      invoiceId: payTargetInvoice.id,
+      amount: due,
+      method: payMethod,
+      reference,
+      idempotencyKey,
+    });
+
+    setIsPaying(false);
+
+    if (!res.success || !res.data) {
+      setPayError(res.error || 'Failed to process portal payment.');
+      return;
+    }
+
+    const newPayment = res.data;
+    showNotification(
+      `Payment of ${formatCurrency(due)} recorded. Receipt #${newPayment.receiptNumber} generated.`
+    );
+    setPayTargetInvoice(null);
+    const rc = getReceipt(newPayment.id);
+    if (rc) setPatientReceipt(rc);
   };
 
   // Search & Filter State
@@ -438,21 +508,46 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
           <CardHeader
             action={
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {invoices.length} {invoices.length === 1 ? 'Invoice' : 'Invoices'}
+                {patientInvoices.length} {patientInvoices.length === 1 ? 'Invoice' : 'Invoices'}
               </span>
             }
           >
-            <CardTitle>Invoices</CardTitle>
+            <CardTitle>Invoices & Payments</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {invoices.length === 0 ? (
+            {/* Balance Due Notice */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+              <div>
+                <span className="text-slate-500 dark:text-slate-400">Total Balance Due:</span>{' '}
+                <span className={`font-bold ${totalPatientBalanceDue > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'}`}>
+                  {formatCurrency(totalPatientBalanceDue)}
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                You can also pay in person at the reception desk.
+              </span>
+            </div>
+
+            {patientInvoices.length === 0 ? (
               <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
                 No invoices on record.
               </div>
             ) : (
-              invoices.map((inv) => {
-                const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
-                const isPaid = inv.status === 'paid' || balance === 0;
+              patientInvoices.map((inv) => {
+                const total = invoiceTotal(inv);
+                const paid = amountPaid(billingPayments, inv.id);
+                const balance = balanceDue(inv, billingPayments);
+                const currentStatus = deriveStatus(inv, billingPayments);
+                const isPaid = currentStatus === 'paid' || balance === 0;
+
+                const statusLabel =
+                  currentStatus === 'paid'
+                    ? 'Paid'
+                    : currentStatus === 'partially_paid'
+                    ? 'Partially Paid'
+                    : currentStatus === 'void'
+                    ? 'Void'
+                    : 'Unpaid';
 
                 return (
                   <div
@@ -462,25 +557,40 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div>
                         <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                          {inv.invoiceNumber}
+                          {inv.number}
                         </span>
                         <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
-                          {inv.date}
+                          {inv.issuedAt ? inv.issuedAt.split('T')[0] : '2026-10-16'}
                         </span>
+                        {inv.doctorName && (
+                          <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
+                            • {inv.doctorName}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold capitalize text-slate-700 dark:text-slate-300">
-                          {isPaid ? 'Paid' : inv.status.replace('_', ' ')}
+                        <span
+                          className={`text-xs font-semibold capitalize ${
+                            isPaid
+                              ? 'text-emerald-700 dark:text-emerald-400'
+                              : currentStatus === 'void'
+                              ? 'text-slate-400 dark:text-slate-500 line-through'
+                              : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {statusLabel}
                         </span>
                       </div>
                     </div>
 
                     {inv.items && inv.items.length > 0 && (
                       <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
-                        {inv.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between text-slate-600 dark:text-slate-400">
-                            <span>{item.description} (x{item.quantity})</span>
-                            <span className="text-slate-800 dark:text-slate-200">${item.total.toFixed(2)}</span>
+                        {inv.items.map((item) => (
+                          <div key={item.id} className="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>{item.description}</span>
+                            <span className="text-slate-800 dark:text-slate-200 font-medium">
+                              {item.kind === 'discount' ? `-${formatCurrency(item.amount)}` : formatCurrency(item.amount)}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -489,37 +599,328 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                       <div>
                         <span className="text-slate-500 dark:text-slate-400">Billed: </span>
-                        <span className="font-semibold text-slate-900 dark:text-slate-100">${inv.totalAmount.toFixed(2)}</span>
+                        <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(total)}</span>
                       </div>
                       <div>
                         <span className="text-slate-500 dark:text-slate-400">Paid: </span>
-                        <span className="font-semibold text-teal-600 dark:text-teal-400">${inv.paidAmount.toFixed(2)}</span>
+                        <span className="font-semibold text-teal-600 dark:text-teal-400">{formatCurrency(paid)}</span>
                       </div>
                       <div>
                         <span className="text-slate-500 dark:text-slate-400">Due: </span>
                         <span className={`font-bold ${balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                          ${balance.toFixed(2)}
+                          {formatCurrency(balance)}
                         </span>
                       </div>
                     </div>
 
-                    {!isPaid && balance > 0 && (
-                      <div className="pt-2">
+                    <div className="pt-2 flex items-center justify-end space-x-2">
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => setPatientViewingInvoice(inv)}
+                      >
+                        View Details
+                      </Button>
+                      {!isPaid && balance > 0 && currentStatus !== 'void' && (
                         <Button
+                          size="xs"
                           variant="primary"
-                          className="w-full min-h-[44px] h-11 text-sm font-semibold cursor-pointer"
-                          onClick={() => handlePayInvoice(inv)}
+                          onClick={() => handleOpenPayModal(inv)}
                         >
-                          Pay Balance (${balance.toFixed(2)})
+                          Pay Now ({formatCurrency(balance)})
                         </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })
             )}
           </CardContent>
         </Card>
+
+        {/* MODAL: PATIENT SIMULATED PAY NOW */}
+        {payTargetInvoice && (
+          <Modal
+            isOpen={Boolean(payTargetInvoice)}
+            onClose={() => setPayTargetInvoice(null)}
+            title={`Pay Invoice: ${payTargetInvoice.number}`}
+            description="Online patient portal settlement simulator."
+            maxWidth="sm"
+            footer={
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPayTargetInvoice(null)}
+                  disabled={isPaying}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleExecutePortalPayment}
+                  disabled={isPaying}
+                >
+                  {isPaying ? 'Processing...' : `Pay ${formatCurrency(balanceDue(payTargetInvoice, billingPayments))}`}
+                </Button>
+              </>
+            }
+          >
+            <form onSubmit={handleExecutePortalPayment} className="space-y-3.5 text-xs">
+              {payError && (
+                <div className="p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-lg">
+                  {payError}
+                </div>
+              )}
+
+              {/* Demo Notice */}
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-200 text-xs space-y-1">
+                <div className="font-semibold">Simulated Payment Environment</div>
+                <p>
+                  No real card charges or gateway transactions will occur. You can also settle invoices at the front desk cashier.
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">Invoice:</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{payTargetInvoice.number}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">Amount Due:</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {formatCurrency(balanceDue(payTargetInvoice, billingPayments))}
+                  </span>
+                </div>
+              </div>
+
+              <Select
+                label="Payment Method"
+                value={payMethod}
+                onChange={(e) => setPayMethod(e.target.value as 'card' | 'upi')}
+                options={[
+                  { value: 'card', label: 'Credit / Debit Card (Simulated)' },
+                  { value: 'upi', label: 'UPI / QR (Simulated)' },
+                ]}
+              />
+
+              {payMethod === 'card' ? (
+                <Input
+                  label="Simulated Card Number"
+                  value={payCardRef}
+                  onChange={(e) => setPayCardRef(e.target.value)}
+                  placeholder="4000 1234 5678 9010"
+                />
+              ) : (
+                <Input
+                  label="Simulated UPI ID"
+                  value={payUpiId}
+                  onChange={(e) => setPayUpiId(e.target.value)}
+                  placeholder="username@bank"
+                />
+              )}
+            </form>
+          </Modal>
+        )}
+
+        {/* MODAL: PATIENT VIEW INVOICE DETAILS */}
+        {patientViewingInvoice && (
+          <Modal
+            isOpen={Boolean(patientViewingInvoice)}
+            onClose={() => setPatientViewingInvoice(null)}
+            title={`Invoice ${patientViewingInvoice.number}`}
+            description={`Issued on ${patientViewingInvoice.issuedAt ? patientViewingInvoice.issuedAt.split('T')[0] : '2026-10-16'}`}
+            maxWidth="md"
+            footer={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPatientViewingInvoice(null)}
+              >
+                Close
+              </Button>
+            }
+          >
+            <div className="space-y-4 text-xs">
+              <div>
+                <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
+                  Billed Items
+                </div>
+                <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      <tr>
+                        <th className="p-2.5">Description</th>
+                        <th className="p-2.5 w-28 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                      {patientViewingInvoice.items.map((it) => (
+                        <tr key={it.id}>
+                          <td className="p-2.5 text-slate-900 dark:text-slate-100">{it.description}</td>
+                          <td className="p-2.5 text-right font-medium text-slate-900 dark:text-slate-100">
+                            {it.kind === 'discount' ? `-${formatCurrency(it.amount)}` : formatCurrency(it.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Payment Receipts list */}
+              <div>
+                <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
+                  Receipts & Settlement History
+                </div>
+                {billingPayments.filter((p) => p.invoiceId === patientViewingInvoice.id).length > 0 ? (
+                  <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        <tr>
+                          <th className="p-2">Receipt #</th>
+                          <th className="p-2">Date</th>
+                          <th className="p-2">Method</th>
+                          <th className="p-2 text-right">Amount</th>
+                          <th className="p-2 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                        {billingPayments
+                          .filter((p) => p.invoiceId === patientViewingInvoice.id)
+                          .map((p) => (
+                            <tr key={p.id}>
+                              <td className="p-2 font-medium text-slate-900 dark:text-slate-100">{p.receiptNumber}</td>
+                              <td className="p-2 text-slate-600 dark:text-slate-400">
+                                {p.receivedAt ? p.receivedAt.split('T')[0] : '2026-10-16'}
+                              </td>
+                              <td className="p-2 uppercase text-slate-600 dark:text-slate-400">{p.method}</td>
+                              <td className="p-2 text-right font-medium text-slate-900 dark:text-slate-100">
+                                {formatCurrency(p.amount)}
+                              </td>
+                              <td className="p-2 text-right">
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const rc = getReceipt(p.id);
+                                    if (rc) setPatientReceipt(rc);
+                                  }}
+                                >
+                                  Receipt
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-slate-500 dark:text-slate-400 text-xs py-2">
+                    No payment receipts generated for this invoice.
+                  </div>
+                )}
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* MODAL: PATIENT OFFICIAL RECEIPT */}
+        {patientReceipt && (
+          <Modal
+            isOpen={Boolean(patientReceipt)}
+            onClose={() => setPatientReceipt(null)}
+            title="Official Payment Receipt"
+            description={patientReceipt.receiptNumber}
+            maxWidth="sm"
+            footer={
+              <div className="flex justify-between w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={<Printer className="w-3.5 h-3.5" />}
+                  onClick={() => window.print()}
+                >
+                  Print Receipt
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setPatientReceipt(null)}
+                >
+                  Close
+                </Button>
+              </div>
+            }
+          >
+            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-xs">
+              <div className="text-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  {patientReceipt.clinicName}
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Official Outpatient Payment Receipt
+                </div>
+                <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
+                  {patientReceipt.receiptNumber}
+                </div>
+              </div>
+
+              <div className="space-y-1.5 text-slate-600 dark:text-slate-400">
+                <div className="flex justify-between">
+                  <span>Date & Time:</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {patientReceipt.receivedAt.replace('T', ' ').slice(0, 16)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Patient Name:</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {patientReceipt.patientName}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>MRN:</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {patientReceipt.patientMrn}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Invoice #:</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {patientReceipt.invoiceNumber}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Payment Method:</span>
+                  <span className="font-medium uppercase text-slate-900 dark:text-slate-100">
+                    {patientReceipt.method}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Channel:</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {patientReceipt.receivedBy}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-sm">
+                <span className="font-bold text-slate-900 dark:text-slate-100">Total Settled:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">
+                  {patientReceipt.formattedAmount}
+                </span>
+              </div>
+
+              <div className="text-center pt-2 text-[10px] text-slate-400 dark:text-slate-500">
+                Outpatient billing receipt.
+                <br />
+                No clinical diagnosis or prescription details are disclosed on receipts.
+              </div>
+            </div>
+          </Modal>
+        )}
       </div>
     );
   }

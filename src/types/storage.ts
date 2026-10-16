@@ -5,11 +5,10 @@ import {
   Patient,
   Appointment,
   Prescription,
-  Invoice,
-  Payment,
   PatientAssignment,
   AccessModule,
 } from './index';
+import { Invoice, Payment } from './billing';
 import { Shift, AttendanceRecord, LeaveRequest } from './attendance';
 import { PendingStaffApproval } from '../data/mockData';
 

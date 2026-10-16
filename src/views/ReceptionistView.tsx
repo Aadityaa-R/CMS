@@ -26,6 +26,8 @@ import {
   validateBookedArrival,
   validateAppointmentBooking,
 } from '@/lib/reception';
+import { useBilling } from '@/context/BillingContext';
+import { formatCurrency, balanceDue } from '@/lib/billing';
 
 interface ReceptionistViewProps {
   activeTab?: string;
@@ -63,6 +65,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     bookAppointment,
     updateAppointmentStatus,
   } = useClinic();
+  const { invoices: billingInvoices, payments: billingPayments } = useBilling();
 
   const patients = useMemo(() => {
     return getScopedPatients(currentUser, rawPatients, patientAssignments);
@@ -739,7 +742,20 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       key: 'patient',
       header: 'Patient',
       isPrimary: true,
-      render: (apt) => <span className="font-medium text-slate-900 dark:text-slate-100">{apt.patientName}</span>,
+      render: (apt) => {
+        const patInvoices = billingInvoices.filter((inv) => inv.patientId === apt.patientId);
+        const due = patInvoices.reduce((acc, inv) => acc + balanceDue(inv, billingPayments), 0);
+        return (
+          <div>
+            <span className="font-medium text-slate-900 dark:text-slate-100">{apt.patientName}</span>
+            {due > 0 && (
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                Outstanding balance: {formatCurrency(due)}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'doctor',
@@ -1380,6 +1396,17 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                   }))}
                 />
               </div>
+
+              {walkInPatientId && (() => {
+                const patInvoices = billingInvoices.filter((inv) => inv.patientId === walkInPatientId);
+                const due = patInvoices.reduce((acc, inv) => acc + balanceDue(inv, billingPayments), 0);
+                if (due <= 0) return null;
+                return (
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+                    Outstanding balance: {formatCurrency(due)}
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Assigned Physician</label>
