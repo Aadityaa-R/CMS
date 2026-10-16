@@ -2,6 +2,7 @@ import React from 'react';
 import { AuthProvider } from '@/context/AuthContext';
 import { ClinicProvider } from '@/context/ClinicContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { AttendanceProvider } from '@/context/AttendanceContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 
 export const App: React.FC = () => {
@@ -9,7 +10,9 @@ export const App: React.FC = () => {
     <ThemeProvider>
       <AuthProvider>
         <ClinicProvider>
-          <AppLayout />
+          <AttendanceProvider>
+            <AppLayout />
+          </AttendanceProvider>
         </ClinicProvider>
       </AuthProvider>
     </ThemeProvider>

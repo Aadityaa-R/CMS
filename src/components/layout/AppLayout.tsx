@@ -12,6 +12,7 @@ import { DoctorView } from '@/views/DoctorView';
 import { PatientView } from '@/views/PatientView';
 import { ReceptionistView } from '@/views/ReceptionistView';
 import { AccessControlView } from '@/views/AccessControlView';
+import { AttendanceView } from '@/views/AttendanceView';
 import { Button } from '@/components/ui/Button';
 import { isAdmin, hasCapability } from '@/lib/permissions';
 import { useClinic } from '@/context/ClinicContext';
@@ -20,15 +21,32 @@ export const AppLayout: React.FC = () => {
   const { currentRole, currentUser, isAuthenticated, isRoleSuspended, logout } = useAuth();
   const { modules } = useClinic();
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [activeSubTab, setActiveSubTab] = useState<string | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('tab') || 'dashboard';
+    } catch {
+      return 'dashboard';
+    }
+  });
+  const [activeSubTab, setActiveSubTab] = useState<string | undefined>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('subtab') || undefined;
+    } catch {
+      return undefined;
+    }
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
 
   // Whenever the active role changes upon login, reset the active module tab to dashboard
   useEffect(() => {
-    setActiveTab('dashboard');
-    setActiveSubTab(undefined);
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get('tab')) {
+      setActiveTab('dashboard');
+      setActiveSubTab(undefined);
+    }
   }, [currentRole]);
 
   // If a user was viewing access_control and their admin capability was revoked, return immediately to dashboard
@@ -123,6 +141,10 @@ export const AppLayout: React.FC = () => {
         return <AdminView activeTab="billing" />;
       }
       return <DashboardView onNavigate={handleNavigate} />;
+    }
+
+    if (activeTab === 'attendance') {
+      return <AttendanceView activeTab={activeSubTab} />;
     }
 
     return <DashboardView onNavigate={handleNavigate} />;

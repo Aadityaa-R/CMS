@@ -536,6 +536,7 @@ for (const staff of INITIAL_STAFF_ACCESS.filter((s) => s.role !== 'patient')) {
       if (p.id === 'perm-register') return 'patientRegistration';
       if (p.id === 'perm-checkin') return 'patientCheckIn';
       if (p.id === 'perm-payment') return 'paymentRecording';
+      if (p.id === 'perm-attendance') return 'attendanceManagement';
       return p.id;
     })
     .sort();

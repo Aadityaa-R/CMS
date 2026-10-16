@@ -28,6 +28,7 @@ import {
   getScopedAppointments,
   getScopedPrescriptions,
 } from '@/lib/selectors';
+import { isDoctorAvailable } from '@/lib/availability';
 
 interface DoctorViewProps {
   activeTab?: string;
@@ -517,7 +518,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     setTransferTargetPatient(pat);
     const currentDocId = getAssignedDoctorId(pat.id, patientAssignments);
     const availableDocs = doctors.filter(
-      (d) => d.id !== currentDocId && d.status === 'active' && hasCapability(d, 'consultationWorkstation')
+      (d) =>
+        d.id !== currentDocId &&
+        d.status === 'active' &&
+        hasCapability(d, 'consultationWorkstation') &&
+        isDoctorAvailable(d.id)
     );
     setTargetDoctorId(availableDocs[0]?.id || '');
     setTransferReason('');
@@ -532,6 +537,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     }
     if (!targetDoctorId) {
       setTransferError('Please select a receiving physician.');
+      return;
+    }
+    if (!isDoctorAvailable(targetDoctorId)) {
+      setTransferError('Doctor is not available today.');
       return;
     }
     if (!transferReason.trim()) {
@@ -1997,7 +2006,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Button
                 variant="primary"
                 size="sm"
-                disabled={targetPatientInConsultation}
+                disabled={
+                  targetPatientInConsultation ||
+                  !targetDoctorId ||
+                  !isDoctorAvailable(targetDoctorId) ||
+                  doctors.filter(
+                    (d) =>
+                      d.status === 'active' &&
+                      d.id !== getAssignedDoctorId(transferTargetPatient.id, patientAssignments) &&
+                      isDoctorAvailable(d.id)
+                  ).length === 0
+                }
                 onClick={handleConfirmTransfer}
               >
                 {isTargetPatientUnassigned ? 'Confirm Assignment' : 'Confirm Transfer'}
@@ -2026,19 +2045,39 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                 {isTargetPatientUnassigned ? 'Assigned Physician' : 'Receiving Physician'}
               </label>
-              <Select
-                size="lg"
-                searchable={true}
-                searchPlaceholder="Search physician by name or specialization..."
-                value={targetDoctorId}
-                onChange={(e) => setTargetDoctorId(e.target.value)}
-                options={doctors
-                  .filter((d) => d.status === 'active' && d.id !== getAssignedDoctorId(transferTargetPatient.id, patientAssignments))
-                  .map((d) => ({
-                    value: d.id,
-                    label: `${d.name} (${d.specialization})`,
-                  }))}
-              />
+              {(() => {
+                const availableCandidateDocs = doctors.filter(
+                  (d) =>
+                    d.status === 'active' &&
+                    d.id !== getAssignedDoctorId(transferTargetPatient.id, patientAssignments) &&
+                    isDoctorAvailable(d.id)
+                );
+                if (availableCandidateDocs.length === 0) {
+                  return (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200">
+                      No doctors available
+                    </div>
+                  );
+                }
+                return (
+                  <Select
+                    size="lg"
+                    searchable={true}
+                    searchPlaceholder="Search physician by name or specialization..."
+                    value={targetDoctorId}
+                    onChange={(e) => setTargetDoctorId(e.target.value)}
+                    options={availableCandidateDocs.map((d) => ({
+                      value: d.id,
+                      label: `${d.name} (${d.specialization})`,
+                    }))}
+                  />
+                );
+              })()}
+              {targetDoctorId && !isDoctorAvailable(targetDoctorId) && (
+                <div className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">
+                  Doctor is not available today
+                </div>
+              )}
             </div>
             <div>
               <label className="text-slate-700 dark:text-slate-300 block font-medium mb-1.5">

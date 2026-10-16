@@ -52,6 +52,11 @@ export const ACCESS_CATALOG: AccessItem[] = [
     label: 'Payment Recording',
     description: 'Record patient consultation fee payments, issue billing receipts, and handle cashier collections.',
   },
+  {
+    id: 'attendanceManagement',
+    label: 'Attendance Management',
+    description: 'View clinic-wide staff attendance, approve or reject leave, set staff shifts, and correct attendance records.',
+  },
 ];
 
 export function registerCustomAccess(item: AccessItem): void {

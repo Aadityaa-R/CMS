@@ -1946,6 +1946,7 @@ export const INITIAL_MODULES: AccessModule[] = [
     description: 'Clinic governance, staff access control, module membership, and security ledger management',
     accessIds: [
       'administrativeAccess',
+      'attendanceManagement',
     ],
     memberIds: ['acc-doc-1'],
     isSystem: true,
@@ -1974,6 +1975,7 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
       { id: 'perm-emr', name: 'EMR Records Access', description: 'Review medical records, chronic history, and vitals', enabled: true },
       { id: 'perm-presc', name: 'Prescription Authoring', description: 'Generate and sign electronic outpatient prescriptions', enabled: true },
       { id: 'perm-schedule', name: 'Consulting Calendar', description: 'Manage personal schedule and view patient queue', enabled: true },
+      { id: 'perm-attendance', name: 'Attendance Management', description: 'View staff attendance, manage shifts, approve leave, and correct records', enabled: true },
     ],
   },
   {

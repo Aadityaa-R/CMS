@@ -11,6 +11,7 @@ import {
   PanelLeftOpen,
   Stethoscope,
   ShieldCheck,
+  Clock,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -78,6 +79,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (hasCapability(currentUser, 'administrativeAccess', modules)) {
       items.push({ id: 'access_control', label: 'Administrative', icon: <ShieldCheck className="w-4 h-4" /> });
     }
+
+    items.push({ id: 'attendance', label: 'Attendance', icon: <Clock className="w-4 h-4" /> });
 
     return items;
   };

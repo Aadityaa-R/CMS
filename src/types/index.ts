@@ -247,6 +247,7 @@ export type StandardCapability =
   | 'patientRegistration'
   | 'patientCheckIn'
   | 'paymentRecording'
+  | 'attendanceManagement'
   | (string & {});
 
 export interface AccessModule {
@@ -306,7 +307,12 @@ export interface AccessAuditLogEntry {
     | 'module_access_included'
     | 'module_access_removed'
     | 'module_member_added'
-    | 'module_member_removed';
+    | 'module_member_removed'
+    | 'leave_approved'
+    | 'leave_rejected'
+    | 'attendance_record_corrected'
+    | 'shift_updated'
+    | 'attendance_clock_in_override';
   description: string;
   authorizedBy: string;
 }

@@ -93,15 +93,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlRole = params.get('role') as UserRole;
+      if (urlRole && DEMO_USERS[urlRole]) return urlRole === 'admin' ? 'md' : urlRole;
+    } catch {
+      // fallback
+    }
     const savedRole = sessionStorage.getItem('cms_auth_role') as UserRole;
     return savedRole && DEMO_USERS[savedRole] ? (savedRole === 'admin' ? 'md' : savedRole) : 'md';
   });
 
   const [activeUserKey, setActiveUserKey] = useState<string>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlRole = params.get('role');
+      if (urlRole && DEMO_USERS[urlRole]) return urlRole;
+    } catch {
+      // fallback
+    }
     return sessionStorage.getItem('cms_auth_user_key') || 'md';
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') || params.get('role')) return true;
+    } catch {
+      // fallback
+    }
     return sessionStorage.getItem('cms_authenticated') === 'true';
   });
 

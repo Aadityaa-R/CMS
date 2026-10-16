@@ -31,6 +31,8 @@ export const CAPABILITY_ALIAS_MAP: Record<string, StandardCapability> = {
   'patientCheckIn': 'patientCheckIn',
   'perm-payment': 'paymentRecording',
   'paymentRecording': 'paymentRecording',
+  'perm-attendance': 'attendanceManagement',
+  'attendanceManagement': 'attendanceManagement',
 };
 
 /**
