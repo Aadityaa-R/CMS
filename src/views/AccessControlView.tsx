@@ -3332,16 +3332,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 <Select
                   size="lg"
                   searchable={true}
+                  placeholder="Select a staff member..."
                   searchPlaceholder="Search staff member by name, title, or badge ID..."
                   value={addMemberSelectedStaffId}
                   onChange={(e) => setAddMemberSelectedStaffId(e.target.value)}
-                  options={[
-                    { value: '', label: 'Select a staff member...' },
-                    ...availableStaff.map((s) => ({
-                      value: s.id,
-                      label: `${s.staffName} (${s.staffTitle} - ${s.badgeNumber})`,
-                    })),
-                  ]}
+                  options={availableStaff.map((s) => ({
+                    value: s.id,
+                    label: `${s.staffName} (${s.staffTitle} - ${s.badgeNumber})`,
+                  }))}
                 />
               </div>
 
@@ -3518,16 +3516,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 <Select
                   size="lg"
                   searchable={true}
+                  placeholder="Select a role..."
                   searchPlaceholder="Search role by name or description..."
                   value={consoleAddModuleSelectedId}
                   onChange={(e) => setConsoleAddModuleSelectedId(e.target.value)}
-                  options={[
-                    { value: '', label: 'Select a role...' },
-                    ...unassignedMods.map((m) => ({
-                      value: m.id,
-                      label: `${m.name} (${m.accessIds.length} accesses)`,
-                    })),
-                  ]}
+                  options={unassignedMods.map((m) => ({
+                    value: m.id,
+                    label: `${m.name} (${m.accessIds.length} accesses)`,
+                  }))}
                 />
               </div>
 
