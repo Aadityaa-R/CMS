@@ -23,22 +23,37 @@ function getStoredOrInitialAttendanceData(): {
   let leaves = generateInitialLeaveRequests();
 
   try {
-    const savedShifts = sessionStorage.getItem('cms_shifts_v1');
-    if (savedShifts) shifts = JSON.parse(savedShifts);
+    const v1Shifts = localStorage.getItem('cms_v1_shifts');
+    if (v1Shifts) {
+      shifts = JSON.parse(v1Shifts);
+    } else {
+      const savedShifts = sessionStorage.getItem('cms_shifts_v1');
+      if (savedShifts) shifts = JSON.parse(savedShifts);
+    }
   } catch {
     // Fallback
   }
 
   try {
-    const savedRecords = sessionStorage.getItem('cms_attendance_records_v1');
-    if (savedRecords) records = JSON.parse(savedRecords);
+    const v1Records = localStorage.getItem('cms_v1_attendance');
+    if (v1Records) {
+      records = JSON.parse(v1Records);
+    } else {
+      const savedRecords = sessionStorage.getItem('cms_attendance_records_v1');
+      if (savedRecords) records = JSON.parse(savedRecords);
+    }
   } catch {
     // Fallback
   }
 
   try {
-    const savedLeaves = sessionStorage.getItem('cms_leave_requests_v1');
-    if (savedLeaves) leaves = JSON.parse(savedLeaves);
+    const v1Leaves = localStorage.getItem('cms_v1_leave');
+    if (v1Leaves) {
+      leaves = JSON.parse(v1Leaves);
+    } else {
+      const savedLeaves = sessionStorage.getItem('cms_leave_requests_v1');
+      if (savedLeaves) leaves = JSON.parse(savedLeaves);
+    }
   } catch {
     // Fallback
   }

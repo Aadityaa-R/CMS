@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { SignUpView } from './SignUpView';
+import { resetDemoData } from '@/data/storage';
 import {
   Building2,
   Lock,
@@ -11,14 +14,26 @@ import {
   ShieldCheck,
   CheckCircle2,
   KeyRound,
+  RotateCcw,
 } from 'lucide-react';
 
-const DevCredentialsDirectory = import.meta.env.DEV
-  ? React.lazy(() => import('./DevCredentialsDirectory'))
-  : null;
+const DevCredentialsDirectory = React.lazy(() => import('./DevCredentialsDirectory'));
 
 export const LoginView: React.FC = () => {
   const { login, roleCredentials } = useAuth();
+  const queryDemoParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('demo') : null;
+  const isDemoMode = queryDemoParam !== null ? queryDemoParam === 'true' : import.meta.env.VITE_DEMO_MODE === 'true';
+
+  const [viewMode, setViewMode] = useState<'login' | 'signup'>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'signup') return 'signup';
+    } catch {
+      // fallback
+    }
+    return 'login';
+  });
+
   const [identifier, setIdentifier] = useState('md');
   const [password, setPassword] = useState('Doctor@123');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,7 +44,15 @@ export const LoginView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCredentialsGuide, setShowCredentialsGuide] = useState(true);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  // Reset demo data modal
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  if (viewMode === 'signup') {
+    return <SignUpView onBackToLogin={() => setViewMode('login')} />;
+  }
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setIdentifierError(null);
@@ -49,7 +72,7 @@ export const LoginView: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    const result = login(identifier.trim(), password);
+    const result = await login(identifier.trim(), password, rememberMe);
     setIsSubmitting(false);
 
     if (!result.success) {
@@ -63,6 +86,14 @@ export const LoginView: React.FC = () => {
     setErrorMessage(null);
     setIdentifierError(null);
     setPasswordError(null);
+  };
+
+  const handleConfirmResetDemo = async () => {
+    setIsResetting(true);
+    await resetDemoData('Login Screen');
+    setIsResetting(false);
+    setIsResetModalOpen(false);
+    window.location.reload();
   };
 
   return (
@@ -89,7 +120,7 @@ export const LoginView: React.FC = () => {
             <div className="mb-5 p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-slate-800 text-xs">
               <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1" />
               <div>
-                <span className="font-semibold text-slate-900">Authentication Failed:</span>{' '}
+                <span className="font-semibold text-slate-900">Authentication Notice:</span>{' '}
                 {errorMessage}
               </div>
             </div>
@@ -107,7 +138,7 @@ export const LoginView: React.FC = () => {
                   if (identifierError) setIdentifierError(null);
                   if (errorMessage) setErrorMessage(null);
                 }}
-                placeholder="e.g. md or doctor or receptionist"
+                placeholder="e.g. md or doctor or receptionist or email"
                 icon={<UserIcon className="w-4 h-4" />}
                 className="min-h-[44px] py-2.5"
                 error={identifierError || undefined}
@@ -165,15 +196,25 @@ export const LoginView: React.FC = () => {
                 />
                 <span>Remember session</span>
               </label>
-              {import.meta.env.DEV && (
-                <button
-                  type="button"
-                  onClick={() => setShowCredentialsGuide(!showCredentialsGuide)}
-                  className="font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1 min-h-[44px]"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span>{showCredentialsGuide ? 'Hide Credentials Guide' : 'Show Role Credentials'}</span>
-                </button>
+              {isDemoMode && (
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowCredentialsGuide(!showCredentialsGuide)}
+                    className="font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1 min-h-[44px] cursor-pointer"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>{showCredentialsGuide ? 'Hide Credentials Guide' : 'Show Role Credentials'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsResetModalOpen(true)}
+                    className="font-medium text-slate-600 hover:text-slate-800 flex items-center gap-1 min-h-[44px] cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset demo data</span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -187,10 +228,21 @@ export const LoginView: React.FC = () => {
             >
               Sign In to Medical Station
             </Button>
+
+            {/* Create account link */}
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => setViewMode('signup')}
+                className="text-xs font-medium text-teal-600 hover:text-teal-800 cursor-pointer min-h-[44px] inline-flex items-center"
+              >
+                Create account
+              </button>
+            </div>
           </form>
 
-          {/* Credentials Guide Table for all 4 roles (Dev only) */}
-          {import.meta.env.DEV && showCredentialsGuide && DevCredentialsDirectory && (
+          {/* Credentials Guide Table for all roles (Demo mode only) */}
+          {isDemoMode && showCredentialsGuide && DevCredentialsDirectory && (
             <React.Suspense fallback={null}>
               <DevCredentialsDirectory
                 roleCredentials={roleCredentials}
@@ -206,6 +258,40 @@ export const LoginView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Reset Demo Data Confirmation Modal */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        title="Reset Demo Data"
+        maxWidth="md"
+        footer={
+          <div className="flex justify-end gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsResetModalOpen(false)}
+              disabled={isResetting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleConfirmResetDemo}
+              isLoading={isResetting}
+            >
+              Restore Demo Data
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-xs text-slate-700 leading-relaxed">
+          Restore the demo data? All changes made in this browser will be lost.
+        </p>
+      </Modal>
     </div>
   );
 };
+
+export default LoginView;

@@ -11,10 +11,12 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, ColumnDef } from '@/components/ui/Table';
-import { Appointment, Patient } from '@/types';
+import { Appointment, Patient, AccessAuditLogEntry } from '@/types';
 import { getScopedPatients, getScopedAppointments } from '@/lib/selectors';
-import { getAssignedDoctorId } from '@/lib/permissions';
+import { getAssignedDoctorId, hasCapability } from '@/lib/permissions';
 import { isDoctorAvailable } from '@/lib/availability';
+import { getRepository } from '@/data/storage';
+import { ClaimRequest, Account } from '@/types/storage';
 import {
   calculateWaitTimeMinutes,
   getTodayIntakeLogs,
@@ -237,6 +239,115 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const paginatedRegistry = useMemo(() => {
     return intakeLogs.slice((registryPage - 1) * pageSize, registryPage * pageSize);
   }, [intakeLogs, registryPage, pageSize]);
+
+  // Tab 4: Account Link Requests State
+  const [claimRequests, setClaimRequests] = useState<ClaimRequest[]>([]);
+  const [claimsPage, setClaimsPage] = useState(1);
+  const [rejectClaimTarget, setRejectClaimTarget] = useState<ClaimRequest | null>(null);
+  const [rejectClaimReason, setRejectClaimReason] = useState('');
+  const [claimNotification, setClaimNotification] = useState<string | null>(null);
+
+  const canManageRegistration = hasCapability(currentUser, 'patientRegistration');
+
+  useEffect(() => {
+    try {
+      const repo = getRepository<ClaimRequest>('claimRequests');
+      repo.list().then((claims) => {
+        setClaimRequests(claims);
+      }).catch(() => {});
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const paginatedClaims = useMemo(() => {
+    return claimRequests.slice((claimsPage - 1) * pageSize, claimsPage * pageSize);
+  }, [claimRequests, claimsPage, pageSize]);
+
+  const pendingClaimsCount = useMemo(() => {
+    return claimRequests.filter((c) => c.status === 'pending').length;
+  }, [claimRequests]);
+
+  const handleApproveClaim = async (claim: ClaimRequest) => {
+    if (!canManageRegistration) return;
+    const now = new Date().toISOString();
+    const updatedClaim: ClaimRequest = {
+      ...claim,
+      status: 'approved',
+      decidedBy: currentUser?.name || 'Reception Desk',
+      decidedAt: now,
+    };
+
+    const repoClaims = getRepository<ClaimRequest>('claimRequests');
+    await repoClaims.update(claim.id, updatedClaim);
+
+    const repoAccounts = getRepository<Account>('accounts');
+    const acc = await repoAccounts.get(claim.accountId);
+    if (acc) {
+      await repoAccounts.update(acc.id, {
+        claimPending: false,
+        linkedPatientId: claim.existingPatientId,
+        updatedAt: now,
+      });
+    }
+
+    const repoLedger = getRepository<AccessAuditLogEntry>('ledger');
+    await repoLedger.create({
+      id: `audit-${Date.now()}`,
+      timestamp: now,
+      action: 'account_link_approved',
+      subject: claim.accountName,
+      role: 'patient',
+      details: `Approved account link to MRN ${claim.existingMrn} for ${claim.accountName}`,
+      authorizedBy: currentUser?.name || 'Receptionist',
+    });
+
+    setClaimRequests((prev) => prev.map((c) => (c.id === claim.id ? updatedClaim : c)));
+    setClaimNotification(`Approved account link for ${claim.accountName} (MRN: ${claim.existingMrn}).`);
+  };
+
+  const handleRejectClaim = async () => {
+    if (!rejectClaimTarget || !canManageRegistration) return;
+    const now = new Date().toISOString();
+    const reason = rejectClaimReason.trim() || 'Link request rejected by Front Desk';
+    const updatedClaim: ClaimRequest = {
+      ...rejectClaimTarget,
+      status: 'rejected',
+      decisionNote: reason,
+      decidedBy: currentUser?.name || 'Reception Desk',
+      decidedAt: now,
+    };
+
+    const repoClaims = getRepository<ClaimRequest>('claimRequests');
+    await repoClaims.update(rejectClaimTarget.id, updatedClaim);
+
+    const repoAccounts = getRepository<Account>('accounts');
+    const acc = await repoAccounts.get(rejectClaimTarget.accountId);
+    if (acc) {
+      await repoAccounts.update(acc.id, {
+        claimPending: false,
+        status: 'rejected',
+        rejectionReason: reason,
+        updatedAt: now,
+      });
+    }
+
+    const repoLedger = getRepository<AccessAuditLogEntry>('ledger');
+    await repoLedger.create({
+      id: `audit-${Date.now()}`,
+      timestamp: now,
+      action: 'account_link_rejected',
+      subject: rejectClaimTarget.accountName,
+      role: 'patient',
+      details: `Rejected account link to MRN ${rejectClaimTarget.existingMrn}: ${reason}`,
+      authorizedBy: currentUser?.name || 'Receptionist',
+    });
+
+    setClaimRequests((prev) => prev.map((c) => (c.id === rejectClaimTarget.id ? updatedClaim : c)));
+    setClaimNotification(`Rejected account link for ${rejectClaimTarget.accountName}.`);
+    setRejectClaimTarget(null);
+    setRejectClaimReason('');
+  };
 
   // Search Bar Suggestions
   const searchSuggestions: SearchSuggestion[] = useMemo(() => {
@@ -751,6 +862,95 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     },
   ];
 
+  const claimColumns: ColumnDef<ClaimRequest>[] = [
+    {
+      key: 'name',
+      header: 'Account Name',
+      isPrimary: true,
+      render: (claim) => (
+        <div>
+          <span className="font-semibold text-slate-900 dark:text-slate-100">{claim.accountName}</span>
+          <div className="text-xs text-slate-500 dark:text-slate-400">DOB: {claim.dob}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email / Phone',
+      render: (claim) => (
+        <div>
+          <div className="text-xs text-slate-700 dark:text-slate-300">{claim.accountEmail}</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">{claim.accountPhone}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'mrn',
+      header: 'Matched MRN',
+      render: (claim) => (
+        <span className="text-xs text-slate-800 dark:text-slate-200">{claim.existingMrn}</span>
+      ),
+    },
+    {
+      key: 'requestedAt',
+      header: 'Requested At',
+      hideBelow: 'md',
+      render: (claim) => (
+        <span className="text-xs text-slate-600 dark:text-slate-400">
+          {claim.requestedAt ? claim.requestedAt.slice(0, 16).replace('T', ' ') : 'N/A'}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (claim) => (
+        <span className="text-xs capitalize text-slate-700 dark:text-slate-300 font-medium">
+          {claim.status}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      isActions: true,
+      render: (claim) => {
+        if (claim.status !== 'pending') {
+          return (
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {claim.decisionNote ? claim.decisionNote : 'Decided'}
+            </span>
+          );
+        }
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={!canManageRegistration}
+              title={!canManageRegistration ? 'Requires patient registration access' : undefined}
+              onClick={() => handleApproveClaim(claim)}
+            >
+              Approve
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={!canManageRegistration}
+              title={!canManageRegistration ? 'Requires patient registration access' : undefined}
+              onClick={() => {
+                setRejectClaimTarget(claim);
+                setRejectClaimReason('');
+              }}
+            >
+              Reject
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header and Quick Actions */}
@@ -993,6 +1193,42 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 pageSize={pageSize}
                 onPageChange={setRegistryPage}
               />
+            </CardContent>
+          </Card>
+
+          {claimNotification && (
+            <div className="text-xs p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300 flex items-center justify-between">
+              <span>{claimNotification}</span>
+              <button
+                type="button"
+                onClick={() => setClaimNotification(null)}
+                className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Account Link Requests Queue */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle>Account Link Requests ({pendingClaimsCount} pending)</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table
+                stackBelow="lg"
+                columns={claimColumns}
+                data={paginatedClaims}
+                keyExtractor={(item) => item.id}
+              />
+              {claimRequests.length > pageSize && (
+                <Pagination
+                  currentPage={claimsPage}
+                  totalItems={claimRequests.length}
+                  pageSize={pageSize}
+                  onPageChange={setClaimsPage}
+                />
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1403,6 +1639,53 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* MODAL 4: Reject Account Link Request */}
+      <Modal
+        isOpen={rejectClaimTarget !== null}
+        onClose={() => {
+          setRejectClaimTarget(null);
+          setRejectClaimReason('');
+        }}
+        title="Reject Account Link Request"
+        description={`Specify a reason for rejecting the account link request for ${rejectClaimTarget?.accountName || ''} (MRN: ${rejectClaimTarget?.existingMrn || ''}).`}
+        maxWidth="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setRejectClaimTarget(null);
+                setRejectClaimReason('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleRejectClaim}
+            >
+              Confirm Rejection
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Rejection Reason
+            </label>
+            <Textarea
+              value={rejectClaimReason}
+              onChange={(e) => setRejectClaimReason(e.target.value)}
+              placeholder="e.g. Identity verification failed, details did not match official clinic record."
+              rows={3}
+            />
+          </div>
+        </div>
       </Modal>
     </div>
   );

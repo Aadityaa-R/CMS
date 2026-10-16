@@ -69,6 +69,7 @@ export interface Patient {
   previousVitals?: PreviousVitals;
   registeredAt?: string;
   registeredBy?: { id: string; name: string } | null;
+  source?: 'walk_in' | 'reception' | 'web' | 'online' | string;
 }
 
 export interface Doctor {
@@ -220,6 +221,15 @@ export interface Invoice {
   notes?: string;
 }
 
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  date: string;
+  method?: PaymentMethod;
+  notes?: string;
+}
+
 
 export interface ClinicalRecord {
   id: string;
@@ -295,8 +305,8 @@ export interface StaffAccessRecord {
 export interface AccessAuditLogEntry {
   id: string;
   timestamp: string;
-  targetRole: UserRole;
-  targetStaffName: string;
+  targetRole?: UserRole | 'system' | string;
+  targetStaffName?: string;
   targetUserId?: string;
   capability?: string;
   oldState?: string;
@@ -323,8 +333,25 @@ export interface AccessAuditLogEntry {
     | 'patient_registered'
     | 'patient_checked_in'
     | 'walkin_checked_in'
-    | 'appointment_scheduled';
-  description: string;
+    | 'appointment_scheduled'
+    | 'storage_mode_changed'
+    | 'data_exported'
+    | 'data_restored'
+    | 'data_restored_undo'
+    | 'demo_data_reset'
+    | 'account_link_approved'
+    | 'account_link_rejected'
+    | 'account_claim_requested'
+    | 'patient_self_registered'
+    | 'staff_clearance_requested'
+    | 'capability_granted'
+    | 'capability_revoked'
+    | 'account_provisioned'
+    | string;
+  description?: string;
+  details?: string;
+  subject?: string;
+  role?: string;
   authorizedBy: string;
 }
 

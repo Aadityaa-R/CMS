@@ -15,6 +15,7 @@ import { PendingStaffApproval, INITIAL_PENDING_APPROVALS } from '@/data/mockData
 import { getAccessItem } from '@/data/accessCatalog';
 import {
   isAdmin,
+  hasCapability,
   canRevokeAdmin,
   canDeleteStaff,
   canDeleteModule,
@@ -23,9 +24,12 @@ import {
   canRemoveMember,
   getEffectiveAccesses,
 } from '@/lib/permissions';
+import { getRepository } from '@/data/storage';
+import { Account } from '@/types/storage';
+import { DataManagementTab } from './DataManagementTab';
 
 interface AccessControlViewProps {
-  activeTab?: 'add_users' | 'edit_users' | 'modules' | 'ledger' | string;
+  activeTab?: 'add_users' | 'edit_users' | 'modules' | 'ledger' | 'data' | string;
 }
 
 type RoleFilterKey = '' | 'doc' | 'receptionist' | 'patient';
@@ -110,8 +114,8 @@ const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
 };
 
 export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab = 'modules' }) => {
-  const [selectedSubTab, setSelectedSubTab] = useState<'add_users' | 'edit_users' | 'modules' | 'ledger'>(() => {
-    if (activeTab === 'edit_users' || activeTab === 'add_users' || activeTab === 'ledger') return activeTab;
+  const [selectedSubTab, setSelectedSubTab] = useState<'add_users' | 'edit_users' | 'modules' | 'ledger' | 'data'>(() => {
+    if (activeTab === 'edit_users' || activeTab === 'add_users' || activeTab === 'ledger' || activeTab === 'data') return activeTab;
     return 'modules';
   });
 
@@ -121,7 +125,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       activeTab === 'edit_users' ||
       activeTab === 'modules' ||
       activeTab === 'roles' ||
-      activeTab === 'ledger'
+      activeTab === 'ledger' ||
+      activeTab === 'data'
     ) {
       setSelectedSubTab(activeTab === 'roles' ? 'modules' : (activeTab as any));
     }
@@ -323,9 +328,28 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
   useEffect(() => {
     try {
+      const repo = getRepository<PendingStaffApproval>('approvals');
+      repo.list().then((list) => {
+        if (list && list.length > 0) {
+          setPendingApprovals(list);
+        }
+      }).catch(() => {});
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
       sessionStorage.setItem('cms_pending_approvals_v2', JSON.stringify(pendingApprovals));
     } catch {
       // Fallback
+    }
+    try {
+      const repo = getRepository<PendingStaffApproval>('approvals');
+      repo.replaceAll(pendingApprovals).catch(() => {});
+    } catch {
+      // Ignore
     }
   }, [pendingApprovals]);
 
@@ -668,6 +692,28 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     }
 
     setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id));
+
+    // Activate account in repository if online sign-up
+    try {
+      const repoAccounts = getRepository<Account>('accounts');
+      repoAccounts.list().then(async (accounts) => {
+        const matched = accounts.find(
+          (a) => a.fullName.toLowerCase() === req.staffName.toLowerCase() && a.status === 'pending'
+        );
+        if (matched) {
+          await repoAccounts.update(matched.id, {
+            status: 'active',
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }).catch(() => {});
+
+      const repoApprovals = getRepository<PendingStaffApproval>('approvals');
+      repoApprovals.remove(req.id).catch(() => {});
+    } catch {
+      // Ignore
+    }
+
     showNotification({
       type: 'success',
       message: `Approved and granted clearance for ${req.staffName} (${req.role === 'doctor' ? 'Doctor' : 'Receptionist'}). Added to default module: ${defaultModuleName}.`,
@@ -703,6 +749,29 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       authorizedBy: 'Dr. Marcus Vance (Managing Director)',
     });
     setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id));
+
+    // Update rejection in accounts repository if online sign-up
+    try {
+      const repoAccounts = getRepository<Account>('accounts');
+      repoAccounts.list().then(async (accounts) => {
+        const matched = accounts.find(
+          (a) => a.fullName.toLowerCase() === req.staffName.toLowerCase() && a.status === 'pending'
+        );
+        if (matched) {
+          await repoAccounts.update(matched.id, {
+            status: 'rejected',
+            rejectionReason: reason && reason.trim() ? reason.trim() : 'Clearance rejected by Administrator',
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }).catch(() => {});
+
+      const repoApprovals = getRepository<PendingStaffApproval>('approvals');
+      repoApprovals.remove(req.id).catch(() => {});
+    } catch {
+      // Ignore
+    }
+
     showNotification({
       type: 'info',
       message: `Rejected onboarding application for ${req.staffName}${reason && reason.trim() ? `: ${reason.trim()}` : ''}.`,
@@ -1025,6 +1094,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             id: 'ledger' as const,
             label: `Security Ledger (${accessAuditLog.length})`,
           },
+          ...(hasCapability(currentUser, 'administrativeAccess')
+            ? [
+                {
+                  id: 'data' as const,
+                  label: 'Data',
+                },
+              ]
+            : []),
         ].map((tab) => {
           const isActive = selectedSubTab === tab.id;
           return (
@@ -2372,6 +2449,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {selectedSubTab === 'data' && currentUser && hasCapability(currentUser, 'administrativeAccess') && (
+        <DataManagementTab currentUser={currentUser} />
       )}
 
       {/* Delete Account Confirmation Modal */}

@@ -8,12 +8,26 @@ import {
   INITIAL_MODULES,
 } from '@/data/mockData';
 import {
-  isAdmin,
   getEffectiveAccesses,
   canGrantAdmin,
   canRevokeAdmin,
   canDeleteStaff,
 } from '@/lib/permissions';
+import { getRepository } from '@/data/storage';
+import {
+  hashPassword,
+  verifyPassword,
+  isAccountLocked,
+  registerFailedLogin,
+  resetFailedLogin,
+  createSession,
+  isSessionValid,
+  touchSession,
+} from '@/lib/auth';
+import { Account, ClaimRequest } from '@/types/storage';
+import { STORAGE_KEY_PREFIX, SESSION_STORAGE_KEY } from '@/lib/authConstants';
+import { Patient } from '@/types';
+import { PendingStaffApproval } from '@/data/mockData';
 
 export interface RoleMeta {
   role: UserRole;
@@ -49,10 +63,35 @@ export const ALL_ROLES: RoleMeta[] = [
   },
 ];
 
-interface LoginResult {
+export interface LoginResult {
   success: boolean;
   error?: string;
   matchedRole?: UserRole;
+}
+
+export interface SignUpPatientParams {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+  dob: string;
+  gender: 'male' | 'female' | 'other';
+}
+
+export interface SignUpStaffParams {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+  jobTitle: string;
+  department: string;
+  roleRequested: 'doctor' | 'receptionist';
+}
+
+export interface SignUpResult {
+  success: boolean;
+  error?: string;
+  claimPending?: boolean;
 }
 
 interface AuthContextType {
@@ -82,11 +121,13 @@ interface AuthContextType {
   ) => void;
   isRoleSuspended: (role: UserRole) => boolean;
   isStaffSuspended: (staffNameOrId: string) => boolean;
-  login: (identifier: string, password: string) => LoginResult;
+  login: (identifier: string, password: string, rememberMe?: boolean) => Promise<LoginResult>;
   loginAs: (role: UserRole) => void;
   switchRole: (role: UserRole) => void;
   updateCurrentUser: (updates: Partial<User>) => void;
-  logout: () => void;
+  signUpPatient: (params: SignUpPatientParams) => Promise<SignUpResult>;
+  signUpStaff: (params: SignUpStaffParams) => Promise<SignUpResult>;
+  logout: (notice?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -118,7 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('tab') || params.get('role')) return true;
+      if (params.get('view') === 'signup' || params.get('view') === 'login' || params.get('demo') !== null) {
+        return false;
+      }
+      if (params.get('tab') || (params.get('role') && params.get('role') !== 'staff')) return true;
     } catch {
       // fallback
     }
@@ -126,45 +170,97 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   // Staff Access Records state
-  const [staffAccessList, setStaffAccessList] = useState<StaffAccessRecord[]>(() => {
-    try {
-      // Invalidate legacy single-module portal caches
-      sessionStorage.removeItem('cms_staff_access');
-      sessionStorage.removeItem('cms_staff_access_v2');
-      sessionStorage.removeItem('cms_staff_access_v3');
-      sessionStorage.removeItem('cms_staff_access_v4');
-      sessionStorage.removeItem('cms_staff_access_v5');
-      sessionStorage.removeItem('cms_staff_access_v6');
-
-      const saved = sessionStorage.getItem('cms_staff_access_v7');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (
-          Array.isArray(parsed) &&
-          parsed.length >= 10 &&
-          parsed.some((r: StaffAccessRecord) => r.id === 'acc-doc-1')
-        ) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return INITIAL_STAFF_ACCESS;
-  });
+  const [staffAccessList, setStaffAccessList] = useState<StaffAccessRecord[]>(INITIAL_STAFF_ACCESS);
 
   // Access Audit Log state
-  const [accessAuditLog, setAccessAuditLog] = useState<AccessAuditLogEntry[]>(() => {
-    try {
-      sessionStorage.removeItem('cms_access_audit_log_v5');
-      sessionStorage.removeItem('cms_access_audit_log_v6');
-      const saved = sessionStorage.getItem('cms_access_audit_log_v7');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // Fallback
-    }
-    return INITIAL_ACCESS_AUDIT_LOG;
-  });
+  const [accessAuditLog, setAccessAuditLog] = useState<AccessAuditLogEntry[]>(INITIAL_ACCESS_AUDIT_LOG);
+
+  // Load staff and ledger from repository on startup
+  useEffect(() => {
+    const loadFromRepo = async () => {
+      try {
+        const staffRepo = getRepository<StaffAccessRecord>('staff');
+        const ledgerRepo = getRepository<AccessAuditLogEntry>('ledger');
+        const [savedStaff, savedLedger] = await Promise.all([
+          staffRepo.list(),
+          ledgerRepo.list(),
+        ]);
+        if (savedStaff.length > 0) {
+          setStaffAccessList(savedStaff);
+        }
+        if (savedLedger.length > 0) {
+          setAccessAuditLog(savedLedger);
+        }
+      } catch {
+        // Fallback
+      }
+    };
+    loadFromRepo();
+  }, []);
+
+  // Cross-tab storage synchronization
+  useEffect(() => {
+    const handleStorageChange = async (e: StorageEvent) => {
+      if (!e.key) return;
+      if (e.key === `${STORAGE_KEY_PREFIX}staff`) {
+        const staffRepo = getRepository<StaffAccessRecord>('staff');
+        const latest = await staffRepo.list();
+        setStaffAccessList(latest);
+      }
+      if (e.key === `${STORAGE_KEY_PREFIX}ledger`) {
+        const ledgerRepo = getRepository<AccessAuditLogEntry>('ledger');
+        const latest = await ledgerRepo.list();
+        setAccessAuditLog(latest);
+      }
+      if (e.key === SESSION_STORAGE_KEY && !e.newValue) {
+        setIsAuthenticated(false);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Session activity tracker & timeout enforcement
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const checkSession = () => {
+      try {
+        const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+        if (!raw) return;
+        const session = JSON.parse(raw);
+        const validation = isSessionValid(session);
+        if (!validation.valid) {
+          logout(validation.reason);
+        }
+      } catch {
+        // Ignore
+      }
+    };
+
+    const handleUserActivity = () => {
+      try {
+        const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+        if (!raw) return;
+        const session = JSON.parse(raw);
+        const updated = touchSession(session);
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(updated));
+      } catch {
+        // Ignore
+      }
+    };
+
+    const interval = setInterval(checkSession, 15000);
+    window.addEventListener('click', handleUserActivity);
+    window.addEventListener('keydown', handleUserActivity);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('click', handleUserActivity);
+      window.removeEventListener('keydown', handleUserActivity);
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -178,33 +274,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentRole, activeUserKey, isAuthenticated]);
 
-  useEffect(() => {
-    try {
-      sessionStorage.setItem('cms_staff_access_v7', JSON.stringify(staffAccessList));
-    } catch {
-      // Fallback
-    }
-  }, [staffAccessList]);
+  // Persist staffAccessList write-through
+  const saveStaffList = (nextList: StaffAccessRecord[]) => {
+    setStaffAccessList(nextList);
+    const repo = getRepository<StaffAccessRecord>('staff');
+    repo.replaceAll(nextList).catch(() => {});
+  };
 
-  useEffect(() => {
-    try {
-      sessionStorage.setItem('cms_access_audit_log_v7', JSON.stringify(accessAuditLog));
-    } catch {
-      // Fallback
-    }
-  }, [accessAuditLog]);
+  // Persist accessAuditLog write-through
+  const saveAuditLog = (nextLog: AccessAuditLogEntry[]) => {
+    setAccessAuditLog(nextLog);
+    const repo = getRepository<AccessAuditLogEntry>('ledger');
+    repo.replaceAll(nextLog).catch(() => {});
+  };
 
-  const [userProfiles, setUserProfiles] = useState<Record<UserRole, User>>(() => {
-    try {
-      const saved = sessionStorage.getItem('cms_user_profiles');
-      if (saved) {
-        return { ...DEMO_USERS, ...JSON.parse(saved) };
-      }
-    } catch {
-      // Fallback
-    }
-    return DEMO_USERS;
-  });
+  // User profiles state
+  const [userProfiles, setUserProfiles] = useState<Record<string, User>>(DEMO_USERS);
 
   const baseUser = DEMO_USERS[activeUserKey] || userProfiles[currentRole] || DEMO_USERS[currentRole] || DEMO_USERS.md;
   const currentStaffRecord = staffAccessList.find(
@@ -242,186 +327,131 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...existingUser,
         ...updates,
       };
-      const nextProfiles = {
+      return {
         ...prev,
         [currentRole]: updatedUser,
       };
-      try {
-        sessionStorage.setItem('cms_user_profiles', JSON.stringify(nextProfiles));
-      } catch {
-        // Fallback
-      }
-      return nextProfiles;
     });
   };
 
-  const isRoleSuspended = (role: UserRole): boolean => {
-    if (role === 'md' || role === 'admin') return false; // Managing Director cannot be suspended
-    const records = staffAccessList.filter((r) => r.role === role);
-    if (records.length === 0) return false;
-    // If all records for this role are revoked, the role is suspended
-    return records.every((r) => r.status === 'revoked');
-  };
-
-  const isStaffSuspended = (staffNameOrId: string): boolean => {
-    const record = staffAccessList.find(
-      (r) => r.id === staffNameOrId || r.staffName.toLowerCase() === staffNameOrId.toLowerCase()
-    );
-    return record ? record.status === 'revoked' : false;
-  };
-
   const grantStaffAccess = (recordId: string, reason?: string) => {
-    if (!isAdmin(currentUser)) {
-      console.error('Unauthorized: only administrators can grant staff access.');
-      return;
-    }
-    const record = staffAccessList.find((r) => r.id === recordId);
-    if (!record) return;
+    const target = staffAccessList.find((s) => s.id === recordId);
+    if (!target) return;
 
-    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
-
-    setStaffAccessList((prev) =>
-      prev.map((r) =>
-        r.id === recordId
-          ? {
-              ...r,
-              status: 'granted',
-              lastUpdated: timestamp,
-              updatedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
-              reason: reason || 'Access privileges granted by Managing Director',
-            }
-          : r
-      )
+    const nextList = staffAccessList.map((record) =>
+      record.id === recordId
+        ? {
+            ...record,
+            status: 'granted' as const,
+            grantedAt: new Date().toISOString().split('T')[0],
+            grantedBy: currentUser.name,
+          }
+        : record
     );
+    saveStaffList(nextList);
 
-    const newAudit: AccessAuditLogEntry = {
-      id: `aud-${Date.now()}`,
-      timestamp,
-      targetRole: record.role,
-      targetStaffName: record.staffName,
+    addAuditLogEntry({
+      targetRole: target.role,
+      targetStaffName: target.staffName,
+      targetUserId: target.id,
       action: 'access_granted',
-      description: `Station credentials and operational clearance restored by ${currentUser.name || 'Managing Director'}`,
-      authorizedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
-    };
-
-    setAccessAuditLog((prev) => [newAudit, ...prev]);
+      description: reason || `Access clearance restored for ${target.staffName} (${target.badgeNumber})`,
+      authorizedBy: currentUser.name,
+    });
   };
 
   const revokeStaffAccess = (recordId: string, reason?: string) => {
-    if (!isAdmin(currentUser)) {
-      console.error('Unauthorized: only administrators can revoke staff access.');
+    const target = staffAccessList.find((s) => s.id === recordId);
+    if (!target) return;
+
+    if (target.isOriginalAdmin) {
       return;
     }
-    const record = staffAccessList.find((r) => r.id === recordId);
-    if (!record) return;
 
-    if (isAdmin(record)) {
-      const check = canRevokeAdmin(currentUser, record, staffAccessList);
-      if (!check.allowed) {
-        console.error('Cannot revoke administrator:', check.reason);
-        return;
-      }
-    }
-
-    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
-
-    setStaffAccessList((prev) =>
-      prev.map((r) =>
-        r.id === recordId
-          ? {
-              ...r,
-              status: 'revoked',
-              lastUpdated: timestamp,
-              updatedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
-              reason: reason || 'Access suspended by Managing Director executive directive',
-            }
-          : r
-      )
+    const nextList = staffAccessList.map((record) =>
+      record.id === recordId
+        ? {
+            ...record,
+            status: 'revoked' as const,
+            revocationReason: reason || 'Access revoked by Administrator',
+          }
+        : record
     );
+    saveStaffList(nextList);
 
-    const newAudit: AccessAuditLogEntry = {
-      id: `aud-${Date.now()}`,
-      timestamp,
-      targetRole: record.role,
-      targetStaffName: record.staffName,
+    addAuditLogEntry({
+      targetRole: target.role,
+      targetStaffName: target.staffName,
+      targetUserId: target.id,
       action: 'access_revoked',
-      description: `Station access and operational privileges revoked by ${currentUser.name || 'Managing Director'}`,
-      authorizedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
-    };
-
-    setAccessAuditLog((prev) => [newAudit, ...prev]);
+      description: reason || `Access clearance suspended for ${target.staffName} (${target.badgeNumber})`,
+      authorizedBy: currentUser.name,
+    });
   };
 
   const deleteStaffAccount = (recordId: string, reason?: string) => {
-    if (!isAdmin(currentUser)) {
-      console.error('Unauthorized: only administrators can delete staff accounts.');
+    const target = staffAccessList.find((s) => s.id === recordId);
+    if (!target) return;
+
+    if (target.isOriginalAdmin) {
       return;
     }
-    const record = staffAccessList.find((r) => r.id === recordId);
-    if (!record) return;
-
-    const check = canDeleteStaff(currentUser, record, staffAccessList);
-    if (!check.allowed) {
-      console.error('Cannot delete staff account:', check.reason);
+    if (!canDeleteStaff(currentUser, target, staffAccessList)) {
       return;
     }
 
-    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const nextList = staffAccessList.filter((s) => s.id !== recordId);
+    saveStaffList(nextList);
 
-    setStaffAccessList((prev) => prev.filter((r) => r.id !== recordId));
-
-    const newAudit: AccessAuditLogEntry = {
-      id: `aud-${Date.now()}`,
-      timestamp,
-      targetRole: record.role,
-      targetStaffName: record.staffName,
+    addAuditLogEntry({
+      targetRole: target.role,
+      targetStaffName: target.staffName,
+      targetUserId: target.id,
       action: 'account_deleted',
-      description: reason || `Account permanently deleted and purged from clinic directory by ${currentUser.name || 'Managing Director'}`,
-      authorizedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
-    };
-
-    setAccessAuditLog((prev) => [newAudit, ...prev]);
+      description: reason || `Account permanently deleted for ${target.staffName} (${target.badgeNumber})`,
+      authorizedBy: currentUser.name,
+    });
   };
 
   const toggleStaffPermission = (recordId: string, permissionId: string) => {
-    const record = staffAccessList.find((r) => r.id === recordId);
-    if (!record) return;
+    const target = staffAccessList.find((s) => s.id === recordId);
+    if (!target) return;
 
-    const targetPerm = (record.permissions || []).find((p) => p.id === permissionId);
-    const nextState = !targetPerm?.enabled;
-    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    const oldState = targetPerm?.enabled ? 'Granted' : 'Not granted';
-    const newState = nextState ? 'Granted' : 'Not granted';
+    const currentPerms = (target.permissions as any) || {};
+    if (permissionId === 'perm-admin') {
+      const willBeEnabled = !currentPerms[permissionId];
+      if (willBeEnabled && !canGrantAdmin(currentUser, target)) return;
+      if (!willBeEnabled && !canRevokeAdmin(currentUser, target, staffAccessList)) return;
+    }
 
-    setStaffAccessList((prev) =>
-      prev.map((r) => {
-        if (r.id !== recordId) return r;
-        return {
-          ...r,
-          lastUpdated: timestamp,
-          updatedBy: 'Dr. Marcus Vance (Managing Director)',
-          permissions: (r.permissions || []).map((p) =>
-            p.id === permissionId ? { ...p, enabled: nextState } : p
-          ),
-        };
-      })
-    );
+    const nextList = staffAccessList.map((record) => {
+      if (record.id !== recordId) return record;
+      const recPerms = (record.permissions as any) || {};
+      const currentVal = Boolean(recPerms[permissionId]);
+      return {
+        ...record,
+        permissions: {
+          ...recPerms,
+          [permissionId]: !currentVal,
+        } as any,
+      };
+    });
+    saveStaffList(nextList);
 
-    const newAudit: AccessAuditLogEntry = {
-      id: `aud-${Date.now()}`,
-      timestamp,
-      targetRole: record.role,
-      targetStaffName: record.staffName,
-      targetUserId: record.id,
-      capability: targetPerm?.name,
+    const oldState = Boolean(currentPerms[permissionId]) ? 'granted' : 'revoked';
+    const newState = !Boolean(currentPerms[permissionId]) ? 'granted' : 'revoked';
+
+    addAuditLogEntry({
+      targetRole: target.role,
+      targetStaffName: target.staffName,
+      targetUserId: target.id,
+      capability: permissionId,
       oldState,
       newState,
-      action: 'permission_updated',
-      description: `Capability '${targetPerm?.name}' changed from ${oldState} to ${newState} for ${record.staffName} (User ID: ${record.id}) by Dr. Marcus Vance (Managing Director)`,
-      authorizedBy: 'Dr. Marcus Vance (Managing Director)',
-    };
-
-    setAccessAuditLog((prev) => [newAudit, ...prev]);
+      action: newState === 'granted' ? 'capability_granted' : 'capability_revoked',
+      description: `Permission ${permissionId} ${newState} for ${target.staffName}`,
+      authorizedBy: currentUser.name,
+    });
   };
 
   const updateStaffCapabilities = (
@@ -429,112 +459,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updates: Array<{ permissionId: string; enabled: boolean }>,
     actingAdmin?: string
   ) => {
-    if (!isAdmin(currentUser)) {
-      console.error('Unauthorized: only administrators can modify staff capabilities.');
-      return;
-    }
-    const record = staffAccessList.find((r) => r.id === recordId);
-    if (!record) return;
+    const target = staffAccessList.find((s) => s.id === recordId);
+    if (!target) return;
 
-    // Filter out unauthorized admin promotions or revocations
-    const validUpdates = updates.filter((u) => {
-      if (u.permissionId === 'perm-admin' || u.permissionId === 'administrativeAccess') {
-        if (u.enabled) {
-          return canGrantAdmin(currentUser, record);
-        } else {
-          const check = canRevokeAdmin(currentUser, record, staffAccessList);
-          return check.allowed;
-        }
-      }
-      return true;
+    const currentPerms = (target.permissions as any) || {};
+    const newPermissions = { ...currentPerms };
+    updates.forEach((u) => {
+      newPermissions[u.permissionId] = u.enabled;
     });
 
-    if (validUpdates.length === 0 && updates.length > 0) return;
+    const nextList = staffAccessList.map((r) =>
+      r.id === recordId ? { ...r, permissions: newPermissions } : r
+    );
+    saveStaffList(nextList);
 
-    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    const adminName = actingAdmin || currentUser.name || 'Dr. Marcus Vance (Managing Director)';
-
-    const newAuditEntries: AccessAuditLogEntry[] = [];
-
-    const existingPerms = [...(record.permissions || [])];
-    for (const update of validUpdates) {
-      if (!existingPerms.some((p) => p.id === update.permissionId)) {
-        if (update.permissionId === 'perm-admin') {
-          existingPerms.unshift({
-            id: 'perm-admin',
-            name: 'Administrative Access',
-            description: 'Clinic configuration, staff access control, and master ledger management',
-            enabled: false,
-          });
-        }
-      }
-    }
-
-    const updatedPermissions = existingPerms.map((p) => {
-      const match = updates.find((u) => u.permissionId === p.id);
-      if (match && match.enabled !== p.enabled) {
-        const oldState = p.enabled ? 'Granted' : 'Not granted';
-        const newState = match.enabled ? 'Granted' : 'Not granted';
-
-        newAuditEntries.push({
-          id: `aud-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          timestamp,
-          targetRole: record.role,
-          targetStaffName: record.staffName,
-          targetUserId: record.id,
-          capability: p.name,
-          oldState,
-          newState,
-          action: 'permission_updated',
-          description: `Capability '${p.name}' changed from ${oldState} to ${newState} for ${record.staffName} (User ID: ${record.id}) by ${adminName}`,
+    const adminName = actingAdmin || currentUser.name;
+    updates.forEach((u) => {
+      const oldVal = Boolean(currentPerms[u.permissionId]);
+      if (oldVal !== u.enabled) {
+        addAuditLogEntry({
+          targetRole: target.role,
+          targetStaffName: target.staffName,
+          targetUserId: target.id,
+          capability: u.permissionId,
+          oldState: oldVal ? 'granted' : 'revoked',
+          newState: u.enabled ? 'granted' : 'revoked',
+          action: u.enabled ? 'capability_granted' : 'capability_revoked',
+          description: `Direct capability ${u.permissionId} ${u.enabled ? 'granted' : 'revoked'} for ${target.staffName}`,
           authorizedBy: adminName,
         });
-
-        return { ...p, enabled: match.enabled };
       }
-      return p;
     });
-
-    setStaffAccessList((prev) =>
-      prev.map((r) => {
-        if (r.id !== recordId) return r;
-        return {
-          ...r,
-          lastUpdated: timestamp,
-          updatedBy: adminName,
-          permissions: updatedPermissions,
-        };
-      })
-    );
-
-    if (newAuditEntries.length > 0) {
-      setAccessAuditLog((prev) => [...newAuditEntries, ...prev]);
-    }
   };
 
   const addStaffAccount = (record: StaffAccessRecord, auditDescription?: string) => {
-    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    const enrichedRecord: StaffAccessRecord = {
-      ...record,
-      lastUpdated: timestamp,
-      updatedBy: 'Dr. Marcus Vance (Managing Director)',
-    };
+    const nextList = [record, ...staffAccessList];
+    saveStaffList(nextList);
 
-    setStaffAccessList((prev) => [enrichedRecord, ...prev]);
-
-    const newAudit: AccessAuditLogEntry = {
-      id: `aud-${Date.now()}`,
-      timestamp,
+    addAuditLogEntry({
       targetRole: record.role,
       targetStaffName: record.staffName,
-      action: 'access_granted',
-      description:
-        auditDescription ||
-        `New ${record.role} account provisioned and workstation clearance authorized by Managing Director`,
-      authorizedBy: 'Dr. Marcus Vance (Managing Director)',
-    };
+      targetUserId: record.id,
+      action: 'account_provisioned',
+      description: auditDescription || `New staff account provisioned for ${record.staffName} (${record.badgeNumber})`,
+      authorizedBy: currentUser.name,
+    });
+  };
 
-    setAccessAuditLog((prev) => [newAudit, ...prev]);
+  const isRoleSuspended = (role: UserRole): boolean => {
+    if (role === 'md') return false;
+    const roleStaff = staffAccessList.filter((s) => s.role === role);
+    if (roleStaff.length === 0) return false;
+    return roleStaff.every((s) => s.status === 'revoked');
+  };
+
+  const isStaffSuspended = (staffNameOrId: string): boolean => {
+    const record = staffAccessList.find(
+      (s) =>
+        s.id === staffNameOrId ||
+        s.staffName.toLowerCase() === staffNameOrId.toLowerCase() ||
+        s.badgeNumber.toLowerCase() === staffNameOrId.toLowerCase()
+    );
+    return record?.status === 'revoked';
   };
 
   const addAuditLogEntry = (
@@ -544,10 +530,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authorizedBy?: string;
     }
   ) => {
-    const timestamp = entry.timestamp || new Date().toISOString().replace('T', ' ').slice(0, 16);
     const newAudit: AccessAuditLogEntry = {
-      id: entry.id || `aud-${Date.now()}`,
-      timestamp,
+      id: entry.id || `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: entry.timestamp || new Date().toISOString(),
       targetRole: entry.targetRole,
       targetStaffName: entry.targetStaffName,
       targetUserId: entry.targetUserId,
@@ -556,22 +541,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       newState: entry.newState,
       action: entry.action,
       description: entry.description,
-      authorizedBy: entry.authorizedBy || 'Dr. Marcus Vance (Managing Director)',
+      authorizedBy: entry.authorizedBy || currentUser.name || 'Dr. Marcus Vance (Managing Director)',
     };
-    setAccessAuditLog((prev) => [newAudit, ...prev]);
+    saveAuditLog([newAudit, ...accessAuditLog]);
   };
 
-  const login = (identifier: string, password: string): LoginResult => {
+  const login = async (identifier: string, password: string, rememberMe = true): Promise<LoginResult> => {
     const cleanId = identifier.trim().toLowerCase();
     const cleanPass = password.trim();
+    const now = Date.now();
 
-    // Match by username, email, or role key
-    const match = ROLE_CREDENTIALS.find((cred) => {
-      const matchUser = cred.username.toLowerCase() === cleanId;
-      const matchEmail = cred.email.toLowerCase() === cleanId;
-      const matchRole = cred.role.toLowerCase() === cleanId;
+    const repoAccounts = getRepository<Account>('accounts');
+    const accounts = await repoAccounts.list();
+
+    let account = accounts.find((a) => {
+      const matchUser = a.username.toLowerCase() === cleanId;
+      const matchEmail = a.email.toLowerCase() === cleanId;
+      const matchRole = a.role.toLowerCase() === cleanId;
       const matchMdAlias =
-        cred.role === 'md' &&
+        a.role === 'md' &&
         (cleanId === 'admin' ||
           cleanId === 'admin@beaconclinic.com' ||
           cleanId === 'm.vance' ||
@@ -579,56 +567,361 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return matchUser || matchEmail || matchRole || matchMdAlias;
     });
 
-    if (!match) {
+    if (!account) {
+      // Fallback matching against ROLE_CREDENTIALS for demo roles
+      const cred = ROLE_CREDENTIALS.find((c) => {
+        const matchUser = c.username.toLowerCase() === cleanId;
+        const matchEmail = c.email.toLowerCase() === cleanId;
+        const matchRole = c.role.toLowerCase() === cleanId;
+        const matchMdAlias =
+          c.role === 'md' &&
+          (cleanId === 'admin' ||
+            cleanId === 'admin@beaconclinic.com' ||
+            cleanId === 'm.vance' ||
+            cleanId === 'md');
+        return matchUser || matchEmail || matchRole || matchMdAlias;
+      });
+
+      if (cred) {
+        const { hash, salt, iterations } = await hashPassword(cred.password);
+        account = {
+          id: `acc-${cred.username}`,
+          username: cred.username.toLowerCase(),
+          email: cred.email.toLowerCase(),
+          fullName: cred.fullName,
+          phone: '+1 (555) 234-5678',
+          role: cred.role,
+          passwordHash: hash,
+          passwordSalt: salt,
+          passwordIterations: iterations,
+          status: 'active',
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        await repoAccounts.create(account);
+      }
+    }
+
+    if (!account) {
       return {
         success: false,
         error: 'No account found matching this username or email address.',
       };
     }
 
-    // Check password
-    const isPasswordValid = match.password === cleanPass || cleanPass === 'password123';
+    // Check account lockout
+    const lockStatus = isAccountLocked(account, now);
+    if (lockStatus.locked) {
+      return {
+        success: false,
+        error: `Account is temporarily locked due to too many failed attempts. Please try again in ${lockStatus.remainingMinutes} minute(s).`,
+      };
+    }
+
+    // Verify password with PBKDF2
+    const isPasswordValid = await verifyPassword(cleanPass, {
+      hash: account.passwordHash,
+      salt: account.passwordSalt,
+      iterations: account.passwordIterations,
+    });
 
     if (!isPasswordValid) {
+      const failedUpdate = registerFailedLogin(account, now);
+      await repoAccounts.update(account.id, failedUpdate);
+
+      if (failedUpdate.lockedUntil) {
+        return {
+          success: false,
+          error: 'Account locked due to 5 failed attempts. Please try again in 5 minutes.',
+        };
+      }
       return {
         success: false,
         error: 'Incorrect password. Please verify your credentials and try again.',
       };
     }
 
-    // Check if individual staff account is suspended
-    const matchingStaff = staffAccessList.find(
-      (s) =>
-        s.staffName.toLowerCase() === match.fullName.toLowerCase() ||
-        s.badgeNumber.toLowerCase() === match.username.toLowerCase()
-    );
-    if (matchingStaff && matchingStaff.status === 'revoked') {
+    // Reset failed attempts upon successful password match
+    await repoAccounts.update(account.id, resetFailedLogin());
+
+    // Status checks
+    if (account.status === 'revoked') {
       return {
         success: false,
-        error: `Access Suspended: Station credentials for ${match.fullName} have been revoked by the Managing Director (Dr. Marcus Vance).`,
+        error: `Access Suspended: Station credentials for ${account.fullName} have been revoked by the Managing Director.`,
+      };
+    }
+    if (account.status === 'pending') {
+      return {
+        success: false,
+        error: 'Your request is waiting for approval.',
+      };
+    }
+    if (account.status === 'rejected') {
+      return {
+        success: false,
+        error: `Your request was not approved: ${account.rejectionReason || 'Application declined by clinic administrator'}.`,
+      };
+    }
+    if (account.claimPending) {
+      return {
+        success: false,
+        error: 'Your account is waiting to be linked to your clinic record.',
       };
     }
 
     // Check if role is suspended
-    if (isRoleSuspended(match.role)) {
+    if (isRoleSuspended(account.role)) {
       return {
         success: false,
         error: 'Access Suspended: Station credentials have been revoked by the Managing Director (Dr. Marcus Vance).',
       };
     }
 
-    setCurrentRole(match.role);
-    setActiveUserKey(match.username in DEMO_USERS ? match.username : match.role);
-    sessionStorage.setItem('cms_auth_user_key', match.username in DEMO_USERS ? match.username : match.role);
+    // Store session
+    const session = createSession(account.id, rememberMe, now);
+    try {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+    } catch {
+      // Fallback
+    }
+
+    setCurrentRole(account.role);
+    setActiveUserKey(account.username in DEMO_USERS ? account.username : account.role);
+    sessionStorage.setItem('cms_auth_user_key', account.username in DEMO_USERS ? account.username : account.role);
     setIsAuthenticated(true);
-    return { success: true, matchedRole: match.role };
+    return { success: true, matchedRole: account.role };
+  };
+
+  const signUpPatient = async (params: SignUpPatientParams): Promise<SignUpResult> => {
+    const repoAccounts = getRepository<Account>('accounts');
+    const repoPatients = getRepository<Patient>('patients');
+    const repoClaimRequests = getRepository<ClaimRequest>('claimRequests');
+    const repoLedger = getRepository<AccessAuditLogEntry>('ledger');
+
+    const cleanEmail = params.email.trim().toLowerCase();
+    const cleanPhone = params.phone.trim();
+    const accounts = await repoAccounts.list();
+
+    if (accounts.some((a) => a.email.toLowerCase() === cleanEmail)) {
+      return { success: false, error: 'An account with this email address already exists.' };
+    }
+    if (accounts.some((a) => a.phone === cleanPhone)) {
+      return { success: false, error: 'An account with this phone number already exists.' };
+    }
+
+    const { hash, salt, iterations } = await hashPassword(params.password);
+    const now = new Date().toISOString();
+
+    const existingPatients = await repoPatients.list();
+    const matchedPatient = existingPatients.find((p) => {
+      const matchPhone = p.phone === cleanPhone;
+      const patFullName = `${p.firstName} ${p.lastName}`.trim().toLowerCase();
+      const reqFullName = params.fullName.trim().toLowerCase();
+      const matchNameAndDob = patFullName === reqFullName && p.dob === params.dob;
+      return matchPhone || matchNameAndDob;
+    });
+
+    const accountId = `acc-pat-${Date.now()}`;
+
+    if (matchedPatient) {
+      const newAccount: Account = {
+        id: accountId,
+        username: cleanEmail,
+        email: cleanEmail,
+        fullName: params.fullName,
+        phone: cleanPhone,
+        role: 'patient',
+        passwordHash: hash,
+        passwordSalt: salt,
+        passwordIterations: iterations,
+        status: 'active',
+        claimPending: true,
+        linkedPatientId: matchedPatient.id,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await repoAccounts.create(newAccount);
+
+      const claimReq: ClaimRequest = {
+        id: `claim-${Date.now()}`,
+        accountId,
+        accountEmail: cleanEmail,
+        accountPhone: cleanPhone,
+        accountName: params.fullName,
+        dob: params.dob,
+        existingPatientId: matchedPatient.id,
+        existingMrn: matchedPatient.mrn,
+        requestedAt: now,
+        status: 'pending',
+      };
+      await repoClaimRequests.create(claimReq);
+
+      await repoLedger.create({
+        id: `audit-${Date.now()}`,
+        timestamp: now,
+        action: 'account_claim_requested',
+        subject: params.fullName,
+        role: 'patient',
+        details: `Account claim submitted for existing patient ${matchedPatient.mrn}`,
+        authorizedBy: 'Patient Self-Registration',
+      });
+
+      return { success: true, claimPending: true };
+    } else {
+      let maxMrn = 84300;
+      existingPatients.forEach((p) => {
+        const num = parseInt(p.mrn.replace(/\D/g, ''), 10);
+        if (!isNaN(num) && num > maxMrn) maxMrn = num;
+      });
+      const newMrn = `MRN-${maxMrn + 1}`;
+
+      const birthYear = parseInt(params.dob.split('-')[0], 10);
+      const age = isNaN(birthYear) ? 30 : Math.max(0, new Date().getFullYear() - birthYear);
+
+      const nameParts = params.fullName.trim().split(' ');
+      const firstName = nameParts[0] || 'Patient';
+      const lastName = nameParts.slice(1).join(' ') || 'User';
+
+      const newPatId = `pat-${Date.now()}`;
+      const newPatient: Patient = {
+        id: newPatId,
+        mrn: newMrn,
+        firstName,
+        lastName,
+        dob: params.dob,
+        age,
+        gender: params.gender,
+        phone: cleanPhone,
+        email: cleanEmail,
+        address: 'Outpatient Address',
+        allergies: [],
+        chronicConditions: [],
+        emergencyContact: {
+          name: 'Primary Contact',
+          relationship: 'Contact',
+          phone: cleanPhone,
+        },
+        source: 'online',
+        registeredDate: now.split('T')[0],
+        status: 'active',
+        registeredAt: now,
+        registeredBy: { id: 'self', name: 'self' },
+      };
+      await repoPatients.create(newPatient);
+
+      const newAccount: Account = {
+        id: accountId,
+        username: cleanEmail,
+        email: cleanEmail,
+        fullName: params.fullName,
+        phone: cleanPhone,
+        role: 'patient',
+        passwordHash: hash,
+        passwordSalt: salt,
+        passwordIterations: iterations,
+        status: 'active',
+        claimPending: false,
+        linkedPatientId: newPatId,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await repoAccounts.create(newAccount);
+
+      await repoLedger.create({
+        id: `audit-${Date.now()}`,
+        timestamp: now,
+        action: 'patient_self_registered',
+        subject: params.fullName,
+        role: 'patient',
+        details: `Self-registered patient account with MRN ${newMrn}`,
+        authorizedBy: 'Patient Self-Registration',
+      });
+
+      return { success: true, claimPending: false };
+    }
+  };
+
+  const signUpStaff = async (params: SignUpStaffParams): Promise<SignUpResult> => {
+    if (params.roleRequested !== 'doctor' && params.roleRequested !== 'receptionist') {
+      return { success: false, error: 'Invalid staff role requested.' };
+    }
+
+    const repoAccounts = getRepository<Account>('accounts');
+    const repoApprovals = getRepository<PendingStaffApproval>('approvals');
+    const repoLedger = getRepository<AccessAuditLogEntry>('ledger');
+
+    const cleanEmail = params.email.trim().toLowerCase();
+    const cleanPhone = params.phone.trim();
+    const accounts = await repoAccounts.list();
+
+    if (accounts.some((a) => a.email.toLowerCase() === cleanEmail)) {
+      return { success: false, error: 'An account with this email address already exists.' };
+    }
+    if (accounts.some((a) => a.phone === cleanPhone)) {
+      return { success: false, error: 'An account with this phone number already exists.' };
+    }
+
+    const { hash, salt, iterations } = await hashPassword(params.password);
+    const now = new Date().toISOString();
+    const accountId = `acc-staff-${Date.now()}`;
+
+    const newAccount: Account = {
+      id: accountId,
+      username: cleanEmail,
+      email: cleanEmail,
+      fullName: params.fullName,
+      phone: cleanPhone,
+      role: params.roleRequested,
+      passwordHash: hash,
+      passwordSalt: salt,
+      passwordIterations: iterations,
+      status: 'pending',
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await repoAccounts.create(newAccount);
+
+    const prefix = params.roleRequested === 'doctor' ? 'DOC' : 'REC';
+    const badgeNumber = `${prefix}-${Math.floor(100 + Math.random() * 900)}`;
+
+    const approvalReq: PendingStaffApproval = {
+      id: `pend-${Date.now()}`,
+      role: params.roleRequested,
+      staffName: params.fullName,
+      staffTitle: params.jobTitle,
+      department: params.department,
+      badgeNumber,
+      requestedAt: now.slice(0, 16).replace('T', ' '),
+      notes: 'Online sign-up request; clearance pending administrator authorization.',
+    };
+    await repoApprovals.create(approvalReq);
+
+    await repoLedger.create({
+      id: `audit-${Date.now()}`,
+      timestamp: now,
+      action: 'staff_clearance_requested',
+      subject: params.fullName,
+      role: params.roleRequested,
+      details: `Staff clearance application submitted for role ${params.roleRequested}`,
+      authorizedBy: 'Staff Self-Registration',
+    });
+
+    return { success: true };
   };
 
   const loginAs = (role: UserRole) => {
     const targetRole = role === 'admin' ? 'md' : role;
     if (DEMO_USERS[targetRole]) {
       if (isRoleSuspended(targetRole)) {
-        // Prevent switching if suspended
         return;
       }
       setCurrentRole(targetRole);
@@ -638,8 +931,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
+  const switchRole = (role: UserRole) => {
+    loginAs(role);
+  };
+
+  const logout = (notice?: string) => {
     setIsAuthenticated(false);
+    try {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      if (notice) {
+        sessionStorage.setItem('cms_auth_notice', notice);
+      }
+    } catch {
+      // Ignore
+    }
     sessionStorage.removeItem('cms_auth_role');
     sessionStorage.removeItem('cms_auth_user_key');
     sessionStorage.removeItem('cms_authenticated');
@@ -666,8 +971,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isStaffSuspended,
         login,
         loginAs,
-        switchRole: loginAs,
+        switchRole,
         updateCurrentUser,
+        signUpPatient,
+        signUpStaff,
         logout,
       }}
     >
@@ -683,4 +990,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

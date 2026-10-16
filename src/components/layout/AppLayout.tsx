@@ -77,7 +77,7 @@ export const AppLayout: React.FC = () => {
             Workstation access for this role has been revoked by <strong>Dr. Marcus Vance (Managing Director)</strong>. Please contact the clinic administrator to request access clearance.
           </p>
           <div className="pt-2">
-            <Button variant="primary" size="sm" onClick={logout}>
+            <Button variant="primary" size="sm" onClick={() => logout()}>
               Return to Login
             </Button>
           </div>

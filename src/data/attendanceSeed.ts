@@ -186,3 +186,6 @@ export function generateInitialAttendanceRecords(now: Date = new Date()): Attend
 
   return records;
 }
+
+export const INITIAL_ATTENDANCE_RECORDS: AttendanceRecord[] = generateInitialAttendanceRecords();
+export const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = generateInitialLeaveRequests();

@@ -43,6 +43,8 @@ import {
   INITIAL_MODULES,
 } from '@/data/mockData';
 import { ACCESS_CATALOG, AccessItem, registerCustomAccess } from '@/data/accessCatalog';
+import { getRepository } from '@/data/storage';
+import { STORAGE_KEY_PREFIX } from '@/lib/authConstants';
 import { useAuth } from '@/context/AuthContext';
 
 export interface RegistrationResult {
@@ -227,31 +229,103 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [labTests, setLabTests] = useState<LabTest[]>(INITIAL_LAB_TESTS);
   const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
   const [patientAssignments, setPatientAssignments] = useState<PatientAssignment[]>(INITIAL_PATIENT_ASSIGNMENTS);
+  const [modules, setModules] = useState<AccessModule[]>(INITIAL_MODULES);
 
-  const [modules, setModules] = useState<AccessModule[]>(() => {
-    try {
-      const saved = sessionStorage.getItem('cms_modules_v2');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (
-          Array.isArray(parsed) &&
-          parsed.length >= 3 &&
-          parsed.some((m: AccessModule) => m.id === 'mod-admin')
-        ) {
-          return parsed;
-        }
+  // Load from repository on startup
+  useEffect(() => {
+    const loadRepo = async () => {
+      try {
+        const repoPatients = getRepository<Patient>('patients');
+        const repoAppointments = getRepository<Appointment>('appointments');
+        const repoPrescriptions = getRepository<Prescription>('prescriptions');
+        const repoInvoices = getRepository<Invoice>('invoices');
+        const repoAssignments = getRepository<PatientAssignment>('assignments');
+        const repoRoles = getRepository<AccessModule>('roles');
+
+        const [pats, apts, rxs, invs, asgns, rols] = await Promise.all([
+          repoPatients.list(),
+          repoAppointments.list(),
+          repoPrescriptions.list(),
+          repoInvoices.list(),
+          repoAssignments.list(),
+          repoRoles.list(),
+        ]);
+
+        if (pats.length > 0) setPatients(pats);
+        if (apts.length > 0) setAppointments(apts);
+        if (rxs.length > 0) setPrescriptions(rxs);
+        if (invs.length > 0) setInvoices(invs);
+        if (asgns.length > 0) setPatientAssignments(asgns);
+        if (rols.length > 0) setModules(rols);
+      } catch {
+        // Fallback
       }
-    } catch {
-      // fallback
+    };
+    loadRepo();
+  }, []);
+
+  // Cross-tab sync
+  useEffect(() => {
+    const handleStorage = async (e: StorageEvent) => {
+      if (!e.key) return;
+      if (e.key === `${STORAGE_KEY_PREFIX}patients`) {
+        const repo = getRepository<Patient>('patients');
+        setPatients(await repo.list());
+      }
+      if (e.key === `${STORAGE_KEY_PREFIX}appointments`) {
+        const repo = getRepository<Appointment>('appointments');
+        setAppointments(await repo.list());
+      }
+      if (e.key === `${STORAGE_KEY_PREFIX}prescriptions`) {
+        const repo = getRepository<Prescription>('prescriptions');
+        setPrescriptions(await repo.list());
+      }
+      if (e.key === `${STORAGE_KEY_PREFIX}assignments`) {
+        const repo = getRepository<PatientAssignment>('assignments');
+        setPatientAssignments(await repo.list());
+      }
+      if (e.key === `${STORAGE_KEY_PREFIX}roles`) {
+        const repo = getRepository<AccessModule>('roles');
+        setModules(await repo.list());
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // Write-through to repositories
+  useEffect(() => {
+    if (patients.length > 0) {
+      getRepository<Patient>('patients').replaceAll(patients).catch(() => {});
     }
-    return INITIAL_MODULES;
-  });
+  }, [patients]);
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem('cms_modules_v2', JSON.stringify(modules));
-    } catch {
-      // fallback
+    if (appointments.length > 0) {
+      getRepository<Appointment>('appointments').replaceAll(appointments).catch(() => {});
+    }
+  }, [appointments]);
+
+  useEffect(() => {
+    if (prescriptions.length > 0) {
+      getRepository<Prescription>('prescriptions').replaceAll(prescriptions).catch(() => {});
+    }
+  }, [prescriptions]);
+
+  useEffect(() => {
+    if (patientAssignments.length > 0) {
+      getRepository<PatientAssignment>('assignments').replaceAll(patientAssignments).catch(() => {});
+    }
+  }, [patientAssignments]);
+
+  useEffect(() => {
+    if (modules.length > 0) {
+      getRepository<AccessModule>('roles').replaceAll(modules).catch(() => {});
+      try {
+        sessionStorage.setItem('cms_modules_v2', JSON.stringify(modules));
+      } catch {
+        // fallback
+      }
     }
   }, [modules]);
 

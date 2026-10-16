@@ -18,6 +18,8 @@ import {
 } from '@/lib/attendance';
 import { useAuth } from '@/context/AuthContext';
 import { hasCapability } from '@/lib/permissions';
+import { getRepository } from '@/data/storage';
+import { STORAGE_KEY_PREFIX } from '@/lib/authConstants';
 
 interface AttendanceContextType {
   shifts: Shift[];
@@ -55,57 +57,89 @@ const AttendanceContext = createContext<AttendanceContextType | undefined>(undef
 export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, staffAccessList, addAuditLogEntry } = useAuth();
 
-  const [shifts, setShifts] = useState<Shift[]>(() => {
-    try {
-      const saved = sessionStorage.getItem('cms_shifts_v1');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // Fallback
-    }
-    return INITIAL_SHIFTS;
-  });
+  const [shifts, setShifts] = useState<Shift[]>(INITIAL_SHIFTS);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
 
-  const [records, setRecords] = useState<AttendanceRecord[]>(() => {
-    try {
-      const saved = sessionStorage.getItem('cms_attendance_records_v1');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // Fallback
-    }
-    return generateInitialAttendanceRecords();
-  });
-
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(() => {
-    try {
-      const saved = sessionStorage.getItem('cms_leave_requests_v1');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // Fallback
-    }
-    return generateInitialLeaveRequests();
-  });
-
+  // Load from repository on startup
   useEffect(() => {
-    try {
-      sessionStorage.setItem('cms_shifts_v1', JSON.stringify(shifts));
-    } catch {
-      // Fallback
+    const loadRepo = async () => {
+      try {
+        const repoShifts = getRepository<Shift>('shifts');
+        const repoRecords = getRepository<AttendanceRecord>('attendance');
+        const repoLeaves = getRepository<LeaveRequest>('leave');
+
+        const [s, r, l] = await Promise.all([
+          repoShifts.list(),
+          repoRecords.list(),
+          repoLeaves.list(),
+        ]);
+
+        if (s.length > 0) setShifts(s);
+        if (r.length > 0) setRecords(r);
+        else setRecords(generateInitialAttendanceRecords());
+        if (l.length > 0) setLeaveRequests(l);
+        else setLeaveRequests(generateInitialLeaveRequests());
+      } catch {
+        setRecords(generateInitialAttendanceRecords());
+        setLeaveRequests(generateInitialLeaveRequests());
+      }
+    };
+    loadRepo();
+  }, []);
+
+  // Cross-tab sync
+  useEffect(() => {
+    const handleStorage = async (e: StorageEvent) => {
+      if (!e.key) return;
+      if (e.key === `${STORAGE_KEY_PREFIX}shifts`) {
+        const repo = getRepository<Shift>('shifts');
+        setShifts(await repo.list());
+      }
+      if (e.key === `${STORAGE_KEY_PREFIX}attendance`) {
+        const repo = getRepository<AttendanceRecord>('attendance');
+        setRecords(await repo.list());
+      }
+      if (e.key === `${STORAGE_KEY_PREFIX}leave`) {
+        const repo = getRepository<LeaveRequest>('leave');
+        setLeaveRequests(await repo.list());
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // Write-through to repository and sessionStorage
+  useEffect(() => {
+    if (shifts.length > 0) {
+      getRepository<Shift>('shifts').replaceAll(shifts).catch(() => {});
+      try {
+        sessionStorage.setItem('cms_shifts_v1', JSON.stringify(shifts));
+      } catch {
+        // Fallback
+      }
     }
   }, [shifts]);
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem('cms_attendance_records_v1', JSON.stringify(records));
-    } catch {
-      // Fallback
+    if (records.length > 0) {
+      getRepository<AttendanceRecord>('attendance').replaceAll(records).catch(() => {});
+      try {
+        sessionStorage.setItem('cms_attendance_records_v1', JSON.stringify(records));
+      } catch {
+        // Fallback
+      }
     }
   }, [records]);
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem('cms_leave_requests_v1', JSON.stringify(leaveRequests));
-    } catch {
-      // Fallback
+    if (leaveRequests.length > 0) {
+      getRepository<LeaveRequest>('leave').replaceAll(leaveRequests).catch(() => {});
+      try {
+        sessionStorage.setItem('cms_leave_requests_v1', JSON.stringify(leaveRequests));
+      } catch {
+        // Fallback
+      }
     }
   }, [leaveRequests]);
 
