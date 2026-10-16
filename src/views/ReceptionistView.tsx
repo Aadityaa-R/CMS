@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -23,7 +23,6 @@ import {
   Ticket,
   CheckCircle2,
   Filter,
-  ChevronDown,
 } from 'lucide-react';
 import { BloodGroup, Appointment } from '@/types';
 import { getScopedPatients, getScopedAppointments } from '@/lib/selectors';
@@ -74,26 +73,6 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'waiting' | 'urgent'>('all');
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const filterDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close filter dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        filterDropdownRef.current &&
-        !filterDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsFilterDropdownOpen(false);
-      }
-    };
-    if (isFilterDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isFilterDropdownOpen]);
 
   // Real-time Feedback Notification Banner State
   const [notification, setNotification] = useState<string | null>(null);
@@ -130,6 +109,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
   // KPI Calculations
   const waitingCount = appointments.filter((a) => a.status === 'checked_in').length;
+  const urgentCount = appointments.filter((a) => a.status === 'checked_in' && a.tokenNumber <= 2).length;
   const inConsultCount = appointments.filter((a) => a.status === 'in_consultation').length;
   const completedCount = appointments.filter((a) => a.status === 'completed').length;
   const upcomingCount = appointments.filter((a) => a.status === 'scheduled' || a.status === 'confirmed').length;
@@ -426,90 +406,19 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           />
         </div>
 
-        {/* Priority Filter as Dropdown Selector */}
-        <div className="relative" ref={filterDropdownRef}>
-          <button
-            type="button"
-            onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors shadow-xs cursor-pointer focus:outline-none focus:ring-0 focus-visible:ring-1 focus-visible:ring-teal-500"
-            aria-label="Filter queue"
-            aria-expanded={isFilterDropdownOpen}
-          >
-            <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-            <span>Queue:</span>
-            <span className="font-semibold text-teal-600 dark:text-teal-400">
-              {filterMode === 'all'
-                ? 'All Today'
-                : filterMode === 'waiting'
-                ? 'Waiting Lounge Only'
-                : 'Priority Patients'}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
-          </button>
-
-          {isFilterDropdownOpen && (
-            <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 animate-fadeIn">
-              <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
-                Filter Reception Queue
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode('all');
-                  setIsFilterDropdownOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
-                  filterMode === 'all'
-                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span>All Today</span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                  ({appointments.length})
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode('waiting');
-                  setIsFilterDropdownOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
-                  filterMode === 'waiting'
-                    ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-                  Waiting Lounge
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                  ({waitingCount})
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode('urgent');
-                  setIsFilterDropdownOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors text-left cursor-pointer ${
-                  filterMode === 'urgent'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                  Priority Next
-                </span>
-              </button>
-            </div>
-          )}
+        {/* Priority Filter as Searchable Dropdown Selector */}
+        <div className="w-full sm:w-60 shrink-0">
+          <Select
+            icon={<Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />}
+            value={filterMode}
+            onChange={(e) => setFilterMode(e.target.value as 'all' | 'waiting' | 'urgent')}
+            placeholder="Filter queue"
+            options={[
+              { value: 'all', label: `All Today (${appointments.length})` },
+              { value: 'waiting', label: `Waiting Lounge (${waitingCount})` },
+              { value: 'urgent', label: `Priority Next (${urgentCount})` },
+            ]}
+          />
         </div>
       </div>
 
