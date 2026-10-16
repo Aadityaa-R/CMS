@@ -54,6 +54,12 @@ export const ACCESS_CATALOG: AccessItem[] = [
   },
 ];
 
+export function registerCustomAccess(item: AccessItem): void {
+  if (!ACCESS_CATALOG.some((a) => a.id === item.id)) {
+    ACCESS_CATALOG.push(item);
+  }
+}
+
 export function getAccessItem(id: StandardCapability | string): AccessItem | undefined {
   return ACCESS_CATALOG.find((item) => item.id === id);
 }

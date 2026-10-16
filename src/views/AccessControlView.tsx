@@ -139,6 +139,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
   const {
     modules = [],
+    accessCatalog = [],
+    createAccess,
     createModule,
     renameModule,
     deleteModule,
@@ -157,6 +159,11 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   const [createModuleDesc, setCreateModuleDesc] = useState('');
   const [createModuleSelectedAccesses, setCreateModuleSelectedAccesses] = useState<StandardCapability[]>([]);
   const [createModuleError, setCreateModuleError] = useState('');
+
+  const [isCreateAccessModalOpen, setIsCreateAccessModalOpen] = useState(false);
+  const [newAccessName, setNewAccessName] = useState('');
+  const [newAccessDesc, setNewAccessDesc] = useState('');
+  const [newAccessError, setNewAccessError] = useState('');
 
   const [isEditModuleModalOpen, setIsEditModuleModalOpen] = useState(false);
   const [editModuleName, setEditModuleName] = useState('');
@@ -252,7 +259,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       }
     });
 
-    ACCESS_CATALOG.forEach((item) => {
+    accessCatalog.forEach((item) => {
       if (!seen.has(item.label.toLowerCase())) {
         seen.add(item.label.toLowerCase());
         list.push({
@@ -1198,7 +1205,22 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                   {/* Accesses Table Card */}
                   <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <CardHeader>
+                    <CardHeader
+                      action={
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => {
+                            setNewAccessName('');
+                            setNewAccessDesc('');
+                            setNewAccessError('');
+                            setIsCreateAccessModalOpen(true);
+                          }}
+                        >
+                          Add New Access
+                        </Button>
+                      }
+                    >
                       <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                         Role Accesses ({currentModule.accessIds.length} included)
                       </CardTitle>
@@ -1214,7 +1236,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {ACCESS_CATALOG.map((item) => {
+                            {accessCatalog.map((item) => {
                               const isIncluded = currentModule.accessIds.includes(item.id);
                               const includeCheck = !isIncluded
                                 ? canIncludeAccess(currentUser, currentModule, item.id, modules)
@@ -1417,19 +1439,33 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
               <CardHeader
                 action={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setCreateModuleName('');
-                      setCreateModuleDesc('');
-                      setCreateModuleSelectedAccesses([]);
-                      setCreateModuleError('');
-                      setIsCreateModuleModalOpen(true);
-                    }}
-                  >
-                    Create Role
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setNewAccessName('');
+                        setNewAccessDesc('');
+                        setNewAccessError('');
+                        setIsCreateAccessModalOpen(true);
+                      }}
+                    >
+                      Add New Access
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setCreateModuleName('');
+                        setCreateModuleDesc('');
+                        setCreateModuleSelectedAccesses([]);
+                        setCreateModuleError('');
+                        setIsCreateModuleModalOpen(true);
+                      }}
+                    >
+                      Create Role
+                    </Button>
+                  </div>
                 }
               >
                 <div>
@@ -2768,13 +2804,26 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Assign Access Privileges
                 <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">
-                  ({createModuleSelectedAccesses.length} of {ACCESS_CATALOG.length} selected)
+                  ({createModuleSelectedAccesses.length} of {accessCatalog.length} selected)
                 </span>
               </label>
               <div className="flex items-center gap-2 text-xs">
                 <button
                   type="button"
-                  onClick={() => setCreateModuleSelectedAccesses(ACCESS_CATALOG.map((a) => a.id))}
+                  onClick={() => {
+                    setNewAccessName('');
+                    setNewAccessDesc('');
+                    setNewAccessError('');
+                    setIsCreateAccessModalOpen(true);
+                  }}
+                  className="text-teal-600 dark:text-teal-400 hover:underline font-semibold cursor-pointer"
+                >
+                  + Add New Access
+                </button>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <button
+                  type="button"
+                  onClick={() => setCreateModuleSelectedAccesses(accessCatalog.map((a) => a.id))}
                   className="text-teal-600 dark:text-teal-400 hover:underline font-medium cursor-pointer"
                 >
                   Select all
@@ -2791,7 +2840,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             </div>
 
             <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 p-1">
-              {ACCESS_CATALOG.map((item) => {
+              {accessCatalog.map((item) => {
                 const isSelected = createModuleSelectedAccesses.includes(item.id);
                 const isDocOnly = item.id === 'prescriptionAuthoring';
 
@@ -2855,6 +2904,93 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Access privileges can be modified at any time via the Configure Role panel.
             </p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Create New Access Privilege Modal */}
+      <Modal
+        isOpen={isCreateAccessModalOpen}
+        onClose={() => {
+          setIsCreateAccessModalOpen(false);
+          setNewAccessName('');
+          setNewAccessDesc('');
+          setNewAccessError('');
+        }}
+        title="Create New Access Privilege"
+        description="Define a new operational capability or security privilege to grant across clinic roles."
+        maxWidth="lg"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setIsCreateAccessModalOpen(false);
+                setNewAccessName('');
+                setNewAccessDesc('');
+                setNewAccessError('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                const name = newAccessName.trim();
+                if (!name) {
+                  setNewAccessError('Access privilege name is required.');
+                  return;
+                }
+                const res = createAccess(name, newAccessDesc.trim(), currentUser);
+                if (res.success && res.accessItem) {
+                  const newItem = res.accessItem;
+                  showNotification({
+                    type: 'success',
+                    message: `Access privilege "${name}" created successfully.`,
+                  });
+                  if (isCreateModuleModalOpen) {
+                    setCreateModuleSelectedAccesses((prev) => [...prev, newItem.id]);
+                  }
+                  if (selectedModuleId) {
+                    includeAccess(selectedModuleId, newItem.id);
+                  }
+                  setIsCreateAccessModalOpen(false);
+                  setNewAccessName('');
+                  setNewAccessDesc('');
+                  setNewAccessError('');
+                } else {
+                  setNewAccessError(res.error || 'Failed to create access privilege.');
+                }
+              }}
+            >
+              Create Access
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label={<>Access Privilege Name <span className="text-rose-500">*</span></>}
+            placeholder="e.g. Pharmacy Dispensing, Telehealth Consultations"
+            value={newAccessName}
+            onChange={(e) => {
+              setNewAccessName(e.target.value);
+              if (newAccessError) setNewAccessError('');
+            }}
+            error={newAccessError}
+          />
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Description (optional)
+            </label>
+            <textarea
+              className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 resize-none h-20"
+              placeholder="Operational permissions, clinical scope, or workstation actions granted by this privilege..."
+              value={newAccessDesc}
+              onChange={(e) => setNewAccessDesc(e.target.value)}
+            />
           </div>
         </div>
       </Modal>

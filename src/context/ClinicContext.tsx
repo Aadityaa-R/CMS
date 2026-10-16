@@ -39,6 +39,7 @@ import {
   INITIAL_PATIENT_ASSIGNMENTS,
   INITIAL_MODULES,
 } from '@/data/mockData';
+import { ACCESS_CATALOG, AccessItem, registerCustomAccess } from '@/data/accessCatalog';
 import { useAuth } from '@/context/AuthContext';
 
 export interface TransferResult {
@@ -156,6 +157,12 @@ interface ClinicContextType {
     reason?: string,
     actingUser?: User | null
   ) => ModuleMutationResult;
+  accessCatalog: AccessItem[];
+  createAccess: (
+    label: string,
+    description: string,
+    actingUser?: User | null
+  ) => { success: boolean; error?: string; accessItem?: AccessItem };
 }
 
 const ClinicContext = createContext<ClinicContextType | undefined>(undefined);
@@ -197,6 +204,26 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // fallback
     }
   }, [modules]);
+
+  const [customAccesses, setCustomAccesses] = useState<AccessItem[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('cms_custom_accesses_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item: AccessItem) => registerCustomAccess(item));
+          return parsed;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return [];
+  });
+
+  const accessCatalog: AccessItem[] = React.useMemo(() => {
+    return [...ACCESS_CATALOG];
+  }, [customAccesses]);
 
   const transferPatient = (
     patientId: string,
@@ -891,6 +918,55 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { success: true };
   };
 
+  const createAccess = (
+    label: string,
+    description: string,
+    actingUser?: User | null
+  ): { success: boolean; error?: string; accessItem?: AccessItem } => {
+    const actor = actingUser || authUser;
+    if (!isAdmin(actor, modules)) {
+      return { success: false, error: 'Only clinic administrators can create new access privileges.' };
+    }
+    const trimmedLabel = label.trim();
+    if (!trimmedLabel) {
+      return { success: false, error: 'Access privilege name is required.' };
+    }
+    if (accessCatalog.some((a) => a.label.toLowerCase() === trimmedLabel.toLowerCase())) {
+      return { success: false, error: 'An access privilege with this name already exists.' };
+    }
+
+    const slug = trimmedLabel.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const id = `acc_${slug || Date.now()}`;
+
+    const newAccess: AccessItem = {
+      id: id as StandardCapability,
+      label: trimmedLabel,
+      description: description.trim() || 'Custom operational access privilege.',
+    };
+
+    registerCustomAccess(newAccess);
+
+    setCustomAccesses((prev) => {
+      const next = [...prev, newAccess];
+      try {
+        sessionStorage.setItem('cms_custom_accesses_v1', JSON.stringify(next));
+      } catch {
+        // fallback
+      }
+      return next;
+    });
+
+    addAuditLogEntry({
+      targetRole: 'md',
+      targetStaffName: trimmedLabel,
+      action: 'module_created',
+      description: `Access privilege '${trimmedLabel}' created by ${actor?.name || 'Managing Director'}`,
+      authorizedBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
+    });
+
+    return { success: true, accessItem: newAccess };
+  };
+
   return (
     <ClinicContext.Provider
       value={{
@@ -903,6 +979,8 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         invoices,
         patientAssignments,
         modules,
+        accessCatalog,
+        createAccess,
         transferPatient,
         addPatient,
         updatePatient,

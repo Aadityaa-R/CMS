@@ -246,7 +246,8 @@ export type StandardCapability =
   | 'consultingCalendar'
   | 'patientRegistration'
   | 'patientCheckIn'
-  | 'paymentRecording';
+  | 'paymentRecording'
+  | (string & {});
 
 export interface AccessModule {
   id: string;
