@@ -153,7 +153,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors cursor-pointer text-left shadow-xs focus:outline-none focus:ring-0 focus:border-teal-500 ${
+        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-xl border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors cursor-pointer text-left shadow-xs focus:outline-none focus:ring-0 focus:border-teal-500 ${
           error
             ? 'border-rose-300 dark:border-rose-800'
             : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
@@ -335,7 +335,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors cursor-pointer text-left shadow-xs focus:outline-none focus:ring-0 focus:border-teal-500 ${
+        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-xl border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors cursor-pointer text-left shadow-xs focus:outline-none focus:ring-0 focus:border-teal-500 ${
           error
             ? 'border-rose-300 dark:border-rose-800'
             : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'

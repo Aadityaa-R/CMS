@@ -449,3 +449,5 @@ This runs `tsc && vite build`. A valid build completes with **0 TypeScript error
 - [x] Vitals and allergy warnings are interactively editable with context persistence.
 - [x] Role-aware Dashboard serves as default landing page with summary card, inline SVG charts, and paginated lists.
 - [x] Proportional column width distribution across all tables (TableHead and TableCell), eliminating horizontal voids and awkward line wrapping.
+- [x] Uniform rounded edges (`rounded-xl`) across all Select triggers, InteractiveSearchBar, Input, DatePicker, and Textarea controls.
+

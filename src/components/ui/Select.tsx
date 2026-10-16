@@ -93,9 +93,15 @@ export const Select: React.FC<SelectProps> = ({
     : options;
 
   const triggerSizeClasses = {
-    sm: 'py-1.5 px-2.5 text-xs rounded-md',
-    md: 'py-2 px-3 text-xs sm:text-sm font-medium rounded-lg',
-    lg: 'py-2.5 sm:py-3 px-3.5 sm:px-4 text-sm font-medium rounded-xl min-h-[44px]',
+    sm: 'py-1.5 text-xs rounded-xl min-h-[36px]',
+    md: 'py-2 text-xs sm:text-sm font-medium rounded-xl min-h-[38px]',
+    lg: 'py-2.5 sm:py-3 text-sm font-medium rounded-xl min-h-[44px]',
+  };
+
+  const triggerPaddingClasses = {
+    sm: icon ? 'pl-8 pr-2.5' : 'px-2.5',
+    md: icon ? 'pl-9 pr-3' : 'px-3',
+    lg: icon ? 'pl-11 pr-4' : 'px-3.5 sm:px-4',
   };
 
   const optionItemSizeClasses = {
@@ -129,9 +135,7 @@ export const Select: React.FC<SelectProps> = ({
         id={id}
         disabled={disabled}
         onClick={() => !disabled && setIsOpen((prev) => !prev)}
-        className={`w-full relative flex items-center justify-between ${
-          icon ? (size === 'lg' ? 'pl-11 pr-4' : 'pl-9 pr-3') : triggerSizeClasses[size]
-        } border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors text-left shadow-xs focus:outline-none focus:ring-0 focus:border-teal-500 ${
+        className={`w-full relative flex items-center justify-between ${triggerSizeClasses[size]} ${triggerPaddingClasses[size]} border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors text-left shadow-xs focus:outline-none focus:ring-0 focus:border-teal-500 ${
           disabled
             ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800'
             : 'cursor-pointer'
