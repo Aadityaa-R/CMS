@@ -302,7 +302,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Full Name</span>
                 <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
                   {patient ? `${patient.firstName} ${patient.lastName}` : currentUser.name}
@@ -311,7 +311,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                   MRN: {patient?.mrn || currentUser.badgeNumber || 'N/A'}
                 </span>
               </div>
-              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Demographics</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm capitalize">
                   {patient?.age ? `${patient.age} yrs` : ''} {patient?.gender ? `• ${patient.gender}` : ''}
@@ -320,7 +320,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                   DOB: {patient?.dob || 'N/A'} • Blood: {patient?.bloodGroup || 'N/A'}
                 </span>
               </div>
-              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Contact Info</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
                   {patient?.phone || 'N/A'}
@@ -332,7 +332,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Allergies</span>
                 <div className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-1">
                   {patient?.allergies && patient.allergies.length > 0 ? (
@@ -345,7 +345,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                   )}
                 </div>
               </div>
-              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Chronic Conditions</span>
                 <div className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-1">
                   {patient?.chronicConditions && patient.chronicConditions.length > 0 ? (
@@ -358,7 +358,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             </div>
 
             {patient?.emergencyContact && (
-              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Emergency Contact</span>
                 <div className="text-xs text-slate-800 dark:text-slate-200 font-medium mt-1">
                   {patient.emergencyContact.name} ({patient.emergencyContact.relationship}) • {patient.emergencyContact.phone}
@@ -367,7 +367,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             )}
 
             {patientVitals && (
-              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 space-y-1">
+              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 space-y-1">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Latest Clinical Triage Vitals</span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1 font-mono">
                   <div>

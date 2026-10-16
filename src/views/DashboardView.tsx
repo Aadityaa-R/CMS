@@ -849,6 +849,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const gridColsClass =
     figureCount === 5
       ? 'grid-cols-2 lg:grid-cols-5'
+      : figureCount === 3
+      ? 'grid-cols-1 sm:grid-cols-3'
       : 'grid-cols-2 lg:grid-cols-4';
 
   return (
@@ -875,21 +877,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Exactly ONE Outlined Summary Figures Card */}
-      <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
-        <div className={`grid ${gridColsClass} gap-6`}>
-          {metrics1.summaryFigures.map((fig) => (
-            <div key={fig.label} className="flex flex-col">
-              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-mono">
-                {fig.formattedValue ?? fig.value}
-              </span>
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
-                {fig.label}
-              </span>
-            </div>
-          ))}
-        </div>
-      </Card>
+      {/* Summary Figures: Each metric in its own separate block card */}
+      <div className={`grid ${gridColsClass} gap-3 sm:gap-4`}>
+        {metrics1.summaryFigures.map((fig) => (
+          <Card
+            key={fig.label}
+            className="p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl shadow-xs transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between"
+          >
+            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-mono">
+              {fig.formattedValue ?? fig.value}
+            </span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+              {fig.label}
+            </span>
+          </Card>
+        ))}
+      </div>
 
       {/* Charts Row: Stack below 1024px (lg:grid-cols-2) */}
       {(currentRole === 'md' || currentRole === 'admin' || currentRole === 'doctor') && (

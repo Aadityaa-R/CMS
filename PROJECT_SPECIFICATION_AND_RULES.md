@@ -451,4 +451,5 @@ This runs `tsc && vite build`. A valid build completes with **0 TypeScript error
 - [x] Proportional column width distribution across all tables (TableHead and TableCell), eliminating horizontal voids and awkward line wrapping.
 - [x] Uniform rounded edges (`rounded-xl`) across all Select triggers, InteractiveSearchBar, Input, DatePicker, and Textarea controls.
 - [x] Unified Combobox pattern for searchable Select controls: main field is directly searchable with inline query typing and clean options-only dropdowns.
+- [x] Individual Card blocks for all Dashboard summary figures, replacing single large multi-metric card with clean separate cards.
 
