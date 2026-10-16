@@ -33,6 +33,9 @@ export const CAPABILITY_ALIAS_MAP: Record<string, StandardCapability> = {
   'paymentRecording': 'paymentRecording',
   'perm-attendance': 'attendanceManagement',
   'attendanceManagement': 'attendanceManagement',
+  'booking': 'patientCheckIn',
+  'perm-pat-booking': 'patientCheckIn',
+  'patientBooking': 'patientCheckIn',
 };
 
 /**
@@ -278,6 +281,24 @@ export function canCheckIn(
 }
 
 /**
+ * Determines whether a user has authority to book appointments.
+ * Receptionists, physicians, clinic administrators, and patients themselves can book.
+ */
+export function canBookAppointment(
+  user: User | null | undefined,
+  modules: AccessModule[] = INITIAL_MODULES
+): boolean {
+  if (!user) return false;
+  if (user.role === 'patient') return true;
+  return (
+    hasCapability(user, 'patientCheckIn', modules) ||
+    hasCapability(user, 'patientRegistration', modules) ||
+    hasCapability(user, 'consultingCalendar', modules) ||
+    isAdmin(user, modules)
+  );
+}
+
+/**
  * Determines whether a user has authority to record billing payments.
  * Depends on module access ('paymentRecording').
  */
@@ -507,6 +528,7 @@ export function canTransferPatient(
 export function scopePatientForReceptionist(patient: Patient): Patient {
   return {
     ...patient,
+    bloodGroup: undefined,
     allergies: [],
     chronicConditions: [],
     currentMedications: [],

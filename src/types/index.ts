@@ -58,7 +58,7 @@ export interface Patient {
   phone: string;
   email: string;
   address: string;
-  bloodGroup: BloodGroup;
+  bloodGroup?: BloodGroup;
   allergies: string[];
   chronicConditions: string[];
   emergencyContact: EmergencyContact;
@@ -67,6 +67,8 @@ export interface Patient {
   lastVisitDate?: string;
   currentMedications?: string[];
   previousVitals?: PreviousVitals;
+  registeredAt?: string;
+  registeredBy?: { id: string; name: string } | null;
 }
 
 export interface Doctor {
@@ -93,6 +95,8 @@ export type AppointmentStatus =
   | 'cancelled'
   | 'no_show';
 
+export type AppointmentSource = 'walk_in' | 'reception' | 'web';
+
 export interface Appointment {
   id: string;
   appointmentNumber: string;
@@ -108,6 +112,9 @@ export interface Appointment {
   reasonForVisit: string;
   tokenNumber: number;
   notes?: string;
+  source?: AppointmentSource;
+  checkedInAt?: string | null;
+  checkedInBy?: { id: string; name: string } | null;
 }
 
 export interface VitalSigns {
@@ -312,7 +319,11 @@ export interface AccessAuditLogEntry {
     | 'leave_rejected'
     | 'attendance_record_corrected'
     | 'shift_updated'
-    | 'attendance_clock_in_override';
+    | 'attendance_clock_in_override'
+    | 'patient_registered'
+    | 'patient_checked_in'
+    | 'walkin_checked_in'
+    | 'appointment_scheduled';
   description: string;
   authorizedBy: string;
 }

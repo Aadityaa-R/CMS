@@ -1,81 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  TableTruncate,
-} from '@/components/ui/Table';
-import {
-  Ticket,
-  CheckCircle2,
-  Filter,
-} from 'lucide-react';
-import { BloodGroup, Appointment } from '@/types';
+import { Table, ColumnDef } from '@/components/ui/Table';
+import { Appointment, Patient } from '@/types';
 import { getScopedPatients, getScopedAppointments } from '@/lib/selectors';
+import { getAssignedDoctorId } from '@/lib/permissions';
+import { isDoctorAvailable } from '@/lib/availability';
+import {
+  calculateWaitTimeMinutes,
+  getTodayIntakeLogs,
+  IntakeLogEntry,
+  validateWalkInNewArrival,
+  validateWalkInExistingArrival,
+  validateBookedArrival,
+  validateAppointmentBooking,
+} from '@/lib/reception';
 
 interface ReceptionistViewProps {
   activeTab?: string;
 }
 
-export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 'overview' }) => {
-  const { currentUser, currentRole, staffAccessList } = useAuth();
-  const isMD = currentRole === 'md' || currentRole === 'admin' || currentUser.role === 'md';
-  const [selectedTab, setSelectedTab] = useState<string>(activeTab || 'overview');
+export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 'lounge' }) => {
+  const { currentUser, currentRole } = useAuth();
+  const isMD = currentRole === 'md' || currentRole === 'admin' || currentUser?.role === 'md';
 
-  const receptionistStaff = React.useMemo(() => {
-    return staffAccessList.filter((s) => s.role === 'receptionist');
-  }, [staffAccessList]);
+  // Map legacy and new tab ids
+  const normalizeTab = (tabId: string): string => {
+    if (tabId === 'overview' || tabId === 'lounge') return 'lounge';
+    if (tabId === 'checkin' || tabId === 'appointments') return 'appointments';
+    if (tabId === 'registration' || tabId === 'patients') return 'patients';
+    if (tabId === 'intake' || tabId === 'registry') return 'registry';
+    return tabId;
+  };
+
+  const [selectedTab, setSelectedTab] = useState<string>(normalizeTab(activeTab));
 
   useEffect(() => {
-    if (activeTab && activeTab !== 'overview') {
-      setSelectedTab(activeTab);
+    if (activeTab) {
+      setSelectedTab(normalizeTab(activeTab));
     }
   }, [activeTab]);
+
   const {
     appointments: rawAppointments,
     patients: rawPatients,
     doctors,
     patientAssignments = [],
+    registerPatient,
+    checkInAppointment,
+    checkInWalkIn,
+    bookAppointment,
     updateAppointmentStatus,
-    addPatient,
-    addAppointment,
   } = useClinic();
 
-  const patients = React.useMemo(() => {
+  const patients = useMemo(() => {
     return getScopedPatients(currentUser, rawPatients, patientAssignments);
   }, [currentUser, rawPatients, patientAssignments]);
 
-  const appointments = React.useMemo(() => {
+  const appointments = useMemo(() => {
     return getScopedAppointments(currentUser, rawAppointments, patientAssignments);
   }, [currentUser, rawAppointments, patientAssignments]);
 
-  // Primary sole doctor
-  const primaryDoctor = doctors[0] || {
-    id: 'doc-1',
-    name: 'Dr. Marcus Vance',
-    department: 'Internal Medicine',
-  };
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // Search & Filter State
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'waiting' | 'urgent'>('all');
-
-  // Real-time Feedback Notification Banner State
+  // Notification Banner State
   const [notification, setNotification] = useState<string | null>(null);
-
   const showNotification = (msg: string) => {
     setNotification(msg);
     setTimeout(() => {
@@ -83,187 +81,165 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     }, 4500);
   };
 
-  // Modals State
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [isBookOpen, setIsBookOpen] = useState(false);
+  // Search and Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [registryFilter, setRegistryFilter] = useState<'all' | 'Registration' | 'Check-in'>('all');
 
-  // Registration Form State
-  const [regFirstName, setRegFirstName] = useState('');
-  const [regLastName, setRegLastName] = useState('');
-  const [regPhone, setRegPhone] = useState('');
-  const [regDob, setRegDob] = useState('1992-06-15');
-  const [regGender, setRegGender] = useState<'male' | 'female' | 'other'>('female');
-  const [regBlood, setRegBlood] = useState<BloodGroup>('O+');
-  const [regAllergies, setRegAllergies] = useState('');
-  const [regError, setRegError] = useState('');
+  // Agenda Date for Appointments Tab (defaults to today)
+  const [agendaDate, setAgendaDate] = useState<string>(todayStr);
 
-  // Booking Form State
-  const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.id || '');
-  const [selectedDoctorId, setSelectedDoctorId] = useState<string>(doctors[0]?.id || 'doc-1');
-  const [bookingReason, setBookingReason] = useState('General consultation');
-  const [bookingError, setBookingError] = useState('');
-  const [isWalkIn, setIsWalkIn] = useState(true);
-
-  const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId) || primaryDoctor;
-
-  // KPI Calculations
-  const waitingCount = appointments.filter((a) => a.status === 'checked_in').length;
-  const urgentCount = appointments.filter((a) => a.status === 'checked_in' && a.tokenNumber <= 2).length;
-
-  // Handlers
-  const handleCheckIn = (apt: Appointment) => {
-    updateAppointmentStatus(apt.id, 'checked_in');
-    showNotification(
-      `Patient ${apt.patientName} checked in. Token #${apt.tokenNumber} issued for ${apt.doctorName} (${apt.department}).`
-    );
-  };
-
-  const handleRegisterPatient = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!regFirstName.trim() || !regLastName.trim()) {
-      setRegError('First name and last name are required.');
-      return;
-    }
-    if (!regPhone.trim()) {
-      setRegError('Contact phone number is required.');
-      return;
-    }
-
-    const birthYear = new Date(regDob).getFullYear();
-    const calculatedAge = Math.max(1, new Date().getFullYear() - birthYear);
-
-    const newPat = addPatient({
-      firstName: regFirstName.trim(),
-      lastName: regLastName.trim(),
-      gender: regGender,
-      dob: regDob,
-      age: calculatedAge,
-      phone: regPhone.trim(),
-      email: `${regFirstName.toLowerCase().trim()}.${regLastName.toLowerCase().trim()}@patient.com`,
-      address: 'Beacon City Center',
-      bloodGroup: regBlood,
-      allergies: regAllergies ? regAllergies.split(',').map((s) => s.trim()).filter(Boolean) : [],
-      chronicConditions: [],
-      emergencyContact: {
-        name: 'Emergency Contact',
-        relationship: 'Family',
-        phone: regPhone.trim(),
-      },
-    });
-
-    showNotification(
-      `New patient ${newPat.firstName} ${newPat.lastName} registered (${newPat.mrn}). Profile active.`
-    );
-
-    setSelectedPatientId(newPat.id);
-    setIsRegisterOpen(false);
-    setRegError('');
-    setRegFirstName('');
-    setRegLastName('');
-    setRegPhone('');
-    setRegAllergies('');
-  };
-
-  const handleBookAppointment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!bookingReason.trim()) {
-      setBookingError('Please enter a reason for the consultation.');
-      return;
-    }
-    const pat = patients.find((p) => p.id === selectedPatientId) || patients[0];
-    if (!pat) return;
-
-    const doc = doctors.find((d) => d.id === selectedDoctorId) || primaryDoctor;
-
-    const newApt = addAppointment({
-      patientId: pat.id,
-      patientName: `${pat.firstName} ${pat.lastName}`,
-      patientPhone: pat.phone,
-      doctorId: doc.id,
-      doctorName: doc.name,
-      department: doc.department,
-      dateTime: new Date().toISOString(),
-      durationMinutes: 30,
-      status: isWalkIn ? 'checked_in' : 'scheduled',
-      reasonForVisit: bookingReason,
-    });
-
-    showNotification(
-      `Appointment ${newApt.appointmentNumber} created for ${newApt.patientName}. Assigned to ${doc.name} (Token #${newApt.tokenNumber}).`
-    );
-
-    setIsBookOpen(false);
-    setBookingReason('General consultation');
-  };
-
-  // Filter Helper
-  const query = searchTerm.toLowerCase().trim();
-
-  const filteredAppointments = appointments.filter((a) => {
-    const matchesSearch =
-      query === '' ||
-      a.patientName.toLowerCase().includes(query) ||
-      a.appointmentNumber.toLowerCase().includes(query) ||
-      a.reasonForVisit.toLowerCase().includes(query);
-
-    if (!matchesSearch) return false;
-    if (filterMode === 'waiting') return a.status === 'checked_in';
-    if (filterMode === 'urgent') return a.status === 'checked_in' && a.tokenNumber <= 2;
-    return true;
-  });
-
-  const awaitingCheckIn = appointments.filter(
-    (a) =>
-      (a.status === 'scheduled' || a.status === 'confirmed') &&
-      (query === '' ||
-        a.patientName.toLowerCase().includes(query) ||
-        a.appointmentNumber.toLowerCase().includes(query) ||
-        a.patientPhone.includes(query))
-  );
-
-  const filteredIntakePatients = patients.filter(
-    (p) =>
-      query === '' ||
-      `${p.firstName} ${p.lastName}`.toLowerCase().includes(query) ||
-      p.mrn.toLowerCase().includes(query) ||
-      p.phone.includes(query)
-  );
-
-  const filteredBookings = appointments.filter(
-    (a) =>
-      query === '' ||
-      a.patientName.toLowerCase().includes(query) ||
-      a.appointmentNumber.toLowerCase().includes(query) ||
-      a.reasonForVisit.toLowerCase().includes(query)
-  );
-
-  // Pagination State (10 records per page)
+  // Pagination States (10 records per page)
   const [loungePage, setLoungePage] = useState(1);
-  const [checkinPage, setCheckinPage] = useState(1);
-  const [intakePage, setIntakePage] = useState(1);
-  const [bookingPage, setBookingPage] = useState(1);
+  const [appointmentsPage, setAppointmentsPage] = useState(1);
+  const [patientsPage, setPatientsPage] = useState(1);
+  const [registryPage, setRegistryPage] = useState(1);
   const pageSize = 10;
 
   useEffect(() => {
     setLoungePage(1);
-    setCheckinPage(1);
-    setIntakePage(1);
-    setBookingPage(1);
-  }, [searchTerm, filterMode]);
+    setAppointmentsPage(1);
+    setPatientsPage(1);
+    setRegistryPage(1);
+  }, [searchTerm, registryFilter, agendaDate]);
 
-  const paginatedLounge = filteredAppointments.slice((loungePage - 1) * pageSize, loungePage * pageSize);
-  const paginatedCheckIn = awaitingCheckIn.slice((checkinPage - 1) * pageSize, checkinPage * pageSize);
-  const paginatedIntake = filteredIntakePatients.slice((intakePage - 1) * pageSize, intakePage * pageSize);
-  const paginatedBookings = filteredBookings.slice((bookingPage - 1) * pageSize, bookingPage * pageSize);
+  // Modals Visibility
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isWalkInOpen, setIsWalkInOpen] = useState(false);
+  const [isBookOpen, setIsBookOpen] = useState(false);
 
-  const initialAgendaDate = filteredBookings[0]?.dateTime?.split('T')[0] || new Date().toISOString().split('T')[0];
-  const [agendaDate, setAgendaDate] = useState(initialAgendaDate);
+  // Walk-In Flow State (New vs Existing)
+  const [walkInMode, setWalkInMode] = useState<'existing' | 'new'>('existing');
+  const [walkInPatientId, setWalkInPatientId] = useState<string>('');
+  const [walkInDoctorId, setWalkInDoctorId] = useState<string>('');
+  const [walkInReason, setWalkInReason] = useState<string>('');
+  const [walkInError, setWalkInError] = useState<string>('');
 
-  const agendaAppointments = React.useMemo(() => {
-    return filteredBookings.filter((apt) => apt.dateTime.startsWith(agendaDate));
-  }, [filteredBookings, agendaDate]);
+  // Walk-In New Patient Form State
+  const [newFirstName, setNewFirstName] = useState('');
+  const [newLastName, setNewLastName] = useState('');
+  const [newDob, setNewDob] = useState('1990-01-01');
+  const [newPhone, setNewPhone] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newAddress, setNewAddress] = useState('');
+  const [newEmergName, setNewEmergName] = useState('');
+  const [newEmergPhone, setNewEmergPhone] = useState('');
 
-  const receptionistSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
+  // Register Patient Form State (Standalone)
+  const [regFirstName, setRegFirstName] = useState('');
+  const [regLastName, setRegLastName] = useState('');
+  const [regDob, setRegDob] = useState('1990-01-01');
+  const [regPhone, setRegPhone] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regAddress, setRegAddress] = useState('');
+  const [regEmergName, setRegEmergName] = useState('');
+  const [regEmergPhone, setRegEmergPhone] = useState('');
+  const [regError, setRegError] = useState('');
+
+  // Book Appointment Form State
+  const [bookPatientId, setBookPatientId] = useState<string>('');
+  const [bookDoctorId, setBookDoctorId] = useState<string>('');
+  const [bookDate, setBookDate] = useState<string>(todayStr);
+  const [bookTime, setBookTime] = useState<string>('09:30');
+  const [bookReason, setBookReason] = useState<string>('');
+  const [bookError, setBookError] = useState<string>('');
+
+  // Tab 1: Waiting Lounge Data
+  const loungeAppointments = useMemo(() => {
+    return appointments
+      .filter((a) => {
+        const aptDate = a.dateTime ? a.dateTime.slice(0, 10) : '';
+        const checkInDate = a.checkedInAt ? a.checkedInAt.slice(0, 10) : '';
+        const isToday = checkInDate === todayStr || (aptDate === todayStr && a.status !== 'scheduled');
+        return isToday && (a.status === 'checked_in' || a.status === 'in_consultation' || a.status === 'completed');
+      })
+      .filter((a) => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        return (
+          a.patientName.toLowerCase().includes(term) ||
+          a.doctorName.toLowerCase().includes(term) ||
+          String(a.tokenNumber).includes(term)
+        );
+      })
+      .sort((a, b) => {
+        const timeA = a.checkedInAt || a.dateTime;
+        const timeB = b.checkedInAt || b.dateTime;
+        return timeA.localeCompare(timeB);
+      });
+  }, [appointments, todayStr, searchTerm]);
+
+  // Tab 1 KPI Stats
+  const totalCheckedIn = loungeAppointments.length;
+  const currentlyWaiting = loungeAppointments.filter((a) => a.status === 'checked_in').length;
+  const inConsultation = loungeAppointments.filter((a) => a.status === 'in_consultation').length;
+  const completedToday = loungeAppointments.filter((a) => a.status === 'completed').length;
+
+  const paginatedLounge = useMemo(() => {
+    return loungeAppointments.slice((loungePage - 1) * pageSize, loungePage * pageSize);
+  }, [loungeAppointments, loungePage, pageSize]);
+
+  // Tab 2: Appointments Data (Agenda)
+  const agendaAppointments = useMemo(() => {
+    return appointments
+      .filter((apt) => {
+        const d = apt.dateTime ? apt.dateTime.slice(0, 10) : '';
+        return d === agendaDate;
+      })
+      .filter((apt) => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        return (
+          apt.patientName.toLowerCase().includes(term) ||
+          apt.doctorName.toLowerCase().includes(term) ||
+          apt.appointmentNumber.toLowerCase().includes(term)
+        );
+      })
+      .sort((a, b) => a.dateTime.localeCompare(b.dateTime));
+  }, [appointments, agendaDate, searchTerm]);
+
+  const paginatedAppointments = useMemo(() => {
+    return agendaAppointments.slice((appointmentsPage - 1) * pageSize, appointmentsPage * pageSize);
+  }, [agendaAppointments, appointmentsPage, pageSize]);
+
+  // Tab 3: Patient Directory Data
+  const filteredPatients = useMemo(() => {
+    return patients.filter((p) => {
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+      return fullName.includes(term) || p.mrn.toLowerCase().includes(term) || p.phone.includes(term);
+    });
+  }, [patients, searchTerm]);
+
+  const paginatedPatients = useMemo(() => {
+    return filteredPatients.slice((patientsPage - 1) * pageSize, patientsPage * pageSize);
+  }, [filteredPatients, patientsPage, pageSize]);
+
+  // Tab 4: Intake Registry Data
+  const intakeLogs = useMemo(() => {
+    const rawLogs = getTodayIntakeLogs(patients, appointments, todayStr);
+    return rawLogs
+      .filter((entry) => {
+        if (registryFilter === 'all') return true;
+        return entry.type === registryFilter;
+      })
+      .filter((entry) => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        return (
+          entry.patientName.toLowerCase().includes(term) ||
+          entry.details.toLowerCase().includes(term) ||
+          entry.performedBy.toLowerCase().includes(term)
+        );
+      });
+  }, [patients, appointments, todayStr, registryFilter, searchTerm]);
+
+  const paginatedRegistry = useMemo(() => {
+    return intakeLogs.slice((registryPage - 1) * pageSize, registryPage * pageSize);
+  }, [intakeLogs, registryPage, pageSize]);
+
+  // Search Bar Suggestions
+  const searchSuggestions: SearchSuggestion[] = useMemo(() => {
     const list: SearchSuggestion[] = [];
     const seen = new Set<string>();
     appointments.forEach((apt) => {
@@ -271,8 +247,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         seen.add(apt.patientName.toLowerCase());
         list.push({
           label: apt.patientName,
-          category: 'Patient',
-          sublabel: `Token #${apt.tokenNumber} • ${apt.reasonForVisit}`,
+          category: 'Appointment',
+          sublabel: `Token #${apt.tokenNumber || '-'} - ${apt.reasonForVisit}`,
         });
       }
     });
@@ -283,20 +259,505 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         list.push({
           label: fullName,
           category: 'Patient',
-          sublabel: `${p.mrn} • ${p.phone}`,
+          sublabel: `${p.mrn} - ${p.phone}`,
         });
       }
     });
     return list;
   }, [appointments, patients]);
 
+  // Action Handlers
+  const handleCallNext = (apt: Appointment) => {
+    updateAppointmentStatus(apt.id, 'in_consultation', currentUser);
+    showNotification(`Patient ${apt.patientName} called for Dr. ${apt.doctorName}.`);
+  };
+
+  const handleMarkCompleted = (apt: Appointment) => {
+    updateAppointmentStatus(apt.id, 'completed', currentUser);
+    showNotification(`Consultation for ${apt.patientName} marked completed.`);
+  };
+
+  const handleCheckInBooked = (apt: Appointment) => {
+    const validation = validateBookedArrival(currentUser, apt, todayStr);
+    if (!validation.allowed) {
+      showNotification(validation.reason || 'Check-in validation failed.');
+      return;
+    }
+    const result = checkInAppointment(apt.id, currentUser, todayStr);
+    if (result.success && result.appointment) {
+      showNotification(
+        `Patient ${result.appointment.patientName} checked in. Token #${result.appointment.tokenNumber} issued.`
+      );
+    } else {
+      showNotification(result.error || 'Failed to check in appointment.');
+    }
+  };
+
+  const handleOpenWalkInForPatient = (p: Patient) => {
+    setWalkInMode('existing');
+    setWalkInPatientId(p.id);
+    setWalkInReason('');
+    setWalkInError('');
+    setIsWalkInOpen(true);
+  };
+
+  const handleOpenBookingForPatient = (p: Patient) => {
+    setBookPatientId(p.id);
+    const assignedDocId = getAssignedDoctorId(p.id, patientAssignments);
+    setBookDoctorId(assignedDocId || doctors[0]?.id || '');
+    setBookDate(todayStr);
+    setBookTime('09:30');
+    setBookReason('');
+    setBookError('');
+    setIsBookOpen(true);
+  };
+
+  // Submit Standalone Patient Registration
+  const handleSubmitRegistration = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegError('');
+
+    if (!regFirstName.trim() || !regLastName.trim()) {
+      setRegError('Patient first and last name are required.');
+      return;
+    }
+    if (!regPhone.trim()) {
+      setRegError('Phone number is required.');
+      return;
+    }
+
+    const birthYear = parseInt(regDob.split('-')[0], 10);
+    const calcAge = isNaN(birthYear) ? 30 : Math.max(0, new Date().getFullYear() - birthYear);
+
+    const regResult = registerPatient(
+      {
+        firstName: regFirstName.trim(),
+        lastName: regLastName.trim(),
+        dob: regDob,
+        age: calcAge,
+        gender: 'other',
+        phone: regPhone.trim(),
+        email: regEmail.trim(),
+        address: regAddress.trim() || 'Outpatient Address',
+        allergies: [],
+        chronicConditions: [],
+        emergencyContact: {
+          name: regEmergName.trim() || 'Primary Contact',
+          relationship: 'Emergency Contact',
+          phone: regEmergPhone.trim() || regPhone.trim(),
+        },
+      },
+      currentUser
+    );
+
+    if (!regResult.success || !regResult.patient) {
+      setRegError(regResult.error || 'Could not register patient.');
+      return;
+    }
+
+    const createdPat = regResult.patient;
+    setIsRegisterOpen(false);
+    showNotification(`Patient registered: ${createdPat.firstName} ${createdPat.lastName} (${createdPat.mrn}).`);
+
+    // Reset form
+    setRegFirstName('');
+    setRegLastName('');
+    setRegPhone('');
+    setRegEmail('');
+    setRegAddress('');
+    setRegEmergName('');
+    setRegEmergPhone('');
+  };
+
+  // Submit Walk-in Check-In (Flow A or Flow B)
+  const handleSubmitWalkIn = (e: React.FormEvent) => {
+    e.preventDefault();
+    setWalkInError('');
+
+    if (walkInMode === 'new') {
+      // Flow A: New Walk-in Patient
+      const validation = validateWalkInNewArrival(
+        currentUser,
+        {
+          firstName: newFirstName,
+          lastName: newLastName,
+          dob: newDob,
+          phone: newPhone,
+          doctorId: walkInDoctorId,
+          chiefComplaint: walkInReason,
+        },
+        todayStr
+      );
+
+      if (!validation.allowed) {
+        setWalkInError(validation.reason || 'Validation failed.');
+        return;
+      }
+
+      const birthYear = parseInt(newDob.split('-')[0], 10);
+      const calcAge = isNaN(birthYear) ? 30 : Math.max(0, new Date().getFullYear() - birthYear);
+
+      // 1. Register Demographics
+      const regResult = registerPatient(
+        {
+          firstName: newFirstName.trim(),
+          lastName: newLastName.trim(),
+          dob: newDob,
+          age: calcAge,
+          gender: 'other',
+          phone: newPhone.trim(),
+          email: newEmail.trim(),
+          address: newAddress.trim() || 'Outpatient Address',
+          allergies: [],
+          chronicConditions: [],
+          emergencyContact: {
+            name: newEmergName.trim() || 'Primary Contact',
+            relationship: 'Emergency Contact',
+            phone: newEmergPhone.trim() || newPhone.trim(),
+          },
+        },
+        currentUser
+      );
+
+      if (!regResult.success || !regResult.patient) {
+        setWalkInError(regResult.error || 'Registration failed.');
+        return;
+      }
+
+      // 2. Check In with initial doctor assignment
+      const checkInRes = checkInWalkIn(
+        {
+          patientId: regResult.patient.id,
+          doctorId: walkInDoctorId,
+          reasonForVisit: walkInReason.trim(),
+          isNewPatient: true,
+        },
+        currentUser,
+        todayStr
+      );
+
+      if (!checkInRes.success || !checkInRes.appointment) {
+        setWalkInError(checkInRes.error || 'Check-in failed.');
+        return;
+      }
+
+      setIsWalkInOpen(false);
+      showNotification(
+        `New walk-in registered and admitted. Token #${checkInRes.appointment.tokenNumber} issued for Dr. ${checkInRes.appointment.doctorName}.`
+      );
+
+      // Reset
+      setNewFirstName('');
+      setNewLastName('');
+      setNewPhone('');
+      setNewEmail('');
+      setNewAddress('');
+      setNewEmergName('');
+      setNewEmergPhone('');
+      setWalkInReason('');
+    } else {
+      // Flow B: Registered Walk-in Patient
+      const validation = validateWalkInExistingArrival(
+        currentUser,
+        walkInPatientId,
+        patientAssignments,
+        todayStr
+      );
+
+      if (!validation.allowed) {
+        setWalkInError(validation.reason || 'Check-in validation failed.');
+        return;
+      }
+
+      if (!walkInReason.trim()) {
+        setWalkInError('Reason for visit is required.');
+        return;
+      }
+
+      const assignedDocId = getAssignedDoctorId(walkInPatientId, patientAssignments) || '';
+      const checkInRes = checkInWalkIn(
+        {
+          patientId: walkInPatientId,
+          doctorId: assignedDocId,
+          reasonForVisit: walkInReason.trim(),
+          isNewPatient: false,
+        },
+        currentUser,
+        todayStr
+      );
+
+      if (!checkInRes.success || !checkInRes.appointment) {
+        setWalkInError(checkInRes.error || 'Check-in failed.');
+        return;
+      }
+
+      setIsWalkInOpen(false);
+      showNotification(
+        `Walk-in admitted. Token #${checkInRes.appointment.tokenNumber} issued for Dr. ${checkInRes.appointment.doctorName}.`
+      );
+      setWalkInReason('');
+    }
+  };
+
+  // Submit Consultation Booking
+  const handleSubmitBooking = (e: React.FormEvent) => {
+    e.preventDefault();
+    setBookError('');
+
+    const validation = validateAppointmentBooking(currentUser, bookDoctorId, bookDate, bookReason);
+    if (!validation.allowed) {
+      setBookError(validation.reason || 'Booking validation failed.');
+      return;
+    }
+
+    if (!bookPatientId) {
+      setBookError('Patient selection is required.');
+      return;
+    }
+
+    const dateTime = `${bookDate}T${bookTime}:00`;
+    const res = bookAppointment(
+      {
+        patientId: bookPatientId,
+        doctorId: bookDoctorId,
+        dateTime,
+        reasonForVisit: bookReason.trim(),
+      },
+      currentUser
+    );
+
+    if (!res.success || !res.appointment) {
+      setBookError(res.error || 'Failed to book appointment.');
+      return;
+    }
+
+    setIsBookOpen(false);
+    showNotification(`Appointment booked for ${res.appointment.patientName} on ${bookDate} at ${bookTime}.`);
+    setBookReason('');
+  };
+
+  // Active doctor assignment helper for existing walk-in flow
+  const currentAssignedDocId = walkInPatientId
+    ? getAssignedDoctorId(walkInPatientId, patientAssignments)
+    : null;
+  const currentAssignedDoc = doctors.find((d) => d.id === currentAssignedDocId);
+  const isAssignedDocAvailableToday = currentAssignedDocId
+    ? isDoctorAvailable(currentAssignedDocId, todayStr)
+    : false;
+
+  // Available doctors today for new walk-ins
+  const availableDoctorsToday = useMemo(() => {
+    return doctors.filter((d) => isDoctorAvailable(d.id, todayStr));
+  }, [doctors, todayStr]);
+
+  // Available doctors on chosen booking date
+  const availableDoctorsOnBookDate = useMemo(() => {
+    return doctors.filter((d) => isDoctorAvailable(d.id, bookDate));
+  }, [doctors, bookDate]);
+
+  // Table Columns Definitions
+  const loungeColumns: ColumnDef<Appointment>[] = [
+    {
+      key: 'token',
+      header: 'Token',
+      render: (apt) => <span className="font-semibold text-slate-900 dark:text-slate-100">{apt.tokenNumber > 0 ? `#${apt.tokenNumber}` : '-'}</span>,
+    },
+    {
+      key: 'patient',
+      header: 'Patient',
+      isPrimary: true,
+      render: (apt) => <span className="font-medium text-slate-900 dark:text-slate-100">{apt.patientName}</span>,
+    },
+    {
+      key: 'doctor',
+      header: 'Doctor',
+      render: (apt) => <span>{apt.doctorName}</span>,
+    },
+    {
+      key: 'arrivalTime',
+      header: 'Arrival Time',
+      render: (apt) => <span>{apt.checkedInAt ? apt.checkedInAt.slice(11, 16) : apt.dateTime.slice(11, 16)}</span>,
+    },
+    {
+      key: 'waitTime',
+      header: 'Wait Time',
+      render: (apt) => <span>{calculateWaitTimeMinutes(apt.checkedInAt)} min</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (apt) => <span className="text-slate-700 dark:text-slate-300 font-medium">{apt.status}</span>,
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      isActions: true,
+      render: (apt) => {
+        const isConcluded = apt.status === 'in_consultation' || apt.status === 'completed';
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isConcluded}
+              onClick={() => handleCallNext(apt)}
+            >
+              Call Next
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isConcluded}
+              onClick={() => handleMarkCompleted(apt)}
+            >
+              Mark Completed
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
+  const appointmentsColumns: ColumnDef<Appointment>[] = [
+    {
+      key: 'time',
+      header: 'Time',
+      render: (apt) => <span>{apt.dateTime ? apt.dateTime.slice(11, 16) : '-'}</span>,
+    },
+    {
+      key: 'patient',
+      header: 'Patient',
+      isPrimary: true,
+      render: (apt) => <span className="font-medium text-slate-900 dark:text-slate-100">{apt.patientName}</span>,
+    },
+    {
+      key: 'doctor',
+      header: 'Doctor',
+      render: (apt) => <span>{apt.doctorName}</span>,
+    },
+    {
+      key: 'source',
+      header: 'Source',
+      render: (apt) => <span>{apt.source || 'reception'}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (apt) => <span className="text-slate-700 dark:text-slate-300 font-medium">{apt.status}</span>,
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      isActions: true,
+      render: (apt) => {
+        const isToday = agendaDate === todayStr;
+        const isScheduled = apt.status === 'scheduled';
+        const isDocAvailable = isDoctorAvailable(apt.doctorId, todayStr);
+        const canCheckInItem = isToday && isScheduled && isDocAvailable;
+
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={!canCheckInItem}
+              onClick={() => handleCheckInBooked(apt)}
+            >
+              Check In
+            </Button>
+            {!isDocAvailable && isScheduled && isToday && (
+              <span className="text-xs text-slate-500 dark:text-slate-400">Doctor unavailable today</span>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
+  const patientDirectoryColumns: ColumnDef<Patient>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      isPrimary: true,
+      render: (p) => <span className="font-medium text-slate-900 dark:text-slate-100">{p.firstName} {p.lastName}</span>,
+    },
+    {
+      key: 'mrn',
+      header: 'MRN',
+      render: (p) => <span>{p.mrn}</span>,
+    },
+    {
+      key: 'dobAge',
+      header: 'DOB / Age',
+      render: (p) => <span>{p.dob} ({p.age})</span>,
+    },
+    {
+      key: 'phone',
+      header: 'Phone',
+      render: (p) => <span>{p.phone}</span>,
+    },
+    {
+      key: 'assignedDoctor',
+      header: 'Assigned Doctor',
+      render: (p) => {
+        const docId = getAssignedDoctorId(p.id, patientAssignments);
+        const doc = doctors.find((d) => d.id === docId);
+        return <span>{doc ? doc.name : 'Unassigned'}</span>;
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      isActions: true,
+      render: (p) => (
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => handleOpenWalkInForPatient(p)}>
+            Check In
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => handleOpenBookingForPatient(p)}>
+            Book
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const registryColumns: ColumnDef<IntakeLogEntry>[] = [
+    {
+      key: 'time',
+      header: 'Time',
+      render: (entry) => <span>{entry.time}</span>,
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      isPrimary: true,
+      render: (entry) => <span className="font-medium text-slate-900 dark:text-slate-100">{entry.type}</span>,
+    },
+    {
+      key: 'patient',
+      header: 'Patient',
+      render: (entry) => <span>{entry.patientName}</span>,
+    },
+    {
+      key: 'performedBy',
+      header: 'Performed by',
+      render: (entry) => <span>{entry.performedBy}</span>,
+    },
+    {
+      key: 'details',
+      header: 'Details',
+      render: (entry) => <span>{entry.details}</span>,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Workstation Header */}
+      {/* Header and Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Front Desk & Patient Reception Workstation
+            Front Desk and Patient Reception Workstation
           </h2>
         </div>
         {!isMD && (
@@ -304,28 +765,44 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setIsRegisterOpen(true)}
+              onClick={() => {
+                setRegError('');
+                setIsRegisterOpen(true);
+              }}
             >
-              Register Patient
+              Register patient
             </Button>
             <Button
               size="sm"
               variant="primary"
-              onClick={() => setIsBookOpen(true)}
+              onClick={() => {
+                setWalkInMode('existing');
+                setWalkInPatientId(patients[0]?.id || '');
+                setWalkInReason('');
+                setWalkInError('');
+                setIsWalkInOpen(true);
+              }}
             >
-              Walk-in Check-In
+              Walk-in check-in
             </Button>
           </div>
         )}
       </div>
 
-      {/* Sub-Workstation Navigation Tabs: Plain underline style */}
+      {/* Notification Banner */}
+      {notification && (
+        <div className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100">
+          {notification}
+        </div>
+      )}
+
+      {/* Workstation Navigation Tabs */}
       <div className="flex items-center gap-4 overflow-x-auto border-b border-slate-200 dark:border-slate-800 no-scrollbar scrollbar-none">
         {[
-          { id: 'overview', label: 'Waiting Lounge & Tokens' },
-          { id: 'checkin', label: 'Patient Check-In' },
-          { id: 'registration', label: 'Patient Intake Registry' },
-          { id: 'booking', label: 'Book Consultation' },
+          { id: 'lounge', label: 'Waiting Lounge' },
+          { id: 'appointments', label: 'Appointments' },
+          { id: 'patients', label: 'Patient Directory' },
+          { id: 'registry', label: 'Intake Registry' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -341,727 +818,589 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         ))}
       </div>
 
-      {/* Real-time Feedback Notification Banner */}
-      {notification && (
-        <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs transition-all animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
-            <span className="font-medium">{notification}</span>
-          </div>
-          <button
-            onClick={() => setNotification(null)}
-            className="text-teal-700 dark:text-teal-400 hover:text-teal-900 dark:hover:text-teal-200 text-xs font-semibold cursor-pointer"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {/* Universal Search & Scope Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
-        <div className="relative flex-1 max-w-md">
-          <InteractiveSearchBar
-            value={searchTerm}
-            onChange={setSearchTerm}
-            suggestions={receptionistSearchSuggestions}
-            placeholder="Search by patient name..."
-          />
-        </div>
-
-        {/* Priority Filter as Searchable Dropdown Selector */}
-        <div className="w-full sm:w-60 shrink-0">
-          <Select
-            icon={<Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />}
-            value={filterMode}
-            onChange={(e) => setFilterMode(e.target.value as 'all' | 'waiting' | 'urgent')}
-            placeholder="Filter queue"
-            options={[
-              { value: 'all', label: `All Today (${appointments.length})` },
-              { value: 'waiting', label: `Waiting Lounge (${waitingCount})` },
-              { value: 'urgent', label: `Priority Next (${urgentCount})` },
-            ]}
-          />
-        </div>
+      {/* Interactive Search Bar across views */}
+      <div className="max-w-md">
+        <InteractiveSearchBar
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Search by patient name, doctor, MRN, or token..."
+          suggestions={searchSuggestions}
+        />
       </div>
 
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 1: FRONT DESK OVERVIEW (`overview`)                            */}
-      {/* ========================================================================= */}
-      {selectedTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Waiting Lounge & Token Dispatch Table */}
-          <div className="lg:col-span-2 space-y-4">
+      {/* TAB 1: WAITING LOUNGE */}
+      {selectedTab === 'lounge' && (
+        <div className="space-y-6">
+          {/* Top Summary Strip: 4 Stat Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
-              <CardHeader
-                action={
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    {filteredAppointments.length} Active Records
-                  </span>
-                }
-              >
-                <CardTitle>Waiting Lounge & Token Dispatch Desk ({waitingCount} in lounge)</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto overflow-y-hidden max-w-full">
-                  <Table stackBelow="lg">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-2/12 min-w-[150px]">Patient Details</TableHead>
-                        <TableHead className="w-1/12 min-w-[70px]">Token</TableHead>
-                        <TableHead hideBelow="md" className="w-2/12 min-w-[140px]">Physician</TableHead>
-                        <TableHead hideBelow="sm" className="w-1/12 min-w-[90px]">Scheduled Time</TableHead>
-                        <TableHead hideBelow="lg" className="w-3/12 min-w-[160px]">Reason for Visit</TableHead>
-                        <TableHead className="w-1/12 min-w-[90px]">Status</TableHead>
-                        {!isMD && <TableHead isActions className="w-2/12 min-w-[130px] text-right align-middle whitespace-nowrap">Action</TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedLounge.map((apt) => (
-                        <TableRow key={apt.id}>
-                          <TableCell isPrimary label="Patient Details" className="w-2/12 min-w-[150px]">
-                            <div className="font-semibold text-slate-900 dark:text-slate-100">
-                              {apt.patientName}
-                            </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                              <TableTruncate>{apt.patientPhone}</TableTruncate>
-                            </div>
-                          </TableCell>
-                          <TableCell label="Token" className="w-1/12 min-w-[70px] text-slate-700 dark:text-slate-300 font-medium">
-                            #{apt.tokenNumber}
-                          </TableCell>
-                          <TableCell label="Physician" hideBelow="md" className="w-2/12 min-w-[140px]">
-                            <div className="font-semibold text-slate-900 dark:text-slate-100">
-                              {apt.doctorName}
-                            </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                              {apt.department}
-                            </div>
-                          </TableCell>
-                          <TableCell label="Scheduled Time" hideBelow="sm" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300 text-[11px]">
-                            {new Date(apt.dateTime).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </TableCell>
-                          <TableCell label="Reason for Visit" hideBelow="lg" className="w-3/12 min-w-[160px] text-slate-600 dark:text-slate-400">
-                            {apt.reasonForVisit}
-                          </TableCell>
-                          <TableCell label="Status" className="w-1/12 min-w-[90px]">
-                            <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                              {apt.status.replace('_', ' ')}
-                            </span>
-                          </TableCell>
-                          {!isMD && (
-                            <TableCell isActions label="Action" fullWidthOnStack className="w-2/12 min-w-[130px] text-right align-middle whitespace-nowrap">
-                              {apt.status === 'scheduled' || apt.status === 'confirmed' ? (
-                                <Button
-                                  size="xs"
-                                  variant="outline"
-                                  onClick={() => handleCheckIn(apt)}
-                                >
-                                  Check In
-                                </Button>
-                              ) : apt.status === 'checked_in' ? (
-                                <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
-                                  In Lounge
-                                </span>
-                              ) : (
-                                <span className="text-xs text-slate-400 dark:text-slate-500 capitalize">
-                                  {apt.status.replace('_', ' ')}
-                                </span>
-                              )}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <Pagination
-                  currentPage={loungePage}
-                  totalItems={filteredAppointments.length}
-                  pageSize={pageSize}
-                  onPageChange={setLoungePage}
-                />
+              <CardContent className="p-4">
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Checked In</div>
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{totalCheckedIn}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Currently Waiting</div>
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{currentlyWaiting}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">In Consultation</div>
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{inConsultation}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Completed Today</div>
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{completedToday}</div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Right Column: Front Desk Staffing & Clinic Roster */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Reception Desk Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3.5 text-xs">
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">
-                    Terminal Operator on Duty
-                  </span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
-                    {currentUser.name}
-                  </span>
-                  <span className="text-slate-600 dark:text-slate-400 block text-[11px] mt-0.5">
-                    {currentUser.title || 'Front Desk Coordinator'} • Badge: {currentUser.badgeNumber || 'REC-301'}
-                  </span>
-                </div>
-
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-                  <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-bold">
-                    Front Desk Roster ({receptionistStaff.length} Receptionists)
-                  </span>
-                  <div className="space-y-1.5">
-                    {receptionistStaff.map((rec) => (
-                      <div
-                        key={rec.id}
-                        className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-slate-700/60 last:border-0"
-                      >
-                        <div className="space-y-0.5">
-                          <div className="font-semibold text-slate-800 dark:text-slate-200">
-                            {rec.staffName}
-                          </div>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
-                            {rec.staffTitle}
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                          ({rec.badgeNumber})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Managing Director:</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">Dr. Marcus Vance (MD)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Active Physicians:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">{doctors.length} Doctors on Duty</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Consultation Desks:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">Desks 1, 2, and 3</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Today's Total Tokens:</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">
-                      {appointments.length}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Waiting Queue Table */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle>Today's Arrival Queue ({loungeAppointments.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table
+                stackBelow="lg"
+                columns={loungeColumns}
+                data={paginatedLounge}
+                keyExtractor={(item) => item.id}
+              />
+              <Pagination
+                currentPage={loungePage}
+                totalItems={loungeAppointments.length}
+                pageSize={pageSize}
+                onPageChange={setLoungePage}
+              />
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 2: PATIENT CHECK-IN WORKSTATION (`checkin`)                    */}
-      {/* ========================================================================= */}
-      {selectedTab === 'checkin' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Patient Check-In & Token Issuance Station ({awaitingCheckIn.length} awaiting check-in)</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto overflow-y-hidden max-w-full">
-              <Table stackBelow="lg">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-2/12 min-w-[150px]">Patient Name</TableHead>
-                    <TableHead hideBelow="sm" className="w-2/12 min-w-[130px]">Appointment #</TableHead>
-                    <TableHead hideBelow="md" className="w-2/12 min-w-[120px]">Contact Phone</TableHead>
-                    <TableHead className="w-1/12 min-w-[90px]">Scheduled Slot</TableHead>
-                    <TableHead hideBelow="sm" className="w-2/12 min-w-[140px]">Consulting Doctor</TableHead>
-                    <TableHead className="w-1/12 min-w-[90px]">Status</TableHead>
-                    {!isMD && <TableHead isActions className="w-2/12 min-w-[120px] text-right align-middle whitespace-nowrap">Action</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {awaitingCheckIn.length > 0 ? (
-                    paginatedCheckIn.map((apt) => (
-                      <TableRow key={apt.id}>
-                        <TableCell isPrimary label="Patient Name" className="w-2/12 min-w-[150px] font-semibold text-slate-900 dark:text-slate-100">
-                          {apt.patientName}
-                        </TableCell>
-                        <TableCell label="Appointment #" hideBelow="sm" className="w-2/12 min-w-[130px] font-semibold text-slate-900 dark:text-slate-100">
-                          <TableTruncate>{apt.appointmentNumber}</TableTruncate>
-                        </TableCell>
-                        <TableCell label="Contact Phone" hideBelow="md" className="w-2/12 min-w-[120px] text-slate-700 dark:text-slate-300 text-[11px]">
-                          <TableTruncate>{apt.patientPhone}</TableTruncate>
-                        </TableCell>
-                        <TableCell label="Scheduled Slot" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300 text-[11px]">
-                          {new Date(apt.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </TableCell>
-                        <TableCell label="Consulting Doctor" hideBelow="sm" className="w-2/12 min-w-[140px] text-slate-800 dark:text-slate-200">
-                          {apt.doctorName}
-                        </TableCell>
-                        <TableCell label="Status" className="w-1/12 min-w-[90px]">
-                          <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                            {apt.status}
-                          </span>
-                        </TableCell>
-                        {!isMD && (
-                          <TableCell isActions label="Action" fullWidthOnStack className="w-2/12 min-w-[120px] text-right align-middle whitespace-nowrap">
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              onClick={() => handleCheckIn(apt)}
-                            >
-                              Issue Token & Check In
-                            </Button>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={isMD ? 6 : 7} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
-                        All scheduled patients have been checked in or no further bookings pending.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <Pagination
-              currentPage={checkinPage}
-              totalItems={awaitingCheckIn.length}
-              pageSize={pageSize}
-              onPageChange={setCheckinPage}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 3: REGISTER NEW PATIENT (`registration`)                       */}
-      {/* ========================================================================= */}
-      {selectedTab === 'registration' && (
-        <Card>
-          <CardHeader
-            action={
-              !isMD && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => setIsRegisterOpen(true)}
-                >
-                  Register Patient
-                </Button>
-              )
-            }
-          >
-            <CardTitle>Patient Intake & Registration Registry ({filteredIntakePatients.length} registered)</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto overflow-y-hidden max-w-full">
-              <Table stackBelow="lg">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-3/12 min-w-[180px]">Patient Name</TableHead>
-                    <TableHead hideBelow="sm" className="w-2/12 min-w-[120px]">MRN</TableHead>
-                    <TableHead hideBelow="md" className="w-2/12 min-w-[120px]">Age & Gender</TableHead>
-                    <TableHead className="w-2/12 min-w-[120px]">Contact Phone</TableHead>
-                    <TableHead hideBelow="lg" className="w-1/12 min-w-[90px]">Blood Group</TableHead>
-                    <TableHead hideBelow="xl" className="w-1/12 min-w-[120px]">Emergency Contact</TableHead>
-                    <TableHead className="w-1/12 min-w-[80px]">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedIntake.map((pat) => (
-                    <TableRow key={pat.id}>
-                      <TableCell isPrimary label="Patient Name" className="w-3/12 min-w-[180px]">
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">
-                          {pat.firstName} {pat.lastName}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                          <TableTruncate>{pat.email}</TableTruncate>
-                        </div>
-                      </TableCell>
-                      <TableCell label="MRN" hideBelow="sm" className="w-2/12 min-w-[120px] font-semibold text-slate-900 dark:text-slate-100">
-                        <TableTruncate>{pat.mrn}</TableTruncate>
-                      </TableCell>
-                      <TableCell label="Age & Gender" hideBelow="md" className="w-2/12 min-w-[120px] text-slate-700 dark:text-slate-300 capitalize">
-                        {pat.age} yrs • {pat.gender}
-                      </TableCell>
-                      <TableCell label="Contact Phone" className="w-2/12 min-w-[120px] text-slate-700 dark:text-slate-300 text-[11px]">
-                        <TableTruncate>{pat.phone}</TableTruncate>
-                      </TableCell>
-                      <TableCell label="Blood Group" hideBelow="lg" className="w-1/12 min-w-[90px]">
-                        <span className="font-medium text-slate-800 dark:text-slate-200">{pat.bloodGroup}</span>
-                      </TableCell>
-                      <TableCell label="Emergency Contact" hideBelow="xl" className="w-1/12 min-w-[120px] text-slate-700 dark:text-slate-300">
-                        {pat.emergencyContact?.name} ({pat.emergencyContact?.relationship})
-                      </TableCell>
-                      <TableCell label="Status" className="w-1/12 min-w-[80px]">
-                        <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                          {pat.status}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <Pagination
-              currentPage={intakePage}
-              totalItems={filteredIntakePatients.length}
-              pageSize={pageSize}
-              onPageChange={setIntakePage}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ========================================================================= */}
-      {/* SUB-MODULE 4: BOOK APPOINTMENT (`booking`)                                 */}
-      {/* ========================================================================= */}
-      {selectedTab === 'booking' && (
-        <Card>
-          <CardHeader
-            action={
-              !isMD && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => setIsBookOpen(true)}
-                >
-                  Book Consultation
-                </Button>
-              )
-            }
-          >
-            <CardTitle>Appointment Booking & Scheduling Terminal ({filteredBookings.length} scheduled)</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {/* Mobile Day-by-Day Agenda View */}
-            <div className="md:hidden p-4 space-y-4">
-              <div className="w-full">
-                <DatePicker
-                  label="Select Agenda Date"
-                  value={agendaDate}
-                  onChange={setAgendaDate}
-                />
+      {/* TAB 2: APPOINTMENTS */}
+      {selectedTab === 'appointments' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Consultation Date:</span>
+              <div className="w-48">
+                <DatePicker value={agendaDate} onChange={(d) => setAgendaDate(d)} />
               </div>
-
-              {agendaAppointments.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                  No appointments scheduled for this date.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    Agenda for {agendaDate} ({agendaAppointments.length} {agendaAppointments.length === 1 ? 'consultation' : 'consultations'})
-                  </div>
-                  {agendaAppointments.map((apt) => (
-                    <div
-                      key={apt.id}
-                      className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-2.5"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                          Token #{apt.tokenNumber}
-                        </span>
-                        <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                          {apt.status.replace('_', ' ')}
-                        </span>
-                      </div>
-
-                      <div>
-                        <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                          {apt.patientName}
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          {apt.appointmentNumber} • {new Date(apt.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-
-                      <div className="text-xs text-slate-700 dark:text-slate-300">
-                        <span className="font-semibold text-slate-900 dark:text-slate-100">{apt.doctorName}</span>
-                        <span className="text-slate-500 dark:text-slate-400"> ({apt.department})</span>
-                      </div>
-
-                      {apt.reasonForVisit && (
-                        <div className="text-xs text-slate-600 dark:text-slate-400 italic">
-                          {apt.reasonForVisit}
-                        </div>
-                      )}
-
-                      {!isMD && (apt.status === 'scheduled' || apt.status === 'confirmed') && (
-                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => handleCheckIn(apt)}
-                          >
-                            Issue Token & Check In
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
+            {!isMD && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  setBookPatientId(patients[0]?.id || '');
+                  setBookDoctorId(doctors[0]?.id || '');
+                  setBookDate(agendaDate);
+                  setBookTime('09:30');
+                  setBookReason('');
+                  setBookError('');
+                  setIsBookOpen(true);
+                }}
+              >
+                Book Appointment
+              </Button>
+            )}
+          </div>
 
-            {/* Desktop / Tablet Table View */}
-            <div className="hidden md:block overflow-x-auto overflow-y-hidden max-w-full">
-              <Table stackBelow="lg">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-2/12 min-w-[150px]">Patient Name</TableHead>
-                    <TableHead className="w-1/12 min-w-[70px]">Token #</TableHead>
-                    <TableHead hideBelow="sm" className="w-2/12 min-w-[130px]">Appointment ID</TableHead>
-                    <TableHead hideBelow="md" className="w-2/12 min-w-[140px]">Physician</TableHead>
-                    <TableHead className="w-1/12 min-w-[100px]">Scheduled Time</TableHead>
-                    <TableHead hideBelow="lg" className="w-3/12 min-w-[160px]">Reason for Visit</TableHead>
-                    <TableHead className="w-1/12 min-w-[90px]">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedBookings.map((apt) => (
-                    <TableRow key={apt.id}>
-                      <TableCell isPrimary label="Patient Name" className="w-2/12 min-w-[150px] font-semibold text-slate-900 dark:text-slate-100">
-                        {apt.patientName}
-                      </TableCell>
-                      <TableCell label="Token #" className="w-1/12 min-w-[70px] text-slate-700 dark:text-slate-300 font-medium">
-                        #{apt.tokenNumber}
-                      </TableCell>
-                      <TableCell label="Appointment ID" hideBelow="sm" className="w-2/12 min-w-[130px] text-slate-700 dark:text-slate-300">
-                        <TableTruncate>{apt.appointmentNumber}</TableTruncate>
-                      </TableCell>
-                      <TableCell label="Physician" hideBelow="md" className="w-2/12 min-w-[140px] text-slate-700 dark:text-slate-300">
-                        {apt.doctorName}
-                      </TableCell>
-                      <TableCell label="Scheduled Time" className="w-1/12 min-w-[100px] text-slate-700 dark:text-slate-300 text-[11px]">
-                        {new Date(apt.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </TableCell>
-                      <TableCell label="Reason for Visit" hideBelow="lg" className="w-3/12 min-w-[160px] text-slate-600 dark:text-slate-400">
-                        {apt.reasonForVisit}
-                      </TableCell>
-                      <TableCell label="Status" className="w-1/12 min-w-[90px]">
-                        <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
-                          {apt.status.replace('_', ' ')}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle>Appointments on {agendaDate} ({agendaAppointments.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table
+                stackBelow="lg"
+                columns={appointmentsColumns}
+                data={paginatedAppointments}
+                keyExtractor={(item) => item.id}
+              />
               <Pagination
-                currentPage={bookingPage}
-                totalItems={filteredBookings.length}
+                currentPage={appointmentsPage}
+                totalItems={agendaAppointments.length}
                 pageSize={pageSize}
-                onPageChange={setBookingPage}
+                onPageChange={setAppointmentsPage}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* TAB 3: PATIENT DIRECTORY */}
+      {selectedTab === 'patients' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle>Registered Patients ({filteredPatients.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table
+                stackBelow="lg"
+                columns={patientDirectoryColumns}
+                data={paginatedPatients}
+                keyExtractor={(item) => item.id}
+              />
+              <Pagination
+                currentPage={patientsPage}
+                totalItems={filteredPatients.length}
+                pageSize={pageSize}
+                onPageChange={setPatientsPage}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* TAB 4: INTAKE REGISTRY */}
+      {selectedTab === 'registry' && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Filter Event Type:</span>
+            <div className="w-44">
+              <Select
+                value={registryFilter}
+                onChange={(e) => setRegistryFilter(e.target.value as any)}
+                options={[
+                  { value: 'all', label: 'All Events' },
+                  { value: 'Registration', label: 'Registrations Only' },
+                  { value: 'Check-in', label: 'Check-ins Only' },
+                ]}
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle>Today's Intake Log ({intakeLogs.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table
+                stackBelow="lg"
+                columns={registryColumns}
+                data={paginatedRegistry}
+                keyExtractor={(item) => item.id}
+              />
+              <Pagination
+                currentPage={registryPage}
+                totalItems={intakeLogs.length}
+                pageSize={pageSize}
+                onPageChange={setRegistryPage}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL 1: REGISTER NEW PATIENT                                             */}
-      {/* ========================================================================= */}
+      {/* MODAL 1: REGISTER PATIENT (Standalone Demographic Form) */}
       <Modal
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
-        title="Register New Outpatient"
-        description="Creates a new patient demographic file and medical record profile."
-        maxWidth="lg"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsRegisterOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleRegisterPatient}
-            >
-              Confirm Registration
-            </Button>
-          </>
-        }
+        title="Register New Patient"
       >
-        <form onSubmit={handleRegisterPatient} className="space-y-4" noValidate>
+        <form onSubmit={handleSubmitRegistration} className="space-y-4">
           {regError && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+            <div className="p-2.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-rose-700 dark:text-rose-300">
               {regError}
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">First Name</label>
+              <Input
+                value={regFirstName}
+                onChange={(e) => setRegFirstName(e.target.value)}
+                placeholder="First name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Last Name</label>
+              <Input
+                value={regLastName}
+                onChange={(e) => setRegLastName(e.target.value)}
+                placeholder="Last name"
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Date of Birth</label>
+              <DatePicker value={regDob} onChange={setRegDob} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Phone</label>
+              <Input
+                value={regPhone}
+                onChange={(e) => setRegPhone(e.target.value)}
+                placeholder="+1 (555) 000-0000"
+                required
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
             <Input
-              label="First Name"
-              value={regFirstName}
-              onChange={(e) => {
-                setRegFirstName(e.target.value);
-                if (regError) setRegError('');
-              }}
-              placeholder="e.g. John"
-              error={!regFirstName.trim() && regError ? 'First name is required' : undefined}
-            />
-            <Input
-              label="Last Name"
-              value={regLastName}
-              onChange={(e) => {
-                setRegLastName(e.target.value);
-                if (regError) setRegError('');
-              }}
-              placeholder="e.g. Doe"
-              error={!regLastName.trim() && regError ? 'Last name is required' : undefined}
+              value={regEmail}
+              onChange={(e) => setRegEmail(e.target.value)}
+              placeholder="patient@example.com"
             />
           </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <Select
-              label="Gender"
-              value={regGender}
-              onChange={(e) => setRegGender(e.target.value as any)}
-              options={[
-                { value: 'male', label: 'Male' },
-                { value: 'female', label: 'Female' },
-                { value: 'other', label: 'Other' },
-              ]}
-            />
-            <DatePicker
-              label="Date of Birth"
-              value={regDob}
-              onChange={setRegDob}
-            />
-            <Select
-              label="Blood Group"
-              value={regBlood}
-              onChange={(e) => setRegBlood(e.target.value as BloodGroup)}
-              options={[
-                { value: 'A+', label: 'A+' },
-                { value: 'A-', label: 'A-' },
-                { value: 'B+', label: 'B+' },
-                { value: 'B-', label: 'B-' },
-                { value: 'AB+', label: 'AB+' },
-                { value: 'AB-', label: 'AB-' },
-                { value: 'O+', label: 'O+' },
-                { value: 'O-', label: 'O-' },
-              ]}
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Residential Address</label>
+            <Input
+              value={regAddress}
+              onChange={(e) => setRegAddress(e.target.value)}
+              placeholder="Address"
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Contact Phone"
-              value={regPhone}
-              onChange={(e) => {
-                setRegPhone(e.target.value);
-                if (regError) setRegError('');
-              }}
-              placeholder="+1 (555) 000-0000"
-              error={!regPhone.trim() && regError ? 'Contact phone is required' : undefined}
-            />
-            <Input
-              label="Known Allergies"
-              value={regAllergies}
-              onChange={(e) => setRegAllergies(e.target.value)}
-              placeholder="e.g. Penicillin, Peanuts"
-              helperText="Safety alert for doctor consultation"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Emergency Contact Name</label>
+              <Input
+                value={regEmergName}
+                onChange={(e) => setRegEmergName(e.target.value)}
+                placeholder="Contact person"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Emergency Contact Phone</label>
+              <Input
+                value={regEmergPhone}
+                onChange={(e) => setRegEmergPhone(e.target.value)}
+                placeholder="Contact phone"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsRegisterOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              Register Patient
+            </Button>
           </div>
         </form>
       </Modal>
 
-      {/* ========================================================================= */}
-      {/* MODAL 2: BOOK CONSULTATION / WALK-IN CHECK-IN                              */}
-      {/* ========================================================================= */}
+      {/* MODAL 2: WALK-IN CHECK-IN (Flow A: New Patient & Flow B: Existing Patient) */}
       <Modal
-        isOpen={isBookOpen}
-        onClose={() => setIsBookOpen(false)}
-        title="Book Outpatient Consultation"
-        description={`Schedule or check in with any clinic physician (${selectedDoctor.name} • ${selectedDoctor.roomNumber}).`}
-        maxWidth="lg"
-        overflowVisible={true}
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsBookOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<Ticket className="w-4 h-4" />}
-              onClick={handleBookAppointment}
-            >
-              Issue Token & Queue
-            </Button>
-          </>
-        }
+        isOpen={isWalkInOpen}
+        onClose={() => setIsWalkInOpen(false)}
+        title="Walk-in Patient Check-In"
       >
-        <form onSubmit={handleBookAppointment} className="space-y-4" noValidate>
-          {bookingError && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
-              {bookingError}
+        <form onSubmit={handleSubmitWalkIn} className="space-y-4">
+          {/* Mode Switcher */}
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+            <Button
+              type="button"
+              size="sm"
+              variant={walkInMode === 'existing' ? 'primary' : 'outline'}
+              onClick={() => {
+                setWalkInMode('existing');
+                setWalkInError('');
+              }}
+            >
+              Existing Patient
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={walkInMode === 'new' ? 'primary' : 'outline'}
+              onClick={() => {
+                setWalkInMode('new');
+                setWalkInDoctorId(availableDoctorsToday[0]?.id || '');
+                setWalkInError('');
+              }}
+            >
+              New Patient
+            </Button>
+          </div>
+
+          {walkInError && (
+            <div className="p-2.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-rose-700 dark:text-rose-300">
+              {walkInError}
             </div>
           )}
 
-          <Select
-            label="Select Registered Patient"
-            size="lg"
-            searchable={true}
-            searchPlaceholder="Search patient by name or MRN..."
-            value={selectedPatientId}
-            onChange={(e) => setSelectedPatientId(e.target.value)}
-            options={patients.map((p) => ({
-              value: p.id,
-              label: `${p.firstName} ${p.lastName} (${p.mrn})`,
-            }))}
-          />
+          {walkInMode === 'existing' ? (
+            /* Flow B: Existing Patient Walk-in */
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Select Patient</label>
+                <Select
+                  value={walkInPatientId}
+                  onChange={(e) => setWalkInPatientId(e.target.value)}
+                  options={patients.map((p) => ({
+                    value: p.id,
+                    label: `${p.firstName} ${p.lastName} (${p.mrn})`,
+                  }))}
+                />
+              </div>
 
-          <Select
-            label="Attending Physician"
-            size="lg"
-            searchable={true}
-            searchPlaceholder="Search physician by name or room..."
-            value={selectedDoctorId}
-            onChange={(e) => setSelectedDoctorId(e.target.value)}
-            options={doctors.map((d) => ({
-              value: d.id,
-              label: `${d.name} (${d.specialization}) - ${d.roomNumber}`,
-            }))}
-          />
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Assigned Physician</label>
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-900 dark:text-slate-100">
+                  {currentAssignedDoc ? currentAssignedDoc.name : 'No physician assigned'}
+                </div>
+              </div>
 
-          <Input
-            label="Reason for Visit / Complaint"
-            value={bookingReason}
-            onChange={(e) => {
-              setBookingReason(e.target.value);
-              if (bookingError) setBookingError('');
-            }}
-            placeholder="e.g. Follow-up consultation, fever check"
-            error={!bookingReason.trim() && bookingError ? 'Reason for visit is required' : undefined}
-          />
+              {!isAssignedDocAvailableToday && (
+                <div className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-rose-700 dark:text-rose-300">
+                  Assigned doctor is not available today. Reassignment requires an administrator.
+                </div>
+              )}
 
-          <div className="flex items-center gap-2 pt-1 text-xs text-slate-700 dark:text-slate-300">
-            <input
-              type="checkbox"
-              id="walkinCheck"
-              checked={isWalkIn}
-              onChange={(e) => setIsWalkIn(e.target.checked)}
-              className="rounded text-teal-600 focus:ring-teal-500 border-slate-300 dark:border-slate-700 dark:bg-slate-800"
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Chief Complaint</label>
+                <Textarea
+                  value={walkInReason}
+                  onChange={(e) => setWalkInReason(e.target.value)}
+                  placeholder="Reason for today's walk-in visit"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <Button type="button" variant="outline" onClick={() => setIsWalkInOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={!isAssignedDocAvailableToday || !walkInPatientId}
+                >
+                  Check In
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Flow A: New Patient Walk-in */
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">First Name</label>
+                  <Input
+                    value={newFirstName}
+                    onChange={(e) => setNewFirstName(e.target.value)}
+                    placeholder="First name"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Last Name</label>
+                  <Input
+                    value={newLastName}
+                    onChange={(e) => setNewLastName(e.target.value)}
+                    placeholder="Last name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Date of Birth</label>
+                  <DatePicker value={newDob} onChange={setNewDob} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Phone</label>
+                  <Input
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    placeholder="+1 (555) 000-0000"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                  <Input
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="patient@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Address</label>
+                  <Input
+                    value={newAddress}
+                    onChange={(e) => setNewAddress(e.target.value)}
+                    placeholder="Residential address"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Emergency Contact Name</label>
+                  <Input
+                    value={newEmergName}
+                    onChange={(e) => setNewEmergName(e.target.value)}
+                    placeholder="Contact person"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Emergency Contact Phone</label>
+                  <Input
+                    value={newEmergPhone}
+                    onChange={(e) => setNewEmergPhone(e.target.value)}
+                    placeholder="Contact phone"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Assign Attending Physician (Available Today)
+                </label>
+                <Select
+                  value={walkInDoctorId}
+                  onChange={(e) => setWalkInDoctorId(e.target.value)}
+                  options={availableDoctorsToday.map((d) => ({
+                    value: d.id,
+                    label: `${d.name} (${d.department})`,
+                  }))}
+                />
+                {availableDoctorsToday.length === 0 && (
+                  <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">No doctors are available today.</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Chief Complaint</label>
+                <Textarea
+                  value={walkInReason}
+                  onChange={(e) => setWalkInReason(e.target.value)}
+                  placeholder="Reason for visit"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <Button type="button" variant="outline" onClick={() => setIsWalkInOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={availableDoctorsToday.length === 0}
+                >
+                  Register and Check In
+                </Button>
+              </div>
+            </div>
+          )}
+        </form>
+      </Modal>
+
+      {/* MODAL 3: BOOK APPOINTMENT */}
+      <Modal
+        isOpen={isBookOpen}
+        onClose={() => setIsBookOpen(false)}
+        title="Book Consultation Appointment"
+      >
+        <form onSubmit={handleSubmitBooking} className="space-y-4">
+          {bookError && (
+            <div className="p-2.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-rose-700 dark:text-rose-300">
+              {bookError}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Patient</label>
+            <Select
+              value={bookPatientId}
+              onChange={(e) => {
+                const patId = e.target.value;
+                setBookPatientId(patId);
+                const assignedDocId = getAssignedDoctorId(patId, patientAssignments);
+                if (assignedDocId) setBookDoctorId(assignedDocId);
+              }}
+              options={patients.map((p) => ({
+                value: p.id,
+                label: `${p.firstName} ${p.lastName} (${p.mrn})`,
+              }))}
             />
-            <label htmlFor="walkinCheck" className="cursor-pointer font-medium">
-              Immediate Check-In (Patient is physically present in lounge)
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Appointment Date</label>
+              <DatePicker value={bookDate} onChange={setBookDate} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Time Slot</label>
+              <Select
+                value={bookTime}
+                onChange={(e) => setBookTime(e.target.value)}
+                options={[
+                  { value: '09:00', label: '09:00 AM' },
+                  { value: '09:30', label: '09:30 AM' },
+                  { value: '10:00', label: '10:00 AM' },
+                  { value: '10:30', label: '10:30 AM' },
+                  { value: '11:00', label: '11:00 AM' },
+                  { value: '11:30', label: '11:30 AM' },
+                  { value: '14:00', label: '02:00 PM' },
+                  { value: '14:30', label: '02:30 PM' },
+                  { value: '15:00', label: '03:00 PM' },
+                  { value: '15:30', label: '03:30 PM' },
+                ]}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Physician (Available on {bookDate})
             </label>
+            <Select
+              value={bookDoctorId}
+              onChange={(e) => setBookDoctorId(e.target.value)}
+              options={availableDoctorsOnBookDate.map((d) => ({
+                value: d.id,
+                label: `${d.name} (${d.department})`,
+              }))}
+            />
+            {availableDoctorsOnBookDate.length === 0 && (
+              <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">
+                No physicians are available on this date.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Reason for Visit</label>
+            <Input
+              value={bookReason}
+              onChange={(e) => setBookReason(e.target.value)}
+              placeholder="Consultation reason"
+              required
+            />
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsBookOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={availableDoctorsOnBookDate.length === 0}
+            >
+              Confirm Booking
+            </Button>
           </div>
         </form>
       </Modal>

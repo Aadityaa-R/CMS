@@ -20,6 +20,7 @@ import {
   canTransferPatient,
   canRegisterPatient,
   canCheckIn,
+  canBookAppointment,
   getAssignedDoctorId,
   hasCapability,
   canDeleteModule,
@@ -28,6 +29,8 @@ import {
   canAddMember,
   canRemoveMember,
 } from '@/lib/permissions';
+import { isDoctorAvailable } from '@/lib/availability';
+import { getNextTokenNumberForDate } from '@/lib/reception';
 import {
   INITIAL_PATIENTS,
   INITIAL_DOCTORS,
@@ -41,6 +44,24 @@ import {
 } from '@/data/mockData';
 import { ACCESS_CATALOG, AccessItem, registerCustomAccess } from '@/data/accessCatalog';
 import { useAuth } from '@/context/AuthContext';
+
+export interface RegistrationResult {
+  success: boolean;
+  error?: string;
+  patient?: Patient;
+}
+
+export interface CheckInResult {
+  success: boolean;
+  error?: string;
+  appointment?: Appointment;
+}
+
+export interface BookingResult {
+  success: boolean;
+  error?: string;
+  appointment?: Appointment;
+}
 
 export interface TransferResult {
   success: boolean;
@@ -72,6 +93,10 @@ interface ClinicContextType {
     data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>,
     actingUser?: User | null
   ) => Patient;
+  registerPatient: (
+    data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>,
+    actingUser?: User | null
+  ) => RegistrationResult;
   updatePatient: (id: string, data: Partial<Patient>) => void;
   transferPatient: (
     patientId: string,
@@ -88,6 +113,31 @@ interface ClinicContextType {
 
   // Appointment Actions
   addAppointment: (data: Omit<Appointment, 'id' | 'appointmentNumber' | 'tokenNumber'>) => Appointment;
+  checkInAppointment: (
+    appointmentId: string,
+    actingUser?: User | null,
+    dateOverride?: string
+  ) => CheckInResult;
+  checkInWalkIn: (
+    params: {
+      patientId: string;
+      doctorId: string;
+      reasonForVisit: string;
+      isNewPatient?: boolean;
+    },
+    actingUser?: User | null,
+    dateOverride?: string
+  ) => CheckInResult;
+  bookAppointment: (
+    data: {
+      patientId: string;
+      doctorId: string;
+      dateTime: string;
+      reasonForVisit: string;
+      durationMinutes?: number;
+    },
+    actingUser?: User | null
+  ) => BookingResult;
   updateAppointmentStatus: (
     id: string,
     status: AppointmentStatus,
@@ -366,24 +416,62 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   };
 
-  const addPatient = (
+  const registerPatient = (
     data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>,
     actingUser?: User | null
-  ): Patient => {
-    if (actingUser && !canRegisterPatient(actingUser)) {
-      console.error('Unauthorized: only receptionists can register patients.');
+  ): RegistrationResult => {
+    const actor = actingUser !== undefined ? actingUser : authUser;
+    if (actor && !canRegisterPatient(actor, modules) && !isAdmin(actor, modules)) {
+      return {
+        success: false,
+        error: 'Unauthorized: Patient registration capability required.',
+      };
     }
+
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const nowIso = now.toISOString();
     const newId = `pat-${patients.length + 1}`;
     const newMrn = `MRN-${Math.floor(10000 + Math.random() * 90000)}`;
+
     const newPatient: Patient = {
       ...data,
       id: newId,
       mrn: newMrn,
-      registeredDate: new Date().toISOString().split('T')[0],
+      registeredDate: dateStr,
+      registeredAt: nowIso,
+      registeredBy: actor ? { id: actor.id, name: actor.name } : null,
       status: 'active',
     };
+
     setPatients((prev) => [newPatient, ...prev]);
-    return newPatient;
+
+    if (addAuditLogEntry) {
+      addAuditLogEntry({
+        targetRole: 'patient',
+        targetStaffName: `${newPatient.firstName} ${newPatient.lastName}`,
+        targetUserId: newPatient.id,
+        action: 'patient_registered',
+        description: `Patient enrolled at reception with MRN ${newMrn} by ${actor?.name || 'Reception Staff'}`,
+        authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Front Desk Coordination',
+      });
+    }
+
+    return {
+      success: true,
+      patient: newPatient,
+    };
+  };
+
+  const addPatient = (
+    data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>,
+    actingUser?: User | null
+  ): Patient => {
+    const result = registerPatient(data, actingUser);
+    if (!result.success || !result.patient) {
+      throw new Error(result.error || 'Failed to register patient.');
+    }
+    return result.patient;
   };
 
   const updatePatient = (id: string, data: Partial<Patient>) => {
@@ -404,17 +492,268 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setDoctors((prev) => prev.map((d) => (d.id === id ? { ...d, status } : d)));
   };
 
+  const checkInAppointment = (
+    appointmentId: string,
+    actingUser?: User | null,
+    dateOverride?: string
+  ): CheckInResult => {
+    const actor = actingUser !== undefined ? actingUser : authUser;
+    if (actor && !canCheckIn(actor, modules) && !isAdmin(actor, modules)) {
+      return {
+        success: false,
+        error: 'Unauthorized: Patient check-in capability required.',
+      };
+    }
+
+    const apt = appointments.find((a) => a.id === appointmentId);
+    if (!apt) {
+      return { success: false, error: 'Appointment not found.' };
+    }
+
+    if (apt.status === 'in_consultation' || apt.status === 'completed') {
+      return {
+        success: false,
+        error: `Appointment is already ${apt.status.replace('_', ' ')}.`,
+      };
+    }
+
+    const todayStr = dateOverride || new Date().toISOString().split('T')[0];
+
+    // Doctor availability check
+    if (!isDoctorAvailable(apt.doctorId, todayStr)) {
+      return {
+        success: false,
+        error: 'Assigned doctor is not available today. Reassignment requires an administrator.',
+      };
+    }
+
+    const nextToken = getNextTokenNumberForDate(appointments, todayStr);
+    const nowIso = new Date().toISOString();
+
+    const updatedApt: Appointment = {
+      ...apt,
+      status: 'checked_in',
+      tokenNumber: nextToken,
+      checkedInAt: nowIso,
+      checkedInBy: actor ? { id: actor.id, name: actor.name } : null,
+    };
+
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === appointmentId ? updatedApt : a))
+    );
+
+    if (addAuditLogEntry) {
+      addAuditLogEntry({
+        targetRole: 'patient',
+        targetStaffName: apt.patientName,
+        targetUserId: apt.patientId,
+        action: 'patient_checked_in',
+        description: `Patient checked in with Token #${nextToken} for Dr. ${apt.doctorName} by ${actor?.name || 'Reception Staff'}`,
+        authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Front Desk Coordination',
+      });
+    }
+
+    return { success: true, appointment: updatedApt };
+  };
+
+  const checkInWalkIn = (
+    params: {
+      patientId: string;
+      doctorId: string;
+      reasonForVisit: string;
+      isNewPatient?: boolean;
+    },
+    actingUser?: User | null,
+    dateOverride?: string
+  ): CheckInResult => {
+    const actor = actingUser !== undefined ? actingUser : authUser;
+    if (actor && !canCheckIn(actor, modules) && !isAdmin(actor, modules)) {
+      return {
+        success: false,
+        error: 'Unauthorized: Patient check-in capability required.',
+      };
+    }
+
+    const pat = patients.find((p) => p.id === params.patientId);
+    if (!pat) {
+      return { success: false, error: 'Patient not found.' };
+    }
+
+    const todayStr = dateOverride || new Date().toISOString().split('T')[0];
+
+    let targetDocId = params.doctorId;
+    if (!params.isNewPatient) {
+      const assignedDocId = getAssignedDoctorId(params.patientId, patientAssignments);
+      if (!assignedDocId) {
+        return {
+          success: false,
+          error: 'Patient has no assigned doctor. Assignment requires an administrator.',
+        };
+      }
+      targetDocId = assignedDocId;
+    }
+
+    // Doctor availability check
+    if (!isDoctorAvailable(targetDocId, todayStr)) {
+      return {
+        success: false,
+        error: 'Assigned doctor is not available today. Reassignment requires an administrator.',
+      };
+    }
+
+    const doc = doctors.find((d) => d.id === targetDocId) || {
+      id: targetDocId,
+      name: 'Consulting Physician',
+      department: 'General Medicine',
+    };
+
+    // If new patient, create initial assignment if none exists
+    if (params.isNewPatient) {
+      const existingAsgn = patientAssignments.find(
+        (a) => a.patientId === params.patientId && a.to === null
+      );
+      if (!existingAsgn) {
+        const newAsgn: PatientAssignment = {
+          id: `asgn-${Date.now()}`,
+          patientId: params.patientId,
+          doctorId: targetDocId,
+          doctorName: doc.name,
+          from: new Date().toISOString(),
+          to: null,
+          transferredBy: actor?.name || 'Reception Staff',
+          reason: 'Initial assignment upon walk-in intake',
+        };
+        setPatientAssignments((prev) => [...prev, newAsgn]);
+      }
+    }
+
+    const nextToken = getNextTokenNumberForDate(appointments, todayStr);
+    const nowIso = new Date().toISOString();
+    const appointmentNumber = `APT-2026-${String(nextToken).padStart(3, '0')}`;
+
+    const newApt: Appointment = {
+      id: `apt-walkin-${Date.now()}`,
+      appointmentNumber,
+      patientId: pat.id,
+      patientName: `${pat.firstName} ${pat.lastName}`,
+      patientPhone: pat.phone,
+      doctorId: targetDocId,
+      doctorName: doc.name,
+      department: doc.department || 'General Medicine',
+      dateTime: nowIso,
+      durationMinutes: 30,
+      status: 'checked_in',
+      reasonForVisit: params.reasonForVisit.trim() || 'Walk-in consultation',
+      tokenNumber: nextToken,
+      source: 'walk_in',
+      checkedInAt: nowIso,
+      checkedInBy: actor ? { id: actor.id, name: actor.name } : null,
+    };
+
+    setAppointments((prev) => [newApt, ...prev]);
+
+    if (addAuditLogEntry) {
+      addAuditLogEntry({
+        targetRole: 'patient',
+        targetStaffName: newApt.patientName,
+        targetUserId: newApt.patientId,
+        action: 'walkin_checked_in',
+        description: `Walk-in patient admitted with Token #${nextToken} for Dr. ${newApt.doctorName} by ${actor?.name || 'Reception Staff'}`,
+        authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Front Desk Coordination',
+      });
+    }
+
+    return { success: true, appointment: newApt };
+  };
+
+  const bookAppointment = (
+    data: {
+      patientId: string;
+      doctorId: string;
+      dateTime: string;
+      reasonForVisit: string;
+      durationMinutes?: number;
+    },
+    actingUser?: User | null
+  ): BookingResult => {
+    const actor = actingUser !== undefined ? actingUser : authUser;
+    if (actor && !canBookAppointment(actor, modules)) {
+      return {
+        success: false,
+        error: 'Unauthorized: Booking capability required.',
+      };
+    }
+
+    const pat = patients.find((p) => p.id === data.patientId);
+    if (!pat) {
+      return { success: false, error: 'Patient not found.' };
+    }
+
+    const aptDate = data.dateTime.slice(0, 10);
+    if (!isDoctorAvailable(data.doctorId, aptDate)) {
+      return {
+        success: false,
+        error: 'Doctor is not available on selected date.',
+      };
+    }
+
+    const doc = doctors.find((d) => d.id === data.doctorId) || {
+      id: data.doctorId,
+      name: 'Consulting Physician',
+      department: 'General Medicine',
+    };
+
+    const newId = `apt-${appointments.length + 1}`;
+    const appointmentNumber = `APT-2026-${String(appointments.length + 1).padStart(3, '0')}`;
+
+    const newApt: Appointment = {
+      id: newId,
+      appointmentNumber,
+      patientId: pat.id,
+      patientName: `${pat.firstName} ${pat.lastName}`,
+      patientPhone: pat.phone,
+      doctorId: data.doctorId,
+      doctorName: doc.name,
+      department: doc.department || 'General Medicine',
+      dateTime: data.dateTime,
+      durationMinutes: data.durationMinutes || 30,
+      status: 'scheduled',
+      reasonForVisit: data.reasonForVisit.trim(),
+      tokenNumber: 0,
+      source: 'reception',
+      checkedInAt: null,
+      checkedInBy: null,
+    };
+
+    setAppointments((prev) => [newApt, ...prev]);
+
+    if (addAuditLogEntry) {
+      addAuditLogEntry({
+        targetRole: 'patient',
+        targetStaffName: newApt.patientName,
+        targetUserId: newApt.patientId,
+        action: 'appointment_scheduled',
+        description: `Consultation booked on ${data.dateTime.replace('T', ' ')} with Dr. ${newApt.doctorName} by ${actor?.name || 'Reception Staff'}`,
+        authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Front Desk Coordination',
+      });
+    }
+
+    return { success: true, appointment: newApt };
+  };
+
   const addAppointment = (
     data: Omit<Appointment, 'id' | 'appointmentNumber' | 'tokenNumber'>
   ): Appointment => {
+    const todayStr = data.dateTime ? data.dateTime.slice(0, 10) : new Date().toISOString().split('T')[0];
     const newId = `apt-${appointments.length + 1}`;
-    const tokenNumber = appointments.length + 1;
-    const appointmentNumber = `APT-2026-${String(tokenNumber).padStart(3, '0')}`;
+    const tokenNumber = data.status === 'checked_in' ? getNextTokenNumberForDate(appointments, todayStr) : 0;
+    const appointmentNumber = `APT-2026-${String(appointments.length + 1).padStart(3, '0')}`;
     const newApt: Appointment = {
       ...data,
       id: newId,
       appointmentNumber,
       tokenNumber,
+      source: data.source || 'reception',
     };
     setAppointments((prev) => [newApt, ...prev]);
     return newApt;
@@ -425,12 +764,30 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     status: AppointmentStatus,
     actingUser?: User | null
   ) => {
-    if (status === 'checked_in' && actingUser && !canCheckIn(actingUser)) {
-      console.error('Unauthorized: only receptionists can check in patients.');
-      return;
+    const actor = actingUser !== undefined ? actingUser : authUser;
+    if (status === 'checked_in') {
+      if (actor && !canCheckIn(actor, modules) && !isAdmin(actor, modules)) {
+        console.error('Unauthorized: only receptionists can check in patients.');
+        return;
+      }
     }
+
     setAppointments((prev) =>
-      prev.map((apt) => (apt.id === id ? { ...apt, status } : apt))
+      prev.map((apt) => {
+        if (apt.id !== id) return apt;
+        if (status === 'checked_in') {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const nextToken = apt.tokenNumber > 0 ? apt.tokenNumber : getNextTokenNumberForDate(prev, todayStr);
+          return {
+            ...apt,
+            status,
+            tokenNumber: nextToken,
+            checkedInAt: apt.checkedInAt || new Date().toISOString(),
+            checkedInBy: apt.checkedInBy || (actor ? { id: actor.id, name: actor.name } : null),
+          };
+        }
+        return { ...apt, status };
+      })
     );
   };
 
@@ -983,6 +1340,10 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         createAccess,
         transferPatient,
         addPatient,
+        registerPatient,
+        checkInAppointment,
+        checkInWalkIn,
+        bookAppointment,
         updatePatient,
         addDoctor,
         updateDoctorStatus,
