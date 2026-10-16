@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
+import { useAuth } from '@/context/AuthContext';
+import { getScopedPatients, getScopedAppointments, getScopedPrescriptions } from '@/lib/selectors';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -25,14 +27,37 @@ interface PatientViewProps {
 }
 
 export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab = 'overview' }) => {
+  const { currentUser } = useAuth();
   const {
-    patients,
-    appointments,
-    prescriptions,
-    vitals,
+    patients: rawPatients,
+    appointments: rawAppointments,
+    prescriptions: rawPrescriptions,
+    vitals: rawVitals,
+    patientAssignments = [],
     addPatient,
     updatePatient,
   } = useClinic();
+
+  const patients = React.useMemo(() => {
+    return getScopedPatients(currentUser, rawPatients, patientAssignments);
+  }, [currentUser, rawPatients, patientAssignments]);
+
+  const appointments = React.useMemo(() => {
+    return getScopedAppointments(currentUser, rawAppointments, patientAssignments);
+  }, [currentUser, rawAppointments, patientAssignments]);
+
+  const prescriptions = React.useMemo(() => {
+    return getScopedPrescriptions(currentUser, rawPrescriptions, patientAssignments);
+  }, [currentUser, rawPrescriptions, patientAssignments]);
+
+  const vitals = React.useMemo(() => {
+    if (!currentUser) return [];
+    if (currentUser.role === 'patient') {
+      const myPatientIds = new Set(patients.map((p) => p.id));
+      return rawVitals.filter((v) => myPatientIds.has(v.patientId));
+    }
+    return rawVitals;
+  }, [currentUser, patients, rawVitals]);
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');

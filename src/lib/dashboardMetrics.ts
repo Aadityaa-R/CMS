@@ -7,7 +7,9 @@ import {
   Prescription,
   User,
   UserRole,
+  PatientAssignment,
 } from '@/types';
+import { isAdmin } from '@/lib/permissions';
 import { PendingStaffApproval } from '@/data/mockData';
 
 export type DateRangePreset = 'today' | 'last_7_days' | 'this_month' | 'last_30_days';
@@ -98,6 +100,8 @@ export interface CalculateDashboardMetricsOptions {
   pendingClearances?: PendingStaffApproval[];
   role: UserRole;
   userId: string;
+  currentUser?: User | null;
+  patientAssignments?: PatientAssignment[];
   dateRange: DateRangePreset;
   chartBucket?: ChartBucketType;
   referenceDate?: Date;
@@ -263,10 +267,14 @@ export function calculateDashboardMetrics(
   const activeBucketType: ChartBucketType =
     chartBucket || (diffDays <= 31 ? 'day' : 'week');
 
-  const isMD = role === 'md' || role === 'admin';
-  const isStaffDoctor = role === 'doctor';
-  const isReceptionist = role === 'receptionist';
-  const isPatient = role === 'patient';
+  const actingUser: User | { role?: string; id?: string } = options.currentUser || {
+    id: userId,
+    role,
+  };
+  const isMD = isAdmin(actingUser);
+  const isStaffDoctor = !isMD && (role === 'doctor' || actingUser.role === 'doctor');
+  const isReceptionist = !isMD && (role === 'receptionist' || actingUser.role === 'receptionist');
+  const isPatient = role === 'patient' || actingUser.role === 'patient';
 
   const doctorId = isStaffDoctor ? resolveDoctorId(userId, doctors) : '';
   const patientId = isPatient ? resolvePatientId(userId, patients) : '';

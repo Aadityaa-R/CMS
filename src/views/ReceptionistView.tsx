@@ -18,6 +18,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { BloodGroup, Appointment } from '@/types';
+import { getScopedPatients, getScopedAppointments } from '@/lib/selectors';
 
 interface ReceptionistViewProps {
   activeTab?: string;
@@ -38,13 +39,22 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     }
   }, [activeTab]);
   const {
-    appointments,
-    patients,
+    appointments: rawAppointments,
+    patients: rawPatients,
     doctors,
+    patientAssignments = [],
     updateAppointmentStatus,
     addPatient,
     addAppointment,
   } = useClinic();
+
+  const patients = React.useMemo(() => {
+    return getScopedPatients(currentUser, rawPatients, patientAssignments);
+  }, [currentUser, rawPatients, patientAssignments]);
+
+  const appointments = React.useMemo(() => {
+    return getScopedAppointments(currentUser, rawAppointments, patientAssignments);
+  }, [currentUser, rawAppointments, patientAssignments]);
 
   // Primary sole doctor
   const primaryDoctor = doctors[0] || {

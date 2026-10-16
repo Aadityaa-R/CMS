@@ -11,7 +11,16 @@ import {
   Invoice,
   PaymentMethod,
   PatientAssignment,
+  User,
 } from '@/types';
+import {
+  isAdmin,
+  canTransferPatient,
+  canRegisterPatient,
+  canCheckIn,
+  getAssignedDoctorId,
+  hasCapability,
+} from '@/lib/permissions';
 import {
   INITIAL_PATIENTS,
   INITIAL_DOCTORS,
@@ -22,6 +31,14 @@ import {
   INITIAL_INVOICES,
   INITIAL_PATIENT_ASSIGNMENTS,
 } from '@/data/mockData';
+
+export interface TransferResult {
+  success: boolean;
+  error?: string;
+  movedAppointmentsCount: number;
+  movedAppointmentIds: string[];
+  isInitialAssignment: boolean;
+}
 
 interface ClinicContextType {
   patients: Patient[];
@@ -34,15 +51,19 @@ interface ClinicContextType {
   patientAssignments: PatientAssignment[];
 
   // Patient Actions
-  addPatient: (data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>) => Patient;
+  addPatient: (
+    data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>,
+    actingUser?: User | null
+  ) => Patient;
   updatePatient: (id: string, data: Partial<Patient>) => void;
   transferPatient: (
     patientId: string,
     toDoctorId: string,
     reason: string,
-    actingUserId: string,
-    actingUserName: string
-  ) => void;
+    actingUserId?: string,
+    actingUserName?: string,
+    actingUser?: User | null
+  ) => TransferResult;
 
   // Doctor Actions
   addDoctor: (data: Omit<Doctor, 'id'>) => Doctor;
@@ -50,7 +71,11 @@ interface ClinicContextType {
 
   // Appointment Actions
   addAppointment: (data: Omit<Appointment, 'id' | 'appointmentNumber' | 'tokenNumber'>) => Appointment;
-  updateAppointmentStatus: (id: string, status: AppointmentStatus) => void;
+  updateAppointmentStatus: (
+    id: string,
+    status: AppointmentStatus,
+    actingUser?: User | null
+  ) => void;
   updateAppointmentNotes: (id: string, notes: string) => void;
 
   // Vitals Actions
@@ -93,15 +118,99 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     patientId: string,
     toDoctorId: string,
     reason: string,
-    actingUserId: string,
-    actingUserName: string
-  ) => {
-    const timestamp = new Date().toISOString();
-    const targetDoctor = doctors.find((d) => d.id === toDoctorId);
-    const doctorName = targetDoctor ? targetDoctor.name : 'Attending Physician';
-    const department = targetDoctor ? targetDoctor.department : 'General Medicine';
+    actingUserId?: string,
+    actingUserName?: string,
+    actingUser?: User | null
+  ): TransferResult => {
+    // 1. Block transfer if patient has an appointment in_consultation
+    const inConsultationApt = appointments.find(
+      (a) => a.patientId === patientId && a.status === 'in_consultation'
+    );
+    if (inConsultationApt) {
+      return {
+        success: false,
+        error: 'Conclude the current consultation before transferring.',
+        movedAppointmentsCount: 0,
+        movedAppointmentIds: [],
+        isInitialAssignment: false,
+      };
+    }
 
-    // 1. Close current active assignment and create new one
+    const currentDocId = getAssignedDoctorId(patientId, patientAssignments);
+    const isInitialAssignment = !currentDocId;
+
+    // 2. Receiving doctor must be different from current doctor
+    if (currentDocId && toDoctorId === currentDocId) {
+      return {
+        success: false,
+        error: 'Receiving doctor must be different from current doctor.',
+        movedAppointmentsCount: 0,
+        movedAppointmentIds: [],
+        isInitialAssignment,
+      };
+    }
+
+    // 3. Receiving doctor must be an active doctor with consultationWorkstation capability
+    const targetDoctor = doctors.find((d) => d.id === toDoctorId);
+    if (!targetDoctor || targetDoctor.status !== 'active') {
+      return {
+        success: false,
+        error: 'Receiving doctor must be an active doctor.',
+        movedAppointmentsCount: 0,
+        movedAppointmentIds: [],
+        isInitialAssignment,
+      };
+    }
+
+    if (!hasCapability(targetDoctor, 'consultationWorkstation')) {
+      return {
+        success: false,
+        error: 'Receiving doctor must have consultation workstation capability.',
+        movedAppointmentsCount: 0,
+        movedAppointmentIds: [],
+        isInitialAssignment,
+      };
+    }
+
+    // 4. Authorization check if actingUser passed
+    if (actingUser) {
+      if (isInitialAssignment) {
+        if (!isAdmin(actingUser)) {
+          return {
+            success: false,
+            error: 'Only clinic administrators can assign unassigned patients.',
+            movedAppointmentsCount: 0,
+            movedAppointmentIds: [],
+            isInitialAssignment,
+          };
+        }
+      } else {
+        if (!canTransferPatient(actingUser, patientId, patientAssignments)) {
+          return {
+            success: false,
+            error: 'Unauthorized to transfer patient care.',
+            movedAppointmentsCount: 0,
+            movedAppointmentIds: [],
+            isInitialAssignment,
+          };
+        }
+      }
+    }
+
+    // 5. Identify open appointments to move: ONLY scheduled and checked_in (NOT in_consultation, NOT completed)
+    const movedApts = appointments.filter(
+      (apt) =>
+        apt.patientId === patientId &&
+        (apt.status === 'scheduled' || apt.status === 'checked_in')
+    );
+    const movedAppointmentIds = movedApts.map((a) => a.id);
+    const movedAppointmentsCount = movedAppointmentIds.length;
+
+    const timestamp = new Date().toISOString();
+    const doctorName = targetDoctor.name;
+    const department = targetDoctor.department || 'General Medicine';
+
+    // 6. Close current active assignment and create new one
     setPatientAssignments((prev) => {
       const closed = prev.map((a) =>
         a.patientId === patientId && a.to === null ? { ...a, to: timestamp } : a
@@ -113,32 +222,46 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         doctorName,
         from: timestamp,
         to: null,
-        transferredBy: actingUserName ? `${actingUserName} (${actingUserId})` : actingUserId,
-        reason,
+        transferredBy: actingUserName
+          ? `${actingUserName}${actingUserId ? ` (${actingUserId})` : ''}`
+          : actingUserId || 'System',
+        reason: reason.trim(),
       };
       return [...closed, newAsgn];
     });
 
-    // 2. Reassign open appointments (scheduled, checked_in, in_consultation) to receiving doctor
-    setAppointments((prev) =>
-      prev.map((apt) => {
-        if (
-          apt.patientId === patientId &&
-          (apt.status === 'scheduled' || apt.status === 'checked_in' || apt.status === 'in_consultation')
-        ) {
-          return {
-            ...apt,
-            doctorId: toDoctorId,
-            doctorName,
-            department,
-          };
-        }
-        return apt;
-      })
-    );
+    // 7. Move scheduled and checked_in appointments to receiving doctor
+    if (movedAppointmentIds.length > 0) {
+      setAppointments((prev) =>
+        prev.map((apt) => {
+          if (movedAppointmentIds.includes(apt.id)) {
+            return {
+              ...apt,
+              doctorId: toDoctorId,
+              doctorName,
+              department,
+            };
+          }
+          return apt;
+        })
+      );
+    }
+
+    return {
+      success: true,
+      movedAppointmentsCount,
+      movedAppointmentIds,
+      isInitialAssignment,
+    };
   };
 
-  const addPatient = (data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>): Patient => {
+  const addPatient = (
+    data: Omit<Patient, 'id' | 'mrn' | 'registeredDate' | 'status'>,
+    actingUser?: User | null
+  ): Patient => {
+    if (actingUser && !canRegisterPatient(actingUser)) {
+      console.error('Unauthorized: only receptionists can register patients.');
+    }
     const newId = `pat-${patients.length + 1}`;
     const newMrn = `MRN-${Math.floor(10000 + Math.random() * 90000)}`;
     const newPatient: Patient = {
@@ -186,7 +309,15 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return newApt;
   };
 
-  const updateAppointmentStatus = (id: string, status: AppointmentStatus) => {
+  const updateAppointmentStatus = (
+    id: string,
+    status: AppointmentStatus,
+    actingUser?: User | null
+  ) => {
+    if (status === 'checked_in' && actingUser && !canCheckIn(actingUser)) {
+      console.error('Unauthorized: only receptionists can check in patients.');
+      return;
+    }
     setAppointments((prev) =>
       prev.map((apt) => (apt.id === id ? { ...apt, status } : apt))
     );

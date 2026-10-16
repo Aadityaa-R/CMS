@@ -620,6 +620,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     invoices,
     prescriptions,
     doctors,
+    patientAssignments = [],
     updateAppointmentStatus,
   } = useClinic();
 
@@ -645,6 +646,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       pendingClearances: INITIAL_PENDING_APPROVALS,
       role: currentRole,
       userId: currentUser.id,
+      currentUser,
+      patientAssignments,
       dateRange,
       chartBucket: chartBucket1,
     });
@@ -655,7 +658,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     prescriptions,
     doctors,
     currentRole,
-    currentUser.id,
+    currentUser,
+    patientAssignments,
     dateRange,
     chartBucket1,
   ]);
@@ -675,6 +679,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       pendingClearances: INITIAL_PENDING_APPROVALS,
       role: currentRole,
       userId: currentUser.id,
+      currentUser,
+      patientAssignments,
       dateRange,
       chartBucket: chartBucket2,
     });
@@ -688,8 +694,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     prescriptions,
     doctors,
     currentRole,
-    currentUser.id,
-    dateRange,
+    currentUser,
+    patientAssignments,
   ]);
 
   const greeting = getGreeting(currentUser.name);

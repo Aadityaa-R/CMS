@@ -6,6 +6,12 @@ import {
   INITIAL_STAFF_ACCESS,
   INITIAL_ACCESS_AUDIT_LOG,
 } from '@/data/mockData';
+import {
+  isAdmin,
+  canGrantAdmin,
+  canRevokeAdmin,
+  canDeleteStaff,
+} from '@/lib/permissions';
 
 export interface RoleMeta {
   role: UserRole;
@@ -226,6 +232,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const grantStaffAccess = (recordId: string, reason?: string) => {
+    if (!isAdmin(currentUser)) {
+      console.error('Unauthorized: only administrators can grant staff access.');
+      return;
+    }
     const record = staffAccessList.find((r) => r.id === recordId);
     if (!record) return;
 
@@ -238,7 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...r,
               status: 'granted',
               lastUpdated: timestamp,
-              updatedBy: 'Dr. Marcus Vance (Managing Director)',
+              updatedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
               reason: reason || 'Access privileges granted by Managing Director',
             }
           : r
@@ -251,16 +261,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       targetRole: record.role,
       targetStaffName: record.staffName,
       action: 'access_granted',
-      description: `Station credentials and operational clearance restored by Managing Director`,
-      authorizedBy: 'Dr. Marcus Vance (Managing Director)',
+      description: `Station credentials and operational clearance restored by ${currentUser.name || 'Managing Director'}`,
+      authorizedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
     };
 
     setAccessAuditLog((prev) => [newAudit, ...prev]);
   };
 
   const revokeStaffAccess = (recordId: string, reason?: string) => {
+    if (!isAdmin(currentUser)) {
+      console.error('Unauthorized: only administrators can revoke staff access.');
+      return;
+    }
     const record = staffAccessList.find((r) => r.id === recordId);
     if (!record) return;
+
+    if (isAdmin(record)) {
+      const check = canRevokeAdmin(currentUser, record, staffAccessList);
+      if (!check.allowed) {
+        console.error('Cannot revoke administrator:', check.reason);
+        return;
+      }
+    }
 
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
 
@@ -271,7 +293,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...r,
               status: 'revoked',
               lastUpdated: timestamp,
-              updatedBy: 'Dr. Marcus Vance (Managing Director)',
+              updatedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
               reason: reason || 'Access suspended by Managing Director executive directive',
             }
           : r
@@ -284,16 +306,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       targetRole: record.role,
       targetStaffName: record.staffName,
       action: 'access_revoked',
-      description: `Station access and operational privileges revoked by Managing Director`,
-      authorizedBy: 'Dr. Marcus Vance (Managing Director)',
+      description: `Station access and operational privileges revoked by ${currentUser.name || 'Managing Director'}`,
+      authorizedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
     };
 
     setAccessAuditLog((prev) => [newAudit, ...prev]);
   };
 
   const deleteStaffAccount = (recordId: string, reason?: string) => {
+    if (!isAdmin(currentUser)) {
+      console.error('Unauthorized: only administrators can delete staff accounts.');
+      return;
+    }
     const record = staffAccessList.find((r) => r.id === recordId);
     if (!record) return;
+
+    const check = canDeleteStaff(currentUser, record, staffAccessList);
+    if (!check.allowed) {
+      console.error('Cannot delete staff account:', check.reason);
+      return;
+    }
 
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
 
@@ -305,8 +337,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       targetRole: record.role,
       targetStaffName: record.staffName,
       action: 'account_deleted',
-      description: reason || `Account permanently deleted and purged from clinic directory by Managing Director`,
-      authorizedBy: 'Dr. Marcus Vance (Managing Director)',
+      description: reason || `Account permanently deleted and purged from clinic directory by ${currentUser.name || 'Managing Director'}`,
+      authorizedBy: currentUser.name || 'Dr. Marcus Vance (Managing Director)',
     };
 
     setAccessAuditLog((prev) => [newAudit, ...prev]);
@@ -358,8 +390,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updates: Array<{ permissionId: string; enabled: boolean }>,
     actingAdmin?: string
   ) => {
+    if (!isAdmin(currentUser)) {
+      console.error('Unauthorized: only administrators can modify staff capabilities.');
+      return;
+    }
     const record = staffAccessList.find((r) => r.id === recordId);
     if (!record) return;
+
+    // Filter out unauthorized admin promotions or revocations
+    const validUpdates = updates.filter((u) => {
+      if (u.permissionId === 'perm-admin' || u.permissionId === 'administrativeAccess') {
+        if (u.enabled) {
+          return canGrantAdmin(currentUser, record);
+        } else {
+          const check = canRevokeAdmin(currentUser, record, staffAccessList);
+          return check.allowed;
+        }
+      }
+      return true;
+    });
+
+    if (validUpdates.length === 0 && updates.length > 0) return;
 
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
     const adminName = actingAdmin || currentUser.name || 'Dr. Marcus Vance (Managing Director)';
@@ -367,7 +418,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newAuditEntries: AccessAuditLogEntry[] = [];
 
     const existingPerms = [...record.permissions];
-    for (const update of updates) {
+    for (const update of validUpdates) {
       if (!existingPerms.some((p) => p.id === update.permissionId)) {
         if (update.permissionId === 'perm-admin') {
           existingPerms.unshift({

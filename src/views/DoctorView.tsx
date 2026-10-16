@@ -18,12 +18,16 @@ import {
 } from 'lucide-react';
 import { Appointment, Prescription, PrescriptionItem, Patient } from '@/types';
 import {
-  canViewPatient,
-  canViewPrescription,
   canTransferPatient,
   getAssignedDoctorId,
+  hasCapability,
   isAdmin,
 } from '@/lib/permissions';
+import {
+  getScopedPatients,
+  getScopedAppointments,
+  getScopedPrescriptions,
+} from '@/lib/selectors';
 
 interface DoctorViewProps {
   activeTab?: string;
@@ -126,7 +130,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   }, [currentRole]);
 
   const activeDoctor = doctors.find((d) => d.id === activeDoctorId) || doctors[0];
-  const doctorAppointments = appointments.filter((a) => a.doctorId === activeDoctorId);
+  const doctorAppointments = useMemo(() => {
+    return getScopedAppointments(currentUser, appointments, patientAssignments, activeDoctorId);
+  }, [currentUser, appointments, patientAssignments, activeDoctorId]);
 
   // Search & Filter State (Equal Authority Governance pattern)
   const [searchTerm, setSearchTerm] = useState('');
@@ -486,10 +492,24 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   const [transferReason, setTransferReason] = useState<string>('');
   const [transferError, setTransferError] = useState<string>('');
 
+  const targetPatientInConsultation = useMemo(() => {
+    if (!transferTargetPatient) return false;
+    return appointments.some(
+      (a) => a.patientId === transferTargetPatient.id && a.status === 'in_consultation'
+    );
+  }, [transferTargetPatient, appointments]);
+
+  const isTargetPatientUnassigned = useMemo(() => {
+    if (!transferTargetPatient) return false;
+    return !getAssignedDoctorId(transferTargetPatient.id, patientAssignments);
+  }, [transferTargetPatient, patientAssignments]);
+
   const handleOpenTransferModal = (pat: Patient) => {
     setTransferTargetPatient(pat);
     const currentDocId = getAssignedDoctorId(pat.id, patientAssignments);
-    const availableDocs = doctors.filter((d) => d.id !== currentDocId && d.status === 'active');
+    const availableDocs = doctors.filter(
+      (d) => d.id !== currentDocId && d.status === 'active' && hasCapability(d, 'consultationWorkstation')
+    );
     setTargetDoctorId(availableDocs[0]?.id || '');
     setTransferReason('');
     setTransferError('');
@@ -497,12 +517,20 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   const handleConfirmTransfer = () => {
     if (!transferTargetPatient) return;
+    if (targetPatientInConsultation) {
+      setTransferError('Conclude the current consultation before transferring.');
+      return;
+    }
     if (!targetDoctorId) {
       setTransferError('Please select a receiving physician.');
       return;
     }
     if (!transferReason.trim()) {
-      setTransferError('Transfer reason is required for clinical continuity.');
+      setTransferError(
+        isTargetPatientUnassigned
+          ? 'Assignment reason is required for clinical records.'
+          : 'Transfer reason is required for clinical continuity.'
+      );
       return;
     }
 
@@ -512,25 +540,40 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     const oldDocName = oldDoc ? oldDoc.name : 'Unassigned';
     const newDocName = newDoc ? newDoc.name : 'Receiving Physician';
 
-    transferPatient(
+    const result = transferPatient(
       transferTargetPatient.id,
       targetDoctorId,
       transferReason.trim(),
       currentUser.id,
-      currentUser.name
+      currentUser.name,
+      currentUser
     );
+
+    if (!result.success) {
+      setTransferError(result.error || 'Transfer failed.');
+      return;
+    }
+
+    const movedText =
+      result.movedAppointmentsCount > 0
+        ? ` Moved ${result.movedAppointmentsCount} appointment(s) (${result.movedAppointmentIds.join(', ')}).`
+        : ' No open appointments moved.';
 
     addAuditLogEntry({
       targetRole: 'patient',
       targetStaffName: `${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`,
       targetUserId: transferTargetPatient.id,
       action: 'permission_updated',
-      description: `Patient care transferred from ${oldDocName} to ${newDocName}. Reason: ${transferReason.trim()}`,
+      description: isTargetPatientUnassigned
+        ? `Patient assigned to ${newDocName}.${movedText} Reason: ${transferReason.trim()}`
+        : `Patient care transferred from ${oldDocName} to ${newDocName}.${movedText} Reason: ${transferReason.trim()}`,
       authorizedBy: currentUser.name,
     });
 
     showNotification(
-      `Patient ${transferTargetPatient.firstName} ${transferTargetPatient.lastName} transferred to ${newDocName}.`
+      isTargetPatientUnassigned
+        ? `Patient ${transferTargetPatient.firstName} ${transferTargetPatient.lastName} assigned to ${newDocName}.`
+        : `Patient ${transferTargetPatient.firstName} ${transferTargetPatient.lastName} transferred to ${newDocName}.`
     );
 
     setTransferTargetPatient(null);
@@ -540,8 +583,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   };
 
   const doctorPrescriptions = useMemo(() => {
-    return prescriptions.filter((r) => canViewPrescription(currentUser, r, patientAssignments));
-  }, [prescriptions, currentUser, patientAssignments]);
+    return getScopedPrescriptions(currentUser, prescriptions, patientAssignments, activeDoctorId);
+  }, [prescriptions, currentUser, patientAssignments, activeDoctorId]);
 
   // Filter Helper with Equal Authority
   const query = searchTerm.toLowerCase().trim();
@@ -561,11 +604,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   });
 
   const doctorPatients = useMemo(() => {
-    if (isAdmin(currentUser)) {
-      return patients;
-    }
-    return patients.filter((p) => canViewPatient(currentUser, p.id, patientAssignments));
-  }, [patients, currentUser, patientAssignments]);
+    return getScopedPatients(currentUser, patients, patientAssignments, activeDoctorId);
+  }, [patients, currentUser, patientAssignments, activeDoctorId]);
 
   // Dedicated Patients Medical Directory Search State
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
@@ -1021,13 +1061,23 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           value={activeDoctorId}
                           placeholder="Select Attending Physician"
                           onChange={(e) => setActiveDoctorId(e.target.value)}
-                          options={doctors.map((doc) => {
-                            const count = appointments.filter((a) => a.doctorId === doc.id).length;
-                            return {
-                              value: doc.id,
-                              label: `${doc.name} (${count} visits)`,
-                            };
-                          })}
+                          options={[
+                            ...(isMD
+                              ? [
+                                  {
+                                    value: 'all',
+                                    label: `All Doctors (${appointments.length} visits)`,
+                                  },
+                                ]
+                              : []),
+                            ...doctors.map((doc) => {
+                              const count = appointments.filter((a) => a.doctorId === doc.id).length;
+                              return {
+                                value: doc.id,
+                                label: `${doc.name} (${count} visits)`,
+                              };
+                            }),
+                          ]}
                         />
                       </div>
                     </div>
@@ -1315,7 +1365,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         : isScheduled
                         ? 'Patient has not been checked in'
                         : undefined;
-                      const canTransfer = canTransferPatient(currentUser, pat.id, patientAssignments);
+                      const isUnassigned = !assignedDocId;
+                      const canTransfer = isUnassigned
+                        ? isAdmin(currentUser)
+                        : canTransferPatient(currentUser, pat.id, patientAssignments);
 
                       return (
                         <TableRow key={pat.id}>
@@ -1358,9 +1411,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                   variant="outline"
                                   className="whitespace-nowrap"
                                   onClick={() => handleOpenTransferModal(pat)}
-                                  aria-label={`Transfer ${pat.firstName} ${pat.lastName}`}
+                                  aria-label={`${isUnassigned ? 'Assign' : 'Transfer'} ${pat.firstName} ${pat.lastName}`}
                                 >
-                                  Transfer
+                                  {isUnassigned ? 'Assign' : 'Transfer'}
                                 </Button>
                               )}
                               {!isReadOnlyView ? (
@@ -1856,13 +1909,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       </Modal>
 
       {/* ========================================================================= */}
-      {/* MODAL 5: TRANSFER PATIENT CARE                                            */}
+      {/* MODAL 5: TRANSFER / ASSIGN PATIENT CARE                                    */}
       {/* ========================================================================= */}
       {transferTargetPatient && (
         <Modal
           isOpen={!!transferTargetPatient}
           onClose={() => setTransferTargetPatient(null)}
-          title={`Transfer Care: ${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`}
+          title={
+            isTargetPatientUnassigned
+              ? `Assign Care: ${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`
+              : `Transfer Care: ${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`
+          }
           maxWidth="md"
           footer={
             <div className="flex justify-end gap-2 w-full">
@@ -1876,15 +1933,21 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Button
                 variant="primary"
                 size="sm"
+                disabled={targetPatientInConsultation}
                 onClick={handleConfirmTransfer}
               >
-                Confirm Transfer
+                {isTargetPatientUnassigned ? 'Confirm Assignment' : 'Confirm Transfer'}
               </Button>
             </div>
           }
         >
           <div className="space-y-4 text-xs">
-            {transferError && (
+            {targetPatientInConsultation && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200">
+                Conclude the current consultation before transferring.
+              </div>
+            )}
+            {transferError && !targetPatientInConsultation && (
               <div className="p-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 rounded text-xs">
                 {transferError}
               </div>
@@ -1897,7 +1960,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             </div>
             <div>
               <label className="text-slate-700 dark:text-slate-300 block font-medium mb-1.5">
-                Receiving Physician
+                {isTargetPatientUnassigned ? 'Assigned Physician' : 'Receiving Physician'}
               </label>
               <Select
                 value={targetDoctorId}
@@ -1912,13 +1975,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             </div>
             <div>
               <label className="text-slate-700 dark:text-slate-300 block font-medium mb-1.5">
-                Clinical Transfer Reason
+                {isTargetPatientUnassigned ? 'Clinical Assignment Reason' : 'Clinical Transfer Reason'}
               </label>
               <Textarea
                 rows={3}
                 value={transferReason}
                 onChange={(e) => setTransferReason(e.target.value)}
-                placeholder="Document clinical indication or continuity rationale for this transfer..."
+                placeholder={
+                  isTargetPatientUnassigned
+                    ? 'Document clinical indication for this initial physician assignment...'
+                    : 'Document clinical indication or continuity rationale for this transfer...'
+                }
               />
             </div>
           </div>
