@@ -174,9 +174,18 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     (activeAppointment && activeAppointment.status === 'in_consultation' ? activeAppointment : null) ||
     doctorAppointments.find((a) => a.status === 'in_consultation') ||
     null;
-  const summaryPatient = consultationApt
-    ? patients.find((p) => p.id === consultationApt.patientId) || null
-    : null;
+  const summaryPatient =
+    activePatient ||
+    (consultationApt ? patients.find((p) => p.id === consultationApt.patientId) || null : null);
+
+  const lastCompletedApt = useMemo(() => {
+    if (!summaryPatient) return null;
+    return (
+      appointments
+        .filter((a) => a.patientId === summaryPatient.id && a.status === 'completed')
+        .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())[0] || null
+    );
+  }, [summaryPatient, appointments]);
 
   // Clinical Triage Vitals Input State
   const [vitalsForm, setVitalsForm] = useState({
@@ -1046,11 +1055,53 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <CardContent className="space-y-3 text-xs">
                   {summaryPatient ? (
                     <>
-                      <div className="flex justify-between items-baseline gap-2">
-                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
-                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                          {summaryPatient.lastVisitDate || 'None recorded'}
-                        </span>
+                      {/* Last Visit Details */}
+                      <div className="space-y-1.5 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex justify-between items-baseline gap-2">
+                          <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                            {summaryPatient.lastVisitDate ||
+                              (lastCompletedApt?.dateTime
+                                ? new Date(lastCompletedApt.dateTime).toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })
+                                : 'None recorded')}
+                          </span>
+                        </div>
+
+                        {summaryPatient.previousVitals && (
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit Vitals:</span>
+                            <div className="text-right">
+                              <span className="font-medium text-slate-900 dark:text-slate-100 block">
+                                BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp} mmHg • HR {summaryPatient.previousVitals.heartRateBpm} bpm
+                              </span>
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                                SpO2 {summaryPatient.previousVitals.oxygenSaturationPct}% • Temp {summaryPatient.previousVitals.temperatureCelsius} °C
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {lastCompletedApt?.reasonForVisit && (
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Reason:</span>
+                            <span className="font-medium text-slate-900 dark:text-slate-100 text-right line-clamp-2" title={lastCompletedApt.reasonForVisit}>
+                              {lastCompletedApt.reasonForVisit}
+                            </span>
+                          </div>
+                        )}
+
+                        {lastCompletedApt?.doctorName && (
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Consulting Doctor:</span>
+                            <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                              {lastCompletedApt.doctorName}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex justify-between items-baseline gap-2">
