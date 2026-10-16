@@ -3,7 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/ClinicContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
@@ -11,17 +10,22 @@ import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/Interact
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { Filter, ArrowLeft, X } from 'lucide-react';
-import { UserRole, StaffAccessRecord, StaffPermission } from '@/types';
+import { User, UserRole, StaffAccessRecord, StaffPermission, AccessModule, StandardCapability } from '@/types';
 import { PendingStaffApproval, INITIAL_PENDING_APPROVALS } from '@/data/mockData';
+import { ACCESS_CATALOG, getAccessItem } from '@/data/accessCatalog';
 import {
   isAdmin,
-  canGrantAdmin,
   canRevokeAdmin,
   canDeleteStaff,
+  canDeleteModule,
+  canIncludeAccess,
+  canRemoveAccess,
+  canRemoveMember,
+  getEffectiveAccesses,
 } from '@/lib/permissions';
 
 interface AccessControlViewProps {
-  activeTab?: 'add_users' | 'edit_users' | 'ledger' | string;
+  activeTab?: 'add_users' | 'edit_users' | 'modules' | 'ledger' | string;
 }
 
 type RoleFilterKey = '' | 'doc' | 'receptionist' | 'patient';
@@ -106,13 +110,13 @@ const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
 };
 
 export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab = 'add_users' }) => {
-  const [selectedSubTab, setSelectedSubTab] = useState<'add_users' | 'edit_users' | 'ledger'>(() => {
-    if (activeTab === 'edit_users' || activeTab === 'ledger') return activeTab;
+  const [selectedSubTab, setSelectedSubTab] = useState<'add_users' | 'edit_users' | 'modules' | 'ledger'>(() => {
+    if (activeTab === 'edit_users' || activeTab === 'modules' || activeTab === 'ledger') return activeTab;
     return 'add_users';
   });
 
   useEffect(() => {
-    if (activeTab === 'add_users' || activeTab === 'edit_users' || activeTab === 'ledger') {
+    if (activeTab === 'add_users' || activeTab === 'edit_users' || activeTab === 'modules' || activeTab === 'ledger') {
       setSelectedSubTab(activeTab);
     }
   }, [activeTab]);
@@ -123,12 +127,105 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     grantStaffAccess,
     revokeStaffAccess,
     deleteStaffAccount,
-    updateStaffCapabilities,
     addStaffAccount,
     addAuditLogEntry,
   } = useAuth();
 
-  const { addDoctor, doctors = [] } = useClinic();
+  const {
+    modules = [],
+    createModule,
+    renameModule,
+    deleteModule,
+    includeAccess,
+    removeAccess,
+    addMember,
+    removeMember,
+    addDoctor,
+    doctors = [],
+  } = useClinic();
+
+  // Module management state
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
+  const [isCreateModuleModalOpen, setIsCreateModuleModalOpen] = useState(false);
+  const [createModuleName, setCreateModuleName] = useState('');
+  const [createModuleDesc, setCreateModuleDesc] = useState('');
+  const [createModuleError, setCreateModuleError] = useState('');
+
+  const [isEditModuleModalOpen, setIsEditModuleModalOpen] = useState(false);
+  const [editModuleName, setEditModuleName] = useState('');
+  const [editModuleDesc, setEditModuleDesc] = useState('');
+  const [editModuleError, setEditModuleError] = useState('');
+
+  const [isDeleteModuleModalOpen, setIsDeleteModuleModalOpen] = useState(false);
+  const [deleteModuleInput, setDeleteModuleInput] = useState('');
+
+  const [modulesPage, setModulesPage] = useState(1);
+  const [moduleMembersPage, setModuleMembersPage] = useState(1);
+
+  const [includeAccessTarget, setIncludeAccessTarget] = useState<{
+    module: AccessModule;
+    accessId: StandardCapability;
+    label: string;
+  } | null>(null);
+
+  const [removeAccessTarget, setRemoveAccessTarget] = useState<{
+    module: AccessModule;
+    accessId: StandardCapability;
+    label: string;
+  } | null>(null);
+
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [addMemberSelectedStaffId, setAddMemberSelectedStaffId] = useState('');
+  const [addMemberAdminConfirmName, setAddMemberAdminConfirmName] = useState('');
+  const [addMemberAdminReason, setAddMemberAdminReason] = useState('');
+
+  const [removeMemberTarget, setRemoveMemberTarget] = useState<{
+    module: AccessModule;
+    staff: StaffAccessRecord;
+  } | null>(null);
+
+  // Access Console (person view) module state
+  const [isConsoleAddModuleOpen, setIsConsoleAddModuleOpen] = useState(false);
+  const [consoleAddModuleSelectedId, setConsoleAddModuleSelectedId] = useState('');
+  const [consoleAddModuleAdminConfirmName, setConsoleAddModuleAdminConfirmName] = useState('');
+  const [consoleAddModuleAdminReason, setConsoleAddModuleAdminReason] = useState('');
+  const [consoleConfirmRemoveModule, setConsoleConfirmRemoveModule] = useState<{
+    moduleId: string;
+    moduleName: string;
+  } | null>(null);
+
+  const getStaffModules = (staff: StaffAccessRecord | User): AccessModule[] => {
+    const ids = [
+      staff.id,
+      'badgeNumber' in staff ? staff.badgeNumber : undefined,
+      'staffName' in staff ? staff.staffName : undefined,
+      'name' in staff ? staff.name : undefined,
+    ].filter(Boolean) as string[];
+
+    return modules.filter(
+      (m) =>
+        m.memberIds.some((mid) => ids.includes(mid)) ||
+        ('moduleIds' in staff && staff.moduleIds?.includes(m.id))
+    );
+  };
+
+  const getStaffEffectiveAccessesWithSources = (staff: StaffAccessRecord | User) => {
+    const staffMods = getStaffModules(staff);
+    const effectiveAccessIds = getEffectiveAccesses(staff, modules);
+
+    return effectiveAccessIds.map((accessId) => {
+      const item = getAccessItem(accessId);
+      const sourceMods = staffMods
+        .filter((m) => m.accessIds.includes(accessId))
+        .map((m) => m.name);
+      return {
+        accessId,
+        label: item?.label || accessId,
+        description: item?.description || '',
+        sourceModuleNames: sourceMods,
+      };
+    });
+  };
 
   // Active role filter: '' (unselected) | 'doc' | 'receptionist' | 'patient'
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('');
@@ -217,135 +314,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     }, 4500);
   };
 
-  // Capability action confirmation modal state
-  interface PendingCapabilityAction {
-    staffId: string;
-    staffName: string;
-    permissionId: string;
-    permissionName: string;
-    permissionDescription: string;
-    action: 'grant' | 'revoke';
-    alsoRevokePrescription?: boolean;
-  }
-
-  const [pendingCapAction, setPendingCapAction] = useState<PendingCapabilityAction | null>(null);
-  const [isCapActionLoading, setIsCapActionLoading] = useState(false);
-
-  const handleRequestCapabilityAction = (
-    staff: StaffAccessRecord,
-    perm: StaffPermission,
-    isCurrentlyGranted: boolean
-  ) => {
-    if (isCurrentlyGranted) {
-      // Check if revoking administrative access
-      if (perm.id === 'perm-admin' || perm.name === 'Administrative Access') {
-        const check = canRevokeAdmin(currentUser, staff, staffAccessList);
-        if (!check.allowed) {
-          showNotification({
-            type: 'error',
-            message: check.reason || 'Administrative access cannot be revoked.',
-          });
-          return;
-        }
-      }
-
-      // Revoke action
-      const isEmr = perm.id === 'perm-emr' || perm.name === 'EMR Records Access';
-      const isPrescGranted = staff.permissions.some(
-        (p) => (p.id === 'perm-presc' || p.name === 'Prescription Authoring') && p.enabled
-      );
-      const alsoRevokePrescription = isEmr && isPrescGranted;
-
-      setPendingCapAction({
-        staffId: staff.id,
-        staffName: staff.staffName,
-        permissionId: perm.id,
-        permissionName: perm.name,
-        permissionDescription: perm.description,
-        action: 'revoke',
-        alsoRevokePrescription,
-      });
-    } else {
-      // Grant action
-      if (perm.id === 'perm-admin' || perm.name === 'Administrative Access') {
-        if (!canGrantAdmin(currentUser, staff)) {
-          showNotification({
-            type: 'error',
-            message: 'Administrative access can only be granted to active consulting physicians.',
-          });
-          return;
-        }
-      }
-
-      setPendingCapAction({
-        staffId: staff.id,
-        staffName: staff.staffName,
-        permissionId: perm.id,
-        permissionName: perm.name,
-        permissionDescription: perm.description,
-        action: 'grant',
-        alsoRevokePrescription: false,
-      });
-    }
-  };
-
-  const handleExecuteCapabilityAction = async () => {
-    if (!pendingCapAction) return;
-
-    setIsCapActionLoading(true);
-    try {
-      // In-flight simulated request delay
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      const updates: Array<{ permissionId: string; enabled: boolean }> = [
-        {
-          permissionId: pendingCapAction.permissionId,
-          enabled: pendingCapAction.action === 'grant',
-        },
-      ];
-
-      if (pendingCapAction.alsoRevokePrescription) {
-        const targetStaff = staffAccessList.find((s) => s.id === pendingCapAction.staffId);
-        const presc = targetStaff?.permissions.find(
-          (p) => p.id === 'perm-presc' || p.name === 'Prescription Authoring'
-        );
-        if (presc && presc.enabled) {
-          updates.push({
-            permissionId: presc.id,
-            enabled: false,
-          });
-        }
-      }
-
-      updateStaffCapabilities(
-        pendingCapAction.staffId,
-        updates,
-        currentUser?.name || 'Dr. Marcus Vance (Managing Director)'
-      );
-
-      if (pendingCapAction.alsoRevokePrescription) {
-        showNotification({
-          type: 'success',
-          message: `Revoked EMR Records Access and dependent Prescription Authoring for ${pendingCapAction.staffName}.`,
-        });
-      } else {
-        const actionVerb = pendingCapAction.action === 'grant' ? 'granted' : 'revoked';
-        showNotification({
-          type: 'success',
-          message: `Capability "${pendingCapAction.permissionName}" successfully ${actionVerb} for ${pendingCapAction.staffName}.`,
-        });
-      }
-
-      setPendingCapAction(null);
-    } catch {
-      showNotification({
-        type: 'error',
-        message: `Failed to update capability "${pendingCapAction.permissionName}". Operational state preserved.`,
-      });
-    } finally {
-      setIsCapActionLoading(false);
-    }
-  };
+  // Personnel clearance handlers
 
   const handleGrant = (id: string, name: string) => {
     grantStaffAccess(id, 'Access clearance authorized by Managing Director');
@@ -465,13 +434,21 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check if any modal dialog is currently open on top of the console
       const isAnyModalOpen =
-        pendingCapAction !== null ||
         isDiscardModalOpen ||
         deleteTarget !== null ||
         isAddModalOpen ||
         isProvisionConfirmOpen ||
         approveTarget !== null ||
-        rejectTarget !== null;
+        rejectTarget !== null ||
+        isCreateModuleModalOpen ||
+        isEditModuleModalOpen ||
+        isDeleteModuleModalOpen ||
+        includeAccessTarget !== null ||
+        removeAccessTarget !== null ||
+        isAddMemberModalOpen ||
+        removeMemberTarget !== null ||
+        isConsoleAddModuleOpen ||
+        consoleConfirmRemoveModule !== null;
 
       if (e.key === 'Escape') {
         if (isAnyModalOpen) {
@@ -509,13 +486,21 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
     const handleFocusIn = (e: FocusEvent) => {
       const isAnyModalOpen =
-        pendingCapAction !== null ||
         isDiscardModalOpen ||
         deleteTarget !== null ||
         isAddModalOpen ||
         isProvisionConfirmOpen ||
         approveTarget !== null ||
-        rejectTarget !== null;
+        rejectTarget !== null ||
+        isCreateModuleModalOpen ||
+        isEditModuleModalOpen ||
+        isDeleteModuleModalOpen ||
+        includeAccessTarget !== null ||
+        removeAccessTarget !== null ||
+        isAddMemberModalOpen ||
+        removeMemberTarget !== null ||
+        isConsoleAddModuleOpen ||
+        consoleConfirmRemoveModule !== null;
 
       if (isAnyModalOpen) return;
 
@@ -536,7 +521,6 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     };
   }, [
     selectedStaffId,
-    pendingCapAction,
     isDiscardModalOpen,
     deleteTarget,
     isAddModalOpen,
@@ -544,11 +528,23 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     isProvisionConfirmOpen,
     approveTarget,
     rejectTarget,
+    isCreateModuleModalOpen,
+    isEditModuleModalOpen,
+    isDeleteModuleModalOpen,
+    includeAccessTarget,
+    removeAccessTarget,
+    isAddMemberModalOpen,
+    removeMemberTarget,
+    isConsoleAddModuleOpen,
+    consoleConfirmRemoveModule,
   ]);
 
   // Handlers for Onboarding Approvals
   const handleApprovePending = (req: PendingStaffApproval) => {
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const defaultModuleId = req.role === 'doctor' ? 'mod-clinical' : 'mod-frontdesk';
+    const defaultModuleName = req.role === 'doctor' ? 'Clinical' : 'Front Desk';
+
     const newRecord: StaffAccessRecord = {
       id: `acc-${req.role}-${Date.now()}`,
       role: req.role,
@@ -558,8 +554,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       badgeNumber: req.badgeNumber,
       status: 'granted',
       lastUpdated: timestamp,
-      updatedBy: 'Dr. Marcus Vance (Managing Director)',
+      updatedBy: currentUser?.name || 'Dr. Marcus Vance (Managing Director)',
       reason: 'Onboarding application authorized by Managing Director',
+      moduleIds: [defaultModuleId],
       permissions:
         req.role === 'doctor'
           ? DEFAULT_DOCTOR_PERMISSIONS
@@ -568,7 +565,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
     addStaffAccount(
       newRecord,
-      `Approved onboarding request for ${req.staffName} as ${req.role === 'doctor' ? 'Staff Physician' : 'Receptionist'}`
+      `Approved onboarding request for ${req.staffName} as ${req.role === 'doctor' ? 'Staff Physician' : 'Receptionist'}. Added to default module: ${defaultModuleName}.`
+    );
+
+    addMember(
+      defaultModuleId,
+      newRecord.id,
+      'Default module assignment on onboarding approval'
     );
 
     if (req.role === 'doctor' && addDoctor) {
@@ -590,7 +593,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     setPendingApprovals((prev) => prev.filter((p) => p.id !== req.id));
     showNotification({
       type: 'success',
-      message: `Approved and granted clearance for ${req.staffName} (${req.role === 'doctor' ? 'Doctor' : 'Receptionist'}).`,
+      message: `Approved and granted clearance for ${req.staffName} (${req.role === 'doctor' ? 'Doctor' : 'Receptionist'}). Added to default module: ${defaultModuleName}.`,
     });
   };
 
@@ -657,6 +660,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     const savedName = addFormName.trim();
     const savedRole = addFormRole;
 
+    const defaultModuleId = addFormRole === 'doctor' ? 'mod-clinical' : 'mod-frontdesk';
+    const defaultModuleName = addFormRole === 'doctor' ? 'Clinical' : 'Front Desk';
+
     const newRecord: StaffAccessRecord = {
       id: `acc-${addFormRole}-${Date.now()}`,
       role: addFormRole,
@@ -666,8 +672,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       badgeNumber: assignedBadge,
       status: 'granted',
       lastUpdated: timestamp,
-      updatedBy: 'Dr. Marcus Vance (Managing Director)',
+      updatedBy: currentUser?.name || 'Dr. Marcus Vance (Managing Director)',
       reason: 'Directly provisioned and authorized by Managing Director',
+      moduleIds: [defaultModuleId],
       permissions:
         addFormRole === 'doctor'
           ? DEFAULT_DOCTOR_PERMISSIONS
@@ -676,7 +683,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
     addStaffAccount(
       newRecord,
-      `Directly provisioned new ${addFormRole === 'doctor' ? 'Doctor' : 'Receptionist'} account for ${savedName}`
+      `Directly provisioned new ${addFormRole === 'doctor' ? 'Doctor' : 'Receptionist'} account for ${savedName}. Added to default module: ${defaultModuleName}.`
+    );
+
+    addMember(
+      defaultModuleId,
+      newRecord.id,
+      'Default module assignment on account provisioning'
     );
 
     if (addFormRole === 'doctor' && addDoctor) {
@@ -699,7 +712,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     resetAddForm();
     showNotification({
       type: 'success',
-      message: `Directly provisioned and granted clearance for ${savedName} (${savedRole === 'doctor' ? 'Doctor' : 'Receptionist'}).`,
+      message: `Directly provisioned and granted clearance for ${savedName} (${savedRole === 'doctor' ? 'Doctor' : 'Receptionist'}). Added to default module: ${defaultModuleName}.`,
     });
   };
 
@@ -768,6 +781,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     { value: 'access_granted', label: 'Access Granted' },
     { value: 'access_revoked', label: 'Access Revoked' },
     { value: 'permission_updated', label: 'Permission Updated' },
+    { value: 'module_created', label: 'Module Created' },
+    { value: 'module_renamed', label: 'Module Renamed' },
+    { value: 'module_deleted', label: 'Module Deleted' },
+    { value: 'module_access_included', label: 'Access Included' },
+    { value: 'module_access_removed', label: 'Access Removed' },
+    { value: 'module_member_added', label: 'Member Added' },
+    { value: 'module_member_removed', label: 'Member Removed' },
     { value: 'clearance_rejected', label: 'Clearance Rejected' },
     { value: 'account_deleted', label: 'Account Deleted' },
     { value: 'security_override', label: 'Security Override' },
@@ -921,6 +941,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             label: `Edit Users (${staffAccessList.length})`,
           },
           {
+            id: 'modules' as const,
+            label: `Modules (${modules.length})`,
+          },
+          {
             id: 'ledger' as const,
             label: `Security Ledger (${accessAuditLog.length})`,
           },
@@ -933,6 +957,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               onClick={() => {
                 setSelectedSubTab(tab.id);
                 setSelectedStaffId(null);
+                setSelectedModuleId(null);
               }}
               className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 ${
                 isActive
@@ -1100,123 +1125,155 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                         </div>
                       </div>
 
-                      {/* Authorized Capabilities Switchboard */}
-                      <div>
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2 flex items-center justify-between">
-                          <span>Authorized Capabilities & Authorities</span>
-                          <span className="text-[10px] text-slate-400 font-normal">
-                            Managing Director Controls
-                          </span>
+                      {/* Person's Modules Section */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                              Assigned Modules
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setConsoleAddModuleSelectedId('');
+                              setConsoleAddModuleAdminConfirmName('');
+                              setConsoleAddModuleAdminReason('');
+                              setIsConsoleAddModuleOpen(true);
+                            }}
+                          >
+                            Add to Module
+                          </Button>
                         </div>
 
-                        {/* Suspended Account Notice (Requirement 6) */}
+                        {/* Suspended Account Notice */}
                         {isRevoked && (
-                          <div className="mb-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-                            <span>Access revoked. Restore access to edit capabilities.</span>
+                          <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
+                            Access revoked. Restore access to activate effective permissions.
                           </div>
                         )}
 
-                        <div className="space-y-2 divide-y divide-slate-200/70 dark:divide-slate-700/60">
-                          {(() => {
-                            let permissionsToDisplay = activeStaff.permissions;
-                            if (activeStaff.role === 'doctor') {
-                              const hasAdmin = permissionsToDisplay.some(
-                                (p) => p.id === 'perm-admin' || p.name === 'Administrative Access'
-                              );
-                              if (!hasAdmin) {
-                                permissionsToDisplay = [
-                                  {
-                                    id: 'perm-admin',
-                                    name: 'Administrative Access',
-                                    description: 'Clinic configuration, staff access control, and master ledger management',
-                                    enabled: Boolean(activeStaff.isOriginalAdmin || activeStaff.id === 'acc-doc-1'),
-                                  },
-                                  ...permissionsToDisplay,
-                                ];
-                              }
-                            } else if (activeStaff.role === 'receptionist') {
-                              const defaultIds = ['perm-register', 'perm-checkin', 'perm-payment'];
-                              const list = [...permissionsToDisplay];
-                              for (const def of DEFAULT_RECEPTIONIST_PERMISSIONS) {
-                                if (!list.some((p) => p.id === def.id || p.name.toLowerCase() === def.name.toLowerCase())) {
-                                  list.push(def);
+                        {/* Table of Person's Assigned Modules */}
+                        <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-lg">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Module</TableHead>
+                                <TableHead>Accesses</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {(() => {
+                                const staffMods = getStaffModules(activeStaff);
+                                if (staffMods.length === 0) {
+                                  return (
+                                    <TableRow>
+                                      <TableCell colSpan={3} className="py-4 text-center text-xs text-slate-500">
+                                        Not assigned to any modules.
+                                      </TableCell>
+                                    </TableRow>
+                                  );
                                 }
+                                return staffMods.map((mod) => {
+                                  const removeCheck = canRemoveMember(
+                                    currentUser,
+                                    mod,
+                                    activeStaff,
+                                    modules,
+                                    staffAccessList
+                                  );
+
+                                  return (
+                                    <TableRow key={mod.id}>
+                                      <TableCell>
+                                        <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                                          {mod.name}
+                                        </div>
+                                        {mod.description && (
+                                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            {mod.description}
+                                          </div>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                                        {mod.accessIds.length} {mod.accessIds.length === 1 ? 'access' : 'accesses'}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        <Button
+                                          size="xs"
+                                          variant="outline"
+                                          disabled={!removeCheck.allowed}
+                                          title={!removeCheck.allowed ? removeCheck.reason : undefined}
+                                          onClick={() =>
+                                            setConsoleConfirmRemoveModule({
+                                              moduleId: mod.id,
+                                              moduleName: mod.name,
+                                            })
+                                          }
+                                        >
+                                          Remove
+                                        </Button>
+                                        {!removeCheck.allowed && removeCheck.reason && (
+                                          <div className="text-[10px] text-slate-500 mt-1">
+                                            {removeCheck.reason}
+                                          </div>
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                });
+                              })()}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Read-only Effective Accesses Section */}
+                        <div className="pt-2">
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
+                            Effective Accesses
+                          </div>
+                          {isRevoked ? (
+                            <div className="text-xs text-slate-500 italic p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800">
+                              Account access is suspended. Effective accesses are inactive until restored.
+                            </div>
+                          ) : (
+                            (() => {
+                              const effectiveAccesses = getStaffEffectiveAccessesWithSources(activeStaff);
+                              if (effectiveAccesses.length === 0) {
+                                return (
+                                  <div className="text-xs text-slate-500 italic p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800">
+                                    No effective accesses (person belongs to no active modules).
+                                  </div>
+                                );
                               }
-                              permissionsToDisplay = list.filter((p) => defaultIds.includes(p.id));
-                            }
-
-                            return permissionsToDisplay.map((perm) => {
-                              const isGranted = perm.enabled;
-
-                              // Dependency Rule (Requirement 5):
-                              // Prescription Authoring cannot be granted while EMR Records Access is Not granted.
-                              const isEmrGranted = activeStaff.permissions.some(
-                                (p) => (p.id === 'perm-emr' || p.name === 'EMR Records Access') && p.enabled
-                              );
-                              const isPrescriptionAuth =
-                                perm.id === 'perm-presc' || perm.name === 'Prescription Authoring';
-                              const isGrantDisabledByDependency = !isGranted && isPrescriptionAuth && !isEmrGranted;
-
-                              // Admin Revocation Protection Rule
-                              const isAdminPerm = perm.id === 'perm-admin' || perm.name === 'Administrative Access';
-                              const adminRevokeCheck =
-                                isAdminPerm && isGranted
-                                  ? canRevokeAdmin(currentUser, activeStaff, staffAccessList)
-                                  : { allowed: true };
-                              const isRevokeBlockedByProtection = isGranted && !adminRevokeCheck.allowed;
-
-                              const isDisabled =
-                                isRevoked || isCapActionLoading || isGrantDisabledByDependency || isRevokeBlockedByProtection;
-
-                              const tooltipText = isRevokeBlockedByProtection
-                                ? adminRevokeCheck.reason
-                                : isGrantDisabledByDependency
-                                ? 'Requires EMR Records Access'
-                                : isRevoked
-                                ? 'Access revoked. Restore access to edit capabilities.'
-                                : undefined;
-
                               return (
-                                <div
-                                  key={perm.id}
-                                  className="pt-2.5 pb-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                                >
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                                      {perm.name}
+                                <div className="border border-slate-200 dark:border-slate-800 rounded-lg divide-y divide-slate-100 dark:divide-slate-800">
+                                  {effectiveAccesses.map((ea) => (
+                                    <div
+                                      key={ea.accessId}
+                                      className="p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs"
+                                    >
+                                      <div>
+                                        <div className="font-semibold text-slate-900 dark:text-slate-100">
+                                          {ea.label}
+                                        </div>
+                                        {ea.description && (
+                                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            {ea.description}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
+                                        via {ea.sourceModuleNames.join(', ')}
+                                      </div>
                                     </div>
-                                    <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                                      {perm.description}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-3 shrink-0">
-                                    {/* 1. Status Label: plain text "Granted" or "Not granted" using app's existing badge style. Same style for both */}
-                                    <Badge variant="neutral" size="sm">
-                                      {isGranted ? 'Granted' : 'Not granted'}
-                                    </Badge>
-
-                                    {/* 2. Action Button: If Granted -> standard secondary button "Revoke"; If Not granted -> standard primary button "Grant" */}
-                                    <div className="inline-block" title={tooltipText}>
-                                      <Button
-                                        size="sm"
-                                        variant={isGranted ? 'secondary' : 'primary'}
-                                        disabled={isDisabled}
-                                        aria-label={`${isGranted ? 'Revoke' : 'Grant'} ${perm.name}`}
-                                        title={tooltipText}
-                                        onClick={() =>
-                                          handleRequestCapabilityAction(activeStaff, perm, isGranted)
-                                        }
-                                      >
-                                        {isGranted ? 'Revoke' : 'Grant'}
-                                      </Button>
-                                    </div>
-                                  </div>
+                                  ))}
                                 </div>
                               );
-                            });
-                          })()}
+                            })()
+                          )}
                         </div>
                       </div>
 
@@ -1337,7 +1394,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                       <TableHead>MRN</TableHead>
                                     )}
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Permissions</TableHead>
+                                    <TableHead>Modules</TableHead>
                                     <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                                   </TableRow>
                                 </TableHeader>
@@ -1347,8 +1404,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                       (staff as { specialization?: string }).specialization ||
                                       doctors.find((d) => d.name.toLowerCase() === staff.staffName.toLowerCase())
                                         ?.specialization;
-                                    const grantedCount = staff.permissions.filter((p) => p.enabled).length;
-                                    const totalCount = staff.permissions.length;
+                                    const staffMods = getStaffModules(staff);
+                                    const moduleNames = staffMods.map((m) => m.name).join(', ') || 'No modules';
 
                                     return (
                                       <TableRow key={staff.id}>
@@ -1381,7 +1438,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                           {staff.status === 'revoked' ? 'Revoked' : 'Active'}
                                         </TableCell>
                                         <TableCell className="text-slate-700 dark:text-slate-300">
-                                          {grantedCount} of {totalCount} granted
+                                          {moduleNames}
                                         </TableCell>
                                         <TableCell className="text-right whitespace-nowrap">
                                           <Button
@@ -1415,6 +1472,404 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 </div>
               )}
             </>
+          )}
+        </div>
+      )}
+
+      {/* SUB-MODULE: MODULES */}
+      {selectedSubTab === 'modules' && (
+        <div className="space-y-6 animate-fadeIn">
+          {selectedModuleId ? (
+            (() => {
+              const currentModule = modules.find((m) => m.id === selectedModuleId);
+              if (!currentModule) {
+                return (
+                  <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
+                    <p>Selected module could not be found.</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3 gap-2"
+                      onClick={() => setSelectedModuleId(null)}
+                    >
+                      <ArrowLeft className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      Back to Modules List
+                    </Button>
+                  </div>
+                );
+              }
+
+              const deleteCheck = canDeleteModule(currentUser, currentModule, modules);
+              const membersCount = currentModule.memberIds.length;
+              const paginatedMemberIds = currentModule.memberIds.slice(
+                (moduleMembersPage - 1) * 10,
+                moduleMembersPage * 10
+              );
+
+              return (
+                <div className="space-y-6">
+                  {/* Top Bar with Back Button */}
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-xs w-fit"
+                      onClick={() => setSelectedModuleId(null)}
+                    >
+                      <ArrowLeft className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      Back to Modules
+                    </Button>
+                  </div>
+
+                  {/* Module Header Card */}
+                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <CardHeader
+                      action={
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditModuleName(currentModule.name);
+                              setEditModuleDesc(currentModule.description || '');
+                              setEditModuleError('');
+                              setIsEditModuleModalOpen(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <div className="inline-block" title={!deleteCheck.allowed ? deleteCheck.reason : undefined}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={!deleteCheck.allowed}
+                              onClick={() => {
+                                setDeleteModuleInput('');
+                                setIsDeleteModuleModalOpen(true);
+                              }}
+                            >
+                              Delete Module
+                            </Button>
+                          </div>
+                        </div>
+                      }
+                    >
+                      <div>
+                        <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                          {currentModule.name}
+                        </CardTitle>
+                        {currentModule.description && (
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            {currentModule.description}
+                          </div>
+                        )}
+                        {!deleteCheck.allowed && deleteCheck.reason && (
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                            {deleteCheck.reason}
+                          </div>
+                        )}
+                      </div>
+                    </CardHeader>
+                  </Card>
+
+                  {/* Accesses Table Card */}
+                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Module Accesses ({currentModule.accessIds.length} included)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Access</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right whitespace-nowrap">Action</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {ACCESS_CATALOG.map((item) => {
+                              const isIncluded = currentModule.accessIds.includes(item.id);
+                              const includeCheck = !isIncluded
+                                ? canIncludeAccess(currentUser, currentModule, item.id, modules)
+                                : { allowed: true };
+                              const removeCheck = isIncluded
+                                ? canRemoveAccess(currentUser, currentModule, item.id, modules)
+                                : { allowed: true };
+
+                              const isActionDisabled = isIncluded ? !removeCheck.allowed : !includeCheck.allowed;
+                              const helperText = isIncluded ? removeCheck.reason : includeCheck.reason;
+
+                              return (
+                                <TableRow key={item.id}>
+                                  <TableCell>
+                                    <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                                      {item.label}
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                      {item.description}
+                                    </div>
+                                    {helperText && (
+                                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 italic">
+                                        {helperText}
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                    {isIncluded ? 'Included' : 'Not included'}
+                                  </TableCell>
+                                  <TableCell className="text-right whitespace-nowrap">
+                                    {isIncluded ? (
+                                      <Button
+                                        size="xs"
+                                        variant="outline"
+                                        disabled={isActionDisabled}
+                                        title={helperText}
+                                        onClick={() =>
+                                          setRemoveAccessTarget({
+                                            module: currentModule,
+                                            accessId: item.id,
+                                            label: item.label,
+                                          })
+                                        }
+                                      >
+                                        Remove
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="xs"
+                                        variant="primary"
+                                        disabled={isActionDisabled}
+                                        title={helperText}
+                                        onClick={() =>
+                                          setIncludeAccessTarget({
+                                            module: currentModule,
+                                            accessId: item.id,
+                                            label: item.label,
+                                          })
+                                        }
+                                      >
+                                        Include
+                                      </Button>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Members Table Card */}
+                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <CardHeader
+                      action={
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setAddMemberSelectedStaffId('');
+                            setAddMemberAdminConfirmName('');
+                            setAddMemberAdminReason('');
+                            setIsAddMemberModalOpen(true);
+                          }}
+                        >
+                          Add Person
+                        </Button>
+                      }
+                    >
+                      <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Module Members ({membersCount})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Staff Type</TableHead>
+                              <TableHead>ID</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {membersCount === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={5} className="py-6 text-center text-xs text-slate-500">
+                                  No members assigned to this module.
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              paginatedMemberIds.map((mid) => {
+                                const staff = staffAccessList.find(
+                                  (s) => s.id === mid || s.badgeNumber === mid || s.staffName === mid
+                                );
+                                const staffName = staff?.staffName || mid;
+                                const staffTitle = staff?.staffTitle || 'Staff Member';
+                                const staffType =
+                                  staff?.role === 'doctor'
+                                    ? 'Doctor'
+                                    : staff?.role === 'receptionist'
+                                    ? 'Receptionist'
+                                    : staff?.role === 'patient'
+                                    ? 'Patient'
+                                    : 'Staff';
+                                const badgeNumber = staff?.badgeNumber || mid;
+                                const isRevokedStatus = staff?.status === 'revoked';
+                                const removeCheck = staff
+                                  ? canRemoveMember(currentUser, currentModule, staff, modules, staffAccessList)
+                                  : { allowed: true };
+
+                                return (
+                                  <TableRow key={mid}>
+                                    <TableCell>
+                                      <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                                        {staffName}
+                                      </div>
+                                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {staffTitle}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                                      {staffType}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                                      {badgeNumber}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                                      {isRevokedStatus ? 'Revoked' : 'Active'}
+                                    </TableCell>
+                                    <TableCell className="text-right whitespace-nowrap">
+                                      <Button
+                                        size="xs"
+                                        variant="outline"
+                                        disabled={!removeCheck.allowed}
+                                        title={!removeCheck.allowed ? removeCheck.reason : undefined}
+                                        onClick={() => {
+                                          if (staff) {
+                                            setRemoveMemberTarget({
+                                              module: currentModule,
+                                              staff,
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        Remove
+                                      </Button>
+                                      {!removeCheck.allowed && removeCheck.reason && (
+                                        <div className="text-[10px] text-slate-500 mt-1">
+                                          {removeCheck.reason}
+                                        </div>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      {membersCount > 10 && (
+                        <Pagination
+                          currentPage={moduleMembersPage}
+                          totalItems={membersCount}
+                          pageSize={10}
+                          onPageChange={setModuleMembersPage}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()
+          ) : (
+            /* Modules List View */
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+              <CardHeader
+                action={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCreateModuleName('');
+                      setCreateModuleDesc('');
+                      setCreateModuleError('');
+                      setIsCreateModuleModalOpen(true);
+                    }}
+                  >
+                    Create Module
+                  </Button>
+                }
+              >
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    Modules ({modules.length})
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Module</TableHead>
+                        <TableHead>Accesses</TableHead>
+                        <TableHead>Members</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {modules.slice((modulesPage - 1) * 10, modulesPage * 10).map((mod) => (
+                        <TableRow key={mod.id}>
+                          <TableCell>
+                            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                              {mod.name}
+                            </div>
+                            {mod.description && (
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                {mod.description}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                            {mod.accessIds.length} {mod.accessIds.length === 1 ? 'access' : 'accesses'}
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                            {mod.memberIds.length} {mod.memberIds.length === 1 ? 'member' : 'members'}
+                          </TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedModuleId(mod.id);
+                                setModuleMembersPage(1);
+                              }}
+                            >
+                              Open
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {modules.length > 10 && (
+                  <Pagination
+                    currentPage={modulesPage}
+                    totalItems={modules.length}
+                    pageSize={10}
+                    onPageChange={setModulesPage}
+                  />
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
       )}
@@ -1812,102 +2267,6 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         )}
       </Modal>
 
-      {/* Capability Confirmation Modal (Requirements 3, 4, 5) */}
-      <Modal
-        isOpen={pendingCapAction !== null}
-        onClose={() => {
-          if (!isCapActionLoading) setPendingCapAction(null);
-        }}
-        title={
-          pendingCapAction?.action === 'grant'
-            ? 'Confirm Grant Capability'
-            : pendingCapAction?.alsoRevokePrescription
-            ? 'Confirm Revoke Capability & Dependencies'
-            : 'Confirm Revoke Capability'
-        }
-        description="Administrative confirmation for workstation authority"
-        maxWidth="md"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPendingCapAction(null)}
-              disabled={isCapActionLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant={pendingCapAction?.action === 'grant' ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={handleExecuteCapabilityAction}
-              isLoading={isCapActionLoading}
-            >
-              Confirm
-            </Button>
-          </>
-        }
-      >
-        {pendingCapAction && (
-          <div className="space-y-4 text-xs">
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Personnel Name:</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100">
-                  {pendingCapAction.staffName}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Capability:</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {pendingCapAction.permissionName}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Requested Action:</span>
-                <span className="font-medium capitalize text-slate-800 dark:text-slate-200">
-                  {pendingCapAction.action === 'grant' ? 'Grant Capability' : 'Revoke Capability'}
-                </span>
-              </div>
-            </div>
-
-            {/* Operational Effect Statement */}
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-start gap-2.5">
-              <span className="w-2 h-2 rounded-full bg-slate-400 mt-1 shrink-0" />
-              <div className="space-y-0.5">
-                <span className="font-semibold text-slate-900 dark:text-slate-100 block">
-                  Operational Effect:
-                </span>
-                <span className="text-slate-600 dark:text-slate-400">
-                  {pendingCapAction.action === 'grant'
-                    ? `Granting this authority allows ${pendingCapAction.staffName} to ${pendingCapAction.permissionDescription.toLowerCase()}.`
-                    : `Revoking this authority prevents ${pendingCapAction.staffName} from ${pendingCapAction.permissionDescription.toLowerCase()}.`}
-                </span>
-              </div>
-            </div>
-
-            {/* Dependency Policy Warning (Requirement 5) */}
-            {pendingCapAction.alsoRevokePrescription && (
-              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-start gap-2.5">
-                <span className="w-2 h-2 rounded-full bg-slate-500 mt-1 shrink-0" />
-                <div className="space-y-0.5">
-                  <span className="font-semibold text-slate-900 dark:text-slate-100 block">
-                    Dependency Policy Warning:
-                  </span>
-                  <span className="text-slate-600 dark:text-slate-400">
-                    Prescription Authoring requires active EMR Records Access. Revoking EMR Records Access prompts to also revoke Prescription Authoring for {pendingCapAction.staffName}. Both capabilities will be revoked upon confirmation.
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <p className="text-slate-600 dark:text-slate-400">
-              Are you sure you want to proceed with this administrative change? This action will be logged in the Security Audit Ledger.
-            </p>
-          </div>
-        )}
-      </Modal>
-
       {/* Unsaved Changes Confirmation Modal (Requirement 3) */}
       <Modal
         isOpen={isDiscardModalOpen}
@@ -2171,6 +2530,699 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           </div>
         )}
       </Modal>
+
+      {/* Create Module Modal */}
+      <Modal
+        isOpen={isCreateModuleModalOpen}
+        onClose={() => {
+          setIsCreateModuleModalOpen(false);
+          setCreateModuleError('');
+        }}
+        title="Create Module"
+        maxWidth="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setIsCreateModuleModalOpen(false);
+                setCreateModuleError('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                const name = createModuleName.trim();
+                if (!name) {
+                  setCreateModuleError('Module name is required.');
+                  return;
+                }
+                if (modules.some((m) => m.name.toLowerCase() === name.toLowerCase())) {
+                  setCreateModuleError('A module with this name already exists.');
+                  return;
+                }
+                const res = createModule(name, createModuleDesc.trim());
+                if (res.success) {
+                  setIsCreateModuleModalOpen(false);
+                  const created = modules.find((m) => m.name.toLowerCase() === name.toLowerCase());
+                  if (created) setSelectedModuleId(created.id);
+                  showNotification({
+                    type: 'success',
+                    message: `Module "${name}" created successfully.`,
+                  });
+                } else {
+                  setCreateModuleError(res.error || 'Failed to create module.');
+                }
+              }}
+            >
+              Create
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label={<>Module Name <span className="text-rose-500">*</span></>}
+            placeholder="e.g. Clinical Research"
+            value={createModuleName}
+            onChange={(e) => {
+              setCreateModuleName(e.target.value);
+              if (createModuleError) setCreateModuleError('');
+            }}
+            error={createModuleError}
+          />
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Description (optional)
+            </label>
+            <textarea
+              className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 resize-none h-20"
+              placeholder="Operational scope and privileges granted by this module..."
+              value={createModuleDesc}
+              onChange={(e) => setCreateModuleDesc(e.target.value)}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Module Modal */}
+      <Modal
+        isOpen={isEditModuleModalOpen}
+        onClose={() => {
+          setIsEditModuleModalOpen(false);
+          setEditModuleError('');
+        }}
+        title="Edit Module"
+        maxWidth="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setIsEditModuleModalOpen(false);
+                setEditModuleError('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                if (!selectedModuleId) return;
+                const name = editModuleName.trim();
+                if (!name) {
+                  setEditModuleError('Module name is required.');
+                  return;
+                }
+                if (
+                  modules.some(
+                    (m) => m.id !== selectedModuleId && m.name.toLowerCase() === name.toLowerCase()
+                  )
+                ) {
+                  setEditModuleError('Another module with this name already exists.');
+                  return;
+                }
+                const res = renameModule(selectedModuleId, name, editModuleDesc.trim());
+                if (res.success) {
+                  setIsEditModuleModalOpen(false);
+                  showNotification({
+                    type: 'success',
+                    message: `Module updated successfully.`,
+                  });
+                } else {
+                  setEditModuleError(res.error || 'Failed to update module.');
+                }
+              }}
+            >
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label={<>Module Name <span className="text-rose-500">*</span></>}
+            value={editModuleName}
+            onChange={(e) => {
+              setEditModuleName(e.target.value);
+              if (editModuleError) setEditModuleError('');
+            }}
+            error={editModuleError}
+          />
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Description (optional)
+            </label>
+            <textarea
+              className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 resize-none h-20"
+              value={editModuleDesc}
+              onChange={(e) => setEditModuleDesc(e.target.value)}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Module Modal */}
+      {selectedModuleId && (() => {
+        const currentMod = modules.find((m) => m.id === selectedModuleId);
+        if (!currentMod) return null;
+        const isMatched = deleteModuleInput.trim() === currentMod.name.trim();
+
+        return (
+          <Modal
+            isOpen={isDeleteModuleModalOpen}
+            onClose={() => {
+              setIsDeleteModuleModalOpen(false);
+              setDeleteModuleInput('');
+            }}
+            title="Delete Module"
+            maxWidth="md"
+            footer={
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsDeleteModuleModalOpen(false);
+                    setDeleteModuleInput('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={!isMatched}
+                  onClick={() => {
+                    const res = deleteModule(currentMod.id);
+                    if (res.success) {
+                      setIsDeleteModuleModalOpen(false);
+                      setSelectedModuleId(null);
+                      setDeleteModuleInput('');
+                      showNotification({
+                        type: 'success',
+                        message: `Module "${currentMod.name}" deleted successfully.`,
+                      });
+                    } else {
+                      showNotification({
+                        type: 'error',
+                        message: res.error || 'Failed to delete module.',
+                      });
+                    }
+                  }}
+                >
+                  Confirm Delete
+                </Button>
+              </>
+            }
+          >
+            <div className="space-y-4">
+              <p className="text-xs text-slate-700 dark:text-slate-300">
+                Are you sure you want to permanently delete module <strong>{currentMod.name}</strong>? This action cannot be undone.
+              </p>
+              <Input
+                label={<>Type <strong>{currentMod.name}</strong> to confirm deletion</>}
+                placeholder={currentMod.name}
+                value={deleteModuleInput}
+                onChange={(e) => setDeleteModuleInput(e.target.value)}
+              />
+            </div>
+          </Modal>
+        );
+      })()}
+
+      {/* Include Access Modal */}
+      {includeAccessTarget && (
+        <Modal
+          isOpen={true}
+          onClose={() => setIncludeAccessTarget(null)}
+          title="Include Access"
+          maxWidth="md"
+          footer={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIncludeAccessTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  const res = includeAccess(
+                    includeAccessTarget.module.id,
+                    includeAccessTarget.accessId
+                  );
+                  if (res.success) {
+                    showNotification({
+                      type: 'success',
+                      message: `Included access "${includeAccessTarget.label}" in module "${includeAccessTarget.module.name}".`,
+                    });
+                  } else {
+                    showNotification({
+                      type: 'error',
+                      message: res.error || 'Failed to include access.',
+                    });
+                  }
+                  setIncludeAccessTarget(null);
+                }}
+              >
+                Include Access
+              </Button>
+            </>
+          }
+        >
+          <p className="text-xs text-slate-700 dark:text-slate-300">
+            Include <strong>{includeAccessTarget.label}</strong> in module <strong>{includeAccessTarget.module.name}</strong>?
+          </p>
+        </Modal>
+      )}
+
+      {/* Remove Access Modal */}
+      {removeAccessTarget && (
+        <Modal
+          isOpen={true}
+          onClose={() => setRemoveAccessTarget(null)}
+          title="Remove Access"
+          maxWidth="md"
+          footer={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRemoveAccessTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  const res = removeAccess(
+                    removeAccessTarget.module.id,
+                    removeAccessTarget.accessId
+                  );
+                  if (res.success) {
+                    showNotification({
+                      type: 'success',
+                      message: `Removed access "${removeAccessTarget.label}" from module "${removeAccessTarget.module.name}".`,
+                    });
+                  } else {
+                    showNotification({
+                      type: 'error',
+                      message: res.error || 'Failed to remove access.',
+                    });
+                  }
+                  setRemoveAccessTarget(null);
+                }}
+              >
+                Remove Access
+              </Button>
+            </>
+          }
+        >
+          <p className="text-xs text-slate-700 dark:text-slate-300">
+            Remove <strong>{removeAccessTarget.label}</strong> from module <strong>{removeAccessTarget.module.name}</strong>?
+          </p>
+        </Modal>
+      )}
+
+      {/* Add Member to Module Modal */}
+      {selectedModuleId && (() => {
+        const currentMod = modules.find((m) => m.id === selectedModuleId);
+        if (!currentMod) return null;
+        const isAdministration = currentMod.id === 'mod-admin' || currentMod.accessIds.includes('administrativeAccess');
+        const availableStaff = staffAccessList.filter(
+          (s) => !currentMod.memberIds.includes(s.id) && s.status !== 'revoked'
+        );
+        const selectedStaff = staffAccessList.find((s) => s.id === addMemberSelectedStaffId);
+        const isDocOnlyIgnored =
+          selectedStaff &&
+          currentMod.accessIds.includes('prescriptionAuthoring') &&
+          selectedStaff.role !== 'doctor';
+
+        const isAdminNameMatched =
+          selectedStaff &&
+          addMemberAdminConfirmName.trim().toLowerCase() === selectedStaff.staffName.trim().toLowerCase();
+        const isAdminReasonValid = Boolean(addMemberAdminReason.trim());
+
+        const isSubmitDisabled =
+          !addMemberSelectedStaffId ||
+          (isAdministration && (!isAdminNameMatched || !isAdminReasonValid));
+
+        return (
+          <Modal
+            isOpen={isAddMemberModalOpen}
+            onClose={() => {
+              setIsAddMemberModalOpen(false);
+              setAddMemberSelectedStaffId('');
+              setAddMemberAdminConfirmName('');
+              setAddMemberAdminReason('');
+            }}
+            title={`Add Person to ${currentMod.name}`}
+            maxWidth="md"
+            footer={
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsAddMemberModalOpen(false);
+                    setAddMemberSelectedStaffId('');
+                    setAddMemberAdminConfirmName('');
+                    setAddMemberAdminReason('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={isSubmitDisabled}
+                  onClick={() => {
+                    if (!selectedStaff) return;
+                    const res = addMember(
+                      currentMod.id,
+                      selectedStaff.id,
+                      isAdministration ? addMemberAdminReason.trim() : undefined
+                    );
+                    if (res.success) {
+                      showNotification({
+                        type: 'success',
+                        message: `Added ${selectedStaff.staffName} to ${currentMod.name}.`,
+                      });
+                      setIsAddMemberModalOpen(false);
+                      setAddMemberSelectedStaffId('');
+                      setAddMemberAdminConfirmName('');
+                      setAddMemberAdminReason('');
+                    } else {
+                      showNotification({
+                        type: 'error',
+                        message: res.error || 'Failed to add member.',
+                      });
+                    }
+                  }}
+                >
+                  Add Person
+                </Button>
+              </>
+            }
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  Select Staff Member
+                </label>
+                <Select
+                  value={addMemberSelectedStaffId}
+                  onChange={(e) => setAddMemberSelectedStaffId(e.target.value)}
+                  options={[
+                    { value: '', label: 'Select a staff member...' },
+                    ...availableStaff.map((s) => ({
+                      value: s.id,
+                      label: `${s.staffName} (${s.staffTitle} - ${s.badgeNumber})`,
+                    })),
+                  ]}
+                />
+              </div>
+
+              {isDocOnlyIgnored && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                  Prescription Authoring applies to doctors only.
+                </p>
+              )}
+
+              {isAdministration && selectedStaff && (
+                <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-700 dark:text-slate-300">
+                    Adding an administrator grants executive clearance and full security governance.
+                  </p>
+                  <Input
+                    label={<>Type full name <strong>{selectedStaff.staffName}</strong> to confirm</>}
+                    placeholder={selectedStaff.staffName}
+                    value={addMemberAdminConfirmName}
+                    onChange={(e) => setAddMemberAdminConfirmName(e.target.value)}
+                  />
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      Operational Reason <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 resize-none h-16"
+                      placeholder="Operational justification for granting administrative access..."
+                      value={addMemberAdminReason}
+                      onChange={(e) => setAddMemberAdminReason(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
+
+      {/* Remove Member Modal */}
+      {removeMemberTarget && (
+        <Modal
+          isOpen={true}
+          onClose={() => setRemoveMemberTarget(null)}
+          title="Remove Member"
+          maxWidth="md"
+          footer={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRemoveMemberTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  const res = removeMember(
+                    removeMemberTarget.module.id,
+                    removeMemberTarget.staff.id
+                  );
+                  if (res.success) {
+                    showNotification({
+                      type: 'success',
+                      message: `Removed ${removeMemberTarget.staff.staffName} from ${removeMemberTarget.module.name}.`,
+                    });
+                  } else {
+                    showNotification({
+                      type: 'error',
+                      message: res.error || 'Failed to remove member.',
+                    });
+                  }
+                  setRemoveMemberTarget(null);
+                }}
+              >
+                Remove Member
+              </Button>
+            </>
+          }
+        >
+          <p className="text-xs text-slate-700 dark:text-slate-300">
+            Remove <strong>{removeMemberTarget.staff.staffName}</strong> from module <strong>{removeMemberTarget.module.name}</strong>?
+          </p>
+        </Modal>
+      )}
+
+      {/* Console Add to Module Modal */}
+      {selectedStaffId && (() => {
+        const activeStaff = staffAccessList.find((s) => s.id === selectedStaffId);
+        if (!activeStaff) return null;
+        const staffMods = getStaffModules(activeStaff);
+        const unassignedMods = modules.filter((m) => !staffMods.some((sm) => sm.id === m.id));
+        const selectedMod = modules.find((m) => m.id === consoleAddModuleSelectedId);
+        const isAdministration = selectedMod && (selectedMod.id === 'mod-admin' || selectedMod.accessIds.includes('administrativeAccess'));
+        const isDocOnlyIgnored =
+          selectedMod &&
+          selectedMod.accessIds.includes('prescriptionAuthoring') &&
+          activeStaff.role !== 'doctor';
+
+        const isAdminNameMatched =
+          consoleAddModuleAdminConfirmName.trim().toLowerCase() === activeStaff.staffName.trim().toLowerCase();
+        const isAdminReasonValid = Boolean(consoleAddModuleAdminReason.trim());
+
+        const isSubmitDisabled =
+          !consoleAddModuleSelectedId ||
+          (isAdministration && (!isAdminNameMatched || !isAdminReasonValid));
+
+        return (
+          <Modal
+            isOpen={isConsoleAddModuleOpen}
+            onClose={() => {
+              setIsConsoleAddModuleOpen(false);
+              setConsoleAddModuleSelectedId('');
+              setConsoleAddModuleAdminConfirmName('');
+              setConsoleAddModuleAdminReason('');
+            }}
+            title={`Add ${activeStaff.staffName} to Module`}
+            maxWidth="md"
+            footer={
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsConsoleAddModuleOpen(false);
+                    setConsoleAddModuleSelectedId('');
+                    setConsoleAddModuleAdminConfirmName('');
+                    setConsoleAddModuleAdminReason('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={isSubmitDisabled}
+                  onClick={() => {
+                    if (!selectedMod) return;
+                    const res = addMember(
+                      selectedMod.id,
+                      activeStaff.id,
+                      isAdministration ? consoleAddModuleAdminReason.trim() : undefined
+                    );
+                    if (res.success) {
+                      showNotification({
+                        type: 'success',
+                        message: `Added ${activeStaff.staffName} to ${selectedMod.name}.`,
+                      });
+                      setIsConsoleAddModuleOpen(false);
+                      setConsoleAddModuleSelectedId('');
+                      setConsoleAddModuleAdminConfirmName('');
+                      setConsoleAddModuleAdminReason('');
+                    } else {
+                      showNotification({
+                        type: 'error',
+                        message: res.error || 'Failed to add to module.',
+                      });
+                    }
+                  }}
+                >
+                  Add to Module
+                </Button>
+              </>
+            }
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  Select Module
+                </label>
+                <Select
+                  value={consoleAddModuleSelectedId}
+                  onChange={(e) => setConsoleAddModuleSelectedId(e.target.value)}
+                  options={[
+                    { value: '', label: 'Select a module...' },
+                    ...unassignedMods.map((m) => ({
+                      value: m.id,
+                      label: `${m.name} (${m.accessIds.length} accesses)`,
+                    })),
+                  ]}
+                />
+              </div>
+
+              {isDocOnlyIgnored && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                  Prescription Authoring applies to doctors only.
+                </p>
+              )}
+
+              {isAdministration && (
+                <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-700 dark:text-slate-300">
+                    Adding an administrator grants executive clearance and full security governance.
+                  </p>
+                  <Input
+                    label={<>Type full name <strong>{activeStaff.staffName}</strong> to confirm</>}
+                    placeholder={activeStaff.staffName}
+                    value={consoleAddModuleAdminConfirmName}
+                    onChange={(e) => setConsoleAddModuleAdminConfirmName(e.target.value)}
+                  />
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      Operational Reason <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 resize-none h-16"
+                      placeholder="Operational justification for granting administrative access..."
+                      value={consoleAddModuleAdminReason}
+                      onChange={(e) => setConsoleAddModuleAdminReason(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
+
+      {/* Console Remove from Module Modal */}
+      {selectedStaffId && consoleConfirmRemoveModule && (() => {
+        const activeStaff = staffAccessList.find((s) => s.id === selectedStaffId);
+        if (!activeStaff) return null;
+
+        return (
+          <Modal
+            isOpen={true}
+            onClose={() => setConsoleConfirmRemoveModule(null)}
+            title="Remove from Module"
+            maxWidth="md"
+            footer={
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConsoleConfirmRemoveModule(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    const res = removeMember(
+                      consoleConfirmRemoveModule.moduleId,
+                      activeStaff.id
+                    );
+                    if (res.success) {
+                      showNotification({
+                        type: 'success',
+                        message: `Removed ${activeStaff.staffName} from ${consoleConfirmRemoveModule.moduleName}.`,
+                      });
+                    } else {
+                      showNotification({
+                        type: 'error',
+                        message: res.error || 'Failed to remove from module.',
+                      });
+                    }
+                    setConsoleConfirmRemoveModule(null);
+                  }}
+                >
+                  Remove from Module
+                </Button>
+              </>
+            }
+          >
+            <p className="text-xs text-slate-700 dark:text-slate-300">
+              Remove <strong>{activeStaff.staffName}</strong> from module <strong>{consoleConfirmRemoveModule.moduleName}</strong>?
+            </p>
+          </Modal>
+        );
+      })()}
     </div>
   );
 };

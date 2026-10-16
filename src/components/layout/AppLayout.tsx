@@ -13,10 +13,12 @@ import { PatientView } from '@/views/PatientView';
 import { ReceptionistView } from '@/views/ReceptionistView';
 import { AccessControlView } from '@/views/AccessControlView';
 import { Button } from '@/components/ui/Button';
-import { isAdmin } from '@/lib/permissions';
+import { isAdmin, hasCapability } from '@/lib/permissions';
+import { useClinic } from '@/context/ClinicContext';
 
 export const AppLayout: React.FC = () => {
   const { currentRole, currentUser, isAuthenticated, isRoleSuspended, logout } = useAuth();
+  const { modules } = useClinic();
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [activeSubTab, setActiveSubTab] = useState<string | undefined>(undefined);
@@ -29,13 +31,13 @@ export const AppLayout: React.FC = () => {
     setActiveSubTab(undefined);
   }, [currentRole]);
 
-  // If a doctor was viewing access_control and their admin capability was revoked, return immediately to dashboard
+  // If a user was viewing access_control and their admin capability was revoked, return immediately to dashboard
   useEffect(() => {
-    if (currentRole === 'doctor' && activeTab === 'access_control' && !isAdmin(currentUser)) {
+    if (activeTab === 'access_control' && !isAdmin(currentUser, modules)) {
       setActiveTab('dashboard');
       setActiveSubTab(undefined);
     }
-  }, [currentRole, activeTab, currentUser]);
+  }, [activeTab, currentUser, modules]);
 
   // If user signed out, display login screen
   if (!isAuthenticated) {
@@ -76,51 +78,54 @@ export const AppLayout: React.FC = () => {
       return <DashboardView onNavigate={handleNavigate} />;
     }
 
-    if (currentRole === 'md' || currentRole === 'admin') {
-      switch (activeTab) {
-        case 'doctor':
-        case 'role_doctor':
-          return <DoctorView activeTab={activeSubTab || 'overview'} />;
-        case 'role_receptionist':
-        case 'receptionist':
-          return <ReceptionistView activeTab={activeSubTab || 'overview'} />;
-        case 'role_patient':
-        case 'patient':
-          return <PatientView activeTab={activeSubTab || 'overview'} />;
-        case 'access_control':
-          return <AccessControlView activeTab={activeSubTab || 'add_users'} />;
-        case 'admin_billing':
-        case 'billing':
-          return <AdminView activeTab="billing" />;
-        default:
-          return <DashboardView onNavigate={handleNavigate} />;
-      }
+    if (currentRole === 'patient') {
+      return <PatientView activeTab={activeSubTab || activeTab} />;
     }
 
-    if (currentRole === 'doctor') {
-      switch (activeTab) {
-        case 'doctor':
-          return <DoctorView activeTab={activeSubTab || 'overview'} />;
-        case 'role_patient':
-          return <PatientView activeTab={activeSubTab || 'overview'} />;
-        case 'access_control':
-          if (isAdmin(currentUser)) {
-            return <AccessControlView activeTab={activeSubTab || 'add_users'} />;
-          }
-          return <DashboardView onNavigate={handleNavigate} />;
-        default:
-          return <DashboardView onNavigate={handleNavigate} />;
+    if (activeTab === 'doctor' || activeTab === 'role_doctor') {
+      if (hasCapability(currentUser, 'consultationWorkstation', modules)) {
+        return <DoctorView activeTab={activeSubTab || 'overview'} />;
       }
+      return <DashboardView onNavigate={handleNavigate} />;
     }
 
-    switch (currentRole) {
-      case 'receptionist':
-        return <ReceptionistView activeTab={activeSubTab || activeTab} />;
-      case 'patient':
-        return <PatientView activeTab={activeSubTab || activeTab} />;
-      default:
-        return <DashboardView onNavigate={handleNavigate} />;
+    if (activeTab === 'consulting_calendar') {
+      if (hasCapability(currentUser, 'consultingCalendar', modules)) {
+        return <DoctorView activeTab={activeSubTab || 'overview'} />;
+      }
+      return <DashboardView onNavigate={handleNavigate} />;
     }
+
+    if (activeTab === 'role_receptionist' || activeTab === 'receptionist') {
+      if (
+        hasCapability(currentUser, 'patientRegistration', modules) ||
+        hasCapability(currentUser, 'patientCheckIn', modules) ||
+        hasCapability(currentUser, 'paymentRecording', modules)
+      ) {
+        return <ReceptionistView activeTab={activeSubTab || 'overview'} />;
+      }
+      return <DashboardView onNavigate={handleNavigate} />;
+    }
+
+    if (activeTab === 'access_control') {
+      if (isAdmin(currentUser, modules)) {
+        return <AccessControlView activeTab={activeSubTab || 'modules'} />;
+      }
+      return <DashboardView onNavigate={handleNavigate} />;
+    }
+
+    if (activeTab === 'role_patient' || activeTab === 'patient') {
+      return <PatientView activeTab={activeSubTab || 'overview'} />;
+    }
+
+    if (activeTab === 'admin_billing' || activeTab === 'billing') {
+      if (isAdmin(currentUser, modules)) {
+        return <AdminView activeTab="billing" />;
+      }
+      return <DashboardView onNavigate={handleNavigate} />;
+    }
+
+    return <DashboardView onNavigate={handleNavigate} />;
   };
 
   return (

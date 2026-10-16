@@ -238,6 +238,27 @@ export interface RoleCredential {
   description: string;
 }
 
+export type StandardCapability =
+  | 'administrativeAccess'
+  | 'consultationWorkstation'
+  | 'emrRecordsAccess'
+  | 'prescriptionAuthoring'
+  | 'consultingCalendar'
+  | 'patientRegistration'
+  | 'patientCheckIn'
+  | 'paymentRecording';
+
+export interface AccessModule {
+  id: string;
+  name: string;
+  description?: string;
+  accessIds: StandardCapability[];
+  memberIds: string[];
+  isSystem: boolean;
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface StaffPermission {
   id: string;
   name: string;
@@ -256,7 +277,8 @@ export interface StaffAccessRecord {
   lastUpdated: string;
   updatedBy: string;
   reason?: string;
-  permissions: StaffPermission[];
+  permissions?: StaffPermission[];
+  moduleIds?: string[];
   isOriginalAdmin?: boolean;
   capabilities?: string[];
 }
@@ -276,7 +298,14 @@ export interface AccessAuditLogEntry {
     | 'permission_updated'
     | 'security_override'
     | 'account_deleted'
-    | 'clearance_rejected';
+    | 'clearance_rejected'
+    | 'module_created'
+    | 'module_renamed'
+    | 'module_deleted'
+    | 'module_access_included'
+    | 'module_access_removed'
+    | 'module_member_added'
+    | 'module_member_removed';
   description: string;
   authorizedBy: string;
 }

@@ -5,9 +5,11 @@ import {
   Prescription,
   Invoice,
   PatientAssignment,
+  AccessModule,
 } from '@/types';
 import {
   isAdmin,
+  hasCapability,
   canViewPatient,
   canViewVisit,
   canViewPrescription,
@@ -15,6 +17,7 @@ import {
   scopePatientForReceptionist,
   scopeAppointmentForReceptionist,
 } from '@/lib/permissions';
+import { INITIAL_MODULES } from '@/data/mockData';
 
 /**
  * Pure selector functions for patient, appointment, prescription, and invoice data.
@@ -26,7 +29,12 @@ import {
  */
 export function resolveDoctorIdForUser(user: User | null | undefined): string | null {
   if (!user) return null;
-  if (user.id === 'usr-1' || user.id === 'usr-doc-1' || user.id === 'doc-1' || user.badgeNumber === 'MD-001') {
+  if (
+    user.id === 'usr-1' ||
+    user.id === 'usr-doc-1' ||
+    user.id === 'doc-1' ||
+    user.badgeNumber === 'MD-001'
+  ) {
     return 'doc-1';
   }
   if (user.id === 'usr-doc-2' || user.id === 'doc-2' || user.badgeNumber === 'DOC-102') {
@@ -42,22 +50,25 @@ export function resolveDoctorIdForUser(user: User | null | undefined): string | 
 
 /**
  * Selects patients based on currentUser permissions and an optional activeDoctorId filter.
- * - Admin:
- *     If activeDoctorId is provided and !== 'all', returns patients assigned to that doctor.
- *     If activeDoctorId is omitted or === 'all', returns all patients (including unassigned pat-16).
- * - Staff Doctor:
- *     Returns ONLY currently assigned patients for this doctor.
- * - Receptionist:
- *     Returns all patients passed through scopePatientForReceptionist (demographics only, clinical fields stripped).
- * - Patient:
- *     Returns only their own patient record.
+ * - Patient: returns only their own patient record.
+ * - Anyone without emrRecordsAccess: returns redacted patient view (demographics, appointments, billing only).
+ * - Admin: returns all patients (or filtered by activeDoctorId).
+ * - Non-admin with emrRecordsAccess: returns only actively assigned patients.
  */
 export function getScopedPatients(
   currentUser: User | null | undefined,
   patients: Patient[],
   assignments: PatientAssignment[],
-  activeDoctorId?: string | null
+  activeDoctorIdOrModules?: string | null | AccessModule[],
+  modules: AccessModule[] = INITIAL_MODULES
 ): Patient[] {
+  let activeDoctorId: string | null | undefined = undefined;
+  if (Array.isArray(activeDoctorIdOrModules)) {
+    modules = activeDoctorIdOrModules;
+  } else {
+    activeDoctorId = activeDoctorIdOrModules;
+  }
+
   if (!currentUser) return [];
 
   // 1. Patient view
@@ -71,13 +82,13 @@ export function getScopedPatients(
     );
   }
 
-  // 2. Receptionist view: demographics only, stripped of all clinical data
-  if (currentUser.role === 'receptionist') {
+  // 2. Staff without EMR Records Access: demographics only, stripped of all clinical data
+  if (!hasCapability(currentUser, 'emrRecordsAccess', modules)) {
     return patients.map((p) => scopePatientForReceptionist(p));
   }
 
-  // 3. Admin view (original MD or promoted doctor-admin)
-  if (isAdmin(currentUser)) {
+  // 3. Admin view (clinic-wide)
+  if (isAdmin(currentUser, modules)) {
     if (activeDoctorId && activeDoctorId !== 'all') {
       return patients.filter(
         (p) => getAssignedDoctorId(p.id, assignments) === activeDoctorId
@@ -86,12 +97,8 @@ export function getScopedPatients(
     return patients;
   }
 
-  // 4. Staff Doctor view: assigned patients only
-  if (currentUser.role === 'doctor' || currentUser.role === 'md') {
-    return patients.filter((p) => canViewPatient(currentUser, p.id, assignments));
-  }
-
-  return [];
+  // 4. Non-admin with EMR Records Access (e.g. Staff Doctor): requires care assignment
+  return patients.filter((p) => canViewPatient(currentUser, p.id, assignments, modules));
 }
 
 /**
@@ -107,23 +114,25 @@ export function getDoctorPatients(
 
 /**
  * Selects appointments based on currentUser permissions and an optional activeDoctorId filter.
- * - Admin:
- *     If activeDoctorId is provided and !== 'all', returns appointments for that doctor.
- *     If activeDoctorId is omitted or === 'all', returns all clinic appointments.
- * - Staff Doctor:
- *     Returns appointments where patient is currently assigned OR doctor authored/attended.
- *     If activeDoctorId is provided, filters to that doctor's desk.
- * - Receptionist:
- *     Returns all appointments passed through scopeAppointmentForReceptionist (clinical notes stripped).
- * - Patient:
- *     Returns only their own appointments.
+ * - Patient: returns only their own appointments.
+ * - Anyone without emrRecordsAccess: returns appointments with clinical notes stripped.
+ * - Admin: returns all appointments (or filtered by activeDoctorId).
+ * - Non-admin with emrRecordsAccess: returns appointments for assigned patients or authored visits.
  */
 export function getScopedAppointments(
   currentUser: User | null | undefined,
   appointments: Appointment[],
   assignments: PatientAssignment[],
-  activeDoctorId?: string | null
+  activeDoctorIdOrModules?: string | null | AccessModule[],
+  modules: AccessModule[] = INITIAL_MODULES
 ): Appointment[] {
+  let activeDoctorId: string | null | undefined = undefined;
+  if (Array.isArray(activeDoctorIdOrModules)) {
+    modules = activeDoctorIdOrModules;
+  } else {
+    activeDoctorId = activeDoctorIdOrModules;
+  }
+
   if (!currentUser) return [];
 
   // 1. Patient view
@@ -137,53 +146,52 @@ export function getScopedAppointments(
     );
   }
 
-  // 2. Receptionist view: metadata only, stripped of clinical consultation notes
-  if (currentUser.role === 'receptionist') {
+  // 2. Staff without EMR Records Access: metadata only, stripped of clinical consultation notes
+  if (!hasCapability(currentUser, 'emrRecordsAccess', modules)) {
     return appointments.map((a) => scopeAppointmentForReceptionist(a));
   }
 
   // 3. Admin view
-  if (isAdmin(currentUser)) {
+  if (isAdmin(currentUser, modules)) {
     if (activeDoctorId && activeDoctorId !== 'all') {
       return appointments.filter((a) => a.doctorId === activeDoctorId);
     }
     return appointments;
   }
 
-  // 4. Staff Doctor view: assigned patients or authored visits
-  if (currentUser.role === 'doctor' || currentUser.role === 'md') {
-    let scoped = appointments.filter((a) => canViewVisit(currentUser, a, assignments));
-    if (activeDoctorId && activeDoctorId !== 'all') {
-      scoped = scoped.filter((a) => a.doctorId === activeDoctorId);
-    }
-    return scoped;
+  // 4. Non-admin with EMR Records Access: assigned patients or authored visits
+  let scoped = appointments.filter((a) => canViewVisit(currentUser, a, assignments, modules));
+  if (activeDoctorId && activeDoctorId !== 'all') {
+    scoped = scoped.filter((a) => a.doctorId === activeDoctorId);
   }
-
-  return [];
+  return scoped;
 }
 
 /**
  * Selects prescriptions based on currentUser permissions and an optional activeDoctorId filter.
- * - Admin:
- *     If activeDoctorId is provided and !== 'all', returns prescriptions for patients assigned to or authored by that doctor.
- *     If activeDoctorId is omitted or === 'all', returns all prescriptions.
- * - Staff Doctor:
- *     Returns prescriptions where patient is currently assigned OR doctor authored prescription.
- * - Receptionist:
- *     Returns empty list (receptionist never sees prescriptions).
- * - Patient:
- *     Returns only their own prescriptions.
+ * - Anyone without emrRecordsAccess: returns empty array (never sees prescriptions).
+ * - Patient: returns only their own prescriptions.
+ * - Admin: returns all prescriptions (or filtered by activeDoctorId).
+ * - Non-admin with emrRecordsAccess: returns prescriptions for assigned patients or authored.
  */
 export function getScopedPrescriptions(
   currentUser: User | null | undefined,
   prescriptions: Prescription[],
   assignments: PatientAssignment[],
-  activeDoctorId?: string | null
+  activeDoctorIdOrModules?: string | null | AccessModule[],
+  modules: AccessModule[] = INITIAL_MODULES
 ): Prescription[] {
+  let activeDoctorId: string | null | undefined = undefined;
+  if (Array.isArray(activeDoctorIdOrModules)) {
+    modules = activeDoctorIdOrModules;
+  } else {
+    activeDoctorId = activeDoctorIdOrModules;
+  }
+
   if (!currentUser) return [];
 
-  // 1. Receptionist view: strictly forbidden
-  if (currentUser.role === 'receptionist') {
+  // 1. Staff without EMR Records Access: strictly forbidden
+  if (!hasCapability(currentUser, 'emrRecordsAccess', modules)) {
     return [];
   }
 
@@ -199,7 +207,7 @@ export function getScopedPrescriptions(
   }
 
   // 3. Admin view
-  if (isAdmin(currentUser)) {
+  if (isAdmin(currentUser, modules)) {
     if (activeDoctorId && activeDoctorId !== 'all') {
       return prescriptions.filter((rx) => {
         const assignedDocId = getAssignedDoctorId(rx.patientId, assignments);
@@ -209,24 +217,21 @@ export function getScopedPrescriptions(
     return prescriptions;
   }
 
-  // 4. Staff Doctor view: assigned patients or authored prescriptions
-  if (currentUser.role === 'doctor' || currentUser.role === 'md') {
-    return prescriptions.filter((rx) => canViewPrescription(currentUser, rx, assignments));
-  }
-
-  return [];
+  // 4. Non-admin with EMR Records Access: assigned patients or authored prescriptions
+  return prescriptions.filter((rx) => canViewPrescription(currentUser, rx, assignments, modules));
 }
 
 /**
  * Selects invoices based on currentUser permissions.
- * - Admin & Receptionist: full clinic invoices.
  * - Patient: only their own invoices.
- * - Staff Doctor: invoices for their currently assigned patients.
+ * - Admin & Staff with paymentRecording: clinic invoices.
+ * - Staff with EMR access: invoices for their currently assigned patients.
  */
 export function getScopedInvoices(
   currentUser: User | null | undefined,
   invoices: Invoice[],
-  assignments?: PatientAssignment[]
+  assignments?: PatientAssignment[],
+  modules: AccessModule[] = INITIAL_MODULES
 ): Invoice[] {
   if (!currentUser) return [];
 
@@ -240,12 +245,12 @@ export function getScopedInvoices(
     );
   }
 
-  if (currentUser.role === 'receptionist' || isAdmin(currentUser)) {
+  if (hasCapability(currentUser, 'paymentRecording', modules) || isAdmin(currentUser, modules)) {
     return invoices;
   }
 
-  if ((currentUser.role === 'doctor' || currentUser.role === 'md') && assignments) {
-    return invoices.filter((inv) => canViewPatient(currentUser, inv.patientId, assignments));
+  if (hasCapability(currentUser, 'emrRecordsAccess', modules) && assignments) {
+    return invoices.filter((inv) => canViewPatient(currentUser, inv.patientId, assignments, modules));
   }
 
   return invoices;

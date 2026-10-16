@@ -6,12 +6,10 @@ import {
   Calendar,
   CreditCard,
   Pill,
-  PlusCircle,
   PanelLeft,
   PanelLeftClose,
   PanelLeftOpen,
   Stethoscope,
-  User,
   ShieldCheck,
 } from 'lucide-react';
 
@@ -30,6 +28,9 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
+import { useClinic } from '@/context/ClinicContext';
+import { hasCapability } from '@/lib/permissions';
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
@@ -39,55 +40,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
 }) => {
   const { currentRole, currentUser } = useAuth();
+  const { modules } = useClinic();
 
   const getNavItems = (): NavItem[] => {
-    switch (currentRole) {
-      case 'md':
-      case 'admin':
-        // Option 1: Clinical-First MD Work Order
-        return [
-          { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> },
-          { id: 'role_receptionist', label: 'Reception Desk', icon: <Calendar className="w-4 h-4" /> },
-          { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
-          { id: 'access_control', label: 'Administrative', icon: <ShieldCheck className="w-4 h-4" /> },
-          { id: 'admin_billing', label: 'Billing & Revenue', icon: <CreditCard className="w-4 h-4" /> },
-        ];
-
-      case 'doctor': {
-        // Staff Doctor working under the MD
-        const items: NavItem[] = [
-          { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> },
-          { id: 'role_patient', label: 'Patient Directory', icon: <User className="w-4 h-4" /> },
-        ];
-        if (currentUser && (currentUser.role === 'admin' || currentUser.isOriginalAdmin || currentUser.capabilities?.includes('perm-admin') || currentUser.capabilities?.includes('administrativeAccess'))) {
-          items.push({ id: 'access_control', label: 'Administrative', icon: <ShieldCheck className="w-4 h-4" /> });
-        }
-        return items;
-      }
-
-      case 'receptionist':
-        return [
-          { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'overview', label: 'Front Desk Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'checkin', label: 'Patient Check-In', icon: <UserCheck className="w-4 h-4" /> },
-          { id: 'registration', label: 'Register New Patient', icon: <PlusCircle className="w-4 h-4" /> },
-          { id: 'booking', label: 'Book Appointment', icon: <Calendar className="w-4 h-4" /> },
-        ];
-
-      case 'patient':
-        return [
-          { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'overview', label: 'My Health Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { id: 'appointments', label: 'My Appointments', icon: <Calendar className="w-4 h-4" /> },
-          { id: 'prescriptions', label: 'My Prescriptions', icon: <Pill className="w-4 h-4" /> },
-          { id: 'billing', label: 'My Invoices', icon: <CreditCard className="w-4 h-4" /> },
-        ];
-
-      default:
-        return [{ id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> }];
+    // Patients have fixed access to their own outpatient portal
+    if (currentRole === 'patient') {
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+        { id: 'overview', label: 'My Health Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
+        { id: 'appointments', label: 'My Appointments', icon: <Calendar className="w-4 h-4" /> },
+        { id: 'prescriptions', label: 'My Prescriptions', icon: <Pill className="w-4 h-4" /> },
+        { id: 'billing', label: 'My Invoices', icon: <CreditCard className="w-4 h-4" /> },
+      ];
     }
+
+    // Staff items strictly driven by effective module capabilities from the single mapping
+    const items: NavItem[] = [
+      { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+    ];
+
+    if (hasCapability(currentUser, 'consultationWorkstation', modules)) {
+      items.push({ id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> });
+    }
+
+    if (hasCapability(currentUser, 'consultingCalendar', modules)) {
+      items.push({ id: 'consulting_calendar', label: 'Consulting Calendar', icon: <Calendar className="w-4 h-4" /> });
+    }
+
+    if (
+      hasCapability(currentUser, 'patientRegistration', modules) ||
+      hasCapability(currentUser, 'patientCheckIn', modules) ||
+      hasCapability(currentUser, 'paymentRecording', modules)
+    ) {
+      items.push({ id: 'role_receptionist', label: 'Reception', icon: <UserCheck className="w-4 h-4" /> });
+    }
+
+    if (hasCapability(currentUser, 'administrativeAccess', modules)) {
+      items.push({ id: 'access_control', label: 'Administrative', icon: <ShieldCheck className="w-4 h-4" /> });
+    }
+
+    return items;
   };
 
   const navItems = getNavItems();

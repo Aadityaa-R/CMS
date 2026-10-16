@@ -152,6 +152,48 @@ Every feature and line of code in this project strictly adheres to the governing
   - The original MD (`isOriginalAdmin: true`) and the last remaining administrator can never have their administrative access revoked or their accounts deleted.
   - Revoking administrative access from a promoted doctor immediately removes the Administrative module from navigation and redirects the user away from `access_control`.
 
+### 2.12 Access Modules & Capability Bundling Architecture (Milestone M2)
+- **Module Definition & Access Union**:
+  - A module is a named bundle of accesses with an assigned member list.
+  - A staff member's effective access is the mathematical union of the accesses of all modules they belong to.
+  - Inactive, revoked, or suspended staff members receive zero effective access regardless of module membership.
+- **Fixed Access Catalog**:
+  - Access capabilities originate from a strictly fixed catalog in code (`src/data/accessCatalog.ts`) containing eight standard accesses: `administrativeAccess`, `consultationWorkstation`, `emrRecordsAccess`, `prescriptionAuthoring`, `consultingCalendar`, `patientRegistration`, `patientCheckIn`, and `paymentRecording`. Administrators cannot invent or alter accesses.
+- **Free Assignment & Patient Invariance**:
+  - Any staff member can be assigned to any module.
+  - Patients are never module members; patient access is invariant and fixed exclusively to their own records.
+- **Role Defaults**:
+  - The clinic principle "Doctors do not register or check in patients" holds as a default because doctors start in Clinical (`mod-clinical`) and receptionists start in Front Desk (`mod-frontdesk`). If an administrator assigns a doctor to Front Desk, they can register and check in patients.
+- **Patient Scoping Protection**:
+  - Module membership never widens patient clinical visibility.
+  - Viewing clinical data requires both the `emrRecordsAccess` capability and an active care assignment (or historical visit authorship) for non-administrators.
+  - Non-EMR staff members receive a redacted demographic-only view. Clinic administrators see all patients clinic-wide.
+- **Prescription Authoring License Restriction**:
+  - `prescriptionAuthoring` takes effect only for personnel whose staff type is Doctor (professional medical licence), regardless of which modules they belong to. Non-doctor staff members in a module with prescription authoring cannot issue prescriptions.
+- **Access Dependency Guards**:
+  - `prescriptionAuthoring` cannot be included in any module that lacks `emrRecordsAccess`.
+  - `emrRecordsAccess` cannot be removed from any module while `prescriptionAuthoring` is present.
+- **System Module & Admin Protection Guards**:
+  - System modules (`Clinical`, `Front Desk`, `Administration`) cannot be deleted.
+  - Custom modules cannot be deleted while they contain members; only empty custom modules may be deleted.
+  - Deleting a custom module requires typing its exact name in a confirmation modal.
+  - The `Administration` module must always retain `administrativeAccess`.
+  - The original MD (`isOriginalAdmin: true`) and the last remaining administrator cannot be removed from `Administration`.
+  - Adding a member to `Administration` requires typing the member's full name and providing an operational reason.
+- **Sidebar Navigation Mapping**:
+  - Navigation visibility is governed by a single mapping from module accesses:
+    - Consultation Desk requires `consultationWorkstation`.
+    - Consulting Calendar requires `consultingCalendar`.
+    - Reception requires `patientRegistration` OR `patientCheckIn` OR `paymentRecording`.
+    - Administrative requires `administrativeAccess`.
+    - A staff member in no module sees only the Dashboard.
+- **Administrative UI Architecture**:
+  - AccessControlView incorporates a dedicated "Modules" tab with a paginated module catalog table and "Create Module" action.
+  - Selecting a module opens an isolated Module View with breadcrumb back navigation, name/description editor, deletion dialog (for empty custom modules), access inclusion/removal matrix with confirmation dialogs, and member directory with an "Add Person" searchable modal and removal actions.
+  - Edit Users tab replaces individual capability counts with a comma-separated list of assigned modules.
+  - Access Console provides a module membership table, direct add-to-module action, and a read-only "Effective accesses" list attributing each access to its originating module.
+  - Direct staff provisioning and onboarding clearance approval automatically assign the standard default module (Clinical for doctors, Front Desk for receptionists) with ledger entry logging.
+
 ---
 
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
@@ -160,6 +202,7 @@ The table below outlines the evolution of the codebase from initial repository s
 
 | Commit Hash | Commit Message / Feature Description | User Intent & Key Actions |
 | :--- | :--- | :--- |
+| `PENDING` | `feat(auth): implement access modules, capability bundling, and module management UI (M2)` | User requested: "TASK: M2, Modules. Replace per-person capability toggles with modules: named bundles of accesses that an admin can add people to." Replaced per-person capability switchboard with access modules model. Created fixed catalog of 8 capabilities (src/data/accessCatalog.ts). Seeded initial system modules (Clinical, Front Desk, Administration) and mapped staff records in mockData.ts. Implemented getEffectiveAccesses union resolution with doctor license check on prescriptionAuthoring, single source of truth for admin via Administration membership, and handler guards (canDeleteModule, canIncludeAccess, canRemoveAccess, canAddMember, canRemoveMember, canDeleteStaff, canGrantAdmin, canRevokeAdmin). Hardened ClinicContext with module state persistence (cms_modules_v2) and mutation handlers. Updated AuthContext dynamic capability resolution and single sidebar navigation mapping. Replaced capability switchboard in AccessControlView with Modules tab, isolated Module View (accesses matrix, member directory, name-typing delete modal, reason-gated admin promotion), updated Edit Users tab with comma-separated modules, Access Console with module membership and effective accesses source attribution, and auto default-module assignment on direct provisioning and onboarding clearance. Filtered staff migration equivalence check in test suite (100% equivalence, 0 exceptions). Built test suite with 76 permission tests, 36 dashboard metrics tests, and 0 emojis. Production build passes with 0 errors and 0 warnings. |
 | `a358bee` | `feat(auth): verify permissions architecture, selector scoping, and test integrity` | User requested: "TASK: Step 1b. Verify and finish the Step 1 permissions work. Do not build new features." Created src/lib/selectors.ts for pure role-scoped filtering (getScopedPatients, getScopedAppointments, getScopedPrescriptions, getScopedInvoices, getDoctorPatients). Eliminated all inline patient filtering across DoctorView, ReceptionistView, PatientView, DashboardView, and AccessControlView. Enforced single source of truth for admin in permissions.ts and dashboardMetrics.ts: admin = original MD or active doctor holding administrativeAccess / perm-admin. Hardened ClinicContext (transferPatient, addPatient, updateAppointmentStatus) and AuthContext (grantStaffAccess, revokeStaffAccess, deleteStaffAccount, updateStaffCapabilities) handlers with permissions checks. Hardened transfer edge cases: blocked transfer while in consultation with message "Conclude the current consultation before transferring.", moved only scheduled and checked_in appointments recording count and IDs in Security Ledger, enforced active receiving doctor with consultationWorkstation capability, and configured "Assign" modal/action for unassigned patient pat-16 (Rachel Green). Converted test suites to real TypeScript imports using tsx (scripts/test-permissions.ts and scripts/test-dashboard-metrics.ts), added Unicode emoji scanner (scripts/scan-emojis.ts), and configured npm test running all three suites (77 tests passed, 0 failures, 0 emojis). Build passes with zero errors and zero warnings. |
 | `dae42e3` | `feat(auth): implement permissions foundation, patient assignment transfer, and admin promotion` | User requested: "TASK: Step 1 of the role and workflow rebuild: permissions foundation, patient assignment and transfer, admin promotion." Discovery completed auditing role checks, registration/check-in points, patient reads, and seeded patient assignments (including Sophia Chen transfer history and unassigned patient Rachel Green pat-16). Added Section 2.11 to specification. Created pure permissions module (src/lib/permissions.ts) with 42 unit tests (scripts/test-permissions.js) passing 100%. Implemented PatientAssignment model with INITIAL_PATIENT_ASSIGNMENTS in mockData.ts, ClinicContext transferPatient action, and AuthContext dynamic capabilities. Scoped patient and prescription data reads in DoctorView and DashboardView. Removed registration/check-in from doctors and MD, disabled Start Consultation on scheduled appointments with "Patient has not been checked in" tooltip, and added transfer care modal and assigned doctor column in DoctorView Patients tab. Built admin promotion in AccessControlView with perm-admin capability, protection guards preventing revocation or deletion of original MD and last remaining admin, immediate sidebar removal on admin revocation, and receptionist capabilities display (Patient Registration, Patient Check-in, Payment Recording). Build passes with zero errors. |
 | `51e5c7c` | `feat: add role-aware dashboard as default landing page with seed history and svg charts` | User requested: "Build a role-aware Dashboard as the front page (landing page after login) of the Clinic Management System. Borrow the layout idea only (greeting, summary figures, two charts, three lists); do not copy any third-party styling or assets. Frontend-first with seed data." Implemented pure aggregation layer in src/lib/dashboardMetrics.ts with 37 unit tests covering presets, day/week bucketing, and role scoping. Extended mockData with 30-day historical seed data (appointments, visits, invoices, and patients). Role-scoped summary figures: MD (8 figures with revenue), Staff Doctor (5 figures, isolated to own visits), Receptionist (4 figures, front desk only), Patient (3 figures). Rendered exactly ONE outlined summary card in 4-column responsive grid without icons or colored numbers. Built inline SVG charts for MD & Staff Doctor (Patients & Visits grouped bars with hatch pattern; Fees & Payments line chart with dashed collected series; Visits trend line) with Day/Week/Month underline tabs, static gridlines, and screen-reader accessibility tables. Built 3 role-scoped semantic Table list cards (Today's Appointments, Follow-ups Due, Pending Clearances / Upcoming Appointments / Recent Prescriptions) with 10-records-per-page Pagination. Configured Dashboard as top item in Sidebar for every role and default landing page upon login and clinic brand click. |

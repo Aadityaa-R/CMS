@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   Patient,
   Doctor,
@@ -12,6 +12,8 @@ import {
   PaymentMethod,
   PatientAssignment,
   User,
+  AccessModule,
+  StandardCapability,
 } from '@/types';
 import {
   isAdmin,
@@ -20,6 +22,11 @@ import {
   canCheckIn,
   getAssignedDoctorId,
   hasCapability,
+  canDeleteModule,
+  canIncludeAccess,
+  canRemoveAccess,
+  canAddMember,
+  canRemoveMember,
 } from '@/lib/permissions';
 import {
   INITIAL_PATIENTS,
@@ -30,7 +37,9 @@ import {
   INITIAL_LAB_TESTS,
   INITIAL_INVOICES,
   INITIAL_PATIENT_ASSIGNMENTS,
+  INITIAL_MODULES,
 } from '@/data/mockData';
+import { useAuth } from '@/context/AuthContext';
 
 export interface TransferResult {
   success: boolean;
@@ -38,6 +47,12 @@ export interface TransferResult {
   movedAppointmentsCount: number;
   movedAppointmentIds: string[];
   isInitialAssignment: boolean;
+}
+
+export interface ModuleMutationResult {
+  success: boolean;
+  error?: string;
+  module?: AccessModule;
 }
 
 interface ClinicContextType {
@@ -49,6 +64,7 @@ interface ClinicContextType {
   labTests: LabTest[];
   invoices: Invoice[];
   patientAssignments: PatientAssignment[];
+  modules: AccessModule[];
 
   // Patient Actions
   addPatient: (
@@ -100,11 +116,51 @@ interface ClinicContextType {
   // Billing Actions
   createInvoice: (data: Omit<Invoice, 'id' | 'invoiceNumber' | 'date' | 'status'>) => Invoice;
   recordPayment: (id: string, amount: number, method: PaymentMethod) => void;
+
+  // Module Actions
+  createModule: (
+    name: string,
+    description?: string,
+    actingUser?: User | null
+  ) => ModuleMutationResult;
+  renameModule: (
+    id: string,
+    name: string,
+    description?: string,
+    actingUser?: User | null
+  ) => ModuleMutationResult;
+  deleteModule: (
+    id: string,
+    actingUser?: User | null
+  ) => ModuleMutationResult;
+  includeAccess: (
+    moduleId: string,
+    accessId: StandardCapability,
+    actingUser?: User | null
+  ) => ModuleMutationResult;
+  removeAccess: (
+    moduleId: string,
+    accessId: StandardCapability,
+    actingUser?: User | null
+  ) => ModuleMutationResult;
+  addMember: (
+    moduleId: string,
+    staffId: string,
+    reason?: string,
+    actingUser?: User | null
+  ) => ModuleMutationResult;
+  removeMember: (
+    moduleId: string,
+    staffId: string,
+    reason?: string,
+    actingUser?: User | null
+  ) => ModuleMutationResult;
 }
 
 const ClinicContext = createContext<ClinicContextType | undefined>(undefined);
 
 export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser: authUser, staffAccessList, addAuditLogEntry } = useAuth();
   const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
   const [doctors, setDoctors] = useState<Doctor[]>(INITIAL_DOCTORS);
   const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
@@ -113,6 +169,33 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [labTests, setLabTests] = useState<LabTest[]>(INITIAL_LAB_TESTS);
   const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
   const [patientAssignments, setPatientAssignments] = useState<PatientAssignment[]>(INITIAL_PATIENT_ASSIGNMENTS);
+
+  const [modules, setModules] = useState<AccessModule[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('cms_modules_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (
+          Array.isArray(parsed) &&
+          parsed.length >= 3 &&
+          parsed.some((m: AccessModule) => m.id === 'mod-admin')
+        ) {
+          return parsed;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_MODULES;
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('cms_modules_v2', JSON.stringify(modules));
+    } catch {
+      // fallback
+    }
+  }, [modules]);
 
   const transferPatient = (
     patientId: string,
@@ -495,6 +578,309 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
+  const createModule = (
+    name: string,
+    description?: string,
+    actingUser?: User | null
+  ): ModuleMutationResult => {
+    const actor = actingUser || authUser;
+    if (!isAdmin(actor, modules)) {
+      return { success: false, error: 'Only clinic administrators can create modules.' };
+    }
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return { success: false, error: 'Module name is required.' };
+    }
+    if (modules.some((m) => m.name.toLowerCase() === trimmedName.toLowerCase())) {
+      return { success: false, error: 'A module with this name already exists.' };
+    }
+
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const newModule: AccessModule = {
+      id: `mod-${Date.now()}`,
+      name: trimmedName,
+      description: description?.trim() || '',
+      accessIds: [],
+      memberIds: [],
+      isSystem: false,
+      createdBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
+      createdAt: timestamp,
+    };
+
+    setModules((prev) => [...prev, newModule]);
+
+    addAuditLogEntry({
+      targetRole: 'md',
+      targetStaffName: trimmedName,
+      action: 'module_created',
+      description: `Module '${trimmedName}' created by ${actor?.name || 'Managing Director'}`,
+      authorizedBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
+    });
+
+    return { success: true, module: newModule };
+  };
+
+  const renameModule = (
+    id: string,
+    name: string,
+    description?: string,
+    actingUser?: User | null
+  ): ModuleMutationResult => {
+    const actor = actingUser || authUser;
+    if (!isAdmin(actor, modules)) {
+      return { success: false, error: 'Only clinic administrators can modify modules.' };
+    }
+    const target = modules.find((m) => m.id === id);
+    if (!target) {
+      return { success: false, error: 'Module not found.' };
+    }
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return { success: false, error: 'Module name is required.' };
+    }
+    if (
+      modules.some(
+        (m) => m.id !== id && m.name.toLowerCase() === trimmedName.toLowerCase()
+      )
+    ) {
+      return { success: false, error: 'A module with this name already exists.' };
+    }
+
+    setModules((prev) =>
+      prev.map((m) =>
+        m.id === id
+          ? {
+              ...m,
+              name: trimmedName,
+              description: description !== undefined ? description.trim() : m.description,
+            }
+          : m
+      )
+    );
+
+    addAuditLogEntry({
+      targetRole: 'md',
+      targetStaffName: trimmedName,
+      action: 'module_renamed',
+      description: `Module '${target.name}' renamed to '${trimmedName}' by ${actor?.name || 'Managing Director'}`,
+      authorizedBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
+    });
+
+    return { success: true };
+  };
+
+  const deleteModule = (
+    id: string,
+    actingUser?: User | null
+  ): ModuleMutationResult => {
+    const actor = actingUser || authUser;
+    const target = modules.find((m) => m.id === id);
+    if (!target) {
+      return { success: false, error: 'Module not found.' };
+    }
+    const check = canDeleteModule(actor, target, modules);
+    if (!check.allowed) {
+      return { success: false, error: check.reason };
+    }
+
+    setModules((prev) => prev.filter((m) => m.id !== id));
+
+    addAuditLogEntry({
+      targetRole: 'md',
+      targetStaffName: target.name,
+      action: 'module_deleted',
+      description: `Module '${target.name}' deleted by ${actor?.name || 'Managing Director'}`,
+      authorizedBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
+    });
+
+    return { success: true };
+  };
+
+  const includeAccess = (
+    moduleId: string,
+    accessId: StandardCapability,
+    actingUser?: User | null
+  ): ModuleMutationResult => {
+    const actor = actingUser || authUser;
+    const target = modules.find((m) => m.id === moduleId);
+    if (!target) {
+      return { success: false, error: 'Module not found.' };
+    }
+    const check = canIncludeAccess(actor, target, accessId, modules);
+    if (!check.allowed) {
+      return { success: false, error: check.reason };
+    }
+
+    setModules((prev) =>
+      prev.map((m) =>
+        m.id === moduleId
+          ? { ...m, accessIds: Array.from(new Set([...m.accessIds, accessId])) }
+          : m
+      )
+    );
+
+    addAuditLogEntry({
+      targetRole: 'md',
+      targetStaffName: target.name,
+      capability: accessId,
+      action: 'module_access_included',
+      description: `Access '${accessId}' included in module '${target.name}' by ${actor?.name || 'Managing Director'}`,
+      authorizedBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
+    });
+
+    return { success: true };
+  };
+
+  const removeAccess = (
+    moduleId: string,
+    accessId: StandardCapability,
+    actingUser?: User | null
+  ): ModuleMutationResult => {
+    const actor = actingUser || authUser;
+    const target = modules.find((m) => m.id === moduleId);
+    if (!target) {
+      return { success: false, error: 'Module not found.' };
+    }
+    const check = canRemoveAccess(actor, target, accessId, modules);
+    if (!check.allowed) {
+      return { success: false, error: check.reason };
+    }
+
+    setModules((prev) =>
+      prev.map((m) =>
+        m.id === moduleId
+          ? { ...m, accessIds: m.accessIds.filter((a) => a !== accessId) }
+          : m
+      )
+    );
+
+    addAuditLogEntry({
+      targetRole: 'md',
+      targetStaffName: target.name,
+      capability: accessId,
+      action: 'module_access_removed',
+      description: `Access '${accessId}' removed from module '${target.name}' by ${actor?.name || 'Managing Director'}`,
+      authorizedBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
+    });
+
+    return { success: true };
+  };
+
+  const addMember = (
+    moduleId: string,
+    staffId: string,
+    reason?: string,
+    actingUser?: User | null
+  ): ModuleMutationResult => {
+    const actor = actingUser || authUser;
+    const target = modules.find((m) => m.id === moduleId);
+    if (!target) {
+      return { success: false, error: 'Module not found.' };
+    }
+    const staffMember = staffAccessList.find(
+      (s) => s.id === staffId || s.badgeNumber === staffId || s.staffName === staffId
+    );
+    const check = canAddMember(
+      actor,
+      target,
+      staffMember || ({ id: staffId } as any),
+      reason,
+      modules
+    );
+    if (!check.allowed) {
+      return { success: false, error: check.reason };
+    }
+
+    setModules((prev) =>
+      prev.map((m) =>
+        m.id === moduleId
+          ? { ...m, memberIds: Array.from(new Set([...m.memberIds, staffId])) }
+          : m
+      )
+    );
+
+    const staffDisplayName = staffMember?.staffName || staffId;
+    const isAdministration =
+      target.id === 'mod-admin' || target.accessIds.includes('administrativeAccess');
+    const reasonText =
+      isAdministration && reason
+        ? ` (Reason: ${reason})`
+        : reason
+        ? ` (${reason})`
+        : '';
+
+    addAuditLogEntry({
+      targetRole: staffMember?.role || 'doctor',
+      targetStaffName: staffDisplayName,
+      targetUserId: staffId,
+      action: 'module_member_added',
+      description: `Staff member '${staffDisplayName}' added to module '${target.name}' by ${actor?.name || 'Managing Director'}${reasonText}`,
+      authorizedBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
+    });
+
+    return { success: true };
+  };
+
+  const removeMember = (
+    moduleId: string,
+    staffId: string,
+    reason?: string,
+    actingUser?: User | null
+  ): ModuleMutationResult => {
+    const actor = actingUser || authUser;
+    const target = modules.find((m) => m.id === moduleId);
+    if (!target) {
+      return { success: false, error: 'Module not found.' };
+    }
+    const staffMember = staffAccessList.find(
+      (s) => s.id === staffId || s.badgeNumber === staffId || s.staffName === staffId
+    );
+    const check = canRemoveMember(
+      actor,
+      target,
+      staffMember || ({ id: staffId } as any),
+      modules,
+      staffAccessList
+    );
+    if (!check.allowed) {
+      return { success: false, error: check.reason };
+    }
+
+    setModules((prev) =>
+      prev.map((m) =>
+        m.id === moduleId
+          ? {
+              ...m,
+              memberIds: m.memberIds.filter(
+                (mid) => mid !== staffId && mid !== staffMember?.id
+              ),
+            }
+          : m
+      )
+    );
+
+    const staffDisplayName = staffMember?.staffName || staffId;
+    const isAdministration =
+      target.id === 'mod-admin' || target.accessIds.includes('administrativeAccess');
+    const reasonText =
+      isAdministration && reason
+        ? ` (Reason: ${reason})`
+        : reason
+        ? ` (${reason})`
+        : '';
+
+    addAuditLogEntry({
+      targetRole: staffMember?.role || 'doctor',
+      targetStaffName: staffDisplayName,
+      targetUserId: staffId,
+      action: 'module_member_removed',
+      description: `Staff member '${staffDisplayName}' removed from module '${target.name}' by ${actor?.name || 'Managing Director'}${reasonText}`,
+      authorizedBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
+    });
+
+    return { success: true };
+  };
+
   return (
     <ClinicContext.Provider
       value={{
@@ -506,6 +892,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         labTests,
         invoices,
         patientAssignments,
+        modules,
         transferPatient,
         addPatient,
         updatePatient,
@@ -522,6 +909,13 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateLabTestStatus,
         createInvoice,
         recordPayment,
+        createModule,
+        renameModule,
+        deleteModule,
+        includeAccess,
+        removeAccess,
+        addMember,
+        removeMember,
       }}
     >
       {children}

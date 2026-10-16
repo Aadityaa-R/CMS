@@ -11,6 +11,7 @@ import {
   StaffAccessRecord,
   AccessAuditLogEntry,
   PatientAssignment,
+  AccessModule,
 } from '@/types';
 
 export const ROLE_CREDENTIALS: RoleCredential[] = [
@@ -1909,6 +1910,50 @@ export const INITIAL_INVOICES: Invoice[] = [
 ];
 
 
+export const INITIAL_MODULES: AccessModule[] = [
+  {
+    id: 'mod-clinical',
+    name: 'Clinical',
+    description: 'Core clinical assessments, outpatient consultations, EMR records, and e-prescribing',
+    accessIds: [
+      'consultationWorkstation',
+      'emrRecordsAccess',
+      'prescriptionAuthoring',
+      'consultingCalendar',
+    ],
+    memberIds: ['acc-doc-1', 'acc-doc-2', 'acc-doc-3'],
+    isSystem: true,
+    createdBy: 'System Bootstrap',
+    createdAt: '2026-10-14 08:00',
+  },
+  {
+    id: 'mod-frontdesk',
+    name: 'Front Desk',
+    description: 'Outpatient arrival intake, patient registration, check-in queue, and payment receipts',
+    accessIds: [
+      'patientRegistration',
+      'patientCheckIn',
+      'paymentRecording',
+    ],
+    memberIds: ['acc-rec-1', 'acc-rec-2'],
+    isSystem: true,
+    createdBy: 'System Bootstrap',
+    createdAt: '2026-10-14 08:00',
+  },
+  {
+    id: 'mod-admin',
+    name: 'Administration',
+    description: 'Clinic governance, staff access control, module membership, and security ledger management',
+    accessIds: [
+      'administrativeAccess',
+    ],
+    memberIds: ['acc-doc-1'],
+    isSystem: true,
+    createdBy: 'System Bootstrap',
+    createdAt: '2026-10-14 08:00',
+  },
+];
+
 export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
   {
     id: 'acc-doc-1',
@@ -1919,6 +1964,7 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     badgeNumber: 'MD-001',
     status: 'granted',
     isOriginalAdmin: true,
+    moduleIds: ['mod-clinical', 'mod-admin'],
     lastUpdated: '2026-10-14 08:00',
     updatedBy: 'System Bootstrap',
     reason: 'Original Managing Director and Clinic Administrator',
@@ -1938,6 +1984,7 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     department: 'General Medicine & Triage',
     badgeNumber: 'DOC-102',
     status: 'granted',
+    moduleIds: ['mod-clinical'],
     lastUpdated: '2026-10-14 08:00',
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Active clinical appointment in good standing',
@@ -1957,6 +2004,7 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     department: 'Outpatient & Family Medicine',
     badgeNumber: 'DOC-103',
     status: 'granted',
+    moduleIds: ['mod-clinical'],
     lastUpdated: '2026-10-14 08:00',
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Active clinical appointment in good standing',
@@ -1976,6 +2024,7 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     department: 'Reception & Triage',
     badgeNumber: 'REC-301',
     status: 'granted',
+    moduleIds: ['mod-frontdesk'],
     lastUpdated: '2026-10-14 08:00',
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Active front desk intake assignment in good standing',
@@ -1993,6 +2042,7 @@ export const INITIAL_STAFF_ACCESS: StaffAccessRecord[] = [
     department: 'Reception & Triage',
     badgeNumber: 'REC-302',
     status: 'granted',
+    moduleIds: ['mod-frontdesk'],
     lastUpdated: '2026-10-14 08:30',
     updatedBy: 'Dr. Marcus Vance (Managing Director)',
     reason: 'Active front desk admissions & intake assignment in good standing',

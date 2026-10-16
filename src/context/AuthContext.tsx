@@ -5,9 +5,11 @@ import {
   ROLE_CREDENTIALS,
   INITIAL_STAFF_ACCESS,
   INITIAL_ACCESS_AUDIT_LOG,
+  INITIAL_MODULES,
 } from '@/data/mockData';
 import {
   isAdmin,
+  getEffectiveAccesses,
   canGrantAdmin,
   canRevokeAdmin,
   canDeleteStaff,
@@ -188,12 +190,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const currentStaffRecord = staffAccessList.find(
     (s) => s.id === baseUser.id || s.badgeNumber === baseUser.badgeNumber || s.staffName === baseUser.name
   );
+
+  let currentModules = INITIAL_MODULES;
+  try {
+    const savedMods = sessionStorage.getItem('cms_modules_v2');
+    if (savedMods) {
+      const parsed = JSON.parse(savedMods);
+      if (Array.isArray(parsed) && parsed.length >= 3) {
+        currentModules = parsed;
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  const effectiveCapabilities = getEffectiveAccesses(
+    currentStaffRecord || baseUser,
+    currentModules
+  );
+
   const currentUser: User = {
     ...baseUser,
     isOriginalAdmin: baseUser.isOriginalAdmin || currentStaffRecord?.isOriginalAdmin || false,
-    capabilities: currentStaffRecord
-      ? currentStaffRecord.permissions.filter((p) => p.enabled).map((p) => p.id)
-      : baseUser.capabilities || [],
+    capabilities: effectiveCapabilities,
   };
 
   const updateCurrentUser = (updates: Partial<User>) => {
@@ -348,7 +367,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const record = staffAccessList.find((r) => r.id === recordId);
     if (!record) return;
 
-    const targetPerm = record.permissions.find((p) => p.id === permissionId);
+    const targetPerm = (record.permissions || []).find((p) => p.id === permissionId);
     const nextState = !targetPerm?.enabled;
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
     const oldState = targetPerm?.enabled ? 'Granted' : 'Not granted';
@@ -361,7 +380,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...r,
           lastUpdated: timestamp,
           updatedBy: 'Dr. Marcus Vance (Managing Director)',
-          permissions: r.permissions.map((p) =>
+          permissions: (r.permissions || []).map((p) =>
             p.id === permissionId ? { ...p, enabled: nextState } : p
           ),
         };
@@ -417,7 +436,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const newAuditEntries: AccessAuditLogEntry[] = [];
 
-    const existingPerms = [...record.permissions];
+    const existingPerms = [...(record.permissions || [])];
     for (const update of validUpdates) {
       if (!existingPerms.some((p) => p.id === update.permissionId)) {
         if (update.permissionId === 'perm-admin') {
