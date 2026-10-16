@@ -1043,7 +1043,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       {/* SUB-MODULE 1: ROLES */}
       {selectedSubTab === 'modules' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Role Governance & Selection Bar (fits 70% of the webapp page) */}
+          {/* Role Governance & Selection Bar */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="min-w-0">
@@ -1055,10 +1055,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 </span>
               </div>
 
-              {/* Selection Menu container fitting 70% of webapp page width */}
-              <div className="w-full lg:w-[70%] flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+              {/* Selection Menu container */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
                 {/* Search Option */}
-                <div className="relative flex-1">
+                <div className="relative w-full sm:w-80">
                   <InteractiveSearchBar
                     value={roleSearchTerm}
                     onChange={(val) => {
@@ -1840,7 +1840,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             })()
           ) : (
             <>
-              {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority (70% width) */}
+              {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -1849,9 +1849,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     </span>
                   </div>
 
-                  <div className="w-full lg:w-[70%] flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
                     {/* Search Input with Interactive Dropdown and Autofill */}
-                    <div className="relative flex-1">
+                    <div className="relative w-full sm:w-80">
                       <InteractiveSearchBar
                         value={searchTerm}
                         onChange={setSearchTerm}
