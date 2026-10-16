@@ -657,14 +657,14 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             <Table stackBelow="md">
               <TableHeader>
                 <TableRow>
-                  <TableHead>MRN</TableHead>
-                  <TableHead>Patient Name & Contact</TableHead>
-                  <TableHead hideBelow="sm">Demographics</TableHead>
-                  <TableHead hideBelow="md">Blood Group</TableHead>
-                  <TableHead hideBelow="lg">Allergies</TableHead>
-                  <TableHead hideBelow="xl">Chronic Conditions</TableHead>
-                  <TableHead hideBelow="xl">Emergency Contact</TableHead>
-                  <TableHead className="text-right align-middle whitespace-nowrap">Medical File Action</TableHead>
+                  <TableHead className="w-1/12 min-w-[80px]">MRN</TableHead>
+                  <TableHead className="w-3/12 min-w-[180px]">Patient Name & Contact</TableHead>
+                  <TableHead hideBelow="sm" className="w-1/12 min-w-[100px]">Demographics</TableHead>
+                  <TableHead hideBelow="md" className="w-1/12 min-w-[80px]">Blood Group</TableHead>
+                  <TableHead hideBelow="lg" className="w-2/12 min-w-[120px]">Allergies</TableHead>
+                  <TableHead hideBelow="xl" className="w-1/12 min-w-[120px]">Chronic Conditions</TableHead>
+                  <TableHead hideBelow="xl" className="w-2/12 min-w-[130px]">Emergency Contact</TableHead>
+                  <TableHead className="w-1/12 min-w-[100px] text-right align-middle whitespace-nowrap">Medical File Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -680,10 +680,10 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                               : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
                           }`}
                         >
-                          <TableCell label="MRN" className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                          <TableCell label="MRN" className="w-1/12 min-w-[80px] font-mono font-bold text-slate-900 dark:text-slate-100">
                             {pat.mrn}
                           </TableCell>
-                          <TableCell label="Patient Name & Contact">
+                          <TableCell label="Patient Name & Contact" className="w-3/12 min-w-[180px]">
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
@@ -693,13 +693,13 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                               <span>{pat.email}</span>
                             </div>
                           </TableCell>
-                          <TableCell label="Demographics" hideBelow="sm" className="text-slate-700 dark:text-slate-300 capitalize">
+                          <TableCell label="Demographics" hideBelow="sm" className="w-1/12 min-w-[100px] text-slate-700 dark:text-slate-300 capitalize">
                             {pat.age} yrs • {pat.gender}
                           </TableCell>
-                          <TableCell label="Blood Group" hideBelow="md">
+                          <TableCell label="Blood Group" hideBelow="md" className="w-1/12 min-w-[80px]">
                             <span className="font-medium text-slate-800 dark:text-slate-200">{pat.bloodGroup}</span>
                           </TableCell>
-                          <TableCell label="Allergies" hideBelow="lg">
+                          <TableCell label="Allergies" hideBelow="lg" className="w-2/12 min-w-[120px]">
                             {pat.allergies && pat.allergies.length > 0 ? (
                               <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
@@ -713,18 +713,18 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                               </span>
                             )}
                           </TableCell>
-                          <TableCell label="Chronic Conditions" hideBelow="xl" className="text-slate-600 dark:text-slate-400">
+                          <TableCell label="Chronic Conditions" hideBelow="xl" className="w-1/12 min-w-[120px] text-slate-600 dark:text-slate-400">
                             {pat.chronicConditions && pat.chronicConditions.length > 0
                               ? pat.chronicConditions.join(', ')
                               : 'None'}
                           </TableCell>
-                          <TableCell label="Emergency Contact" hideBelow="xl" className="text-slate-700 dark:text-slate-300">
+                          <TableCell label="Emergency Contact" hideBelow="xl" className="w-2/12 min-w-[130px] text-slate-700 dark:text-slate-300">
                             <div className="font-medium text-xs">{pat.emergencyContact?.name}</div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400">
                               {pat.emergencyContact?.relationship} • {pat.emergencyContact?.phone}
                             </div>
                           </TableCell>
-                          <TableCell label="Action" fullWidthOnStack className="text-right align-middle">
+                          <TableCell label="Action" fullWidthOnStack className="w-1/12 min-w-[100px] text-right align-middle whitespace-nowrap">
                             <Button
                               size="xs"
                               variant={isSelected ? 'secondary' : 'outline'}

@@ -261,15 +261,15 @@ export const AdminView: React.FC<AdminViewProps> = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
                 <tr>
-                  <th className="px-4 py-3.5 align-middle">Invoice #</th>
-                  <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                  <th className="px-4 py-3.5 align-middle">Issue Date</th>
-                  <th className="px-4 py-3.5 align-middle">Total Billed</th>
-                  <th className="px-4 py-3.5 align-middle">Amount Settled</th>
-                  <th className="px-4 py-3.5 align-middle">Balance Due</th>
-                  <th className="px-4 py-3.5 align-middle">Method</th>
-                  <th className="px-4 py-3.5 align-middle">Settlement Status</th>
-                  <th className="px-4 py-3.5 text-right align-middle">Action</th>
+                  <th className="w-1/12 min-w-[90px] px-4 py-3.5 align-middle">Invoice #</th>
+                  <th className="w-2/12 min-w-[140px] px-4 py-3.5 align-middle">Patient Name</th>
+                  <th className="w-1/12 min-w-[90px] px-4 py-3.5 align-middle">Issue Date</th>
+                  <th className="w-1/12 min-w-[90px] px-4 py-3.5 align-middle">Total Billed</th>
+                  <th className="w-1/12 min-w-[100px] px-4 py-3.5 align-middle">Amount Settled</th>
+                  <th className="w-1/12 min-w-[90px] px-4 py-3.5 align-middle">Balance Due</th>
+                  <th className="w-1/12 min-w-[90px] px-4 py-3.5 align-middle">Method</th>
+                  <th className="w-2/12 min-w-[120px] px-4 py-3.5 align-middle">Settlement Status</th>
+                  <th className="w-2/12 min-w-[120px] px-4 py-3.5 text-right align-middle">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

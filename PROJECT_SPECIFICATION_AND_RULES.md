@@ -442,3 +442,4 @@ This runs `tsc && vite build`. A valid build completes with **0 TypeScript error
 - [x] Managing Director supervisory read-only inspection renders without "View Only" boxes or enabled buttons.
 - [x] Vitals and allergy warnings are interactively editable with context persistence.
 - [x] Role-aware Dashboard serves as default landing page with summary card, inline SVG charts, and paginated lists.
+- [x] Proportional column width distribution across all tables (TableHead and TableCell), eliminating horizontal voids and awkward line wrapping.

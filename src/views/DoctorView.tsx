@@ -1198,13 +1198,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <Table stackBelow="md">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[56px]">#</TableHead>
-                          <TableHead className="w-[80px]">Time</TableHead>
-                          <TableHead className="w-[180px]">Patient</TableHead>
-                          <TableHead hideBelow="md" className="w-[140px]">Appt ID</TableHead>
-                          <TableHead className="w-full">Complaint</TableHead>
-                          <TableHead className="w-[140px]">Status</TableHead>
-                          <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                          <TableHead className="w-12 text-center">#</TableHead>
+                          <TableHead className="w-24 whitespace-nowrap">Time</TableHead>
+                          <TableHead className="w-44 whitespace-nowrap">Patient</TableHead>
+                          <TableHead hideBelow="md" className="w-32 whitespace-nowrap">Appt ID</TableHead>
+                          <TableHead className="w-auto min-w-[200px]">Complaint</TableHead>
+                          <TableHead className="w-36 whitespace-nowrap">Status</TableHead>
+                          <TableHead className="w-48 text-right whitespace-nowrap">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1218,32 +1218,32 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 key={apt.id}
                                 className={isCurrent ? 'bg-teal-50/50 dark:bg-teal-950/30' : ''}
                               >
-                                <TableCell label="Token #" className="text-slate-700 dark:text-slate-300 w-[56px]">
+                                <TableCell label="Token #" className="w-12 text-center text-slate-700 dark:text-slate-300">
                                   {apt.tokenNumber}
                                 </TableCell>
-                                <TableCell label="Time" className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[80px]">
+                                <TableCell label="Time" className="w-24 whitespace-nowrap text-slate-700 dark:text-slate-300">
                                   {new Date(apt.dateTime).toLocaleTimeString([], {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                   })}
                                 </TableCell>
-                                <TableCell label="Patient" className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap w-[180px]">
+                                <TableCell label="Patient" className="w-44 whitespace-nowrap font-bold text-slate-900 dark:text-slate-100">
                                   {apt.patientName}
                                 </TableCell>
-                                <TableCell label="Appt ID" hideBelow="md" className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
+                                <TableCell label="Appt ID" hideBelow="md" className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300">
                                   {apt.appointmentNumber}
                                 </TableCell>
                                 <TableCell
                                   label="Complaint"
-                                  className="text-slate-600 dark:text-slate-300 w-full"
+                                  className="w-auto min-w-[200px] text-slate-600 dark:text-slate-300"
                                   title={apt.reasonForVisit}
                                 >
                                   <span className="line-clamp-2">{apt.reasonForVisit}</span>
                                 </TableCell>
-                                <TableCell label="Status" className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
+                                <TableCell label="Status" className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
                                   {formatAppointmentStatus(apt.status)}
                                 </TableCell>
-                                <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                                <TableCell label="Actions" fullWidthOnStack className="w-48 text-right whitespace-nowrap">
                                   <div className="flex items-center justify-end gap-2">
                                     {isInConsultation && isCurrent ? (
                                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -1346,15 +1346,15 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Table stackBelow="md">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>MRN</TableHead>
-                    <TableHead>Patient Name</TableHead>
-                    <TableHead hideBelow="md">Demographics</TableHead>
-                    <TableHead hideBelow="sm">Phone</TableHead>
-                    <TableHead hideBelow="md">Blood Group</TableHead>
-                    <TableHead hideBelow="sm">Allergies</TableHead>
-                    <TableHead hideBelow="lg">Chronic Conditions</TableHead>
-                    {isAdmin(currentUser) && <TableHead hideBelow="md">Assigned Doctor</TableHead>}
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-28 whitespace-nowrap">MRN</TableHead>
+                    <TableHead className="w-48">Patient Name</TableHead>
+                    <TableHead hideBelow="md" className="w-32 whitespace-nowrap">Demographics</TableHead>
+                    <TableHead hideBelow="sm" className="w-36 whitespace-nowrap">Phone</TableHead>
+                    <TableHead hideBelow="md" className="w-24 whitespace-nowrap">Blood Group</TableHead>
+                    <TableHead hideBelow="sm" className="w-1/6 min-w-[140px]">Allergies</TableHead>
+                    <TableHead hideBelow="lg" className="w-1/6 min-w-[140px]">Chronic Conditions</TableHead>
+                    {isAdmin(currentUser) && <TableHead hideBelow="md" className="w-36 whitespace-nowrap">Assigned Doctor</TableHead>}
+                    <TableHead className="w-44 text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1379,10 +1379,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       return (
                         <TableRow key={pat.id}>
-                          <TableCell label="MRN" className="text-slate-700 dark:text-slate-300 font-mono">
+                          <TableCell label="MRN" className="w-28 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
                             {pat.mrn}
                           </TableCell>
-                          <TableCell label="Patient Name">
+                          <TableCell label="Patient Name" className="w-48">
                             <div className="font-bold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
@@ -1390,27 +1390,27 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               {pat.email}
                             </div>
                           </TableCell>
-                          <TableCell label="Demographics" hideBelow="md" className="text-slate-700 dark:text-slate-300 capitalize">
+                          <TableCell label="Demographics" hideBelow="md" className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300 capitalize">
                             {pat.age} yrs • {pat.gender}
                           </TableCell>
-                          <TableCell label="Phone" hideBelow="sm" className="text-slate-700 dark:text-slate-300">
+                          <TableCell label="Phone" hideBelow="sm" className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
                             {pat.phone}
                           </TableCell>
-                          <TableCell label="Blood Group" hideBelow="md" className="text-slate-700 dark:text-slate-300">
+                          <TableCell label="Blood Group" hideBelow="md" className="w-24 whitespace-nowrap text-slate-700 dark:text-slate-300">
                             {pat.bloodGroup}
                           </TableCell>
-                          <TableCell label="Allergies" hideBelow="sm" className="text-slate-600 dark:text-slate-400 break-words">
+                          <TableCell label="Allergies" hideBelow="sm" className="w-1/6 min-w-[140px] text-slate-600 dark:text-slate-400 break-words">
                             {pat.allergies && pat.allergies.length > 0 ? deduplicateList(pat.allergies).join(', ') : 'None recorded'}
                           </TableCell>
-                          <TableCell label="Chronic Conditions" hideBelow="lg" className="text-slate-600 dark:text-slate-400 break-words">
+                          <TableCell label="Chronic Conditions" hideBelow="lg" className="w-1/6 min-w-[140px] text-slate-600 dark:text-slate-400 break-words">
                             {pat.chronicConditions && pat.chronicConditions.length > 0 ? deduplicateList(pat.chronicConditions).join(', ') : 'None recorded'}
                           </TableCell>
                           {isAdmin(currentUser) && (
-                            <TableCell label="Assigned Doctor" hideBelow="md" className="text-slate-700 dark:text-slate-300">
+                            <TableCell label="Assigned Doctor" hideBelow="md" className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
                               {assignedDoc ? assignedDoc.name : <span className="italic text-slate-400">Unassigned</span>}
                             </TableCell>
                           )}
-                          <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                          <TableCell label="Actions" fullWidthOnStack className="w-44 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2 flex-wrap sm:flex-nowrap">
                               {canTransfer && (
                                 <Button
@@ -1506,32 +1506,32 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Table stackBelow="md">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Rx #</TableHead>
-                    <TableHead>Patient Name</TableHead>
-                    <TableHead hideBelow="sm">Issue Date</TableHead>
-                    <TableHead>Diagnosis</TableHead>
-                    <TableHead>Prescribed Regimen</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-1/12 min-w-[90px]">Rx #</TableHead>
+                    <TableHead className="w-2/12 min-w-[150px]">Patient Name</TableHead>
+                    <TableHead hideBelow="sm" className="w-1/12 min-w-[100px]">Issue Date</TableHead>
+                    <TableHead className="w-3/12 min-w-[180px]">Diagnosis</TableHead>
+                    <TableHead className="w-4/12 min-w-[240px]">Prescribed Regimen</TableHead>
+                    <TableHead className="w-1/12 min-w-[90px] text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPrescriptions.length > 0 ? (
                     paginatedPrescriptions.map((rx) => (
                       <TableRow key={rx.id}>
-                        <TableCell label="Rx #" className="text-slate-700 dark:text-slate-300 font-mono">
+                        <TableCell label="Rx #" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300 font-mono">
                           {rx.prescriptionNumber}
                         </TableCell>
-                        <TableCell label="Patient Name" className="font-semibold text-slate-900 dark:text-slate-100">
+                        <TableCell label="Patient Name" className="w-2/12 min-w-[150px] font-semibold text-slate-900 dark:text-slate-100">
                           {rx.patientName}
                         </TableCell>
-                        <TableCell label="Issue Date" hideBelow="sm" className="text-slate-600 dark:text-slate-400">
+                        <TableCell label="Issue Date" hideBelow="sm" className="w-1/12 min-w-[100px] text-slate-600 dark:text-slate-400">
                           {rx.date}
                         </TableCell>
-                        <TableCell label="Diagnosis" className="text-slate-800 dark:text-slate-200 font-medium break-words">
+                        <TableCell label="Diagnosis" className="w-3/12 min-w-[180px] text-slate-800 dark:text-slate-200 font-medium break-words">
                           {rx.diagnosis}
                         </TableCell>
-                        <TableCell label="Prescribed Regimen">
-                          <div className="space-y-1 whitespace-normal break-words max-w-md">
+                        <TableCell label="Prescribed Regimen" className="w-4/12 min-w-[240px]">
+                          <div className="space-y-1 whitespace-normal break-words">
                             {rx.items && rx.items.length > 0 ? (
                               rx.items.map((item, idx) => {
                                 if (typeof (item as unknown) === 'string') {
@@ -1558,7 +1558,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             )}
                           </div>
                         </TableCell>
-                        <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                        <TableCell label="Actions" fullWidthOnStack className="w-1/12 min-w-[90px] text-right whitespace-nowrap">
                           <div className="flex items-center justify-end">
                             <Button
                               size="xs"

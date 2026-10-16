@@ -935,10 +935,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Patient</TableHead>
-                      <TableHead>Doctor</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="w-2/12 min-w-[90px]">Time</TableHead>
+                      <TableHead className="w-4/12 min-w-[140px]">Patient</TableHead>
+                      <TableHead className="w-3/12 min-w-[130px]">Doctor</TableHead>
+                      <TableHead className="w-3/12 min-w-[100px]">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -951,16 +951,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Time" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="w-2/12 min-w-[90px] font-mono text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
-                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="w-4/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
                             {apt.patientName}
                           </TableCell>
-                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="w-3/12 min-w-[130px] text-slate-600 dark:text-slate-300">
                             {apt.doctorName}
                           </TableCell>
-                          <TableCell label="Status" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="w-3/12 min-w-[100px] text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
                           </TableCell>
                         </TableRow>
@@ -995,10 +995,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Patient</TableHead>
-                      <TableHead>Doctor</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Reason</TableHead>
+                      <TableHead className="w-3/12 min-w-[130px]">Patient</TableHead>
+                      <TableHead className="w-3/12 min-w-[130px]">Doctor</TableHead>
+                      <TableHead className="w-2/12 min-w-[100px]">Due Date</TableHead>
+                      <TableHead className="w-4/12 min-w-[140px]">Reason</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1011,16 +1011,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedFollowUps.map((fu) => (
                         <TableRow key={fu.id}>
-                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="w-3/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
                             {fu.patientName}
                           </TableCell>
-                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="w-3/12 min-w-[130px] text-slate-600 dark:text-slate-300">
                             {fu.doctorName}
                           </TableCell>
-                          <TableCell label="Due Date" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Due Date" className="w-2/12 min-w-[100px] font-mono text-slate-600 dark:text-slate-300">
                             {fu.dueDate}
                           </TableCell>
-                          <TableCell label="Reason" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Reason" className="w-4/12 min-w-[140px] text-slate-600 dark:text-slate-300">
                             {fu.reason || 'Routine follow-up'}
                           </TableCell>
                         </TableRow>
@@ -1055,10 +1055,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Applied</TableHead>
-                      <TableHead>Action</TableHead>
+                      <TableHead className="w-4/12 min-w-[140px]">Name</TableHead>
+                      <TableHead className="w-2/12 min-w-[90px]">Role</TableHead>
+                      <TableHead className="w-3/12 min-w-[110px]">Applied</TableHead>
+                      <TableHead className="w-3/12 min-w-[100px] text-right whitespace-nowrap">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1071,16 +1071,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedClearances.map((c) => (
                         <TableRow key={c.id}>
-                          <TableCell label="Name" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Name" className="w-4/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
                             {c.name}
                           </TableCell>
-                          <TableCell label="Role" className="capitalize text-slate-600 dark:text-slate-300">
+                          <TableCell label="Role" className="w-2/12 min-w-[90px] capitalize text-slate-600 dark:text-slate-300">
                             {c.role}
                           </TableCell>
-                          <TableCell label="Applied" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Applied" className="w-3/12 min-w-[110px] font-mono text-slate-600 dark:text-slate-300">
                             {c.applied}
                           </TableCell>
-                          <TableCell label="Action" fullWidthOnStack>
+                          <TableCell label="Action" fullWidthOnStack className="w-3/12 min-w-[100px] text-right whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => onNavigate?.('access_control', 'add_users')}
@@ -1126,9 +1126,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Patient</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="w-3/12 min-w-[100px]">Time</TableHead>
+                      <TableHead className="w-6/12 min-w-[180px]">Patient</TableHead>
+                      <TableHead className="w-3/12 min-w-[100px]">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1141,13 +1141,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Time" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="w-3/12 min-w-[100px] font-mono text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
-                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="w-6/12 min-w-[180px] font-medium text-slate-900 dark:text-slate-100">
                             {apt.patientName}
                           </TableCell>
-                          <TableCell label="Status" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="w-3/12 min-w-[100px] text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
                           </TableCell>
                         </TableRow>
@@ -1182,9 +1182,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Patient</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Reason</TableHead>
+                      <TableHead className="w-4/12 min-w-[140px]">Patient</TableHead>
+                      <TableHead className="w-3/12 min-w-[110px]">Due Date</TableHead>
+                      <TableHead className="w-5/12 min-w-[160px]">Reason</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1197,13 +1197,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedFollowUps.map((fu) => (
                         <TableRow key={fu.id}>
-                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="w-4/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
                             {fu.patientName}
                           </TableCell>
-                          <TableCell label="Due Date" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Due Date" className="w-3/12 min-w-[110px] font-mono text-slate-600 dark:text-slate-300">
                             {fu.dueDate}
                           </TableCell>
-                          <TableCell label="Reason" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Reason" className="w-5/12 min-w-[160px] text-slate-600 dark:text-slate-300">
                             {fu.reason || 'Routine follow-up'}
                           </TableCell>
                         </TableRow>
@@ -1243,11 +1243,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Patient</TableHead>
-                      <TableHead>Doctor</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Action</TableHead>
+                      <TableHead className="w-2/12 min-w-[80px]">Time</TableHead>
+                      <TableHead className="w-3/12 min-w-[130px]">Patient</TableHead>
+                      <TableHead className="w-3/12 min-w-[120px]">Doctor</TableHead>
+                      <TableHead className="w-2/12 min-w-[90px]">Status</TableHead>
+                      <TableHead className="w-2/12 min-w-[90px] text-right whitespace-nowrap">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1260,19 +1260,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Time" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="w-2/12 min-w-[80px] font-mono text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
-                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="w-3/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
                             {apt.patientName}
                           </TableCell>
-                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="w-3/12 min-w-[120px] text-slate-600 dark:text-slate-300">
                             {apt.doctorName}
                           </TableCell>
-                          <TableCell label="Status" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
                           </TableCell>
-                          <TableCell label="Action" fullWidthOnStack>
+                          <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[90px] text-right whitespace-nowrap">
                             {apt.status === 'scheduled' ? (
                               <Button
                                 size="sm"
@@ -1319,10 +1319,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Patient</TableHead>
-                      <TableHead>Doctor</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Reason</TableHead>
+                      <TableHead className="w-3/12 min-w-[130px]">Patient</TableHead>
+                      <TableHead className="w-3/12 min-w-[130px]">Doctor</TableHead>
+                      <TableHead className="w-2/12 min-w-[100px]">Due Date</TableHead>
+                      <TableHead className="w-4/12 min-w-[140px]">Reason</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1335,16 +1335,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedFollowUps.map((fu) => (
                         <TableRow key={fu.id}>
-                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="w-3/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
                             {fu.patientName}
                           </TableCell>
-                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="w-3/12 min-w-[130px] text-slate-600 dark:text-slate-300">
                             {fu.doctorName}
                           </TableCell>
-                          <TableCell label="Due Date" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Due Date" className="w-2/12 min-w-[100px] font-mono text-slate-600 dark:text-slate-300">
                             {fu.dueDate}
                           </TableCell>
-                          <TableCell label="Reason" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Reason" className="w-4/12 min-w-[140px] text-slate-600 dark:text-slate-300">
                             {fu.reason || 'Routine follow-up'}
                           </TableCell>
                         </TableRow>
@@ -1384,11 +1384,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Doctor</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="w-2/12 min-w-[90px]">Date</TableHead>
+                      <TableHead className="w-2/12 min-w-[80px]">Time</TableHead>
+                      <TableHead className="w-3/12 min-w-[120px]">Doctor</TableHead>
+                      <TableHead className="w-3/12 min-w-[130px]">Reason</TableHead>
+                      <TableHead className="w-2/12 min-w-[90px]">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1401,19 +1401,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedPatientAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Date" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Date" className="w-2/12 min-w-[90px] font-mono text-slate-600 dark:text-slate-300">
                             {apt.date}
                           </TableCell>
-                          <TableCell label="Time" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="w-2/12 min-w-[80px] font-mono text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
-                          <TableCell label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Doctor" className="w-3/12 min-w-[120px] font-medium text-slate-900 dark:text-slate-100">
                             {apt.doctorName}
                           </TableCell>
-                          <TableCell label="Reason" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Reason" className="w-3/12 min-w-[130px] text-slate-600 dark:text-slate-300">
                             {apt.reason}
                           </TableCell>
-                          <TableCell label="Status" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
                           </TableCell>
                         </TableRow>
@@ -1448,10 +1448,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Medication</TableHead>
-                      <TableHead>Doctor</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="w-2/12 min-w-[90px]">Date</TableHead>
+                      <TableHead className="w-4/12 min-w-[150px]">Medication</TableHead>
+                      <TableHead className="w-3/12 min-w-[120px]">Doctor</TableHead>
+                      <TableHead className="w-3/12 min-w-[90px]">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1464,16 +1464,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedPatientPrescriptions.map((rx) => (
                         <TableRow key={rx.id}>
-                          <TableCell label="Date" className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Date" className="w-2/12 min-w-[90px] font-mono text-slate-600 dark:text-slate-300">
                             {rx.date}
                           </TableCell>
-                          <TableCell label="Medication" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Medication" className="w-4/12 min-w-[150px] font-medium text-slate-900 dark:text-slate-100">
                             {rx.medications}
                           </TableCell>
-                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="w-3/12 min-w-[120px] text-slate-600 dark:text-slate-300">
                             {rx.doctorName}
                           </TableCell>
-                          <TableCell label="Status" className="capitalize text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="w-3/12 min-w-[90px] capitalize text-slate-600 dark:text-slate-300">
                             {rx.status}
                           </TableCell>
                         </TableRow>

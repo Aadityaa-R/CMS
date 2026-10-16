@@ -208,31 +208,31 @@ export const LoginView: React.FC = () => {
                 <Table stackBelow="sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead hideBelow="sm">Password</TableHead>
-                      <TableHead hideBelow="sm">Assigned Staff</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead className="w-3/12 min-w-[120px]">Role</TableHead>
+                      <TableHead className="w-2/12 min-w-[100px]">Username</TableHead>
+                      <TableHead hideBelow="sm" className="w-2/12 min-w-[100px]">Password</TableHead>
+                      <TableHead hideBelow="sm" className="w-3/12 min-w-[140px]">Assigned Staff</TableHead>
+                      <TableHead className="w-2/12 min-w-[80px] text-right whitespace-nowrap">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {roleCredentials.map((c) => (
                       <TableRow key={c.username}>
-                        <TableCell label="Role">
+                        <TableCell label="Role" className="w-3/12 min-w-[120px]">
                           <span className="font-medium text-teal-700 dark:text-teal-400">
                             {c.label}
                           </span>
                         </TableCell>
-                        <TableCell label="Username" className="font-mono text-[11px] text-slate-700">
+                        <TableCell label="Username" className="w-2/12 min-w-[100px] font-mono text-[11px] text-slate-700">
                           {c.username}
                         </TableCell>
-                        <TableCell label="Password" hideBelow="sm" className="font-mono text-[11px] text-slate-700">
+                        <TableCell label="Password" hideBelow="sm" className="w-2/12 min-w-[100px] font-mono text-[11px] text-slate-700">
                           {c.password}
                         </TableCell>
-                        <TableCell label="Assigned Staff" hideBelow="sm" className="text-slate-600 truncate max-w-[140px]">
+                        <TableCell label="Assigned Staff" hideBelow="sm" className="w-3/12 min-w-[140px] text-slate-600 truncate">
                           {c.fullName}
                         </TableCell>
-                        <TableCell label="Action" fullWidthOnStack className="text-right">
+                        <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[80px] text-right whitespace-nowrap">
                           <Button
                             size="xs"
                             variant="outline"

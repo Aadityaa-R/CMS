@@ -142,6 +142,12 @@ const stackCellClasses: Record<StackBreakpoint, string> = {
   lg: 'block lg:table-cell py-1.5 lg:py-3 px-1 lg:px-4',
 };
 
+const fullWidthStackClasses: Record<StackBreakpoint, string> = {
+  sm: 'block w-full pt-2 sm:pt-3 border-t sm:border-t-0 sm:table-cell sm:w-auto',
+  md: 'block w-full pt-2 md:pt-3 border-t md:border-t-0 md:table-cell md:w-auto',
+  lg: 'block w-full pt-2 lg:pt-3 border-t lg:border-t-0 lg:table-cell lg:w-auto',
+};
+
 export const TableCell: React.FC<TableCellProps> = ({
   className = '',
   label,
@@ -155,9 +161,10 @@ export const TableCell: React.FC<TableCellProps> = ({
   const stackCellClass = stackBelow ? stackCellClasses[stackBelow] : '';
 
   if (stackBelow && fullWidthOnStack) {
+    const fullStackClass = fullWidthStackClasses[stackBelow];
     return (
       <td
-        className={`px-4 py-3 align-middle ${hideClass} ${stackCellClass} block w-full pt-2 md:pt-3 border-t md:border-t-0 border-slate-100 dark:border-slate-800 ${className}`}
+        className={`px-4 py-3 align-middle ${hideClass} ${fullStackClass} ${className}`}
         {...props}
       >
         {children}
@@ -167,18 +174,29 @@ export const TableCell: React.FC<TableCellProps> = ({
 
   if (stackBelow && label) {
     const hideLabelClass = hideLabelClasses[stackBelow];
+    const breakpoint = stackBelow;
+    const desktopDisplay = breakpoint === 'sm' ? 'sm:block' : breakpoint === 'lg' ? 'lg:block' : 'md:block';
+    const isRightAligned = className.includes('text-right');
+    const textAlignment = isRightAligned
+      ? 'text-right'
+      : breakpoint === 'sm'
+      ? 'text-right sm:text-left'
+      : breakpoint === 'lg'
+      ? 'text-right lg:text-left'
+      : 'text-right md:text-left';
+
     return (
       <td
         className={`px-4 py-3 align-middle ${hideClass} ${stackCellClass} ${className}`}
         {...props}
       >
-        <div className="flex items-center justify-between gap-2 md:block">
+        <div className={`flex items-center justify-between gap-2 ${desktopDisplay}`}>
           <span
             className={`${hideLabelClass} text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0 select-none`}
           >
             {label}
           </span>
-          <div className="text-right md:text-left flex-1 min-w-0">{children}</div>
+          <div className={`${textAlignment} flex-1`}>{children}</div>
         </div>
       </td>
     );

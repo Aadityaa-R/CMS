@@ -538,22 +538,22 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                   <Table stackBelow="md">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Token</TableHead>
-                        <TableHead>Patient Details</TableHead>
-                        <TableHead hideBelow="md">Physician</TableHead>
-                        <TableHead hideBelow="sm">Scheduled Time</TableHead>
-                        <TableHead hideBelow="lg">Reason for Visit</TableHead>
-                        <TableHead>Status</TableHead>
-                        {!isMD && <TableHead className="text-right align-middle whitespace-nowrap">Front Desk Action</TableHead>}
+                        <TableHead className="w-1/12 min-w-[70px]">Token</TableHead>
+                        <TableHead className="w-2/12 min-w-[150px]">Patient Details</TableHead>
+                        <TableHead hideBelow="md" className="w-2/12 min-w-[140px]">Physician</TableHead>
+                        <TableHead hideBelow="sm" className="w-1/12 min-w-[90px]">Scheduled Time</TableHead>
+                        <TableHead hideBelow="lg" className="w-3/12 min-w-[160px]">Reason for Visit</TableHead>
+                        <TableHead className="w-1/12 min-w-[90px]">Status</TableHead>
+                        {!isMD && <TableHead className="w-2/12 min-w-[130px] text-right align-middle whitespace-nowrap">Front Desk Action</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedLounge.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Token" className="font-mono font-bold text-teal-600 dark:text-teal-400">
+                          <TableCell label="Token" className="w-1/12 min-w-[70px] font-mono font-bold text-teal-600 dark:text-teal-400">
                             #{apt.tokenNumber}
                           </TableCell>
-                          <TableCell label="Patient Details">
+                          <TableCell label="Patient Details" className="w-2/12 min-w-[150px]">
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {apt.patientName}
                             </div>
@@ -561,7 +561,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                               {apt.patientPhone}
                             </div>
                           </TableCell>
-                          <TableCell label="Physician" hideBelow="md">
+                          <TableCell label="Physician" hideBelow="md" className="w-2/12 min-w-[140px]">
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {apt.doctorName}
                             </div>
@@ -569,16 +569,16 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                               {apt.department}
                             </div>
                           </TableCell>
-                          <TableCell label="Scheduled Time" hideBelow="sm" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                          <TableCell label="Scheduled Time" hideBelow="sm" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                             {new Date(apt.dateTime).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}
                           </TableCell>
-                          <TableCell label="Reason for Visit" hideBelow="lg" className="text-slate-600 dark:text-slate-400">
+                          <TableCell label="Reason for Visit" hideBelow="lg" className="w-3/12 min-w-[160px] text-slate-600 dark:text-slate-400">
                             {apt.reasonForVisit}
                           </TableCell>
-                          <TableCell label="Status">
+                          <TableCell label="Status" className="w-1/12 min-w-[90px]">
                             <div className="flex items-center gap-1.5">
                               <span
                                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -595,7 +595,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                             </div>
                           </TableCell>
                           {!isMD && (
-                            <TableCell label="Action" fullWidthOnStack className="text-right align-middle whitespace-nowrap">
+                            <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[130px] text-right align-middle whitespace-nowrap">
                               {apt.status === 'scheduled' || apt.status === 'confirmed' ? (
                                 <Button
                                   size="xs"
@@ -729,35 +729,35 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
               <Table stackBelow="md">
                 <TableHeader>
                   <TableRow>
-                    <TableHead hideBelow="sm">Appointment #</TableHead>
-                    <TableHead>Patient Name</TableHead>
-                    <TableHead hideBelow="md">Contact Phone</TableHead>
-                    <TableHead>Scheduled Slot</TableHead>
-                    <TableHead hideBelow="sm">Consulting Doctor</TableHead>
-                    <TableHead>Status</TableHead>
-                    {!isMD && <TableHead className="text-right align-middle whitespace-nowrap">Action</TableHead>}
+                    <TableHead hideBelow="sm" className="w-2/12 min-w-[130px]">Appointment #</TableHead>
+                    <TableHead className="w-2/12 min-w-[150px]">Patient Name</TableHead>
+                    <TableHead hideBelow="md" className="w-2/12 min-w-[120px]">Contact Phone</TableHead>
+                    <TableHead className="w-1/12 min-w-[90px]">Scheduled Slot</TableHead>
+                    <TableHead hideBelow="sm" className="w-2/12 min-w-[140px]">Consulting Doctor</TableHead>
+                    <TableHead className="w-1/12 min-w-[90px]">Status</TableHead>
+                    {!isMD && <TableHead className="w-2/12 min-w-[120px] text-right align-middle whitespace-nowrap">Action</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {awaitingCheckIn.length > 0 ? (
                     paginatedCheckIn.map((apt) => (
                       <TableRow key={apt.id}>
-                        <TableCell label="Appointment #" hideBelow="sm" className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                        <TableCell label="Appointment #" hideBelow="sm" className="w-2/12 min-w-[130px] font-mono font-semibold text-slate-900 dark:text-slate-100">
                           {apt.appointmentNumber}
                         </TableCell>
-                        <TableCell label="Patient Name" className="font-semibold text-slate-900 dark:text-slate-100">
+                        <TableCell label="Patient Name" className="w-2/12 min-w-[150px] font-semibold text-slate-900 dark:text-slate-100">
                           {apt.patientName}
                         </TableCell>
-                        <TableCell label="Contact Phone" hideBelow="md" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                        <TableCell label="Contact Phone" hideBelow="md" className="w-2/12 min-w-[120px] text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                           {apt.patientPhone}
                         </TableCell>
-                        <TableCell label="Scheduled Slot" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                        <TableCell label="Scheduled Slot" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                           {new Date(apt.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </TableCell>
-                        <TableCell label="Consulting Doctor" hideBelow="sm" className="text-slate-800 dark:text-slate-200">
+                        <TableCell label="Consulting Doctor" hideBelow="sm" className="w-2/12 min-w-[140px] text-slate-800 dark:text-slate-200">
                           {apt.doctorName}
                         </TableCell>
-                        <TableCell label="Status">
+                        <TableCell label="Status" className="w-1/12 min-w-[90px]">
                           <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                             <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
@@ -766,7 +766,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                           </div>
                         </TableCell>
                         {!isMD && (
-                          <TableCell label="Action" fullWidthOnStack className="text-right align-middle whitespace-nowrap">
+                          <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[120px] text-right align-middle whitespace-nowrap">
                             <Button
                               size="xs"
                               variant="primary"
@@ -828,22 +828,22 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
               <Table stackBelow="md">
                 <TableHeader>
                   <TableRow>
-                    <TableHead hideBelow="sm">MRN</TableHead>
-                    <TableHead>Patient Name</TableHead>
-                    <TableHead hideBelow="md">Age & Gender</TableHead>
-                    <TableHead>Contact Phone</TableHead>
-                    <TableHead hideBelow="lg">Blood Group</TableHead>
-                    <TableHead hideBelow="xl">Emergency Contact</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead hideBelow="sm" className="w-2/12 min-w-[120px]">MRN</TableHead>
+                    <TableHead className="w-3/12 min-w-[180px]">Patient Name</TableHead>
+                    <TableHead hideBelow="md" className="w-2/12 min-w-[120px]">Age & Gender</TableHead>
+                    <TableHead className="w-2/12 min-w-[120px]">Contact Phone</TableHead>
+                    <TableHead hideBelow="lg" className="w-1/12 min-w-[90px]">Blood Group</TableHead>
+                    <TableHead hideBelow="xl" className="w-1/12 min-w-[120px]">Emergency Contact</TableHead>
+                    <TableHead className="w-1/12 min-w-[80px]">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedIntake.map((pat) => (
                     <TableRow key={pat.id}>
-                      <TableCell label="MRN" hideBelow="sm" className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                      <TableCell label="MRN" hideBelow="sm" className="w-2/12 min-w-[120px] font-mono font-semibold text-slate-900 dark:text-slate-100">
                         {pat.mrn}
                       </TableCell>
-                      <TableCell label="Patient Name">
+                      <TableCell label="Patient Name" className="w-3/12 min-w-[180px]">
                         <div className="font-semibold text-slate-900 dark:text-slate-100">
                           {pat.firstName} {pat.lastName}
                         </div>
@@ -851,19 +851,19 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                           {pat.email}
                         </div>
                       </TableCell>
-                      <TableCell label="Age & Gender" hideBelow="md" className="text-slate-700 dark:text-slate-300 capitalize">
+                      <TableCell label="Age & Gender" hideBelow="md" className="w-2/12 min-w-[120px] text-slate-700 dark:text-slate-300 capitalize">
                         {pat.age} yrs • {pat.gender}
                       </TableCell>
-                      <TableCell label="Contact Phone" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                      <TableCell label="Contact Phone" className="w-2/12 min-w-[120px] text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                         {pat.phone}
                       </TableCell>
-                      <TableCell label="Blood Group" hideBelow="lg">
+                      <TableCell label="Blood Group" hideBelow="lg" className="w-1/12 min-w-[90px]">
                         <span className="font-medium text-slate-800 dark:text-slate-200">{pat.bloodGroup}</span>
                       </TableCell>
-                      <TableCell label="Emergency Contact" hideBelow="xl" className="text-slate-700 dark:text-slate-300">
+                      <TableCell label="Emergency Contact" hideBelow="xl" className="w-1/12 min-w-[120px] text-slate-700 dark:text-slate-300">
                         {pat.emergencyContact?.name} ({pat.emergencyContact?.relationship})
                       </TableCell>
-                      <TableCell label="Status">
+                      <TableCell label="Status" className="w-1/12 min-w-[80px]">
                         <div className="flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
                           <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
@@ -997,37 +997,37 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
               <Table stackBelow="md">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Token #</TableHead>
-                    <TableHead hideBelow="sm">Appointment ID</TableHead>
-                    <TableHead>Patient Name</TableHead>
-                    <TableHead hideBelow="md">Physician</TableHead>
-                    <TableHead>Scheduled Time</TableHead>
-                    <TableHead hideBelow="lg">Reason for Visit</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="w-1/12 min-w-[70px]">Token #</TableHead>
+                    <TableHead hideBelow="sm" className="w-2/12 min-w-[130px]">Appointment ID</TableHead>
+                    <TableHead className="w-2/12 min-w-[150px]">Patient Name</TableHead>
+                    <TableHead hideBelow="md" className="w-2/12 min-w-[140px]">Physician</TableHead>
+                    <TableHead className="w-1/12 min-w-[100px]">Scheduled Time</TableHead>
+                    <TableHead hideBelow="lg" className="w-3/12 min-w-[160px]">Reason for Visit</TableHead>
+                    <TableHead className="w-1/12 min-w-[90px]">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedBookings.map((apt) => (
                     <TableRow key={apt.id}>
-                      <TableCell label="Token #" className="font-mono font-bold text-teal-600 dark:text-teal-400">
+                      <TableCell label="Token #" className="w-1/12 min-w-[70px] font-mono font-bold text-teal-600 dark:text-teal-400">
                         #{apt.tokenNumber}
                       </TableCell>
-                      <TableCell label="Appointment ID" hideBelow="sm" className="font-mono text-slate-800 dark:text-slate-200">
+                      <TableCell label="Appointment ID" hideBelow="sm" className="w-2/12 min-w-[130px] font-mono text-slate-800 dark:text-slate-200">
                         {apt.appointmentNumber}
                       </TableCell>
-                      <TableCell label="Patient Name" className="font-semibold text-slate-900 dark:text-slate-100">
+                      <TableCell label="Patient Name" className="w-2/12 min-w-[150px] font-semibold text-slate-900 dark:text-slate-100">
                         {apt.patientName}
                       </TableCell>
-                      <TableCell label="Physician" hideBelow="md" className="text-slate-700 dark:text-slate-300">
+                      <TableCell label="Physician" hideBelow="md" className="w-2/12 min-w-[140px] text-slate-700 dark:text-slate-300">
                         {apt.doctorName}
                       </TableCell>
-                      <TableCell label="Scheduled Time" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                      <TableCell label="Scheduled Time" className="w-1/12 min-w-[100px] text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                         {new Date(apt.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </TableCell>
-                      <TableCell label="Reason for Visit" hideBelow="lg" className="text-slate-600 dark:text-slate-400">
+                      <TableCell label="Reason for Visit" hideBelow="lg" className="w-3/12 min-w-[160px] text-slate-600 dark:text-slate-400">
                         {apt.reasonForVisit}
                       </TableCell>
-                      <TableCell label="Status">
+                      <TableCell label="Status" className="w-1/12 min-w-[90px]">
                         <div className="flex items-center gap-1.5">
                           <span
                             className={`w-1.5 h-1.5 rounded-full shrink-0 ${

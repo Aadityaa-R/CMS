@@ -1222,9 +1222,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                         <Table stackBelow="md">
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Access</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead className="text-right whitespace-nowrap">Action</TableHead>
+                              <TableHead className="w-7/12 min-w-[280px]">Access</TableHead>
+                              <TableHead className="w-3/12 min-w-[140px]">Status</TableHead>
+                              <TableHead className="w-2/12 min-w-[120px] text-right whitespace-nowrap">Action</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1242,7 +1242,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                               return (
                                 <TableRow key={item.id}>
-                                  <TableCell label="Access">
+                                  <TableCell label="Access" className="w-7/12 min-w-[280px]">
                                     <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
                                       {item.label}
                                     </div>
@@ -1255,10 +1255,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                       </div>
                                     )}
                                   </TableCell>
-                                  <TableCell label="Status" className="text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                  <TableCell label="Status" className="w-3/12 min-w-[140px] text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                     {isIncluded ? 'Included' : 'Not included'}
                                   </TableCell>
-                                  <TableCell label="Action" fullWidthOnStack className="text-right whitespace-nowrap">
+                                  <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[120px] text-right whitespace-nowrap">
                                     {isIncluded ? (
                                       <Button
                                         size="xs"
@@ -1329,11 +1329,11 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                         <Table stackBelow="md">
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Staff Type</TableHead>
-                              <TableHead>ID</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                              <TableHead className="w-4/12 min-w-[220px]">Name</TableHead>
+                              <TableHead className="w-2/12 min-w-[120px]">Staff Type</TableHead>
+                              <TableHead className="w-2/12 min-w-[100px]">ID</TableHead>
+                              <TableHead className="w-2/12 min-w-[100px]">Status</TableHead>
+                              <TableHead className="w-2/12 min-w-[120px] text-right whitespace-nowrap">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1366,7 +1366,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                                 return (
                                   <TableRow key={mid}>
-                                    <TableCell label="Name">
+                                    <TableCell label="Name" className="w-4/12 min-w-[220px]">
                                       <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
                                         {staffName}
                                       </div>
@@ -1374,16 +1374,16 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                         {staffTitle}
                                       </div>
                                     </TableCell>
-                                    <TableCell label="Staff Type" className="text-xs text-slate-700 dark:text-slate-300">
+                                    <TableCell label="Staff Type" className="w-2/12 min-w-[120px] text-xs text-slate-700 dark:text-slate-300">
                                       {staffType}
                                     </TableCell>
-                                    <TableCell label="ID" className="text-xs text-slate-700 dark:text-slate-300 font-mono">
+                                    <TableCell label="ID" className="w-2/12 min-w-[100px] text-xs text-slate-700 dark:text-slate-300 font-mono">
                                       {badgeNumber}
                                     </TableCell>
-                                    <TableCell label="Status" className="text-xs text-slate-700 dark:text-slate-300">
+                                    <TableCell label="Status" className="w-2/12 min-w-[100px] text-xs text-slate-700 dark:text-slate-300">
                                       {isRevokedStatus ? 'Revoked' : 'Active'}
                                     </TableCell>
-                                    <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                                    <TableCell label="Actions" fullWidthOnStack className="w-2/12 min-w-[120px] text-right whitespace-nowrap">
                                       <Button
                                         size="xs"
                                         variant="outline"
@@ -1456,10 +1456,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   <Table stackBelow="md">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Accesses</TableHead>
-                        <TableHead>Members</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                        <TableHead className="w-5/12 min-w-[260px]">Role</TableHead>
+                        <TableHead className="w-2/12 min-w-[130px]">Accesses</TableHead>
+                        <TableHead className="w-2/12 min-w-[130px]">Members</TableHead>
+                        <TableHead className="w-3/12 min-w-[160px] text-right whitespace-nowrap">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1472,7 +1472,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       ) : (
                         filteredRolesList.slice((modulesPage - 1) * 10, modulesPage * 10).map((mod) => (
                           <TableRow key={mod.id}>
-                            <TableCell label="Role">
+                            <TableCell label="Role" className="w-5/12 min-w-[260px]">
                               <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
                                 {mod.name}
                               </div>
@@ -1482,13 +1482,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell label="Accesses" className="text-xs text-slate-700 dark:text-slate-300">
+                            <TableCell label="Accesses" className="w-2/12 min-w-[130px] text-xs text-slate-700 dark:text-slate-300">
                               {mod.accessIds.length} {mod.accessIds.length === 1 ? 'access' : 'accesses'}
                             </TableCell>
-                            <TableCell label="Members" className="text-xs text-slate-700 dark:text-slate-300">
+                            <TableCell label="Members" className="w-2/12 min-w-[130px] text-xs text-slate-700 dark:text-slate-300">
                               {mod.memberIds.length} {mod.memberIds.length === 1 ? 'member' : 'members'}
                             </TableCell>
-                            <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                            <TableCell label="Actions" fullWidthOnStack className="w-3/12 min-w-[160px] text-right whitespace-nowrap">
                               <Button
                                 size="xs"
                                 variant="outline"
@@ -1708,9 +1708,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           <Table stackBelow="md">
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Role</TableHead>
-                                <TableHead>Accesses</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead className="w-6/12 min-w-[200px]">Role</TableHead>
+                                <TableHead className="w-3/12 min-w-[120px]">Accesses</TableHead>
+                                <TableHead className="w-3/12 min-w-[120px] text-right whitespace-nowrap">Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1736,7 +1736,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                                   return (
                                     <TableRow key={mod.id}>
-                                      <TableCell label="Role">
+                                      <TableCell label="Role" className="w-6/12 min-w-[200px]">
                                         <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
                                           {mod.name}
                                         </div>
@@ -1746,10 +1746,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                           </div>
                                         )}
                                       </TableCell>
-                                      <TableCell label="Accesses" className="text-xs text-slate-700 dark:text-slate-300">
+                                      <TableCell label="Accesses" className="w-3/12 min-w-[120px] text-xs text-slate-700 dark:text-slate-300">
                                         {mod.accessIds.length} {mod.accessIds.length === 1 ? 'access' : 'accesses'}
                                       </TableCell>
-                                      <TableCell label="Actions" fullWidthOnStack className="text-right">
+                                      <TableCell label="Actions" fullWidthOnStack className="w-3/12 min-w-[120px] text-right whitespace-nowrap">
                                         <Button
                                           size="xs"
                                           variant="outline"
@@ -1935,18 +1935,18 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               <Table stackBelow="md">
                                 <TableHeader>
                                   <TableRow>
-                                    <TableHead>Name</TableHead>
+                                    <TableHead className={isPatientSection ? 'w-4/12 min-w-[200px]' : 'w-3/12 min-w-[180px]'}>Name</TableHead>
                                     {!isPatientSection ? (
                                       <>
-                                        <TableHead hideBelow="sm">Department</TableHead>
-                                        <TableHead hideBelow="sm">ID</TableHead>
+                                        <TableHead hideBelow="sm" className="w-2/12 min-w-[140px]">Department</TableHead>
+                                        <TableHead hideBelow="sm" className="w-1/12 min-w-[80px]">ID</TableHead>
                                       </>
                                     ) : (
-                                      <TableHead hideBelow="sm">MRN</TableHead>
+                                      <TableHead hideBelow="sm" className="w-2/12 min-w-[100px]">MRN</TableHead>
                                     )}
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Roles</TableHead>
-                                    <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                                    <TableHead className="w-1/12 min-w-[80px]">Status</TableHead>
+                                    <TableHead className="w-3/12 min-w-[160px]">Roles</TableHead>
+                                    <TableHead className="w-2/12 min-w-[130px] text-right whitespace-nowrap">Actions</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1960,7 +1960,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                                     return (
                                       <TableRow key={staff.id}>
-                                        <TableCell label="Name">
+                                        <TableCell label="Name" className={isPatientSection ? 'w-4/12 min-w-[200px]' : 'w-3/12 min-w-[180px]'}>
                                           <div className="font-bold text-slate-900 dark:text-slate-100">
                                             {staff.staffName}
                                           </div>
@@ -1971,7 +1971,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                           )}
                                         </TableCell>
                                         {!isPatientSection && (
-                                          <TableCell label="Department" hideBelow="sm">
+                                          <TableCell label="Department" hideBelow="sm" className="w-2/12 min-w-[140px]">
                                             <div className="text-slate-700 dark:text-slate-300">
                                               {staff.department}
                                             </div>
@@ -1982,16 +1982,16 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                             )}
                                           </TableCell>
                                         )}
-                                        <TableCell label={isPatientSection ? 'MRN' : 'ID'} hideBelow="sm" className="text-slate-700 dark:text-slate-300">
+                                        <TableCell label={isPatientSection ? 'MRN' : 'ID'} hideBelow="sm" className={`text-slate-700 dark:text-slate-300 ${isPatientSection ? 'w-2/12 min-w-[100px]' : 'w-1/12 min-w-[80px]'}`}>
                                           {staff.badgeNumber}
                                         </TableCell>
-                                        <TableCell label="Status" className="text-slate-700 dark:text-slate-300">
+                                        <TableCell label="Status" className="w-1/12 min-w-[80px] text-slate-700 dark:text-slate-300">
                                           {staff.status === 'revoked' ? 'Revoked' : 'Active'}
                                         </TableCell>
-                                        <TableCell label="Roles" className="text-slate-700 dark:text-slate-300">
+                                        <TableCell label="Roles" className="w-3/12 min-w-[160px] text-slate-700 dark:text-slate-300">
                                           {moduleNames}
                                         </TableCell>
-                                        <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                                        <TableCell label="Actions" fullWidthOnStack className="w-2/12 min-w-[130px] text-right whitespace-nowrap">
                                           <Button
                                             size="xs"
                                             variant="outline"
@@ -2167,44 +2167,44 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Applicant</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead hideBelow="sm">Department</TableHead>
-                      <TableHead hideBelow="sm">Badge ID</TableHead>
-                      <TableHead hideBelow="md">Applied</TableHead>
-                      <TableHead hideBelow="lg">Notes</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                      <TableHead className="w-3/12 min-w-[180px]">Applicant</TableHead>
+                      <TableHead className="w-1/12 min-w-[90px]">Role</TableHead>
+                      <TableHead hideBelow="sm" className="w-2/12 min-w-[130px]">Department</TableHead>
+                      <TableHead hideBelow="sm" className="w-1/12 min-w-[80px]">Badge ID</TableHead>
+                      <TableHead hideBelow="md" className="w-1/12 min-w-[90px]">Applied</TableHead>
+                      <TableHead hideBelow="lg" className="w-2/12 min-w-[140px]">Notes</TableHead>
+                      <TableHead className="w-2/12 min-w-[150px] text-right whitespace-nowrap">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedApprovals.length > 0 ? (
                       paginatedApprovals.map((req) => (
                         <TableRow key={req.id}>
-                          <TableCell label="Applicant">
+                          <TableCell label="Applicant" className="w-3/12 min-w-[180px]">
                             <div className="font-bold text-slate-900 dark:text-slate-100">{req.staffName}</div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">{req.staffTitle}</div>
                           </TableCell>
-                          <TableCell label="Role" className="text-slate-700 dark:text-slate-300">
+                          <TableCell label="Role" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300">
                             {req.role === 'doctor' ? 'Doctor' : 'Receptionist'}
                           </TableCell>
-                          <TableCell label="Department" hideBelow="sm">
+                          <TableCell label="Department" hideBelow="sm" className="w-2/12 min-w-[130px]">
                             <div className="text-slate-700 dark:text-slate-300">{req.department}</div>
                             {req.specialization && (
                               <div className="text-xs text-slate-500 dark:text-slate-400">{req.specialization}</div>
                             )}
                           </TableCell>
-                          <TableCell label="Badge ID" hideBelow="sm" className="text-slate-700 dark:text-slate-300">
+                          <TableCell label="Badge ID" hideBelow="sm" className="w-1/12 min-w-[80px] text-slate-700 dark:text-slate-300">
                             {req.badgeNumber}
                           </TableCell>
-                          <TableCell label="Applied" hideBelow="md" className="text-slate-600 dark:text-slate-400 text-xs whitespace-nowrap">
+                          <TableCell label="Applied" hideBelow="md" className="w-1/12 min-w-[90px] text-slate-600 dark:text-slate-400 text-xs whitespace-nowrap">
                             {req.requestedAt}
                           </TableCell>
-                          <TableCell label="Notes" hideBelow="lg">
-                            <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 max-w-xs" title={req.notes}>
+                          <TableCell label="Notes" hideBelow="lg" className="w-2/12 min-w-[140px]">
+                            <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2" title={req.notes}>
                               {req.notes}
                             </div>
                           </TableCell>
-                          <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                          <TableCell label="Actions" fullWidthOnStack className="w-2/12 min-w-[150px] text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
                               <Button
                                 size="xs"
@@ -2293,36 +2293,36 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead hideBelow="sm">Timestamp</TableHead>
-                      <TableHead>Action</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead hideBelow="sm">Role</TableHead>
-                      <TableHead>Details</TableHead>
-                      <TableHead hideBelow="md">Authorized By</TableHead>
+                      <TableHead hideBelow="sm" className="w-2/12 min-w-[130px]">Timestamp</TableHead>
+                      <TableHead className="w-2/12 min-w-[130px]">Action</TableHead>
+                      <TableHead className="w-2/12 min-w-[130px]">Subject</TableHead>
+                      <TableHead hideBelow="sm" className="w-1/12 min-w-[80px]">Role</TableHead>
+                      <TableHead className="w-3/12 min-w-[180px]">Details</TableHead>
+                      <TableHead hideBelow="md" className="w-2/12 min-w-[140px]">Authorized By</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAuditLog.length > 0 ? (
                       paginatedAuditLog.map((log) => (
                         <TableRow key={log.id}>
-                          <TableCell label="Timestamp" hideBelow="sm" className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                          <TableCell label="Timestamp" hideBelow="sm" className="w-2/12 min-w-[130px] text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             {log.timestamp}
                           </TableCell>
-                          <TableCell label="Action" className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                          <TableCell label="Action" className="w-2/12 min-w-[130px] text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             {formatActionLabel(log.action)}
                           </TableCell>
-                          <TableCell label="Subject" className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          <TableCell label="Subject" className="w-2/12 min-w-[130px] font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                             {log.targetStaffName}
                           </TableCell>
-                          <TableCell label="Role" hideBelow="sm" className="text-slate-700 dark:text-slate-300 capitalize whitespace-nowrap">
+                          <TableCell label="Role" hideBelow="sm" className="w-1/12 min-w-[80px] text-slate-700 dark:text-slate-300 capitalize whitespace-nowrap">
                             {log.targetRole}
                           </TableCell>
-                          <TableCell label="Details" className="text-slate-700 dark:text-slate-300 max-w-md">
+                          <TableCell label="Details" className="w-3/12 min-w-[180px] text-slate-700 dark:text-slate-300">
                             <div className="line-clamp-2" title={log.description}>
                               {log.description}
                             </div>
                           </TableCell>
-                          <TableCell label="Authorized By" hideBelow="md" className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                          <TableCell label="Authorized By" hideBelow="md" className="w-2/12 min-w-[140px] text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             {log.authorizedBy || 'Dr. Marcus Vance (Managing Director)'}
                           </TableCell>
                         </TableRow>
