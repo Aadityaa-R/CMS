@@ -1117,6 +1117,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       <div className="w-full sm:w-68">
                         <Select
                           icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                          searchable={true}
+                          searchPlaceholder="Search physician..."
                           value={activeDoctorId}
                           placeholder="Select Attending Physician"
                           onChange={(e) => setActiveDoctorId(e.target.value)}
@@ -1644,6 +1646,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           <div className="grid grid-cols-2 gap-3">
             <Select
               label="Select Patient"
+              searchable={true}
+              searchPlaceholder="Search patient by name or MRN..."
               value={prescPatientId}
               onChange={(e) => {
                 setPrescPatientId(e.target.value);
@@ -1928,7 +1932,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               ? `Assign Care: ${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`
               : `Transfer Care: ${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`
           }
-          maxWidth="md"
+          maxWidth="lg"
+          overflowVisible={true}
+          bodyClassName="min-h-[280px]"
           footer={
             <div className="flex justify-end gap-2 w-full">
               <Button
@@ -1967,10 +1973,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               </span>
             </div>
             <div>
-              <label className="text-slate-700 dark:text-slate-300 block font-medium mb-1.5">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                 {isTargetPatientUnassigned ? 'Assigned Physician' : 'Receiving Physician'}
               </label>
               <Select
+                size="lg"
+                searchable={true}
+                searchPlaceholder="Search physician by name or specialization..."
                 value={targetDoctorId}
                 onChange={(e) => setTargetDoctorId(e.target.value)}
                 options={doctors

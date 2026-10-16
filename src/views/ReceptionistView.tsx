@@ -1179,7 +1179,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         onClose={() => setIsBookOpen(false)}
         title="Book Outpatient Consultation"
         description={`Schedule or check in with any clinic physician (${selectedDoctor.name} • ${selectedDoctor.roomNumber}).`}
-        maxWidth="md"
+        maxWidth="lg"
+        overflowVisible={true}
         footer={
           <>
             <Button
@@ -1209,6 +1210,9 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
           <Select
             label="Select Registered Patient"
+            size="lg"
+            searchable={true}
+            searchPlaceholder="Search patient by name or MRN..."
             value={selectedPatientId}
             onChange={(e) => setSelectedPatientId(e.target.value)}
             options={patients.map((p) => ({
@@ -1219,6 +1223,9 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
           <Select
             label="Attending Physician"
+            size="lg"
+            searchable={true}
+            searchPlaceholder="Search physician by name or room..."
             value={selectedDoctorId}
             onChange={(e) => setSelectedDoctorId(e.target.value)}
             options={doctors.map((d) => ({

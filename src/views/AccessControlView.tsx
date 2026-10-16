@@ -2048,10 +2048,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 noValidate
               >
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     Target Role
                   </label>
                   <Select
+                    size="lg"
+                    searchable={true}
+                    searchPlaceholder="Search target role..."
                     value={addFormRole}
                     onChange={(e) => setAddFormRole(e.target.value as 'doctor' | 'receptionist')}
                     options={[
@@ -2457,7 +2460,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         onClose={() => setIsAddModalOpen(false)}
         title="Directly Provision Staff Member into Role"
         description="Directly register and authorize a new physician or receptionist into the clinic access directory."
-        maxWidth="lg"
+        maxWidth="xl"
+        overflowVisible={true}
         footer={
           <>
             <Button
@@ -2486,10 +2490,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           )}
 
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
               Target Role <span className="text-rose-500">*</span>
             </label>
             <Select
+              size="lg"
+              searchable={true}
+              searchPlaceholder="Search target role..."
               value={addFormRole}
               onChange={(e) => setAddFormRole(e.target.value as 'doctor' | 'receptionist')}
               options={[
@@ -3041,7 +3048,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               setAddMemberAdminReason('');
             }}
             title={`Add Person to Role: ${currentMod.name}`}
-            maxWidth="md"
+            maxWidth="lg"
+            overflowVisible={true}
+            bodyClassName="min-h-[280px]"
             footer={
               <>
                 <Button
@@ -3091,10 +3100,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           >
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Select Staff Member
                 </label>
                 <Select
+                  size="lg"
+                  searchable={true}
+                  searchPlaceholder="Search staff member by name, title, or badge ID..."
                   value={addMemberSelectedStaffId}
                   onChange={(e) => setAddMemberSelectedStaffId(e.target.value)}
                   options={[
@@ -3222,7 +3234,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               setConsoleAddModuleAdminReason('');
             }}
             title={`Assign Role to ${activeStaff.staffName}`}
-            maxWidth="md"
+            maxWidth="lg"
+            overflowVisible={true}
+            bodyClassName="min-h-[280px]"
             footer={
               <>
                 <Button
@@ -3272,10 +3286,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           >
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Select Role
                 </label>
                 <Select
+                  size="lg"
+                  searchable={true}
+                  searchPlaceholder="Search role by name or description..."
                   value={consoleAddModuleSelectedId}
                   onChange={(e) => setConsoleAddModuleSelectedId(e.target.value)}
                   options={[

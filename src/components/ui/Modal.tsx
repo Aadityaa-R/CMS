@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-interface ModalProps {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -10,6 +10,8 @@ interface ModalProps {
   footer?: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   fullScreenOnMobile?: boolean;
+  overflowVisible?: boolean;
+  bodyClassName?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -21,6 +23,8 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   maxWidth = 'md',
   fullScreenOnMobile = false,
+  overflowVisible = false,
+  bodyClassName = '',
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,9 +65,13 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Dialog Content */}
       <div
-        className={`relative ${dialogLayout} ${maxWidthClasses[maxWidth]} bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden z-10`}
+        className={`relative ${dialogLayout} ${maxWidthClasses[maxWidth]} bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 ${
+          overflowVisible ? 'overflow-visible' : 'overflow-hidden'
+        } z-10`}
       >
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 ${
+          overflowVisible ? 'rounded-t-xl' : ''
+        }`}>
           <div>
             <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
             {description && (
@@ -78,12 +86,22 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         </div>
 
-        <div className={`px-4 sm:px-6 py-4 sm:py-5 ${fullScreenOnMobile ? 'flex-1' : 'max-h-[75vh]'} overflow-y-auto text-slate-800 dark:text-slate-200`}>
+        <div
+          className={`px-4 sm:px-6 py-4 sm:py-5 ${
+            overflowVisible
+              ? 'overflow-visible'
+              : fullScreenOnMobile
+              ? 'flex-1 overflow-y-auto'
+              : 'max-h-[75vh] overflow-y-auto'
+          } text-slate-800 dark:text-slate-200 ${bodyClassName}`}
+        >
           {children}
         </div>
 
         {footer && (
-          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 shrink-0">
+          <div className={`px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 shrink-0 ${
+            overflowVisible ? 'rounded-b-xl' : ''
+          }`}>
             {footer}
           </div>
         )}
