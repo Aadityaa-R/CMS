@@ -23,6 +23,7 @@ import {
   createSession,
   isSessionValid,
   touchSession,
+  validatePasswordPolicy,
 } from '@/lib/auth';
 import { Account, ClaimRequest } from '@/types/storage';
 import { STORAGE_KEY_PREFIX, SESSION_STORAGE_KEY } from '@/lib/authConstants';
@@ -127,6 +128,11 @@ interface AuthContextType {
   updateCurrentUser: (updates: Partial<User>) => void;
   signUpPatient: (params: SignUpPatientParams) => Promise<SignUpResult>;
   signUpStaff: (params: SignUpStaffParams) => Promise<SignUpResult>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  verifyCurrentPassword: (password: string) => Promise<boolean>;
   logout: (notice?: string) => void;
 }
 
@@ -918,6 +924,119 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   };
 
+  const verifyCurrentPassword = async (password: string): Promise<boolean> => {
+    const cleanPass = password.trim();
+    if (!cleanPass) return false;
+
+    const repoAccounts = getRepository<Account>('accounts');
+    const accounts = await repoAccounts.list();
+    const currentEmail = currentUser.email.toLowerCase();
+    const currentName = currentUser.name.toLowerCase();
+
+    const account = accounts.find(
+      (a) =>
+        a.email.toLowerCase() === currentEmail ||
+        a.username.toLowerCase() === currentEmail ||
+        a.fullName.toLowerCase() === currentName
+    );
+
+    if (account) {
+      return verifyPassword(
+        cleanPass,
+        account.passwordHash,
+        account.passwordSalt,
+        account.passwordIterations
+      );
+    }
+
+    const cred = ROLE_CREDENTIALS.find(
+      (c) =>
+        c.role === currentRole ||
+        c.email.toLowerCase() === currentEmail ||
+        c.fullName.toLowerCase() === currentName
+    );
+    if (cred) {
+      return cleanPass === cred.password;
+    }
+
+    return false;
+  };
+
+  const changePassword = async (
+    currentPass: string,
+    newPass: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const policyResult = validatePasswordPolicy(newPass);
+    if (!policyResult.valid) {
+      return {
+        success: false,
+        error: policyResult.error || 'Password does not satisfy security policy.',
+      };
+    }
+
+    const isCurrentValid = await verifyCurrentPassword(currentPass);
+    if (!isCurrentValid) {
+      return { success: false, error: 'Current password is incorrect.' };
+    }
+
+    const { hash, salt, iterations } = await hashPassword(newPass);
+    const now = new Date().toISOString();
+    const repoAccounts = getRepository<Account>('accounts');
+    const repoLedger = getRepository<AccessAuditLogEntry>('ledger');
+    const accounts = await repoAccounts.list();
+    const currentEmail = currentUser.email.toLowerCase();
+    const currentName = currentUser.name.toLowerCase();
+
+    const existingAccount = accounts.find(
+      (a) =>
+        a.email.toLowerCase() === currentEmail ||
+        a.username.toLowerCase() === currentEmail ||
+        a.fullName.toLowerCase() === currentName
+    );
+
+    if (existingAccount) {
+      const updatedAccount: Account = {
+        ...existingAccount,
+        passwordHash: hash,
+        passwordSalt: salt,
+        passwordIterations: iterations,
+        updatedAt: now,
+      };
+      await repoAccounts.update(existingAccount.id, updatedAccount);
+    } else {
+      const newAccount: Account = {
+        id: `acc-${Date.now()}`,
+        username: currentUser.email.toLowerCase(),
+        email: currentUser.email.toLowerCase(),
+        fullName: currentUser.name,
+        phone: (currentUser as any).phone || '',
+        role: currentRole,
+        passwordHash: hash,
+        passwordSalt: salt,
+        passwordIterations: iterations,
+        status: 'active',
+        claimPending: false,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await repoAccounts.create(newAccount);
+    }
+
+    await repoLedger.create({
+      id: `audit-${Date.now()}`,
+      timestamp: now,
+      action: 'password_reset',
+      subject: currentUser.name,
+      role: currentRole,
+      details: `Password changed by user ${currentUser.email}`,
+      authorizedBy: currentUser.name,
+    });
+
+    return { success: true };
+  };
+
   const loginAs = (role: UserRole) => {
     const targetRole = role === 'admin' ? 'md' : role;
     if (DEMO_USERS[targetRole]) {
@@ -975,6 +1094,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateCurrentUser,
         signUpPatient,
         signUpStaff,
+        changePassword,
+        verifyCurrentPassword,
         logout,
       }}
     >

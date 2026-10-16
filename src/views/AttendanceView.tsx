@@ -37,6 +37,9 @@ import {
   monthlySummary,
 } from '@/lib/attendance';
 import { Shift, AttendanceRecord, LeaveRequest, LeaveType, DayOfWeek } from '@/types/attendance';
+import { Appointment } from '@/types';
+import { appointmentsAffectedByLeave } from '@/lib/scheduling';
+import { useNotifications } from '@/context/NotificationContext';
 
 interface AttendanceViewProps {
   activeTab?: string;
@@ -44,7 +47,8 @@ interface AttendanceViewProps {
 
 export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => {
   const { currentUser, staffAccessList } = useAuth();
-  const { modules } = useClinic();
+  const { modules, appointments, updateAppointment } = useClinic();
+  const { addNotification } = useNotifications();
   const {
     shifts,
     records,
@@ -102,6 +106,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
   const [leaveToDate, setLeaveToDate] = useState(todayStr);
   const [leaveReason, setLeaveReason] = useState('');
   const [leaveFormError, setLeaveFormError] = useState('');
+
+  // Approve Leave Modal & Affected Bookings
+  const [approveTarget, setApproveTarget] = useState<LeaveRequest | null>(null);
+  const [affectedAppointments, setAffectedAppointments] = useState<Appointment[]>([]);
 
   // Reject Leave Modal
   const [rejectTarget, setRejectTarget] = useState<LeaveRequest | null>(null);
@@ -198,13 +206,42 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
   };
 
   // Decide leave request (approve)
-  const handleApproveLeave = (requestId: string) => {
-    const res = decideLeaveRequest(requestId, 'approved');
-    if (res.success) {
-      showMessage('success', 'Leave request approved.');
-    } else {
+  const handleApproveLeave = (req: LeaveRequest) => {
+    const affected = appointmentsAffectedByLeave(req.staffId, req.fromDate, req.toDate, appointments);
+    setApproveTarget(req);
+    setAffectedAppointments(affected);
+  };
+
+  const handleConfirmApproval = () => {
+    if (!approveTarget) return;
+    const res = decideLeaveRequest(approveTarget.id, 'approved');
+    if (!res.success) {
       showMessage('error', res.error || 'Failed to approve leave request.');
+      return;
     }
+
+    // Mark affected appointments and create in-app notifications
+    if (affectedAppointments.length > 0) {
+      affectedAppointments.forEach((apt) => {
+        updateAppointment(apt.id, { needsReschedule: true });
+        addNotification({
+          recipientId: apt.patientId,
+          title: 'Schedule Change Notice',
+          message: `Dr. ${approveTarget.staffName || 'your doctor'} is on approved leave from ${approveTarget.fromDate} to ${approveTarget.toDate}. Your appointment on ${apt.dateTime ? apt.dateTime.slice(0, 10) : ''} needs to be rescheduled.`,
+          type: 'leave',
+          linkTab: 'appointments',
+        });
+      });
+      showMessage(
+        'success',
+        `Leave request approved. ${affectedAppointments.length} appointment(s) marked for rescheduling.`
+      );
+    } else {
+      showMessage('success', 'Leave request approved.');
+    }
+
+    setApproveTarget(null);
+    setAffectedAppointments([]);
   };
 
   // Open reject modal
@@ -1103,7 +1140,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                                           size="xs"
                                           variant="primary"
                                           disabled={cannotDecideSelf}
-                                          onClick={() => handleApproveLeave(req.id)}
+                                          onClick={() => handleApproveLeave(req)}
                                           title={cannotDecideSelf ? 'Cannot approve own leave request' : undefined}
                                         >
                                           Approve
@@ -1271,6 +1308,69 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                 placeholder="State the justification or medical condition for this leave request..."
               />
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1B: APPROVE LEAVE (Checks Affected Appointments)                    */}
+      {/* ========================================================================= */}
+      {approveTarget && (
+        <Modal
+          isOpen={Boolean(approveTarget)}
+          onClose={() => setApproveTarget(null)}
+          title="Approve Leave Request"
+          description={`Review leave approval for ${approveTarget.staffName || approveTarget.staffId}`}
+          maxWidth="md"
+          footer={
+            <div className="flex justify-end gap-2 w-full">
+              <Button variant="outline" size="sm" onClick={() => setApproveTarget(null)}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleConfirmApproval}>
+                Confirm Approval
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            <div>
+              <span className="text-slate-500 dark:text-slate-400 block text-[11px] mb-1">Staff Member</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {approveTarget.staffName || approveTarget.staffId}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-500 dark:text-slate-400 block text-[11px] mb-1">Leave Period</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {approveTarget.fromDate} to {approveTarget.toDate} ({approveTarget.type} Leave)
+              </span>
+            </div>
+
+            {affectedAppointments.length > 0 ? (
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="font-bold text-slate-900 dark:text-slate-100">
+                  {affectedAppointments.length} {affectedAppointments.length === 1 ? 'appointment is affected' : 'appointments are affected'}.
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-xs">
+                  Approving this leave will mark the affected consultations as needing rescheduling and automatically send an in-app notice to each patient.
+                </p>
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-1">
+                  {affectedAppointments.map((apt) => (
+                    <div key={apt.id} className="flex justify-between items-center text-xs py-1">
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{apt.patientName}</span>
+                      <span className="text-slate-500 dark:text-slate-400">
+                        {apt.dateTime ? apt.dateTime.slice(0, 10) : ''} at {apt.dateTime ? apt.dateTime.slice(11, 16) : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs">
+                0 appointments are affected by this leave window.
+              </div>
+            )}
           </div>
         </Modal>
       )}

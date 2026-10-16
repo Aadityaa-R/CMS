@@ -61,6 +61,14 @@ function getStoredOrInitialAttendanceData(): {
   return { shifts, records, leaves };
 }
 
+export function getStoredAttendanceData(): {
+  shifts: Shift[];
+  records: AttendanceRecord[];
+  leaves: LeaveRequest[];
+} {
+  return getStoredOrInitialAttendanceData();
+}
+
 /**
  * Check if a doctor is available for consultations on a specific date.
  * If date is omitted, defaults to today.

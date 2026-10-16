@@ -8,6 +8,8 @@ import { Select, SelectOption } from '@/components/ui/Select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
 import { INITIAL_PENDING_APPROVALS, DEMO_USERS } from '@/data/mockData';
+import { getScopedInvoices } from '@/lib/selectors';
+import { balanceDue } from '@/lib/billing';
 import {
   calculateDashboardMetrics,
   DateRangePreset,
@@ -711,6 +713,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   const greeting = getGreeting(currentUser.name);
 
+  const patientBalanceDue = useMemo(() => {
+    if (currentRole !== 'patient') return 0;
+    const scopedInvoices = getScopedInvoices(currentUser, billingInvoices, patientAssignments);
+    return scopedInvoices.reduce((sum, inv) => sum + balanceDue(inv, billingPayments), 0);
+  }, [currentRole, currentUser, billingInvoices, billingPayments, patientAssignments]);
+
+  const nextPatientAppointment = useMemo(() => {
+    if (currentRole !== 'patient') return null;
+    const list = metrics1.patientUpcomingAppointments || [];
+    return list.length > 0 ? list[0] : null;
+  }, [currentRole, metrics1.patientUpcomingAppointments]);
+
   // Quick Action Buttons based on role
   const renderQuickActions = () => {
     switch (currentRole) {
@@ -793,16 +807,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         return (
           <div className="flex flex-wrap items-center gap-2.5 pt-3">
             <Button
+              variant="primary"
+              size="sm"
+              onClick={() => onNavigate?.('portal', 'appointments')}
+            >
+              Book Appointment
+            </Button>
+            {patientBalanceDue > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onNavigate?.('portal', 'invoices')}
+              >
+                Pay Balance
+              </Button>
+            )}
+            <Button
               variant="outline"
               size="sm"
-              onClick={() => onNavigate?.('appointments')}
+              onClick={() => onNavigate?.('portal', 'appointments')}
             >
               My Appointments
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onNavigate?.('prescriptions')}
+              onClick={() => onNavigate?.('portal', 'prescriptions')}
             >
               View Prescriptions
             </Button>
@@ -1378,6 +1408,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.patientUpcomingAppointments?.length || 0}
                 </span>
               </div>
+              {nextPatientAppointment && (
+                <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <span className="text-xs text-slate-500 uppercase tracking-wider block">Next Appointment</span>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {nextPatientAppointment.date} at {nextPatientAppointment.time} with Dr. {nextPatientAppointment.doctorName}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => onNavigate?.('portal', 'appointments')}
+                      className="text-xs font-semibold text-teal-700 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 cursor-pointer"
+                    >
+                      Reschedule
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate?.('portal', 'appointments')}
+                      className="text-xs font-semibold text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="p-3 sm:p-0">
                 <Table stackBelow="md">
                   <TableHeader>
@@ -1387,12 +1443,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       <TableHead className="w-3/12 min-w-[120px]">Doctor</TableHead>
                       <TableHead className="w-3/12 min-w-[130px]">Reason</TableHead>
                       <TableHead className="w-2/12 min-w-[90px]">Status</TableHead>
+                      <TableHead className="w-2/12 min-w-[110px] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedPatientAppointments.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="py-6 text-center text-slate-500">
+                        <TableCell colSpan={6} className="py-6 text-center text-slate-500">
                           No upcoming appointments
                         </TableCell>
                       </TableRow>
@@ -1413,6 +1470,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           </TableCell>
                           <TableCell label="Status" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
+                          </TableCell>
+                          <TableCell label="Actions" className="w-2/12 min-w-[110px] text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => onNavigate?.('portal', 'appointments')}
+                                className="text-xs font-semibold text-teal-700 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 cursor-pointer"
+                              >
+                                Reschedule
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onNavigate?.('portal', 'appointments')}
+                                className="text-xs font-semibold text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))

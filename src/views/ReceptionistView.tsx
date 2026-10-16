@@ -14,7 +14,8 @@ import { Table, ColumnDef } from '@/components/ui/Table';
 import { Appointment, Patient, AccessAuditLogEntry } from '@/types';
 import { getScopedPatients, getScopedAppointments } from '@/lib/selectors';
 import { getAssignedDoctorId, hasCapability } from '@/lib/permissions';
-import { isDoctorAvailable } from '@/lib/availability';
+import { isDoctorAvailable, getStoredAttendanceData } from '@/lib/availability';
+import { getAvailableSlots, validateBooking } from '@/lib/scheduling';
 import { getRepository } from '@/data/storage';
 import { ClaimRequest, Account } from '@/types/storage';
 import {
@@ -24,7 +25,6 @@ import {
   validateWalkInNewArrival,
   validateWalkInExistingArrival,
   validateBookedArrival,
-  validateAppointmentBooking,
 } from '@/lib/reception';
 import { useBilling } from '@/context/BillingContext';
 import { formatCurrency, balanceDue } from '@/lib/billing';
@@ -613,19 +613,58 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     }
   };
 
+  // Available booking slots for selected doctor and date
+  const availableBookingSlots = useMemo(() => {
+    if (!bookDoctorId || !bookDate) return [];
+    const attendanceData = getStoredAttendanceData();
+    return getAvailableSlots(
+      bookDoctorId,
+      bookDate,
+      appointments,
+      attendanceData.shifts,
+      attendanceData.leaves,
+      new Date()
+    );
+  }, [bookDoctorId, bookDate, appointments]);
+
+  useEffect(() => {
+    if (availableBookingSlots.length > 0 && !availableBookingSlots.includes(bookTime)) {
+      setBookTime(availableBookingSlots[0]);
+    }
+  }, [availableBookingSlots, bookTime]);
+
   // Submit Consultation Booking
   const handleSubmitBooking = (e: React.FormEvent) => {
     e.preventDefault();
     setBookError('');
 
-    const validation = validateAppointmentBooking(currentUser, bookDoctorId, bookDate, bookReason);
-    if (!validation.allowed) {
-      setBookError(validation.reason || 'Booking validation failed.');
+    if (!bookPatientId) {
+      setBookError('Patient selection is required.');
+      return;
+    }
+    if (!bookDoctorId) {
+      setBookError('Attending physician selection is required.');
+      return;
+    }
+    if (!bookTime) {
+      setBookError('Please select an available time slot.');
       return;
     }
 
-    if (!bookPatientId) {
-      setBookError('Patient selection is required.');
+    const attendanceData = getStoredAttendanceData();
+    const validation = validateBooking(
+      bookDoctorId,
+      bookDate,
+      bookTime,
+      bookPatientId,
+      appointments,
+      attendanceData.shifts,
+      attendanceData.leaves,
+      new Date()
+    );
+
+    if (!validation.allowed) {
+      setBookError(validation.reason || 'Booking validation failed.');
       return;
     }
 
@@ -636,6 +675,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         doctorId: bookDoctorId,
         dateTime,
         reasonForVisit: bookReason.trim(),
+        source: 'reception',
       },
       currentUser
     );
@@ -1608,19 +1648,24 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
               <Select
                 value={bookTime}
                 onChange={(e) => setBookTime(e.target.value)}
-                options={[
-                  { value: '09:00', label: '09:00 AM' },
-                  { value: '09:30', label: '09:30 AM' },
-                  { value: '10:00', label: '10:00 AM' },
-                  { value: '10:30', label: '10:30 AM' },
-                  { value: '11:00', label: '11:00 AM' },
-                  { value: '11:30', label: '11:30 AM' },
-                  { value: '14:00', label: '02:00 PM' },
-                  { value: '14:30', label: '02:30 PM' },
-                  { value: '15:00', label: '03:00 PM' },
-                  { value: '15:30', label: '03:30 PM' },
-                ]}
+                options={
+                  availableBookingSlots.length > 0
+                    ? availableBookingSlots.map((slot) => {
+                        const h = parseInt(slot.split(':')[0], 10);
+                        const m = slot.split(':')[1];
+                        const period = h >= 12 ? 'PM' : 'AM';
+                        const displayH = h % 12 === 0 ? 12 : h % 12;
+                        return {
+                          value: slot,
+                          label: `${String(displayH).padStart(2, '0')}:${m} ${period}`,
+                        };
+                      })
+                    : [{ value: '', label: 'No available slots' }]
+                }
               />
+              {availableBookingSlots.length === 0 && (
+                <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">No free slots on this date.</p>
+              )}
             </div>
           </div>
 

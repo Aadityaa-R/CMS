@@ -17,6 +17,7 @@ import {
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useNotifications } from '@/context/NotificationContext';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -26,6 +27,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) => {
   const { currentUser, currentRole, logout, updateCurrentUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { userNotifications, unreadCount, markAsRead, markAllAsRead, dismissNotification } = useNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -167,34 +169,105 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
               type="button"
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer relative outline-none focus:outline-none focus:ring-0"
-              aria-label="Notifications"
+              aria-label={`Notifications (${unreadCount} unread)`}
               aria-expanded={isNotificationsOpen}
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full ring-2 ring-white dark:ring-slate-900" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full ring-2 ring-white dark:ring-slate-900" />
+              )}
             </button>
 
             {/* Notification Dropdown Popover */}
             {isNotificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-4 z-50 animate-fadeIn">
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-4 z-50 animate-fadeIn">
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Notifications</span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                      (0 Unread)
+                      ({unreadCount} Unread)
                     </span>
                   </div>
-                  <span className="text-[11px] text-teal-600 dark:text-teal-400 font-medium">All caught up</span>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => markAllAsRead()}
+                      className="text-[11px] text-teal-600 dark:text-teal-400 hover:text-teal-700 font-medium cursor-pointer"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
                 </div>
-                <div className="py-6 text-center">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-2.5 text-slate-400 dark:text-slate-500">
-                    <Bell className="w-5 h-5" />
+
+                {userNotifications.length === 0 ? (
+                  <div className="py-6 text-center">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-2.5 text-slate-400 dark:text-slate-500">
+                      <Bell className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">No notifications</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-[220px] mx-auto leading-relaxed">
+                      Consultation updates, schedule alerts, and booking notices will appear here.
+                    </p>
                   </div>
-                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">No new notifications</p>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-[220px] mx-auto leading-relaxed">
-                    Clinical alerts, consultation updates, and critical reminders will appear here.
-                  </p>
-                </div>
+                ) : (
+                  <div className="py-2 max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                    {userNotifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`p-2.5 text-xs rounded-lg transition-colors ${
+                          notif.read ? 'bg-transparent text-slate-600 dark:text-slate-400' : 'bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className={`font-semibold ${notif.read ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-slate-100'}`}>
+                            {notif.title}
+                          </span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                            {notif.createdAt ? notif.createdAt.replace('T', ' ').slice(0, 16) : ''}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                          {notif.message}
+                        </p>
+                        <div className="flex items-center justify-between gap-2 mt-2 pt-1">
+                          {notif.linkTab ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                markAsRead(notif.id);
+                                setIsNotificationsOpen(false);
+                                onNavigate?.(notif.linkTab!);
+                              }}
+                              className="text-[11px] text-teal-600 dark:text-teal-400 hover:underline font-medium cursor-pointer"
+                            >
+                              View details
+                            </button>
+                          ) : (
+                            <span />
+                          )}
+                          <div className="flex items-center gap-2">
+                            {!notif.read && (
+                              <button
+                                type="button"
+                                onClick={() => markAsRead(notif.id)}
+                                className="text-[11px] text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
+                              >
+                                Mark read
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => dismissNotification(notif.id)}
+                              className="text-[11px] text-slate-400 hover:text-rose-600 cursor-pointer"
+                            >
+                              Dismiss
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

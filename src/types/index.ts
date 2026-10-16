@@ -17,6 +17,7 @@ export interface User {
   isOriginalAdmin?: boolean;
   capabilities?: string[];
   patientId?: string;
+  claimPending?: boolean;
 }
 
 export interface PatientAssignment {
@@ -116,6 +117,23 @@ export interface Appointment {
   source?: AppointmentSource;
   checkedInAt?: string | null;
   checkedInBy?: { id: string; name: string } | null;
+  bookedBy?: { id: string; name: string } | null;
+  cancelledBy?: { id: string; name: string } | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  rescheduledFrom?: string | null;
+  needsReschedule?: boolean;
+}
+
+export interface InAppNotification {
+  id: string;
+  recipientId: string;
+  title: string;
+  message: string;
+  type: 'booking' | 'cancellation' | 'reschedule' | 'leave' | 'general';
+  read: boolean;
+  createdAt: string;
+  linkTab?: string;
 }
 
 export interface VitalSigns {

@@ -28,6 +28,20 @@ import {
 } from './mockData';
 import { INITIAL_SHIFTS, INITIAL_ATTENDANCE_RECORDS, INITIAL_LEAVE_REQUESTS } from './attendanceSeed';
 import { INITIAL_SEED_INVOICES, INITIAL_SEED_PAYMENTS } from './billingSeed';
+import { InAppNotification } from '../types';
+
+export const INITIAL_NOTIFICATIONS: InAppNotification[] = [
+  {
+    id: 'notif-1',
+    recipientId: 'pat-1',
+    title: 'Welcome to Patient Portal',
+    message: 'Welcome to Beacon Health Clinic. You can view your upcoming appointments, medical records, and settle invoices online.',
+    type: 'general',
+    read: false,
+    createdAt: '2026-10-16T08:00:00.000Z',
+    linkTab: 'appointments',
+  },
+];
 
 // Active in-memory registry of repositories per collection
 const repositories: Partial<Record<CollectionName, Repository<any>>> = {};
@@ -203,6 +217,7 @@ export async function seedInitialData(force = false): Promise<void> {
   const repoLedger = getRepository<any>('ledger');
   const repoVisits = getRepository<any>('visits');
   const repoPayments = getRepository<any>('payments');
+  const repoNotifications = getRepository<InAppNotification>('notifications');
 
   await repoAccounts.replaceAll(seedAccounts);
   await repoStaff.replaceAll(INITIAL_STAFF_ACCESS);
@@ -220,6 +235,7 @@ export async function seedInitialData(force = false): Promise<void> {
   await repoLedger.replaceAll(INITIAL_ACCESS_AUDIT_LOG);
   await repoVisits.replaceAll([]);
   await repoPayments.replaceAll(INITIAL_SEED_PAYMENTS);
+  await repoNotifications.replaceAll(INITIAL_NOTIFICATIONS);
 
   setStorageSettings({
     mode: 'browser',
@@ -283,6 +299,7 @@ export async function exportBackupData(): Promise<BackupData> {
     'approvals',
     'claimRequests',
     'ledger',
+    'notifications',
     'settings',
   ];
 

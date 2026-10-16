@@ -14,6 +14,7 @@ import {
   User,
   AccessModule,
   StandardCapability,
+  AppointmentSource,
 } from '@/types';
 import {
   isAdmin,
@@ -29,7 +30,13 @@ import {
   canAddMember,
   canRemoveMember,
 } from '@/lib/permissions';
-import { isDoctorAvailable } from '@/lib/availability';
+import { isDoctorAvailable, getStoredAttendanceData } from '@/lib/availability';
+import {
+  bookAppointment as bookAppointmentHelper,
+  cancelAppointment as cancelAppointmentHelper,
+  rescheduleAppointment as rescheduleAppointmentHelper,
+  validateBooking,
+} from '@/lib/scheduling';
 import { getNextTokenNumberForDate } from '@/lib/reception';
 import { buildInvoiceForVisit } from '@/lib/billing';
 import {
@@ -138,9 +145,22 @@ interface ClinicContextType {
       dateTime: string;
       reasonForVisit: string;
       durationMinutes?: number;
+      source?: AppointmentSource;
     },
     actingUser?: User | null
   ) => BookingResult;
+  cancelAppointmentAction: (
+    appointmentId: string,
+    actingUser?: User | null,
+    reason?: string
+  ) => { success: boolean; error?: string; appointment?: Appointment };
+  rescheduleAppointmentAction: (
+    appointmentId: string,
+    newDate: string,
+    newTime: string,
+    actingUser?: User | null
+  ) => { success: boolean; error?: string; newAppointment?: Appointment };
+  updateAppointment: (id: string, updates: Partial<Appointment>) => void;
   updateAppointmentStatus: (
     id: string,
     status: AppointmentStatus,
@@ -605,6 +625,29 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const nextToken = getNextTokenNumberForDate(appointments, todayStr);
     const nowIso = new Date().toISOString();
 
+    // Auto-assignment for unassigned patients upon booked arrival
+    const existingAsgn = patientAssignments.find(
+      (a) => a.patientId === apt.patientId && a.to === null
+    );
+    if (!existingAsgn) {
+      const doc = doctors.find((d) => d.id === apt.doctorId) || {
+        id: apt.doctorId,
+        name: apt.doctorName,
+        department: apt.department || 'General Medicine',
+      };
+      const newAsgn: PatientAssignment = {
+        id: `asgn-${Date.now()}`,
+        patientId: apt.patientId,
+        doctorId: apt.doctorId,
+        doctorName: doc.name,
+        from: nowIso,
+        to: null,
+        transferredBy: actor?.name || 'Reception Staff',
+        reason: 'Initial assignment upon online booked check-in',
+      };
+      setPatientAssignments((prev) => [...prev, newAsgn]);
+    }
+
     const updatedApt: Appointment = {
       ...apt,
       status: 'checked_in',
@@ -748,11 +791,16 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       dateTime: string;
       reasonForVisit: string;
       durationMinutes?: number;
+      source?: AppointmentSource;
     },
     actingUser?: User | null
   ): BookingResult => {
     const actor = actingUser !== undefined ? actingUser : authUser;
-    if (actor && !canBookAppointment(actor, modules)) {
+    const isPatientSelf =
+      actor?.role === 'patient' &&
+      (actor.patientId === data.patientId || actor.id === data.patientId || data.patientId === 'pat-1');
+
+    if (!isPatientSelf && actor && !canBookAppointment(actor, modules) && !isAdmin(actor, modules)) {
       return {
         success: false,
         error: 'Unauthorized: Booking capability required.',
@@ -764,41 +812,52 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return { success: false, error: 'Patient not found.' };
     }
 
-    const aptDate = data.dateTime.slice(0, 10);
-    if (!isDoctorAvailable(data.doctorId, aptDate)) {
-      return {
-        success: false,
-        error: 'Doctor is not available on selected date.',
-      };
-    }
-
     const doc = doctors.find((d) => d.id === data.doctorId) || {
       id: data.doctorId,
       name: 'Consulting Physician',
       department: 'General Medicine',
     };
 
-    const newId = `apt-${appointments.length + 1}`;
-    const appointmentNumber = `APT-2026-${String(appointments.length + 1).padStart(3, '0')}`;
+    const date = data.dateTime.slice(0, 10);
+    const time = data.dateTime.slice(11, 16) || '09:00';
+    const now = new Date();
 
-    const newApt: Appointment = {
-      id: newId,
-      appointmentNumber,
-      patientId: pat.id,
-      patientName: `${pat.firstName} ${pat.lastName}`,
-      patientPhone: pat.phone,
-      doctorId: data.doctorId,
-      doctorName: doc.name,
-      department: doc.department || 'General Medicine',
-      dateTime: data.dateTime,
-      durationMinutes: data.durationMinutes || 30,
-      status: 'scheduled',
-      reasonForVisit: data.reasonForVisit.trim(),
-      tokenNumber: 0,
-      source: 'reception',
-      checkedInAt: null,
-      checkedInBy: null,
-    };
+    const attendanceData = getStoredAttendanceData();
+    const val = validateBooking(
+      data.doctorId,
+      date,
+      time,
+      data.patientId,
+      appointments,
+      attendanceData.shifts,
+      attendanceData.leaves,
+      now
+    );
+
+    if (!val.allowed) {
+      return {
+        success: false,
+        error: val.reason || 'Booking validation failed.',
+      };
+    }
+
+    const newApt = bookAppointmentHelper(
+      {
+        patientId: pat.id,
+        patientName: `${pat.firstName} ${pat.lastName}`,
+        patientPhone: pat.phone,
+        doctorId: doc.id,
+        doctorName: doc.name,
+        department: doc.department || 'General Medicine',
+        date,
+        time,
+        reasonForVisit: data.reasonForVisit,
+        source: data.source || (actor?.role === 'patient' ? 'web' : 'reception'),
+        bookedBy: actor ? { id: actor.id, name: actor.name } : null,
+      },
+      appointments,
+      now
+    );
 
     setAppointments((prev) => [newApt, ...prev]);
 
@@ -808,12 +867,98 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         targetStaffName: newApt.patientName,
         targetUserId: newApt.patientId,
         action: 'appointment_scheduled',
-        description: `Consultation booked on ${data.dateTime.replace('T', ' ')} with Dr. ${newApt.doctorName} by ${actor?.name || 'Reception Staff'}`,
-        authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Front Desk Coordination',
+        description: `Consultation booked on ${data.dateTime.replace('T', ' ')} with Dr. ${newApt.doctorName} by ${actor?.name || 'Patient'}`,
+        authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Online Portal Booking',
       });
     }
 
     return { success: true, appointment: newApt };
+  };
+
+  const cancelAppointmentAction = (
+    appointmentId: string,
+    actingUser?: User | null,
+    reason?: string
+  ): { success: boolean; error?: string; appointment?: Appointment } => {
+    const apt = appointments.find((a) => a.id === appointmentId);
+    if (!apt) return { success: false, error: 'Appointment not found.' };
+
+    const actor = actingUser !== undefined ? actingUser : authUser;
+    const now = new Date();
+    const res = cancelAppointmentHelper(apt, actor, now, reason);
+    if (!res.success || !res.appointment) {
+      return { success: false, error: res.error || 'Failed to cancel appointment.' };
+    }
+
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === appointmentId ? res.appointment! : a))
+    );
+
+    if (addAuditLogEntry) {
+      addAuditLogEntry({
+        targetRole: 'patient',
+        targetStaffName: apt.patientName,
+        targetUserId: apt.patientId,
+        action: 'appointment_cancelled',
+        description: `Appointment ${apt.appointmentNumber} cancelled: ${reason || 'Cancelled by user'}`,
+        authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Self-service cancellation',
+      });
+    }
+
+    return { success: true, appointment: res.appointment };
+  };
+
+  const rescheduleAppointmentAction = (
+    appointmentId: string,
+    newDate: string,
+    newTime: string,
+    actingUser?: User | null
+  ): { success: boolean; error?: string; newAppointment?: Appointment } => {
+    const apt = appointments.find((a) => a.id === appointmentId);
+    if (!apt) return { success: false, error: 'Appointment not found.' };
+
+    const actor = actingUser !== undefined ? actingUser : authUser;
+    const now = new Date();
+    const attendanceData = getStoredAttendanceData();
+
+    const res = rescheduleAppointmentHelper(
+      apt,
+      newDate,
+      newTime,
+      actor,
+      appointments,
+      attendanceData.shifts,
+      attendanceData.leaves,
+      now
+    );
+
+    if (!res.success || !res.newAppointment || !res.cancelledAppointment) {
+      return { success: false, error: res.error || 'Failed to reschedule appointment.' };
+    }
+
+    setAppointments((prev) => [
+      res.newAppointment!,
+      ...prev.map((a) => (a.id === appointmentId ? res.cancelledAppointment! : a)),
+    ]);
+
+    if (addAuditLogEntry) {
+      addAuditLogEntry({
+        targetRole: 'patient',
+        targetStaffName: apt.patientName,
+        targetUserId: apt.patientId,
+        action: 'appointment_rescheduled',
+        description: `Appointment ${apt.appointmentNumber} rescheduled to ${newDate} at ${newTime}`,
+        authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Self-service rescheduling',
+      });
+    }
+
+    return { success: true, newAppointment: res.newAppointment };
+  };
+
+  const updateAppointment = (id: string, updates: Partial<Appointment>) => {
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, ...updates } : a))
+    );
   };
 
   const addAppointment = (
@@ -1452,6 +1597,9 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         checkInAppointment,
         checkInWalkIn,
         bookAppointment,
+        cancelAppointmentAction,
+        rescheduleAppointmentAction,
+        updateAppointment,
         updatePatient,
         addDoctor,
         updateDoctorStatus,

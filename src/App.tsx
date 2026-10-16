@@ -4,6 +4,7 @@ import { ClinicProvider } from '@/context/ClinicContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AttendanceProvider } from '@/context/AttendanceContext';
 import { BillingProvider } from '@/context/BillingContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { seedInitialData, isStorageCorrupted, resetDemoData } from '@/data/storage';
 import { Button } from '@/components/ui/Button';
@@ -67,7 +68,9 @@ export const App: React.FC = () => {
         <ClinicProvider>
           <AttendanceProvider>
             <BillingProvider>
-              <AppLayout />
+              <NotificationProvider>
+                <AppLayout />
+              </NotificationProvider>
             </BillingProvider>
           </AttendanceProvider>
         </ClinicProvider>
