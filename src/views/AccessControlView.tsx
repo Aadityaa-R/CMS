@@ -155,6 +155,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   const [isCreateModuleModalOpen, setIsCreateModuleModalOpen] = useState(false);
   const [createModuleName, setCreateModuleName] = useState('');
   const [createModuleDesc, setCreateModuleDesc] = useState('');
+  const [createModuleSelectedAccesses, setCreateModuleSelectedAccesses] = useState<StandardCapability[]>([]);
   const [createModuleError, setCreateModuleError] = useState('');
 
   const [isEditModuleModalOpen, setIsEditModuleModalOpen] = useState(false);
@@ -1098,21 +1099,6 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     ]}
                   />
                 </div>
-
-                {/* Create Role Action Button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 whitespace-nowrap"
-                  onClick={() => {
-                    setCreateModuleName('');
-                    setCreateModuleDesc('');
-                    setCreateModuleError('');
-                    setIsCreateModuleModalOpen(true);
-                  }}
-                >
-                  Create Role
-                </Button>
               </div>
             </div>
           </div>
@@ -1437,6 +1423,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     onClick={() => {
                       setCreateModuleName('');
                       setCreateModuleDesc('');
+                      setCreateModuleSelectedAccesses([]);
                       setCreateModuleError('');
                       setIsCreateModuleModalOpen(true);
                     }}
@@ -2696,10 +2683,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         isOpen={isCreateModuleModalOpen}
         onClose={() => {
           setIsCreateModuleModalOpen(false);
+          setCreateModuleName('');
+          setCreateModuleDesc('');
+          setCreateModuleSelectedAccesses([]);
           setCreateModuleError('');
         }}
         title="Create Role"
-        maxWidth="md"
+        maxWidth="xl"
         footer={
           <>
             <Button
@@ -2707,6 +2697,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               size="sm"
               onClick={() => {
                 setIsCreateModuleModalOpen(false);
+                setCreateModuleName('');
+                setCreateModuleDesc('');
+                setCreateModuleSelectedAccesses([]);
                 setCreateModuleError('');
               }}
             >
@@ -2725,21 +2718,24 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   setCreateModuleError('A role with this name already exists.');
                   return;
                 }
-                const res = createModule(name, createModuleDesc.trim());
+                const res = createModule(name, createModuleDesc.trim(), createModuleSelectedAccesses);
                 if (res.success) {
                   setIsCreateModuleModalOpen(false);
-                  const created = modules.find((m) => m.name.toLowerCase() === name.toLowerCase());
+                  setCreateModuleName('');
+                  setCreateModuleDesc('');
+                  setCreateModuleSelectedAccesses([]);
+                  const created = res.module || modules.find((m) => m.name.toLowerCase() === name.toLowerCase());
                   if (created) setSelectedModuleId(created.id);
                   showNotification({
                     type: 'success',
-                    message: `Role "${name}" created successfully.`,
+                    message: `Role "${name}" created with ${createModuleSelectedAccesses.length} access(es).`,
                   });
                 } else {
                   setCreateModuleError(res.error || 'Failed to create role.');
                 }
               }}
             >
-              Create
+              Create Role
             </Button>
           </>
         }
@@ -2760,11 +2756,105 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               Description (optional)
             </label>
             <textarea
-              className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 resize-none h-20"
+              className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 resize-none h-16"
               placeholder="Operational scope and privileges granted by this role..."
               value={createModuleDesc}
               onChange={(e) => setCreateModuleDesc(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Assign Access Privileges
+                <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">
+                  ({createModuleSelectedAccesses.length} of {ACCESS_CATALOG.length} selected)
+                </span>
+              </label>
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setCreateModuleSelectedAccesses(ACCESS_CATALOG.map((a) => a.id))}
+                  className="text-teal-600 dark:text-teal-400 hover:underline font-medium cursor-pointer"
+                >
+                  Select all
+                </button>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <button
+                  type="button"
+                  onClick={() => setCreateModuleSelectedAccesses([])}
+                  className="text-slate-500 dark:text-slate-400 hover:underline cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 p-1">
+              {ACCESS_CATALOG.map((item) => {
+                const isSelected = createModuleSelectedAccesses.includes(item.id);
+                const isDocOnly = item.id === 'prescriptionAuthoring';
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      setCreateModuleSelectedAccesses((prev) => {
+                        const exists = prev.includes(item.id);
+                        if (exists) {
+                          if (item.id === 'emrRecordsAccess') {
+                            return prev.filter((id) => id !== 'emrRecordsAccess' && id !== 'prescriptionAuthoring');
+                          }
+                          return prev.filter((id) => id !== item.id);
+                        } else {
+                          if (item.id === 'prescriptionAuthoring') {
+                            return Array.from(new Set([...prev, 'prescriptionAuthoring', 'emrRecordsAccess']));
+                          }
+                          return [...prev, item.id];
+                        }
+                      });
+                    }}
+                    className={`flex items-start gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-900/60'
+                        : 'hover:bg-white dark:hover:bg-slate-800 border border-transparent'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => {}}
+                      className="mt-0.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300 dark:border-slate-700 dark:bg-slate-800 cursor-pointer shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs font-medium ${
+                          isSelected ? 'text-teal-900 dark:text-teal-200 font-semibold' : 'text-slate-800 dark:text-slate-200'
+                        }`}>
+                          {item.label}
+                        </span>
+                        {isDocOnly && (
+                          <span className="text-[10px] px-1 py-0.2 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded">
+                            Doctors only
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                        {item.description}
+                      </p>
+                      {isDocOnly && isSelected && (
+                        <p className="text-[10px] text-teal-700 dark:text-teal-400 mt-1 italic">
+                          Includes required EMR Records Access dependency.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Access privileges can be modified at any time via the Configure Role panel.
+            </p>
           </div>
         </div>
       </Modal>

@@ -121,6 +121,7 @@ interface ClinicContextType {
   createModule: (
     name: string,
     description?: string,
+    initialAccessIds?: StandardCapability[],
     actingUser?: User | null
   ) => ModuleMutationResult;
   renameModule: (
@@ -581,6 +582,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const createModule = (
     name: string,
     description?: string,
+    initialAccessIds?: StandardCapability[],
     actingUser?: User | null
   ): ModuleMutationResult => {
     const actor = actingUser || authUser;
@@ -589,10 +591,18 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     const trimmedName = name.trim();
     if (!trimmedName) {
-      return { success: false, error: 'Module name is required.' };
+      return { success: false, error: 'Role name is required.' };
     }
     if (modules.some((m) => m.name.toLowerCase() === trimmedName.toLowerCase())) {
-      return { success: false, error: 'A module with this name already exists.' };
+      return { success: false, error: 'A role with this name already exists.' };
+    }
+
+    const accessIds = initialAccessIds ? Array.from(new Set(initialAccessIds)) : [];
+    if (accessIds.includes('prescriptionAuthoring') && !accessIds.includes('emrRecordsAccess')) {
+      return {
+        success: false,
+        error: 'Prescription Authoring requires EMR Records Access to be included as well.',
+      };
     }
 
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
@@ -600,7 +610,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       id: `mod-${Date.now()}`,
       name: trimmedName,
       description: description?.trim() || '',
-      accessIds: [],
+      accessIds,
       memberIds: [],
       isSystem: false,
       createdBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
@@ -613,7 +623,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       targetRole: 'md',
       targetStaffName: trimmedName,
       action: 'module_created',
-      description: `Module '${trimmedName}' created by ${actor?.name || 'Managing Director'}`,
+      description: `Role '${trimmedName}' created with ${accessIds.length} access(es) by ${actor?.name || 'Managing Director'}`,
       authorizedBy: actor?.name || 'Dr. Marcus Vance (Managing Director)',
     });
 
