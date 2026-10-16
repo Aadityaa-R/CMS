@@ -314,3 +314,23 @@ body.dark,
   font-size: 15px;
 }
 
+/* Scrollbar hiding utilities preserving touch and pointer scrolling */
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Table truncate overrides: table mode truncates, stack mode displays full */
+tr.block .table-cell-truncate {
+  max-width: none !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  display: inline !important;
+}
+
+

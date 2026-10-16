@@ -147,13 +147,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
             <div className="w-11 h-11 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-teal-500/20 group-hover:bg-teal-700 transition-colors">
               <Building2 className="w-6 h-6" />
             </div>
-            <div>
-              <div>
-                <h1 className="font-bold text-slate-900 dark:text-slate-100 text-base sm:text-lg leading-tight tracking-tight">
-                  Beacon Health Clinic
-                </h1>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+            <div className="min-w-0 text-left">
+              <h1 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base md:text-lg leading-tight tracking-tight truncate max-w-[190px] sm:max-w-none">
+                Beacon Health Clinic
+              </h1>
+              <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
                 Clinical Management System
               </p>
             </div>

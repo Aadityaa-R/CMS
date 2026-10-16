@@ -190,20 +190,24 @@ export function getScopedPrescriptions(
 
   if (!currentUser) return [];
 
-  // 1. Staff without EMR Records Access: strictly forbidden
-  if (!hasCapability(currentUser, 'emrRecordsAccess', modules)) {
-    return [];
-  }
-
-  // 2. Patient view
+  // 1. Patient view: patients always see all their own prescriptions regardless of authoring doctor
   if (currentUser.role === 'patient') {
+    const rawId = currentUser.id || '';
+    const cleanId = rawId.startsWith('usr-') ? rawId.replace('usr-', '') : rawId;
     return prescriptions.filter(
       (rx) =>
         rx.patientId === currentUser.patientId ||
+        rx.patientId === cleanId ||
+        rx.patientId === rawId ||
         rx.patientId === currentUser.badgeNumber ||
-        currentUser.id === `usr-${rx.patientId}` ||
-        currentUser.id === rx.patientId
+        rawId === `usr-${rx.patientId}` ||
+        rawId === rx.patientId
     );
+  }
+
+  // 2. Staff without EMR Records Access: strictly forbidden
+  if (!hasCapability(currentUser, 'emrRecordsAccess', modules)) {
+    return [];
   }
 
   // 3. Admin view
@@ -236,12 +240,16 @@ export function getScopedInvoices(
   if (!currentUser) return [];
 
   if (currentUser.role === 'patient') {
+    const rawId = currentUser.id || '';
+    const cleanId = rawId.startsWith('usr-') ? rawId.replace('usr-', '') : rawId;
     return invoices.filter(
       (inv) =>
         inv.patientId === currentUser.patientId ||
+        inv.patientId === cleanId ||
+        inv.patientId === rawId ||
         inv.patientId === currentUser.badgeNumber ||
-        currentUser.id === `usr-${inv.patientId}` ||
-        currentUser.id === inv.patientId
+        rawId === `usr-${inv.patientId}` ||
+        rawId === inv.patientId
     );
   }
 

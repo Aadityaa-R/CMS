@@ -314,6 +314,12 @@ const patientScopedPrescriptions = getScopedPrescriptions(
   INITIAL_PRESCRIPTIONS,
   INITIAL_PATIENT_ASSIGNMENTS
 );
+assert('Patient has at least 1 prescription', patientScopedPrescriptions.length >= 1);
+assertEqual(
+  'Eleanor Wright sees RX-2026-0081 in portal',
+  patientScopedPrescriptions.some((r) => r.prescriptionNumber === 'RX-2026-0081'),
+  true
+);
 assert(
   'Patient prescriptions only belong to pat-1',
   patientScopedPrescriptions.every((r) => r.patientId === 'pat-1')

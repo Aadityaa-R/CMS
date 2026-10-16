@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTruncate } from '@/components/ui/Table';
 import {
   CheckCircle2,
   Filter,
@@ -1060,48 +1060,47 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <div className="flex justify-between items-baseline gap-2">
                           <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
                           <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                            {summaryPatient.lastVisitDate ||
-                              (lastCompletedApt?.dateTime
-                                ? new Date(lastCompletedApt.dateTime).toLocaleDateString('en-GB', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                  })
-                                : 'None recorded')}
+                            {lastCompletedApt?.dateTime
+                              ? new Date(lastCompletedApt.dateTime).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })
+                              : summaryPatient.lastVisitDate || 'None recorded'}
                           </span>
                         </div>
 
-                        {summaryPatient.previousVitals && (
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit Vitals:</span>
-                            <div className="text-right">
-                              <span className="font-medium text-slate-900 dark:text-slate-100 block">
-                                BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp} mmHg • HR {summaryPatient.previousVitals.heartRateBpm} bpm
-                              </span>
-                              <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
-                                SpO2 {summaryPatient.previousVitals.oxygenSaturationPct}% • Temp {summaryPatient.previousVitals.temperatureCelsius} °C
-                              </span>
-                            </div>
+                        <div className="flex justify-between items-baseline gap-2">
+                          <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit Vitals:</span>
+                          <div className="text-right">
+                            {summaryPatient.previousVitals ? (
+                              <>
+                                <span className="font-medium text-slate-900 dark:text-slate-100 block">
+                                  BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp} mmHg • HR {summaryPatient.previousVitals.heartRateBpm} bpm
+                                </span>
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                                  SpO2 {summaryPatient.previousVitals.oxygenSaturationPct}% • Temp {summaryPatient.previousVitals.temperatureCelsius} °C
+                                </span>
+                              </>
+                            ) : (
+                              <span className="font-medium text-slate-900 dark:text-slate-100">None recorded</span>
+                            )}
                           </div>
-                        )}
+                        </div>
 
-                        {lastCompletedApt?.reasonForVisit && (
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Reason:</span>
-                            <span className="font-medium text-slate-900 dark:text-slate-100 text-right line-clamp-2" title={lastCompletedApt.reasonForVisit}>
-                              {lastCompletedApt.reasonForVisit}
-                            </span>
-                          </div>
-                        )}
+                        <div className="flex justify-between items-baseline gap-2">
+                          <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Reason:</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100 text-right line-clamp-2" title={lastCompletedApt?.reasonForVisit || undefined}>
+                            {lastCompletedApt?.reasonForVisit || 'None recorded'}
+                          </span>
+                        </div>
 
-                        {lastCompletedApt?.doctorName && (
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Consulting Doctor:</span>
-                            <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                              {lastCompletedApt.doctorName}
-                            </span>
-                          </div>
-                        )}
+                        <div className="flex justify-between items-baseline gap-2">
+                          <span className="text-slate-500 dark:text-slate-400 shrink-0">Consulting Doctor:</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                            {lastCompletedApt?.doctorName || 'None recorded'}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="flex justify-between items-baseline gap-2">
@@ -1247,17 +1246,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 sm:p-0">
-                  <div className="p-3 sm:p-0">
-                    <Table stackBelow="md">
+                  <div className="overflow-x-auto overflow-y-hidden max-w-full">
+                    <Table stackBelow="lg">
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-44 whitespace-nowrap">Patient</TableHead>
                           <TableHead className="w-12 text-center">#</TableHead>
                           <TableHead className="w-24 whitespace-nowrap">Time</TableHead>
-                          <TableHead className="w-44 whitespace-nowrap">Patient</TableHead>
                           <TableHead hideBelow="md" className="w-32 whitespace-nowrap">Appt ID</TableHead>
                           <TableHead className="w-auto min-w-[200px]">Complaint</TableHead>
                           <TableHead className="w-36 whitespace-nowrap">Status</TableHead>
-                          <TableHead className="w-48 text-right whitespace-nowrap">Actions</TableHead>
+                          <TableHead isActions className="w-48 text-right whitespace-nowrap">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1271,6 +1270,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 key={apt.id}
                                 className={isCurrent ? 'bg-teal-50/50 dark:bg-teal-950/30' : ''}
                               >
+                                <TableCell isPrimary label="Patient" className="w-44 whitespace-nowrap font-bold text-slate-900 dark:text-slate-100">
+                                  {apt.patientName}
+                                </TableCell>
                                 <TableCell label="Token #" className="w-12 text-center text-slate-700 dark:text-slate-300">
                                   {apt.tokenNumber}
                                 </TableCell>
@@ -1280,11 +1282,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                     minute: '2-digit',
                                   })}
                                 </TableCell>
-                                <TableCell label="Patient" className="w-44 whitespace-nowrap font-bold text-slate-900 dark:text-slate-100">
-                                  {apt.patientName}
-                                </TableCell>
                                 <TableCell label="Appt ID" hideBelow="md" className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300">
-                                  {apt.appointmentNumber}
+                                  <TableTruncate>{apt.appointmentNumber}</TableTruncate>
                                 </TableCell>
                                 <TableCell
                                   label="Complaint"
@@ -1296,7 +1295,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 <TableCell label="Status" className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
                                   {formatAppointmentStatus(apt.status)}
                                 </TableCell>
-                                <TableCell label="Actions" fullWidthOnStack className="w-48 text-right whitespace-nowrap">
+                                <TableCell isActions label="Actions" fullWidthOnStack className="w-48 text-right whitespace-nowrap">
                                   <div className="flex items-center justify-end gap-2">
                                     {isInConsultation && isCurrent ? (
                                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -1395,19 +1394,19 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 />
               </div>
             </div>
-            <div className="p-3 sm:p-0">
-              <Table stackBelow="md">
+            <div className="overflow-x-auto overflow-y-hidden max-w-full">
+              <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-28 whitespace-nowrap">MRN</TableHead>
                     <TableHead className="w-48">Patient Name</TableHead>
+                    <TableHead className="w-28 whitespace-nowrap">MRN</TableHead>
                     <TableHead hideBelow="md" className="w-32 whitespace-nowrap">Demographics</TableHead>
                     <TableHead hideBelow="sm" className="w-36 whitespace-nowrap">Phone</TableHead>
                     <TableHead hideBelow="md" className="w-24 whitespace-nowrap">Blood Group</TableHead>
                     <TableHead hideBelow="sm" className="w-1/6 min-w-[140px]">Allergies</TableHead>
                     <TableHead hideBelow="lg" className="w-1/6 min-w-[140px]">Chronic Conditions</TableHead>
                     {isAdmin(currentUser) && <TableHead hideBelow="md" className="w-36 whitespace-nowrap">Assigned Doctor</TableHead>}
-                    <TableHead className="w-44 text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead isActions className="w-44 text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1432,16 +1431,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       return (
                         <TableRow key={pat.id}>
-                          <TableCell label="MRN" className="w-28 whitespace-nowrap text-slate-700 dark:text-slate-300 font-mono">
-                            {pat.mrn}
-                          </TableCell>
-                          <TableCell label="Patient Name" className="w-48">
+                          <TableCell isPrimary label="Patient Name" className="w-48">
                             <div className="font-bold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 break-all">
-                              {pat.email}
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              <TableTruncate>{pat.email}</TableTruncate>
                             </div>
+                          </TableCell>
+                          <TableCell label="MRN" className="w-28 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                            <TableTruncate>{pat.mrn}</TableTruncate>
                           </TableCell>
                           <TableCell label="Demographics" hideBelow="md" className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300 capitalize">
                             {pat.age} yrs • {pat.gender}
@@ -1463,7 +1462,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               {assignedDoc ? assignedDoc.name : <span className="italic text-slate-400">Unassigned</span>}
                             </TableCell>
                           )}
-                          <TableCell label="Actions" fullWidthOnStack className="w-44 text-right whitespace-nowrap">
+                          <TableCell isActions label="Actions" fullWidthOnStack className="w-44 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2 flex-wrap sm:flex-nowrap">
                               {canTransfer && (
                                 <Button
@@ -1555,27 +1554,27 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 />
               </div>
             </div>
-            <div className="p-3 sm:p-0">
-              <Table stackBelow="md">
+            <div className="overflow-x-auto overflow-y-hidden max-w-full">
+              <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-1/12 min-w-[90px]">Rx #</TableHead>
                     <TableHead className="w-2/12 min-w-[150px]">Patient Name</TableHead>
+                    <TableHead className="w-1/12 min-w-[90px]">Rx #</TableHead>
                     <TableHead hideBelow="sm" className="w-1/12 min-w-[100px]">Issue Date</TableHead>
                     <TableHead className="w-3/12 min-w-[180px]">Diagnosis</TableHead>
                     <TableHead className="w-4/12 min-w-[240px]">Prescribed Regimen</TableHead>
-                    <TableHead className="w-1/12 min-w-[90px] text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead isActions className="w-1/12 min-w-[90px] text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPrescriptions.length > 0 ? (
                     paginatedPrescriptions.map((rx) => (
                       <TableRow key={rx.id}>
-                        <TableCell label="Rx #" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300 font-mono">
-                          {rx.prescriptionNumber}
-                        </TableCell>
-                        <TableCell label="Patient Name" className="w-2/12 min-w-[150px] font-semibold text-slate-900 dark:text-slate-100">
+                        <TableCell isPrimary label="Patient Name" className="w-2/12 min-w-[150px] font-semibold text-slate-900 dark:text-slate-100">
                           {rx.patientName}
+                        </TableCell>
+                        <TableCell label="Rx #" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300">
+                          <TableTruncate>{rx.prescriptionNumber}</TableTruncate>
                         </TableCell>
                         <TableCell label="Issue Date" hideBelow="sm" className="w-1/12 min-w-[100px] text-slate-600 dark:text-slate-400">
                           {rx.date}
@@ -1611,7 +1610,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             )}
                           </div>
                         </TableCell>
-                        <TableCell label="Actions" fullWidthOnStack className="w-1/12 min-w-[90px] text-right whitespace-nowrap">
+                        <TableCell isActions label="Actions" fullWidthOnStack className="w-1/12 min-w-[90px] text-right whitespace-nowrap">
                           <div className="flex items-center justify-end">
                             <Button
                               size="xs"

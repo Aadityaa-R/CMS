@@ -281,114 +281,100 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
         )}
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Patient Portal
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Welcome, {patient ? `${patient.firstName} ${patient.lastName}` : currentUser.name} • MRN: {patient?.mrn || currentUser.badgeNumber || 'N/A'}
-            </p>
-          </div>
+        <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            Patient Portal
+          </h1>
         </div>
 
         {/* Section 1: Personal Record */}
         <Card>
           <CardHeader>
             <CardTitle>Personal Record</CardTitle>
-            <CardDescription>
-              Demographics, medical profile, and contact details
-            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Full Name</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+          <CardContent className="space-y-3 text-xs">
+            <div className="space-y-2 divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="flex justify-between items-baseline gap-2 pt-1 first:pt-0">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Patient Name:</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 text-right">
                   {patient ? `${patient.firstName} ${patient.lastName}` : currentUser.name}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">
-                  MRN: {patient?.mrn || currentUser.badgeNumber || 'N/A'}
+              </div>
+
+              <div className="flex justify-between items-baseline gap-2 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">MRN:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                  {patient?.mrn || currentUser.badgeNumber || 'None recorded'}
                 </span>
               </div>
-              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Demographics</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm capitalize">
+
+              <div className="flex justify-between items-baseline gap-2 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Demographics:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100 text-right capitalize">
                   {patient?.age ? `${patient.age} yrs` : ''} {patient?.gender ? `• ${patient.gender}` : ''}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">
-                  DOB: {patient?.dob || 'N/A'} • Blood: {patient?.bloodGroup || 'N/A'}
+              </div>
+
+              <div className="flex justify-between items-baseline gap-2 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Date of Birth:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                  {patient?.dob || 'None recorded'}
                 </span>
               </div>
-              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Contact Info</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
-                  {patient?.phone || 'N/A'}
+
+              <div className="flex justify-between items-baseline gap-2 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Blood Group:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                  {patient?.bloodGroup || 'None recorded'}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5 break-all">
+              </div>
+
+              <div className="flex justify-between items-baseline gap-2 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Contact Phone:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                  {patient?.phone || 'None recorded'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-baseline gap-2 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Email:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100 text-right break-all">
                   {patient?.email || currentUser.email}
                 </span>
               </div>
+
+              <div className="flex justify-between items-baseline gap-2 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Allergies:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                  {patient?.allergies && patient.allergies.length > 0 ? patient.allergies.join(', ') : 'None recorded'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-baseline gap-2 pt-2">
+                <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                  {patient?.chronicConditions && patient.chronicConditions.length > 0 ? patient.chronicConditions.join(', ') : 'None recorded'}
+                </span>
+              </div>
+
+              {patient?.emergencyContact && (
+                <div className="flex justify-between items-baseline gap-2 pt-2">
+                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Emergency Contact:</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                    {patient.emergencyContact.name} ({patient.emergencyContact.relationship}) • {patient.emergencyContact.phone}
+                  </span>
+                </div>
+              )}
+
+              {patientVitals && (
+                <div className="flex justify-between items-baseline gap-2 pt-2">
+                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Latest Clinical Vitals:</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                    BP {patientVitals.systolicBp}/{patientVitals.diastolicBp} mmHg • HR {patientVitals.heartRateBpm} bpm • O2 {patientVitals.oxygenSaturationPct}% • Temp {patientVitals.temperatureCelsius}°C
+                  </span>
+                </div>
+              )}
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Allergies</span>
-                <div className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-1">
-                  {patient?.allergies && patient.allergies.length > 0 ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                      <span>{patient.allergies.join(', ')}</span>
-                    </div>
-                  ) : (
-                    <span className="text-slate-400 italic">None Recorded</span>
-                  )}
-                </div>
-              </div>
-              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Chronic Conditions</span>
-                <div className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-1">
-                  {patient?.chronicConditions && patient.chronicConditions.length > 0 ? (
-                    patient.chronicConditions.join(', ')
-                  ) : (
-                    <span className="text-slate-400 italic">None Recorded</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {patient?.emergencyContact && (
-              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Emergency Contact</span>
-                <div className="text-xs text-slate-800 dark:text-slate-200 font-medium mt-1">
-                  {patient.emergencyContact.name} ({patient.emergencyContact.relationship}) • {patient.emergencyContact.phone}
-                </div>
-              </div>
-            )}
-
-            {patientVitals && (
-              <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Latest Clinical Triage Vitals</span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1 font-mono">
-                  <div>
-                    <span className="text-slate-500 text-[10px] block font-sans">BP</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">{patientVitals.systolicBp}/{patientVitals.diastolicBp} mmHg</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block font-sans">Heart Rate</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">{patientVitals.heartRateBpm} bpm</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block font-sans">O2 Sat</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">{patientVitals.oxygenSaturationPct}%</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block font-sans">Temp</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">{patientVitals.temperatureCelsius}°C</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -402,9 +388,6 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             }
           >
             <CardTitle>Prescriptions</CardTitle>
-            <CardDescription>
-              e-Prescriptions issued by attending clinic doctors
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {prescriptions.length === 0 ? (
@@ -418,10 +401,10 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                   className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-2"
                 >
                   <div className="flex items-center justify-between flex-wrap gap-1">
-                    <span className="font-mono text-xs font-bold text-teal-600 dark:text-teal-400">
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                       {rx.prescriptionNumber}
                     </span>
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
                       {rx.date}
                     </span>
                   </div>
@@ -439,7 +422,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Medications</span>
                     {rx.items.map((item, idx) => (
                       <div key={idx} className="text-xs text-slate-800 dark:text-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                        <span className="font-medium text-teal-700 dark:text-teal-300">{item.medicineName} {item.dosage}</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">{item.medicineName} {item.dosage}</span>
                         <span className="text-[11px] text-slate-500 dark:text-slate-400">{item.frequency} • {item.duration}</span>
                       </div>
                     ))}
@@ -460,9 +443,6 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             }
           >
             <CardTitle>Invoices</CardTitle>
-            <CardDescription>
-              Consultation statements and payment receipts
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {invoices.length === 0 ? (
@@ -481,7 +461,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                   >
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div>
-                        <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
+                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                           {inv.invoiceNumber}
                         </span>
                         <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
@@ -489,11 +469,6 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            isPaid ? 'bg-teal-500' : 'bg-amber-500'
-                          }`}
-                        />
                         <span className="text-xs font-semibold capitalize text-slate-700 dark:text-slate-300">
                           {isPaid ? 'Paid' : inv.status.replace('_', ' ')}
                         </span>
@@ -505,7 +480,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                         {inv.items.map((item, idx) => (
                           <div key={idx} className="flex justify-between text-slate-600 dark:text-slate-400">
                             <span>{item.description} (x{item.quantity})</span>
-                            <span className="font-mono text-slate-800 dark:text-slate-200">${item.total.toFixed(2)}</span>
+                            <span className="text-slate-800 dark:text-slate-200">${item.total.toFixed(2)}</span>
                           </div>
                         ))}
                       </div>
@@ -522,7 +497,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                       </div>
                       <div>
                         <span className="text-slate-500 dark:text-slate-400">Due: </span>
-                        <span className={`font-bold font-mono ${balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                        <span className={`font-bold ${balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
                           ${balance.toFixed(2)}
                         </span>
                       </div>

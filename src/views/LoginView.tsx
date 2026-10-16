@@ -3,14 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/ui/Table';
-import {
   Building2,
   Lock,
   User as UserIcon,
@@ -20,6 +12,10 @@ import {
   CheckCircle2,
   KeyRound,
 } from 'lucide-react';
+
+const DevCredentialsDirectory = import.meta.env.DEV
+  ? React.lazy(() => import('./DevCredentialsDirectory'))
+  : null;
 
 export const LoginView: React.FC = () => {
   const { login, roleCredentials } = useAuth();
@@ -169,14 +165,16 @@ export const LoginView: React.FC = () => {
                 />
                 <span>Remember session</span>
               </label>
-              <button
-                type="button"
-                onClick={() => setShowCredentialsGuide(!showCredentialsGuide)}
-                className="font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1 min-h-[44px]"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>{showCredentialsGuide ? 'Hide Credentials Guide' : 'Show Role Credentials'}</span>
-              </button>
+              {import.meta.env.DEV && (
+                <button
+                  type="button"
+                  onClick={() => setShowCredentialsGuide(!showCredentialsGuide)}
+                  className="font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1 min-h-[44px]"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>{showCredentialsGuide ? 'Hide Credentials Guide' : 'Show Role Credentials'}</span>
+                </button>
+              )}
             </div>
 
             <Button
@@ -191,64 +189,14 @@ export const LoginView: React.FC = () => {
             </Button>
           </form>
 
-          {/* Credentials Guide Table for all 4 roles */}
-          {showCredentialsGuide && (
-            <div className="mt-8 pt-6 border-t border-slate-200">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Authorized Role Credentials Directory ({roleCredentials.length} Accounts)</span>
-                </h3>
-                <span className="text-[11px] text-slate-500">
-                  Click 'Fill' to load credentials
-                </span>
-              </div>
-
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <Table stackBelow="sm">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-3/12 min-w-[120px]">Role</TableHead>
-                      <TableHead className="w-2/12 min-w-[100px]">Username</TableHead>
-                      <TableHead hideBelow="sm" className="w-2/12 min-w-[100px]">Password</TableHead>
-                      <TableHead hideBelow="sm" className="w-3/12 min-w-[140px]">Assigned Staff</TableHead>
-                      <TableHead className="w-2/12 min-w-[80px] text-right whitespace-nowrap">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {roleCredentials.map((c) => (
-                      <TableRow key={c.username}>
-                        <TableCell label="Role" className="w-3/12 min-w-[120px]">
-                          <span className="font-medium text-teal-700 dark:text-teal-400">
-                            {c.label}
-                          </span>
-                        </TableCell>
-                        <TableCell label="Username" className="w-2/12 min-w-[100px] font-mono text-[11px] text-slate-700">
-                          {c.username}
-                        </TableCell>
-                        <TableCell label="Password" hideBelow="sm" className="w-2/12 min-w-[100px] font-mono text-[11px] text-slate-700">
-                          {c.password}
-                        </TableCell>
-                        <TableCell label="Assigned Staff" hideBelow="sm" className="w-3/12 min-w-[140px] text-slate-600 truncate">
-                          {c.fullName}
-                        </TableCell>
-                        <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[80px] text-right whitespace-nowrap">
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            type="button"
-                            className="min-h-[36px] sm:min-h-0 w-full sm:w-auto"
-                            onClick={() => handleFillCredentials(c.username, c.password)}
-                          >
-                            Fill
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
+          {/* Credentials Guide Table for all 4 roles (Dev only) */}
+          {import.meta.env.DEV && showCredentialsGuide && DevCredentialsDirectory && (
+            <React.Suspense fallback={null}>
+              <DevCredentialsDirectory
+                roleCredentials={roleCredentials}
+                onFill={handleFillCredentials}
+              />
+            </React.Suspense>
           )}
 
           {/* Security notice */}

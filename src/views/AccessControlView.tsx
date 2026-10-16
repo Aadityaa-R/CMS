@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTruncate } from '@/components/ui/Table';
 import { Filter, ArrowLeft, X } from 'lucide-react';
 import { User, UserRole, StaffAccessRecord, StaffPermission, AccessModule, StandardCapability } from '@/types';
 import { PendingStaffApproval, INITIAL_PENDING_APPROVALS } from '@/data/mockData';
@@ -1007,7 +1007,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       </div>
 
       {/* Sub-Workstation Navigation Tabs (scrollable on mobile) */}
-      <div className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto scrollbar-none flex-nowrap shrink-0">
+      <div className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto overflow-y-hidden no-scrollbar scrollbar-none flex-nowrap shrink-0">
         {[
           {
             id: 'modules' as const,
@@ -1057,9 +1057,6 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               <div className="min-w-0">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
                   Role Clearance Governance
-                </span>
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                  Select role to inspect access capabilities and member roster:
                 </span>
               </div>
 
@@ -1475,14 +1472,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table stackBelow="md">
+                <div className="overflow-x-auto overflow-y-hidden max-w-full">
+                  <Table stackBelow="lg">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-5/12 min-w-[260px]">Role</TableHead>
                         <TableHead className="w-2/12 min-w-[130px]">Accesses</TableHead>
                         <TableHead className="w-2/12 min-w-[130px]">Members</TableHead>
-                        <TableHead className="w-3/12 min-w-[160px] text-right whitespace-nowrap">Actions</TableHead>
+                        <TableHead className="w-3/12 min-w-[160px] text-right whitespace-nowrap sticky right-0 bg-slate-50/90 dark:bg-slate-800/90 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1495,7 +1492,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       ) : (
                         filteredRolesList.slice((modulesPage - 1) * 10, modulesPage * 10).map((mod) => (
                           <TableRow key={mod.id}>
-                            <TableCell label="Role" className="w-5/12 min-w-[260px]">
+                            <TableCell label="Role" isPrimary className="w-5/12 min-w-[260px]">
                               <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
                                 {mod.name}
                               </div>
@@ -1511,7 +1508,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                             <TableCell label="Members" className="w-2/12 min-w-[130px] text-xs text-slate-700 dark:text-slate-300">
                               {mod.memberIds.length} {mod.memberIds.length === 1 ? 'member' : 'members'}
                             </TableCell>
-                            <TableCell label="Actions" fullWidthOnStack className="w-3/12 min-w-[160px] text-right whitespace-nowrap">
+                            <TableCell label="Actions" isActions fullWidthOnStack className="w-3/12 min-w-[160px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
                               <Button
                                 size="xs"
                                 variant="outline"
@@ -1888,16 +1885,16 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       <Select
                         icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
                         searchable={true}
-                        searchPlaceholder="Search roles..."
+                        searchPlaceholder="Search staff types..."
                         value={selectedRoleFilter}
-                        placeholder="All roles"
+                        placeholder="All staff types"
                         onChange={(e) => {
                           const newRole = e.target.value as RoleFilterKey;
                           setSelectedRoleFilter(newRole);
                           setSelectedStaffId(null);
                         }}
                         options={[
-                          { value: '', label: 'All roles' },
+                          { value: '', label: 'All staff types' },
                           { value: 'doc', label: `Doctors (${docCount})` },
                           { value: 'receptionist', label: `Receptionists (${receptionistCount})` },
                           { value: 'patient', label: `Patients (${patientCount})` },
@@ -1954,8 +1951,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           </CardHeader>
 
                           <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                              <Table stackBelow="md">
+                            <div className="overflow-x-auto overflow-y-hidden max-w-full">
+                              <Table stackBelow="lg">
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead className={isPatientSection ? 'w-4/12 min-w-[200px]' : 'w-3/12 min-w-[180px]'}>Name</TableHead>
@@ -1969,7 +1966,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                     )}
                                     <TableHead className="w-1/12 min-w-[80px]">Status</TableHead>
                                     <TableHead className="w-3/12 min-w-[160px]">Roles</TableHead>
-                                    <TableHead className="w-2/12 min-w-[130px] text-right whitespace-nowrap">Actions</TableHead>
+                                    <TableHead className="w-2/12 min-w-[130px] text-right whitespace-nowrap sticky right-0 bg-slate-50/90 dark:bg-slate-800/90 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">Actions</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1983,7 +1980,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                                     return (
                                       <TableRow key={staff.id}>
-                                        <TableCell label="Name" className={isPatientSection ? 'w-4/12 min-w-[200px]' : 'w-3/12 min-w-[180px]'}>
+                                        <TableCell label="Name" isPrimary className={isPatientSection ? 'w-4/12 min-w-[200px]' : 'w-3/12 min-w-[180px]'}>
                                           <div className="font-bold text-slate-900 dark:text-slate-100">
                                             {staff.staffName}
                                           </div>
@@ -1998,7 +1995,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                             <div className="text-slate-700 dark:text-slate-300">
                                               {staff.department}
                                             </div>
-                                            {specialization && (
+                                            {specialization && specialization.trim().toLowerCase() !== staff.department?.trim().toLowerCase() && (
                                               <div className="text-xs text-slate-500 dark:text-slate-400">
                                                 {specialization}
                                               </div>
@@ -2006,7 +2003,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                           </TableCell>
                                         )}
                                         <TableCell label={isPatientSection ? 'MRN' : 'ID'} hideBelow="sm" className={`text-slate-700 dark:text-slate-300 ${isPatientSection ? 'w-2/12 min-w-[100px]' : 'w-1/12 min-w-[80px]'}`}>
-                                          {staff.badgeNumber}
+                                          <TableTruncate>{staff.badgeNumber}</TableTruncate>
                                         </TableCell>
                                         <TableCell label="Status" className="w-1/12 min-w-[80px] text-slate-700 dark:text-slate-300">
                                           {staff.status === 'revoked' ? 'Revoked' : 'Active'}
@@ -2014,7 +2011,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                         <TableCell label="Roles" className="w-3/12 min-w-[160px] text-slate-700 dark:text-slate-300">
                                           {moduleNames}
                                         </TableCell>
-                                        <TableCell label="Actions" fullWidthOnStack className="w-2/12 min-w-[130px] text-right whitespace-nowrap">
+                                        <TableCell label="Actions" isActions fullWidthOnStack className="w-2/12 min-w-[130px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
                                           <Button
                                             size="xs"
                                             variant="outline"
@@ -2190,7 +2187,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <Table stackBelow="md">
+                <Table stackBelow="lg">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-3/12 min-w-[180px]">Applicant</TableHead>
@@ -2199,14 +2196,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       <TableHead hideBelow="sm" className="w-1/12 min-w-[80px]">Badge ID</TableHead>
                       <TableHead hideBelow="md" className="w-1/12 min-w-[90px]">Applied</TableHead>
                       <TableHead hideBelow="lg" className="w-2/12 min-w-[140px]">Notes</TableHead>
-                      <TableHead className="w-2/12 min-w-[150px] text-right whitespace-nowrap">Actions</TableHead>
+                      <TableHead className="w-2/12 min-w-[150px] text-right whitespace-nowrap sticky right-0 bg-slate-50/90 dark:bg-slate-800/90 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedApprovals.length > 0 ? (
                       paginatedApprovals.map((req) => (
                         <TableRow key={req.id}>
-                          <TableCell label="Applicant" className="w-3/12 min-w-[180px]">
+                          <TableCell label="Applicant" isPrimary className="w-3/12 min-w-[180px]">
                             <div className="font-bold text-slate-900 dark:text-slate-100">{req.staffName}</div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">{req.staffTitle}</div>
                           </TableCell>
@@ -2220,7 +2217,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                             )}
                           </TableCell>
                           <TableCell label="Badge ID" hideBelow="sm" className="w-1/12 min-w-[80px] text-slate-700 dark:text-slate-300">
-                            {req.badgeNumber}
+                            <TableTruncate>{req.badgeNumber}</TableTruncate>
                           </TableCell>
                           <TableCell label="Applied" hideBelow="md" className="w-1/12 min-w-[90px] text-slate-600 dark:text-slate-400 text-xs whitespace-nowrap">
                             {req.requestedAt}
@@ -2230,8 +2227,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               {req.notes}
                             </div>
                           </TableCell>
-                          <TableCell label="Actions" fullWidthOnStack className="w-2/12 min-w-[150px] text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-2">
+                          <TableCell label="Actions" isActions fullWidthOnStack className="w-2/12 min-w-[150px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
+                            <div className="flex flex-wrap items-center justify-end gap-2 [&_button]:min-h-[44px]">
                               <Button
                                 size="xs"
                                 variant="outline"
@@ -2315,8 +2312,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   />
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <Table stackBelow="md">
+              <div className="overflow-x-auto overflow-y-hidden max-w-full">
+                <Table stackBelow="lg">
                   <TableHeader>
                     <TableRow>
                       <TableHead hideBelow="sm" className="w-2/12 min-w-[130px]">Timestamp</TableHead>
@@ -2337,7 +2334,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           <TableCell label="Action" className="w-2/12 min-w-[130px] text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             {formatActionLabel(log.action)}
                           </TableCell>
-                          <TableCell label="Subject" className="w-2/12 min-w-[130px] font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          <TableCell label="Subject" isPrimary className="w-2/12 min-w-[130px] font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                             {log.targetStaffName}
                           </TableCell>
                           <TableCell label="Role" hideBelow="sm" className="w-1/12 min-w-[80px] text-slate-700 dark:text-slate-300 capitalize whitespace-nowrap">

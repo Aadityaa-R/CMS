@@ -141,7 +141,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                     x={38}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[10px] fill-slate-400 dark:fill-slate-500 font-mono"
+                    className="text-[10px] fill-slate-400 dark:fill-slate-500"
                   >
                     {tick}
                   </text>
@@ -195,7 +195,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                       x={slotCenterX}
                       y={215}
                       textAnchor="middle"
-                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 font-mono ${
+                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 ${
                         i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
                       }`}
                     >
@@ -342,7 +342,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                     x={48}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[10px] fill-slate-400 dark:fill-slate-500 font-mono"
+                    className="text-[10px] fill-slate-400 dark:fill-slate-500"
                   >
                     ${tick}
                   </text>
@@ -398,7 +398,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                       x={x}
                       y={215}
                       textAnchor="middle"
-                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 font-mono ${
+                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 ${
                         i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
                       }`}
                     >
@@ -529,7 +529,7 @@ const VisitsTrendChart: React.FC<VisitsTrendChartProps> = ({
                     x={38}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[10px] fill-slate-400 dark:fill-slate-500 font-mono"
+                    className="text-[10px] fill-slate-400 dark:fill-slate-500"
                   >
                     {tick}
                   </text>
@@ -566,7 +566,7 @@ const VisitsTrendChart: React.FC<VisitsTrendChartProps> = ({
                       x={x}
                       y={215}
                       textAnchor="middle"
-                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 font-mono ${
+                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 ${
                         i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
                       }`}
                     >
@@ -844,15 +844,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     return list.slice(start, start + 10);
   }, [metrics1.patientRecentPrescriptions, prescriptionsPage]);
 
-  // Column count for summary figure grid: 4 columns on desktop, 2 on tablet, 2 on phones
-  const figureCount = metrics1.summaryFigures.length;
-  const gridColsClass =
-    figureCount === 5
-      ? 'grid-cols-2 lg:grid-cols-5'
-      : figureCount === 3
-      ? 'grid-cols-1 sm:grid-cols-3'
-      : 'grid-cols-2 lg:grid-cols-4';
-
   return (
     <div className="space-y-6 pb-8">
       {/* Header: Greeting, Date Range Selector & Quick Actions */}
@@ -877,22 +868,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Summary Figures: Each metric in its own separate block card */}
-      <div className={`grid ${gridColsClass} gap-3 sm:gap-4`}>
-        {metrics1.summaryFigures.map((fig) => (
-          <Card
-            key={fig.label}
-            className="p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl shadow-xs transition-all hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between"
-          >
-            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-mono">
-              {fig.formattedValue ?? fig.value}
-            </span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
-              {fig.label}
-            </span>
-          </Card>
-        ))}
-      </div>
+      {/* Summary Figures: One outlined card with a plain grid of figures (4 columns on desktop, 2 on tablets and phones), no box around each figure, standard font */}
+      <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {metrics1.summaryFigures.map((fig) => (
+            <div key={fig.label} className="flex flex-col">
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                {fig.formattedValue ?? fig.value}
+              </span>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                {fig.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {/* Charts Row: Stack below 1024px (lg:grid-cols-2) */}
       {(currentRole === 'md' || currentRole === 'admin' || currentRole === 'doctor') && (
@@ -930,7 +920,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Today&apos;s Appointments
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {metrics1.todayAppointments.length}
                 </span>
               </div>
@@ -954,7 +944,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Time" className="w-2/12 min-w-[90px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
                           <TableCell label="Patient" className="w-4/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
@@ -990,7 +980,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Follow-ups Due
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {metrics1.followUpsDue.length}
                 </span>
               </div>
@@ -1020,7 +1010,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           <TableCell label="Doctor" className="w-3/12 min-w-[130px] text-slate-600 dark:text-slate-300">
                             {fu.doctorName}
                           </TableCell>
-                          <TableCell label="Due Date" className="w-2/12 min-w-[100px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Due Date" className="w-2/12 min-w-[100px] text-slate-600 dark:text-slate-300">
                             {fu.dueDate}
                           </TableCell>
                           <TableCell label="Reason" className="w-4/12 min-w-[140px] text-slate-600 dark:text-slate-300">
@@ -1050,7 +1040,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Pending Clearances
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {metrics1.pendingClearances.length}
                 </span>
               </div>
@@ -1080,7 +1070,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           <TableCell label="Role" className="w-2/12 min-w-[90px] capitalize text-slate-600 dark:text-slate-300">
                             {c.role}
                           </TableCell>
-                          <TableCell label="Applied" className="w-3/12 min-w-[110px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Applied" className="w-3/12 min-w-[110px] text-slate-600 dark:text-slate-300">
                             {c.applied}
                           </TableCell>
                           <TableCell label="Action" fullWidthOnStack className="w-3/12 min-w-[100px] text-right whitespace-nowrap">
@@ -1121,7 +1111,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Today&apos;s Appointments
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {metrics1.todayAppointments.length}
                 </span>
               </div>
@@ -1144,7 +1134,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Time" className="w-3/12 min-w-[100px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="w-3/12 min-w-[100px] text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
                           <TableCell label="Patient" className="w-6/12 min-w-[180px] font-medium text-slate-900 dark:text-slate-100">
@@ -1177,7 +1167,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Follow-ups Due
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {metrics1.followUpsDue.length}
                 </span>
               </div>
@@ -1203,7 +1193,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           <TableCell label="Patient" className="w-4/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
                             {fu.patientName}
                           </TableCell>
-                          <TableCell label="Due Date" className="w-3/12 min-w-[110px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Due Date" className="w-3/12 min-w-[110px] text-slate-600 dark:text-slate-300">
                             {fu.dueDate}
                           </TableCell>
                           <TableCell label="Reason" className="w-5/12 min-w-[160px] text-slate-600 dark:text-slate-300">
@@ -1238,7 +1228,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Today&apos;s Appointments
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {metrics1.todayAppointments.length}
                 </span>
               </div>
@@ -1263,7 +1253,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Time" className="w-2/12 min-w-[80px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="w-2/12 min-w-[80px] text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
                           <TableCell label="Patient" className="w-3/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
@@ -1314,7 +1304,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Follow-ups Due
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {metrics1.followUpsDue.length}
                 </span>
               </div>
@@ -1344,7 +1334,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           <TableCell label="Doctor" className="w-3/12 min-w-[130px] text-slate-600 dark:text-slate-300">
                             {fu.doctorName}
                           </TableCell>
-                          <TableCell label="Due Date" className="w-2/12 min-w-[100px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Due Date" className="w-2/12 min-w-[100px] text-slate-600 dark:text-slate-300">
                             {fu.dueDate}
                           </TableCell>
                           <TableCell label="Reason" className="w-4/12 min-w-[140px] text-slate-600 dark:text-slate-300">
@@ -1379,7 +1369,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Upcoming Appointments
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {metrics1.patientUpcomingAppointments?.length || 0}
                 </span>
               </div>
@@ -1404,10 +1394,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedPatientAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Date" className="w-2/12 min-w-[90px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Date" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
                             {apt.date}
                           </TableCell>
-                          <TableCell label="Time" className="w-2/12 min-w-[80px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="w-2/12 min-w-[80px] text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
                           <TableCell label="Doctor" className="w-3/12 min-w-[120px] font-medium text-slate-900 dark:text-slate-100">
@@ -1443,7 +1433,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Recent Prescriptions
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {metrics1.patientRecentPrescriptions?.length || 0}
                 </span>
               </div>
@@ -1467,7 +1457,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedPatientPrescriptions.map((rx) => (
                         <TableRow key={rx.id}>
-                          <TableCell label="Date" className="w-2/12 min-w-[90px] font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Date" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
                             {rx.date}
                           </TableCell>
                           <TableCell label="Medication" className="w-4/12 min-w-[150px] font-medium text-slate-900 dark:text-slate-100">
