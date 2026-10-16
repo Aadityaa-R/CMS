@@ -61,3 +61,4 @@ export function getAccessItem(id: StandardCapability | string): AccessItem | und
 export function isValidAccessId(id: string): id is StandardCapability {
   return ACCESS_CATALOG.some((item) => item.id === id);
 }
+

@@ -109,15 +109,21 @@ const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
   );
 };
 
-export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab = 'add_users' }) => {
+export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab = 'modules' }) => {
   const [selectedSubTab, setSelectedSubTab] = useState<'add_users' | 'edit_users' | 'modules' | 'ledger'>(() => {
-    if (activeTab === 'edit_users' || activeTab === 'modules' || activeTab === 'ledger') return activeTab;
-    return 'add_users';
+    if (activeTab === 'edit_users' || activeTab === 'add_users' || activeTab === 'ledger') return activeTab;
+    return 'modules';
   });
 
   useEffect(() => {
-    if (activeTab === 'add_users' || activeTab === 'edit_users' || activeTab === 'modules' || activeTab === 'ledger') {
-      setSelectedSubTab(activeTab);
+    if (
+      activeTab === 'add_users' ||
+      activeTab === 'edit_users' ||
+      activeTab === 'modules' ||
+      activeTab === 'roles' ||
+      activeTab === 'ledger'
+    ) {
+      setSelectedSubTab(activeTab === 'roles' ? 'modules' : (activeTab as any));
     }
   }, [activeTab]);
   const {
@@ -144,7 +150,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     doctors = [],
   } = useClinic();
 
-  // Module management state
+  // Module / Role management state
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [isCreateModuleModalOpen, setIsCreateModuleModalOpen] = useState(false);
   const [createModuleName, setCreateModuleName] = useState('');
@@ -226,6 +232,69 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       };
     });
   };
+
+  // Role Governance Selection & Search State (Roles tab)
+  const [roleSearchTerm, setRoleSearchTerm] = useState('');
+
+  const roleSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
+    const list: SearchSuggestion[] = [];
+    const seen = new Set<string>();
+
+    modules.forEach((mod) => {
+      if (!seen.has(mod.name.toLowerCase())) {
+        seen.add(mod.name.toLowerCase());
+        list.push({
+          label: mod.name,
+          category: 'Role',
+          sublabel: `${mod.accessIds.length} accesses • ${mod.memberIds.length} members`,
+        });
+      }
+    });
+
+    ACCESS_CATALOG.forEach((item) => {
+      if (!seen.has(item.label.toLowerCase())) {
+        seen.add(item.label.toLowerCase());
+        list.push({
+          label: item.label,
+          category: 'Access',
+          sublabel: item.description,
+        });
+      }
+    });
+
+    staffAccessList.forEach((staff) => {
+      if (staff.staffName && !seen.has(staff.staffName.toLowerCase())) {
+        seen.add(staff.staffName.toLowerCase());
+        list.push({
+          label: staff.staffName,
+          category: 'Member',
+          sublabel: `${staff.badgeNumber} • ${staff.staffTitle}`,
+        });
+      }
+    });
+
+    return list;
+  }, [modules, staffAccessList]);
+
+  const filteredRolesList = React.useMemo(() => {
+    const query = roleSearchTerm.trim().toLowerCase();
+    if (!query) return modules;
+    return modules.filter((mod) => {
+      const nameMatch = mod.name.toLowerCase().includes(query);
+      const descMatch = mod.description?.toLowerCase().includes(query);
+      const accessMatch = mod.accessIds.some((aid) => {
+        const item = getAccessItem(aid);
+        return aid.toLowerCase().includes(query) || (item && item.label.toLowerCase().includes(query));
+      });
+      const memberMatch = mod.memberIds.some((mid) => {
+        const staff = staffAccessList.find(
+          (s) => s.id === mid || s.badgeNumber === mid || s.staffName === mid
+        );
+        return staff?.staffName.toLowerCase().includes(query) || mid.toLowerCase().includes(query);
+      });
+      return Boolean(nameMatch || descMatch || accessMatch || memberMatch);
+    });
+  }, [modules, roleSearchTerm, staffAccessList]);
 
   // Active role filter: '' (unselected) | 'doc' | 'receptionist' | 'patient'
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('');
@@ -933,16 +1002,16 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800">
         {[
           {
-            id: 'add_users' as const,
-            label: `Add New Users (${pendingApprovals.length} pending)`,
+            id: 'modules' as const,
+            label: `Roles (${modules.length})`,
           },
           {
             id: 'edit_users' as const,
             label: `Edit Users (${staffAccessList.length})`,
           },
           {
-            id: 'modules' as const,
-            label: `Modules (${modules.length})`,
+            id: 'add_users' as const,
+            label: `Add New Users (${pendingApprovals.length} pending)`,
           },
           {
             id: 'ledger' as const,
@@ -970,6 +1039,486 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           );
         })}
       </div>
+
+      {/* SUB-MODULE 1: ROLES */}
+      {selectedSubTab === 'modules' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Role Governance & Selection Bar (fits 70% of the webapp page) */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                  Role Clearance Governance
+                </span>
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Select role to inspect access capabilities and member roster:
+                </span>
+              </div>
+
+              {/* Selection Menu container fitting 70% of webapp page width */}
+              <div className="w-full lg:w-[70%] flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+                {/* Search Option */}
+                <div className="relative flex-1">
+                  <InteractiveSearchBar
+                    value={roleSearchTerm}
+                    onChange={(val) => {
+                      setRoleSearchTerm(val);
+                      const matchingMod = modules.find(
+                        (m) => m.name.toLowerCase() === val.trim().toLowerCase()
+                      );
+                      if (matchingMod) {
+                        setSelectedModuleId(matchingMod.id);
+                        setModuleMembersPage(1);
+                      }
+                    }}
+                    suggestions={roleSearchSuggestions}
+                    placeholder="Search roles, accesses, or personnel"
+                  />
+                </div>
+
+                {/* Drop Down Selection Option */}
+                <div className="w-full sm:w-64 shrink-0">
+                  <Select
+                    icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                    searchable={true}
+                    searchPlaceholder="Search roles..."
+                    value={selectedModuleId || ''}
+                    placeholder="All Roles (Directory)"
+                    onChange={(e) => {
+                      const newId = e.target.value;
+                      setSelectedModuleId(newId ? newId : null);
+                      setModuleMembersPage(1);
+                    }}
+                    options={[
+                      { value: '', label: `All Roles (${modules.length})` },
+                      ...modules.map((m) => ({
+                        value: m.id,
+                        label: `${m.name} (${m.memberIds.length} members)`,
+                      })),
+                    ]}
+                  />
+                </div>
+
+                {/* Create Role Action Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 whitespace-nowrap"
+                  onClick={() => {
+                    setCreateModuleName('');
+                    setCreateModuleDesc('');
+                    setCreateModuleError('');
+                    setIsCreateModuleModalOpen(true);
+                  }}
+                >
+                  Create Role
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {selectedModuleId ? (
+            (() => {
+              const currentModule = modules.find((m) => m.id === selectedModuleId);
+              if (!currentModule) {
+                return (
+                  <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
+                    <p>Selected role could not be found.</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3 gap-2"
+                      onClick={() => setSelectedModuleId(null)}
+                    >
+                      <ArrowLeft className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      Back to Roles
+                    </Button>
+                  </div>
+                );
+              }
+
+              const deleteCheck = canDeleteModule(currentUser, currentModule, modules);
+              const membersCount = currentModule.memberIds.length;
+              const paginatedMemberIds = currentModule.memberIds.slice(
+                (moduleMembersPage - 1) * 10,
+                moduleMembersPage * 10
+              );
+
+              return (
+                <div className="space-y-6">
+                  {/* Top Bar with Back Button */}
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-xs w-fit"
+                      onClick={() => setSelectedModuleId(null)}
+                    >
+                      <ArrowLeft className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      Back to Roles
+                    </Button>
+                  </div>
+
+                  {/* Role Header Card */}
+                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <CardHeader
+                      action={
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditModuleName(currentModule.name);
+                              setEditModuleDesc(currentModule.description || '');
+                              setEditModuleError('');
+                              setIsEditModuleModalOpen(true);
+                            }}
+                          >
+                            Edit Role
+                          </Button>
+                          <div className="inline-block" title={!deleteCheck.allowed ? deleteCheck.reason : undefined}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={!deleteCheck.allowed}
+                              onClick={() => {
+                                setDeleteModuleInput('');
+                                setIsDeleteModuleModalOpen(true);
+                              }}
+                            >
+                              Delete Role
+                            </Button>
+                          </div>
+                        </div>
+                      }
+                    >
+                      <div>
+                        <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                          {currentModule.name}
+                        </CardTitle>
+                        {currentModule.description && (
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            {currentModule.description}
+                          </div>
+                        )}
+                        {!deleteCheck.allowed && deleteCheck.reason && (
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                            {deleteCheck.reason}
+                          </div>
+                        )}
+                      </div>
+                    </CardHeader>
+                  </Card>
+
+                  {/* Accesses Table Card */}
+                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Role Accesses ({currentModule.accessIds.length} included)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Access</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right whitespace-nowrap">Action</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {ACCESS_CATALOG.map((item) => {
+                              const isIncluded = currentModule.accessIds.includes(item.id);
+                              const includeCheck = !isIncluded
+                                ? canIncludeAccess(currentUser, currentModule, item.id, modules)
+                                : { allowed: true };
+                              const removeCheck = isIncluded
+                                ? canRemoveAccess(currentUser, currentModule, item.id, modules)
+                                : { allowed: true };
+
+                              const isActionDisabled = isIncluded ? !removeCheck.allowed : !includeCheck.allowed;
+                              const helperText = isIncluded ? removeCheck.reason : includeCheck.reason;
+
+                              return (
+                                <TableRow key={item.id}>
+                                  <TableCell>
+                                    <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                                      {item.label}
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                      {item.description}
+                                    </div>
+                                    {helperText && (
+                                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 italic">
+                                        {helperText}
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                    {isIncluded ? 'Included' : 'Not included'}
+                                  </TableCell>
+                                  <TableCell className="text-right whitespace-nowrap">
+                                    {isIncluded ? (
+                                      <Button
+                                        size="xs"
+                                        variant="outline"
+                                        disabled={isActionDisabled}
+                                        title={helperText}
+                                        onClick={() =>
+                                          setRemoveAccessTarget({
+                                            module: currentModule,
+                                            accessId: item.id,
+                                            label: item.label,
+                                          })
+                                        }
+                                      >
+                                        Remove
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="xs"
+                                        variant="primary"
+                                        disabled={isActionDisabled}
+                                        title={helperText}
+                                        onClick={() =>
+                                          setIncludeAccessTarget({
+                                            module: currentModule,
+                                            accessId: item.id,
+                                            label: item.label,
+                                          })
+                                        }
+                                      >
+                                        Include
+                                      </Button>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Members Table Card */}
+                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <CardHeader
+                      action={
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setAddMemberSelectedStaffId('');
+                            setAddMemberAdminConfirmName('');
+                            setAddMemberAdminReason('');
+                            setIsAddMemberModalOpen(true);
+                          }}
+                        >
+                          Add Person
+                        </Button>
+                      }
+                    >
+                      <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Role Members ({membersCount})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Staff Type</TableHead>
+                              <TableHead>ID</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {membersCount === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={5} className="py-6 text-center text-xs text-slate-500">
+                                  No members assigned to this role.
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              paginatedMemberIds.map((mid) => {
+                                const staff = staffAccessList.find(
+                                  (s) => s.id === mid || s.badgeNumber === mid || s.staffName === mid
+                                );
+                                const staffName = staff?.staffName || mid;
+                                const staffTitle = staff?.staffTitle || 'Staff Member';
+                                const staffType =
+                                  staff?.role === 'doctor'
+                                    ? 'Doctor'
+                                    : staff?.role === 'receptionist'
+                                    ? 'Receptionist'
+                                    : staff?.role === 'patient'
+                                    ? 'Patient'
+                                    : 'Staff';
+                                const badgeNumber = staff?.badgeNumber || mid;
+                                const isRevokedStatus = staff?.status === 'revoked';
+                                const removeCheck = staff
+                                  ? canRemoveMember(currentUser, currentModule, staff, modules, staffAccessList)
+                                  : { allowed: true };
+
+                                return (
+                                  <TableRow key={mid}>
+                                    <TableCell>
+                                      <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                                        {staffName}
+                                      </div>
+                                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {staffTitle}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                                      {staffType}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                                      {badgeNumber}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                                      {isRevokedStatus ? 'Revoked' : 'Active'}
+                                    </TableCell>
+                                    <TableCell className="text-right whitespace-nowrap">
+                                      <Button
+                                        size="xs"
+                                        variant="outline"
+                                        disabled={!removeCheck.allowed}
+                                        title={!removeCheck.allowed ? removeCheck.reason : undefined}
+                                        onClick={() => {
+                                          if (staff) {
+                                            setRemoveMemberTarget({
+                                              module: currentModule,
+                                              staff,
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        Remove
+                                      </Button>
+                                      {!removeCheck.allowed && removeCheck.reason && (
+                                        <div className="text-[10px] text-slate-500 mt-1">
+                                          {removeCheck.reason}
+                                        </div>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      {membersCount > 10 && (
+                        <Pagination
+                          currentPage={moduleMembersPage}
+                          totalItems={membersCount}
+                          pageSize={10}
+                          onPageChange={setModuleMembersPage}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()
+          ) : (
+            /* Roles Directory Table View */
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+              <CardHeader
+                action={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCreateModuleName('');
+                      setCreateModuleDesc('');
+                      setCreateModuleError('');
+                      setIsCreateModuleModalOpen(true);
+                    }}
+                  >
+                    Create Role
+                  </Button>
+                }
+              >
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    Roles ({filteredRolesList.length})
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Accesses</TableHead>
+                        <TableHead>Members</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRolesList.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="py-6 text-center text-xs text-slate-500">
+                            No roles found matching query.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredRolesList.slice((modulesPage - 1) * 10, modulesPage * 10).map((mod) => (
+                          <TableRow key={mod.id}>
+                            <TableCell>
+                              <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                                {mod.name}
+                              </div>
+                              {mod.description && (
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                  {mod.description}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                              {mod.accessIds.length} {mod.accessIds.length === 1 ? 'access' : 'accesses'}
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-700 dark:text-slate-300">
+                              {mod.memberIds.length} {mod.memberIds.length === 1 ? 'member' : 'members'}
+                            </TableCell>
+                            <TableCell className="text-right whitespace-nowrap">
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedModuleId(mod.id);
+                                  setModuleMembersPage(1);
+                                }}
+                              >
+                                Configure Role
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                {filteredRolesList.length > 10 && (
+                  <Pagination
+                    currentPage={modulesPage}
+                    totalItems={filteredRolesList.length}
+                    pageSize={10}
+                    onPageChange={setModulesPage}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* SUB-MODULE 2: EDIT USERS */}
       {selectedSubTab === 'edit_users' && (
@@ -1125,12 +1674,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                         </div>
                       </div>
 
-                      {/* Person's Modules Section */}
+                      {/* Person's Roles Section */}
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div>
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                              Assigned Modules
+                              Assigned Roles
                             </span>
                           </div>
                           <Button
@@ -1143,7 +1692,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               setIsConsoleAddModuleOpen(true);
                             }}
                           >
-                            Add to Module
+                            Add to Role
                           </Button>
                         </div>
 
@@ -1154,12 +1703,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           </div>
                         )}
 
-                        {/* Table of Person's Assigned Modules */}
+                        {/* Table of Person's Assigned Roles */}
                         <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-lg">
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Module</TableHead>
+                                <TableHead>Role</TableHead>
                                 <TableHead>Accesses</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                               </TableRow>
@@ -1171,7 +1720,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                   return (
                                     <TableRow>
                                       <TableCell colSpan={3} className="py-4 text-center text-xs text-slate-500">
-                                        Not assigned to any modules.
+                                        Not assigned to any roles.
                                       </TableCell>
                                     </TableRow>
                                   );
@@ -1244,7 +1793,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               if (effectiveAccesses.length === 0) {
                                 return (
                                   <div className="text-xs text-slate-500 italic p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800">
-                                    No effective accesses (person belongs to no active modules).
+                                    No effective accesses (person belongs to no active roles).
                                   </div>
                                 );
                               }
@@ -1291,7 +1840,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             })()
           ) : (
             <>
-              {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
+              {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority (70% width) */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -1300,9 +1849,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     </span>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
+                  <div className="w-full lg:w-[70%] flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
                     {/* Search Input with Interactive Dropdown and Autofill */}
-                    <div className="relative w-full sm:w-80">
+                    <div className="relative flex-1">
                       <InteractiveSearchBar
                         value={searchTerm}
                         onChange={setSearchTerm}
@@ -1312,9 +1861,11 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     </div>
 
                     {/* Role Filter Dropdown with Filter icon inside */}
-                    <div className="w-full sm:w-56 shrink-0">
+                    <div className="w-full sm:w-64 shrink-0">
                       <Select
                         icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                        searchable={true}
+                        searchPlaceholder="Search roles..."
                         value={selectedRoleFilter}
                         placeholder="All roles"
                         onChange={(e) => {
@@ -1394,7 +1945,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                       <TableHead>MRN</TableHead>
                                     )}
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Modules</TableHead>
+                                    <TableHead>Roles</TableHead>
                                     <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                                   </TableRow>
                                 </TableHeader>
@@ -1405,7 +1956,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                       doctors.find((d) => d.name.toLowerCase() === staff.staffName.toLowerCase())
                                         ?.specialization;
                                     const staffMods = getStaffModules(staff);
-                                    const moduleNames = staffMods.map((m) => m.name).join(', ') || 'No modules';
+                                    const moduleNames = staffMods.map((m) => m.name).join(', ') || 'No roles';
 
                                     return (
                                       <TableRow key={staff.id}>
@@ -1476,405 +2027,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         </div>
       )}
 
-      {/* SUB-MODULE: MODULES */}
-      {selectedSubTab === 'modules' && (
-        <div className="space-y-6 animate-fadeIn">
-          {selectedModuleId ? (
-            (() => {
-              const currentModule = modules.find((m) => m.id === selectedModuleId);
-              if (!currentModule) {
-                return (
-                  <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
-                    <p>Selected module could not be found.</p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-3 gap-2"
-                      onClick={() => setSelectedModuleId(null)}
-                    >
-                      <ArrowLeft className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                      Back to Modules List
-                    </Button>
-                  </div>
-                );
-              }
-
-              const deleteCheck = canDeleteModule(currentUser, currentModule, modules);
-              const membersCount = currentModule.memberIds.length;
-              const paginatedMemberIds = currentModule.memberIds.slice(
-                (moduleMembersPage - 1) * 10,
-                moduleMembersPage * 10
-              );
-
-              return (
-                <div className="space-y-6">
-                  {/* Top Bar with Back Button */}
-                  <div className="flex items-center justify-between">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 text-xs w-fit"
-                      onClick={() => setSelectedModuleId(null)}
-                    >
-                      <ArrowLeft className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                      Back to Modules
-                    </Button>
-                  </div>
-
-                  {/* Module Header Card */}
-                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <CardHeader
-                      action={
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditModuleName(currentModule.name);
-                              setEditModuleDesc(currentModule.description || '');
-                              setEditModuleError('');
-                              setIsEditModuleModalOpen(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <div className="inline-block" title={!deleteCheck.allowed ? deleteCheck.reason : undefined}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={!deleteCheck.allowed}
-                              onClick={() => {
-                                setDeleteModuleInput('');
-                                setIsDeleteModuleModalOpen(true);
-                              }}
-                            >
-                              Delete Module
-                            </Button>
-                          </div>
-                        </div>
-                      }
-                    >
-                      <div>
-                        <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                          {currentModule.name}
-                        </CardTitle>
-                        {currentModule.description && (
-                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            {currentModule.description}
-                          </div>
-                        )}
-                        {!deleteCheck.allowed && deleteCheck.reason && (
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                            {deleteCheck.reason}
-                          </div>
-                        )}
-                      </div>
-                    </CardHeader>
-                  </Card>
-
-                  {/* Accesses Table Card */}
-                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <CardHeader>
-                      <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        Module Accesses ({currentModule.accessIds.length} included)
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Access</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead className="text-right whitespace-nowrap">Action</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {ACCESS_CATALOG.map((item) => {
-                              const isIncluded = currentModule.accessIds.includes(item.id);
-                              const includeCheck = !isIncluded
-                                ? canIncludeAccess(currentUser, currentModule, item.id, modules)
-                                : { allowed: true };
-                              const removeCheck = isIncluded
-                                ? canRemoveAccess(currentUser, currentModule, item.id, modules)
-                                : { allowed: true };
-
-                              const isActionDisabled = isIncluded ? !removeCheck.allowed : !includeCheck.allowed;
-                              const helperText = isIncluded ? removeCheck.reason : includeCheck.reason;
-
-                              return (
-                                <TableRow key={item.id}>
-                                  <TableCell>
-                                    <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
-                                      {item.label}
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                      {item.description}
-                                    </div>
-                                    {helperText && (
-                                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 italic">
-                                        {helperText}
-                                      </div>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                                    {isIncluded ? 'Included' : 'Not included'}
-                                  </TableCell>
-                                  <TableCell className="text-right whitespace-nowrap">
-                                    {isIncluded ? (
-                                      <Button
-                                        size="xs"
-                                        variant="outline"
-                                        disabled={isActionDisabled}
-                                        title={helperText}
-                                        onClick={() =>
-                                          setRemoveAccessTarget({
-                                            module: currentModule,
-                                            accessId: item.id,
-                                            label: item.label,
-                                          })
-                                        }
-                                      >
-                                        Remove
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        size="xs"
-                                        variant="primary"
-                                        disabled={isActionDisabled}
-                                        title={helperText}
-                                        onClick={() =>
-                                          setIncludeAccessTarget({
-                                            module: currentModule,
-                                            accessId: item.id,
-                                            label: item.label,
-                                          })
-                                        }
-                                      >
-                                        Include
-                                      </Button>
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Members Table Card */}
-                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <CardHeader
-                      action={
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setAddMemberSelectedStaffId('');
-                            setAddMemberAdminConfirmName('');
-                            setAddMemberAdminReason('');
-                            setIsAddMemberModalOpen(true);
-                          }}
-                        >
-                          Add Person
-                        </Button>
-                      }
-                    >
-                      <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        Module Members ({membersCount})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Staff Type</TableHead>
-                              <TableHead>ID</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {membersCount === 0 ? (
-                              <TableRow>
-                                <TableCell colSpan={5} className="py-6 text-center text-xs text-slate-500">
-                                  No members assigned to this module.
-                                </TableCell>
-                              </TableRow>
-                            ) : (
-                              paginatedMemberIds.map((mid) => {
-                                const staff = staffAccessList.find(
-                                  (s) => s.id === mid || s.badgeNumber === mid || s.staffName === mid
-                                );
-                                const staffName = staff?.staffName || mid;
-                                const staffTitle = staff?.staffTitle || 'Staff Member';
-                                const staffType =
-                                  staff?.role === 'doctor'
-                                    ? 'Doctor'
-                                    : staff?.role === 'receptionist'
-                                    ? 'Receptionist'
-                                    : staff?.role === 'patient'
-                                    ? 'Patient'
-                                    : 'Staff';
-                                const badgeNumber = staff?.badgeNumber || mid;
-                                const isRevokedStatus = staff?.status === 'revoked';
-                                const removeCheck = staff
-                                  ? canRemoveMember(currentUser, currentModule, staff, modules, staffAccessList)
-                                  : { allowed: true };
-
-                                return (
-                                  <TableRow key={mid}>
-                                    <TableCell>
-                                      <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
-                                        {staffName}
-                                      </div>
-                                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                        {staffTitle}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-xs text-slate-700 dark:text-slate-300">
-                                      {staffType}
-                                    </TableCell>
-                                    <TableCell className="text-xs text-slate-700 dark:text-slate-300">
-                                      {badgeNumber}
-                                    </TableCell>
-                                    <TableCell className="text-xs text-slate-700 dark:text-slate-300">
-                                      {isRevokedStatus ? 'Revoked' : 'Active'}
-                                    </TableCell>
-                                    <TableCell className="text-right whitespace-nowrap">
-                                      <Button
-                                        size="xs"
-                                        variant="outline"
-                                        disabled={!removeCheck.allowed}
-                                        title={!removeCheck.allowed ? removeCheck.reason : undefined}
-                                        onClick={() => {
-                                          if (staff) {
-                                            setRemoveMemberTarget({
-                                              module: currentModule,
-                                              staff,
-                                            });
-                                          }
-                                        }}
-                                      >
-                                        Remove
-                                      </Button>
-                                      {!removeCheck.allowed && removeCheck.reason && (
-                                        <div className="text-[10px] text-slate-500 mt-1">
-                                          {removeCheck.reason}
-                                        </div>
-                                      )}
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      {membersCount > 10 && (
-                        <Pagination
-                          currentPage={moduleMembersPage}
-                          totalItems={membersCount}
-                          pageSize={10}
-                          onPageChange={setModuleMembersPage}
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              );
-            })()
-          ) : (
-            /* Modules List View */
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
-              <CardHeader
-                action={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setCreateModuleName('');
-                      setCreateModuleDesc('');
-                      setCreateModuleError('');
-                      setIsCreateModuleModalOpen(true);
-                    }}
-                  >
-                    Create Module
-                  </Button>
-                }
-              >
-                <div>
-                  <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    Modules ({modules.length})
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Module</TableHead>
-                        <TableHead>Accesses</TableHead>
-                        <TableHead>Members</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {modules.slice((modulesPage - 1) * 10, modulesPage * 10).map((mod) => (
-                        <TableRow key={mod.id}>
-                          <TableCell>
-                            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
-                              {mod.name}
-                            </div>
-                            {mod.description && (
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                {mod.description}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs text-slate-700 dark:text-slate-300">
-                            {mod.accessIds.length} {mod.accessIds.length === 1 ? 'access' : 'accesses'}
-                          </TableCell>
-                          <TableCell className="text-xs text-slate-700 dark:text-slate-300">
-                            {mod.memberIds.length} {mod.memberIds.length === 1 ? 'member' : 'members'}
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedModuleId(mod.id);
-                                setModuleMembersPage(1);
-                              }}
-                            >
-                              Open
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                {modules.length > 10 && (
-                  <Pagination
-                    currentPage={modulesPage}
-                    totalItems={modules.length}
-                    pageSize={10}
-                    onPageChange={setModulesPage}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* SUB-MODULE 1: ADD NEW USERS */}
+      {/* SUB-MODULE 3: ADD NEW USERS */}
       {selectedSubTab === 'add_users' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Direct Staff Member Provisioning Card */}
@@ -2531,14 +2684,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         )}
       </Modal>
 
-      {/* Create Module Modal */}
+      {/* Create Role Modal */}
       <Modal
         isOpen={isCreateModuleModalOpen}
         onClose={() => {
           setIsCreateModuleModalOpen(false);
           setCreateModuleError('');
         }}
-        title="Create Module"
+        title="Create Role"
         maxWidth="md"
         footer={
           <>
@@ -2558,11 +2711,11 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               onClick={() => {
                 const name = createModuleName.trim();
                 if (!name) {
-                  setCreateModuleError('Module name is required.');
+                  setCreateModuleError('Role name is required.');
                   return;
                 }
                 if (modules.some((m) => m.name.toLowerCase() === name.toLowerCase())) {
-                  setCreateModuleError('A module with this name already exists.');
+                  setCreateModuleError('A role with this name already exists.');
                   return;
                 }
                 const res = createModule(name, createModuleDesc.trim());
@@ -2572,10 +2725,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   if (created) setSelectedModuleId(created.id);
                   showNotification({
                     type: 'success',
-                    message: `Module "${name}" created successfully.`,
+                    message: `Role "${name}" created successfully.`,
                   });
                 } else {
-                  setCreateModuleError(res.error || 'Failed to create module.');
+                  setCreateModuleError(res.error || 'Failed to create role.');
                 }
               }}
             >
@@ -2586,7 +2739,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       >
         <div className="space-y-4">
           <Input
-            label={<>Module Name <span className="text-rose-500">*</span></>}
+            label={<>Role Name <span className="text-rose-500">*</span></>}
             placeholder="e.g. Clinical Research"
             value={createModuleName}
             onChange={(e) => {
@@ -2601,7 +2754,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             </label>
             <textarea
               className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 resize-none h-20"
-              placeholder="Operational scope and privileges granted by this module..."
+              placeholder="Operational scope and privileges granted by this role..."
               value={createModuleDesc}
               onChange={(e) => setCreateModuleDesc(e.target.value)}
             />
@@ -2609,14 +2762,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         </div>
       </Modal>
 
-      {/* Edit Module Modal */}
+      {/* Edit Role Modal */}
       <Modal
         isOpen={isEditModuleModalOpen}
         onClose={() => {
           setIsEditModuleModalOpen(false);
           setEditModuleError('');
         }}
-        title="Edit Module"
+        title="Edit Role"
         maxWidth="md"
         footer={
           <>
@@ -2637,7 +2790,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 if (!selectedModuleId) return;
                 const name = editModuleName.trim();
                 if (!name) {
-                  setEditModuleError('Module name is required.');
+                  setEditModuleError('Role name is required.');
                   return;
                 }
                 if (
@@ -2645,7 +2798,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     (m) => m.id !== selectedModuleId && m.name.toLowerCase() === name.toLowerCase()
                   )
                 ) {
-                  setEditModuleError('Another module with this name already exists.');
+                  setEditModuleError('Another role with this name already exists.');
                   return;
                 }
                 const res = renameModule(selectedModuleId, name, editModuleDesc.trim());
@@ -2653,10 +2806,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   setIsEditModuleModalOpen(false);
                   showNotification({
                     type: 'success',
-                    message: `Module updated successfully.`,
+                    message: `Role updated successfully.`,
                   });
                 } else {
-                  setEditModuleError(res.error || 'Failed to update module.');
+                  setEditModuleError(res.error || 'Failed to update role.');
                 }
               }}
             >
@@ -2667,7 +2820,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       >
         <div className="space-y-4">
           <Input
-            label={<>Module Name <span className="text-rose-500">*</span></>}
+            label={<>Role Name <span className="text-rose-500">*</span></>}
             value={editModuleName}
             onChange={(e) => {
               setEditModuleName(e.target.value);
@@ -2688,7 +2841,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         </div>
       </Modal>
 
-      {/* Delete Module Modal */}
+      {/* Delete Role Modal */}
       {selectedModuleId && (() => {
         const currentMod = modules.find((m) => m.id === selectedModuleId);
         if (!currentMod) return null;
@@ -2701,7 +2854,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               setIsDeleteModuleModalOpen(false);
               setDeleteModuleInput('');
             }}
-            title="Delete Module"
+            title="Delete Role"
             maxWidth="md"
             footer={
               <>
@@ -2727,12 +2880,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       setDeleteModuleInput('');
                       showNotification({
                         type: 'success',
-                        message: `Module "${currentMod.name}" deleted successfully.`,
+                        message: `Role "${currentMod.name}" deleted successfully.`,
                       });
                     } else {
                       showNotification({
                         type: 'error',
-                        message: res.error || 'Failed to delete module.',
+                        message: res.error || 'Failed to delete role.',
                       });
                     }
                   }}
@@ -2744,7 +2897,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           >
             <div className="space-y-4">
               <p className="text-xs text-slate-700 dark:text-slate-300">
-                Are you sure you want to permanently delete module <strong>{currentMod.name}</strong>? This action cannot be undone.
+                Are you sure you want to permanently delete role <strong>{currentMod.name}</strong>? This action cannot be undone.
               </p>
               <Input
                 label={<>Type <strong>{currentMod.name}</strong> to confirm deletion</>}
@@ -2784,7 +2937,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   if (res.success) {
                     showNotification({
                       type: 'success',
-                      message: `Included access "${includeAccessTarget.label}" in module "${includeAccessTarget.module.name}".`,
+                      message: `Included access "${includeAccessTarget.label}" in role "${includeAccessTarget.module.name}".`,
                     });
                   } else {
                     showNotification({
@@ -2801,7 +2954,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           }
         >
           <p className="text-xs text-slate-700 dark:text-slate-300">
-            Include <strong>{includeAccessTarget.label}</strong> in module <strong>{includeAccessTarget.module.name}</strong>?
+            Include <strong>{includeAccessTarget.label}</strong> in role <strong>{includeAccessTarget.module.name}</strong>?
           </p>
         </Modal>
       )}
@@ -2833,7 +2986,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   if (res.success) {
                     showNotification({
                       type: 'success',
-                      message: `Removed access "${removeAccessTarget.label}" from module "${removeAccessTarget.module.name}".`,
+                      message: `Removed access "${removeAccessTarget.label}" from role "${removeAccessTarget.module.name}".`,
                     });
                   } else {
                     showNotification({
@@ -2850,12 +3003,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           }
         >
           <p className="text-xs text-slate-700 dark:text-slate-300">
-            Remove <strong>{removeAccessTarget.label}</strong> from module <strong>{removeAccessTarget.module.name}</strong>?
+            Remove <strong>{removeAccessTarget.label}</strong> from role <strong>{removeAccessTarget.module.name}</strong>?
           </p>
         </Modal>
       )}
 
-      {/* Add Member to Module Modal */}
+      {/* Add Member to Role Modal */}
       {selectedModuleId && (() => {
         const currentMod = modules.find((m) => m.id === selectedModuleId);
         if (!currentMod) return null;
@@ -2887,7 +3040,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               setAddMemberAdminConfirmName('');
               setAddMemberAdminReason('');
             }}
-            title={`Add Person to ${currentMod.name}`}
+            title={`Add Person to Role: ${currentMod.name}`}
             maxWidth="md"
             footer={
               <>
@@ -2994,7 +3147,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         <Modal
           isOpen={true}
           onClose={() => setRemoveMemberTarget(null)}
-          title="Remove Member"
+          title="Remove Member from Role"
           maxWidth="md"
           footer={
             <>
@@ -3033,12 +3186,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           }
         >
           <p className="text-xs text-slate-700 dark:text-slate-300">
-            Remove <strong>{removeMemberTarget.staff.staffName}</strong> from module <strong>{removeMemberTarget.module.name}</strong>?
+            Remove <strong>{removeMemberTarget.staff.staffName}</strong> from role <strong>{removeMemberTarget.module.name}</strong>?
           </p>
         </Modal>
       )}
 
-      {/* Console Add to Module Modal */}
+      {/* Console Assign Role Modal */}
       {selectedStaffId && (() => {
         const activeStaff = staffAccessList.find((s) => s.id === selectedStaffId);
         if (!activeStaff) return null;
@@ -3068,7 +3221,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               setConsoleAddModuleAdminConfirmName('');
               setConsoleAddModuleAdminReason('');
             }}
-            title={`Add ${activeStaff.staffName} to Module`}
+            title={`Assign Role to ${activeStaff.staffName}`}
             maxWidth="md"
             footer={
               <>
@@ -3098,7 +3251,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     if (res.success) {
                       showNotification({
                         type: 'success',
-                        message: `Added ${activeStaff.staffName} to ${selectedMod.name}.`,
+                        message: `Assigned ${activeStaff.staffName} to ${selectedMod.name}.`,
                       });
                       setIsConsoleAddModuleOpen(false);
                       setConsoleAddModuleSelectedId('');
@@ -3107,12 +3260,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     } else {
                       showNotification({
                         type: 'error',
-                        message: res.error || 'Failed to add to module.',
+                        message: res.error || 'Failed to assign role.',
                       });
                     }
                   }}
                 >
-                  Add to Module
+                  Add to Role
                 </Button>
               </>
             }
@@ -3120,13 +3273,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  Select Module
+                  Select Role
                 </label>
                 <Select
                   value={consoleAddModuleSelectedId}
                   onChange={(e) => setConsoleAddModuleSelectedId(e.target.value)}
                   options={[
-                    { value: '', label: 'Select a module...' },
+                    { value: '', label: 'Select a role...' },
                     ...unassignedMods.map((m) => ({
                       value: m.id,
                       label: `${m.name} (${m.accessIds.length} accesses)`,
@@ -3170,7 +3323,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         );
       })()}
 
-      {/* Console Remove from Module Modal */}
+      {/* Console Remove Role Modal */}
       {selectedStaffId && consoleConfirmRemoveModule && (() => {
         const activeStaff = staffAccessList.find((s) => s.id === selectedStaffId);
         if (!activeStaff) return null;
@@ -3179,7 +3332,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           <Modal
             isOpen={true}
             onClose={() => setConsoleConfirmRemoveModule(null)}
-            title="Remove from Module"
+            title="Remove Role"
             maxWidth="md"
             footer={
               <>
@@ -3206,19 +3359,19 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     } else {
                       showNotification({
                         type: 'error',
-                        message: res.error || 'Failed to remove from module.',
+                        message: res.error || 'Failed to remove role.',
                       });
                     }
                     setConsoleConfirmRemoveModule(null);
                   }}
                 >
-                  Remove from Module
+                  Remove Role
                 </Button>
               </>
             }
           >
             <p className="text-xs text-slate-700 dark:text-slate-300">
-              Remove <strong>{activeStaff.staffName}</strong> from module <strong>{consoleConfirmRemoveModule.moduleName}</strong>?
+              Remove <strong>{activeStaff.staffName}</strong> from role <strong>{consoleConfirmRemoveModule.moduleName}</strong>?
             </p>
           </Modal>
         );

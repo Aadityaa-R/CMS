@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Search } from 'lucide-react';
 
 export interface SelectOption {
   value: string;
@@ -20,6 +20,8 @@ export interface SelectProps {
   id?: string;
   name?: string;
   icon?: React.ReactNode;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -35,11 +37,28 @@ export const Select: React.FC<SelectProps> = ({
   required = false,
   id,
   icon,
+  searchable = false,
+  searchPlaceholder = 'Search options...',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selectedOption = options.find((opt) => String(opt.value) === String(value));
+
+  // Focus search input when popover opens
+  useEffect(() => {
+    if (isOpen) {
+      setSearchQuery('');
+      if (searchable) {
+        const timer = setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 50);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isOpen, searchable]);
 
   // Click outside to close
   useEffect(() => {
@@ -63,6 +82,10 @@ export const Select: React.FC<SelectProps> = ({
     }
     setIsOpen(false);
   };
+
+  const filteredOptions = searchable && searchQuery.trim()
+    ? options.filter((opt) => opt.label.toLowerCase().includes(searchQuery.toLowerCase().trim()))
+    : options;
 
   return (
     <div className={`w-full relative ${className}`} ref={containerRef}>
@@ -119,15 +142,37 @@ export const Select: React.FC<SelectProps> = ({
         <p className="mt-1 text-xs text-slate-500">{helperText}</p>
       )}
 
-      {/* Custom Options Popover */}
+      {/* Custom Options Popover with Optional Search Option */}
       {isOpen && (
-        <div className="absolute left-0 mt-1.5 w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-fadeIn">
-          {options.length === 0 ? (
+        <div className="absolute left-0 mt-1.5 w-full max-h-64 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-fadeIn">
+          {searchable && (
+            <div className="px-2 pb-1.5 pt-0.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && filteredOptions.length > 0) {
+                      e.preventDefault();
+                      handleSelect(filteredOptions[0].value);
+                    }
+                  }}
+                  placeholder={searchPlaceholder}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md pl-8 pr-2.5 py-1 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+          )}
+          {filteredOptions.length === 0 ? (
             <div className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">
-              No options available
+              {searchQuery ? 'No matching options found' : 'No options available'}
             </div>
           ) : (
-            options.map((opt) => {
+            filteredOptions.map((opt) => {
               const isSelected = String(opt.value) === String(value);
               return (
                 <button
