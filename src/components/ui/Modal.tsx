@@ -9,6 +9,7 @@ interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  fullScreenOnMobile?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -19,6 +20,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   maxWidth = 'md',
+  fullScreenOnMobile = false,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -44,8 +46,13 @@ export const Modal: React.FC<ModalProps> = ({
     '2xl': 'max-w-2xl',
   };
 
+  const containerPadding = fullScreenOnMobile ? 'p-0 sm:p-6' : 'p-4 sm:p-6';
+  const dialogLayout = fullScreenOnMobile
+    ? 'w-full h-full sm:h-auto rounded-none sm:rounded-xl my-0 sm:my-8 max-h-screen sm:max-h-[90vh] flex flex-col'
+    : 'w-full rounded-xl my-8';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center ${containerPadding} overflow-y-auto`}>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
@@ -54,9 +61,9 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Dialog Content */}
       <div
-        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden z-10 my-8`}
+        className={`relative ${dialogLayout} ${maxWidthClasses[maxWidth]} bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden z-10`}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div>
             <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
             {description && (
@@ -71,10 +78,12 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         </div>
 
-        <div className="px-6 py-5 max-h-[75vh] overflow-y-auto text-slate-800 dark:text-slate-200">{children}</div>
+        <div className={`px-4 sm:px-6 py-4 sm:py-5 ${fullScreenOnMobile ? 'flex-1' : 'max-h-[75vh]'} overflow-y-auto text-slate-800 dark:text-slate-200`}>
+          {children}
+        </div>
 
         {footer && (
-          <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 shrink-0">
             {footer}
           </div>
         )}

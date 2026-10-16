@@ -195,7 +195,9 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                       x={slotCenterX}
                       y={215}
                       textAnchor="middle"
-                      className="text-[10px] fill-slate-500 dark:fill-slate-400 font-mono"
+                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 font-mono ${
+                        i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
+                      }`}
                     >
                       {b.label}
                     </text>
@@ -237,7 +239,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
       </div>
 
       {/* Static Legend */}
-      <div className="flex items-center gap-5 text-xs text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 bg-teal-600 dark:bg-teal-500 inline-block" />
           <span>New Patients</span>
@@ -396,7 +398,9 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                       x={x}
                       y={215}
                       textAnchor="middle"
-                      className="text-[10px] fill-slate-500 dark:fill-slate-400 font-mono"
+                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 font-mono ${
+                        i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
+                      }`}
                     >
                       {b.label}
                     </text>
@@ -438,7 +442,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
       </div>
 
       {/* Static Legend */}
-      <div className="flex items-center gap-5 text-xs text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-1.5">
           <span className="w-4 h-0.5 bg-teal-600 dark:bg-teal-500 inline-block" />
           <span>Billed</span>
@@ -562,7 +566,9 @@ const VisitsTrendChart: React.FC<VisitsTrendChartProps> = ({
                       x={x}
                       y={215}
                       textAnchor="middle"
-                      className="text-[10px] fill-slate-500 dark:fill-slate-400 font-mono"
+                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 font-mono ${
+                        i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
+                      }`}
                     >
                       {b.label}
                     </text>
@@ -602,7 +608,7 @@ const VisitsTrendChart: React.FC<VisitsTrendChartProps> = ({
       </div>
 
       {/* Static Legend */}
-      <div className="flex items-center gap-5 text-xs text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-1.5">
           <span className="w-4 h-0.5 bg-teal-600 dark:bg-teal-500 inline-block" />
           <span>Completed Visits</span>
@@ -838,16 +844,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     return list.slice(start, start + 10);
   }, [metrics1.patientRecentPrescriptions, prescriptionsPage]);
 
-  // Column count for summary figure grid
+  // Column count for summary figure grid: 4 columns on desktop, 2 on tablet, 2 on phones
   const figureCount = metrics1.summaryFigures.length;
   const gridColsClass =
-    figureCount === 8
-      ? 'grid-cols-2 md:grid-cols-4'
-      : figureCount === 5
-      ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
-      : figureCount === 4
-      ? 'grid-cols-2 md:grid-cols-4'
-      : 'grid-cols-1 sm:grid-cols-3';
+    figureCount === 5
+      ? 'grid-cols-2 lg:grid-cols-5'
+      : 'grid-cols-2 lg:grid-cols-4';
 
   return (
     <div className="space-y-6 pb-8">
@@ -889,9 +891,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
       </Card>
 
-      {/* Charts Row: Rendered for MD and Staff Doctor only */}
+      {/* Charts Row: Stack below 1024px (lg:grid-cols-2) */}
       {(currentRole === 'md' || currentRole === 'admin' || currentRole === 'doctor') && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <PatientsAndVisitsChart
             buckets={metrics1.patientsAndVisits}
             activeBucket={chartBucket1}
@@ -914,10 +916,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* Lists Row: Scoped per Role */}
+      {/* Lists Row: Scoped per Role (stacked lists with Table stackBelow="md") */}
       {/* 1. Managing Director (3 Lists) */}
       {(currentRole === 'md' || currentRole === 'admin') && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* List 1: Today's Appointments */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
             <div>
@@ -929,8 +931,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.todayAppointments.length}
                 </span>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Time</TableHead>
@@ -949,16 +951,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="font-mono text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
                             {apt.patientName}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
                             {apt.doctorName}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
                           </TableCell>
                         </TableRow>
@@ -989,8 +991,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.followUpsDue.length}
                 </span>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Patient</TableHead>
@@ -1009,16 +1011,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedFollowUps.map((fu) => (
                         <TableRow key={fu.id}>
-                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
                             {fu.patientName}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
                             {fu.doctorName}
                           </TableCell>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Due Date" className="font-mono text-slate-600 dark:text-slate-300">
                             {fu.dueDate}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300 truncate max-w-[120px]" title={fu.reason}>
+                          <TableCell label="Reason" className="text-slate-600 dark:text-slate-300">
                             {fu.reason || 'Routine follow-up'}
                           </TableCell>
                         </TableRow>
@@ -1049,8 +1051,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.pendingClearances.length}
                 </span>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
@@ -1069,22 +1071,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedClearances.map((c) => (
                         <TableRow key={c.id}>
-                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Name" className="font-medium text-slate-900 dark:text-slate-100">
                             {c.name}
                           </TableCell>
-                          <TableCell className="capitalize text-slate-600 dark:text-slate-300">
+                          <TableCell label="Role" className="capitalize text-slate-600 dark:text-slate-300">
                             {c.role}
                           </TableCell>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Applied" className="font-mono text-slate-600 dark:text-slate-300">
                             {c.applied}
                           </TableCell>
-                          <TableCell>
+                          <TableCell label="Action" fullWidthOnStack>
                             <button
                               type="button"
                               onClick={() => onNavigate?.('access_control', 'add_users')}
                               className="text-xs font-semibold text-teal-700 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 cursor-pointer"
                             >
-                              Review
+                              Review Clearance
                             </button>
                           </TableCell>
                         </TableRow>
@@ -1108,7 +1110,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
       {/* 2. Staff Doctor (2 Lists) */}
       {currentRole === 'doctor' && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* List 1: Doctor's Own Today Appointments */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
             <div>
@@ -1120,8 +1122,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.todayAppointments.length}
                 </span>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Time</TableHead>
@@ -1139,13 +1141,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="font-mono text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
                             {apt.patientName}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
                           </TableCell>
                         </TableRow>
@@ -1176,8 +1178,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.followUpsDue.length}
                 </span>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Patient</TableHead>
@@ -1195,13 +1197,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedFollowUps.map((fu) => (
                         <TableRow key={fu.id}>
-                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
                             {fu.patientName}
                           </TableCell>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Due Date" className="font-mono text-slate-600 dark:text-slate-300">
                             {fu.dueDate}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300 truncate max-w-[150px]" title={fu.reason}>
+                          <TableCell label="Reason" className="text-slate-600 dark:text-slate-300">
                             {fu.reason || 'Routine follow-up'}
                           </TableCell>
                         </TableRow>
@@ -1225,7 +1227,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
       {/* 3. Receptionist (2 Lists) */}
       {currentRole === 'receptionist' && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* List 1: Today's Appointments with Quick Check-In */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
             <div>
@@ -1237,8 +1239,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.todayAppointments.length}
                 </span>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Time</TableHead>
@@ -1258,19 +1260,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="font-mono text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
                             {apt.patientName}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
                             {apt.doctorName}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
                           </TableCell>
-                          <TableCell>
+                          <TableCell label="Action" fullWidthOnStack>
                             {apt.status === 'scheduled' ? (
                               <Button
                                 size="sm"
@@ -1313,8 +1315,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.followUpsDue.length}
                 </span>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Patient</TableHead>
@@ -1333,16 +1335,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedFollowUps.map((fu) => (
                         <TableRow key={fu.id}>
-                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
                             {fu.patientName}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
                             {fu.doctorName}
                           </TableCell>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Due Date" className="font-mono text-slate-600 dark:text-slate-300">
                             {fu.dueDate}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300 truncate max-w-[120px]" title={fu.reason}>
+                          <TableCell label="Reason" className="text-slate-600 dark:text-slate-300">
                             {fu.reason || 'Routine follow-up'}
                           </TableCell>
                         </TableRow>
@@ -1366,7 +1368,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
       {/* 4. Patient (2 Lists) */}
       {currentRole === 'patient' && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* List 1: Upcoming Appointments */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
             <div>
@@ -1378,8 +1380,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.patientUpcomingAppointments?.length || 0}
                 </span>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
@@ -1399,19 +1401,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedPatientAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Date" className="font-mono text-slate-600 dark:text-slate-300">
                             {apt.date}
                           </TableCell>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" className="font-mono text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
                             {apt.doctorName}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300 truncate max-w-[120px]" title={apt.reason}>
+                          <TableCell label="Reason" className="text-slate-600 dark:text-slate-300">
                             {apt.reason}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
                           </TableCell>
                         </TableRow>
@@ -1442,8 +1444,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {metrics1.patientRecentPrescriptions?.length || 0}
                 </span>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
@@ -1462,16 +1464,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedPatientPrescriptions.map((rx) => (
                         <TableRow key={rx.id}>
-                          <TableCell className="font-mono text-slate-600 dark:text-slate-300">
+                          <TableCell label="Date" className="font-mono text-slate-600 dark:text-slate-300">
                             {rx.date}
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Medication" className="font-medium text-slate-900 dark:text-slate-100">
                             {rx.medications}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" className="text-slate-600 dark:text-slate-300">
                             {rx.doctorName}
                           </TableCell>
-                          <TableCell className="capitalize text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" className="capitalize text-slate-600 dark:text-slate-300">
                             {rx.status}
                           </TableCell>
                         </TableRow>

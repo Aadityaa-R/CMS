@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar container */}
       <aside
         className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[width] overflow-hidden shrink-0 select-none h-full ${
-          isCollapsed ? 'lg:w-14 w-14' : 'lg:w-64 w-64'
+          isCollapsed ? 'w-64 lg:w-14' : 'w-64 lg:w-64'
         } ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
@@ -133,7 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Clinic Portal Brand Details */}
             <div
               className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap ${
-                isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[170px] opacity-100 ml-2.5'
+                isCollapsed ? 'lg:max-w-0 lg:opacity-0 lg:ml-0 max-w-[170px] opacity-100 ml-2.5' : 'max-w-[170px] opacity-100 ml-2.5'
               }`}
             >
               <div className="text-xs font-bold text-teal-400 tracking-wide uppercase">
@@ -154,7 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto overflow-x-hidden">
           <div
             className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap px-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider ${
-              isCollapsed ? 'max-w-0 opacity-0 pb-0' : 'max-w-[170px] opacity-100 pb-2'
+              isCollapsed ? 'lg:max-w-0 lg:opacity-0 lg:pb-0 max-w-[170px] opacity-100 pb-2' : 'max-w-[170px] opacity-100 pb-2'
             }`}
           >
             Navigation Pane
@@ -185,7 +185,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </span>
                 <span
                   className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap truncate ${
-                    isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[170px] opacity-100 ml-2.5'
+                    isCollapsed ? 'lg:max-w-0 lg:opacity-0 lg:ml-0 max-w-[170px] opacity-100 ml-2.5' : 'max-w-[170px] opacity-100 ml-2.5'
                   }`}
                 >
                   {item.label}

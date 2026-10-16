@@ -32,9 +32,9 @@ export const StatCard: React.FC<StatCardProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+    <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm transition-all hover:border-slate-300 dark:hover:border-slate-700">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <span className="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
           {title}
         </span>
         {icon ? (
@@ -43,7 +43,7 @@ export const StatCard: React.FC<StatCardProps> = ({
           </div>
         ) : (
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
               {value}
             </span>
             {unit && (

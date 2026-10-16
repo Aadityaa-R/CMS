@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
-import { getScopedPatients, getScopedAppointments, getScopedPrescriptions } from '@/lib/selectors';
+import {
+  getScopedPatients,
+  getScopedAppointments,
+  getScopedPrescriptions,
+  getScopedInvoices,
+} from '@/lib/selectors';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -10,6 +15,14 @@ import { Select } from '@/components/ui/Select';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Pagination } from '@/components/ui/Pagination';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/Table';
 import {
   Filter,
   Plus,
@@ -20,7 +33,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { BloodGroup } from '@/types';
+import { BloodGroup, Invoice } from '@/types';
 
 interface PatientViewProps {
   activeTab?: string;
@@ -33,9 +46,11 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
     appointments: rawAppointments,
     prescriptions: rawPrescriptions,
     vitals: rawVitals,
+    invoices: rawInvoices = [],
     patientAssignments = [],
     addPatient,
     updatePatient,
+    recordPayment,
   } = useClinic();
 
   const patients = React.useMemo(() => {
@@ -58,6 +73,17 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
     }
     return rawVitals;
   }, [currentUser, patients, rawVitals]);
+
+  const invoices = React.useMemo(() => {
+    return getScopedInvoices(currentUser, rawInvoices, patientAssignments);
+  }, [currentUser, rawInvoices, patientAssignments]);
+
+  const handlePayInvoice = (inv: Invoice) => {
+    const due = Math.max(0, inv.totalAmount - inv.paidAmount);
+    if (due <= 0) return;
+    recordPayment(inv.id, due, 'card');
+    showNotification(`Payment of $${due.toFixed(2)} recorded for Invoice ${inv.invoiceNumber}.`);
+  };
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -232,6 +258,297 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
     currentPage * pageSize
   );
 
+  if (currentUser?.role === 'patient') {
+    const patient = patients[0];
+    const patientVitals = vitals.find((v) => v.patientId === patient?.id || v.patientId === currentUser.patientId);
+
+    return (
+      <div className="space-y-6">
+        {notification && (
+          <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+              <span>{notification}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setNotification(null)}
+              className="text-teal-700 dark:text-teal-400 hover:text-teal-900 dark:hover:text-teal-200 text-xs font-semibold cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Patient Portal
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Welcome, {patient ? `${patient.firstName} ${patient.lastName}` : currentUser.name} • MRN: {patient?.mrn || currentUser.badgeNumber || 'N/A'}
+            </p>
+          </div>
+        </div>
+
+        {/* Section 1: Personal Record */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Personal Record</CardTitle>
+            <CardDescription>
+              Demographics, medical profile, and contact details
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Full Name</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                  {patient ? `${patient.firstName} ${patient.lastName}` : currentUser.name}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">
+                  MRN: {patient?.mrn || currentUser.badgeNumber || 'N/A'}
+                </span>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Demographics</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm capitalize">
+                  {patient?.age ? `${patient.age} yrs` : ''} {patient?.gender ? `• ${patient.gender}` : ''}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">
+                  DOB: {patient?.dob || 'N/A'} • Blood: {patient?.bloodGroup || 'N/A'}
+                </span>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Contact Info</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                  {patient?.phone || 'N/A'}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5 break-all">
+                  {patient?.email || currentUser.email}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Allergies</span>
+                <div className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-1">
+                  {patient?.allergies && patient.allergies.length > 0 ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                      <span>{patient.allergies.join(', ')}</span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400 italic">None Recorded</span>
+                  )}
+                </div>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Chronic Conditions</span>
+                <div className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-1">
+                  {patient?.chronicConditions && patient.chronicConditions.length > 0 ? (
+                    patient.chronicConditions.join(', ')
+                  ) : (
+                    <span className="text-slate-400 italic">None Recorded</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {patient?.emergencyContact && (
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Emergency Contact</span>
+                <div className="text-xs text-slate-800 dark:text-slate-200 font-medium mt-1">
+                  {patient.emergencyContact.name} ({patient.emergencyContact.relationship}) • {patient.emergencyContact.phone}
+                </div>
+              </div>
+            )}
+
+            {patientVitals && (
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Latest Clinical Triage Vitals</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1 font-mono">
+                  <div>
+                    <span className="text-slate-500 text-[10px] block font-sans">BP</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{patientVitals.systolicBp}/{patientVitals.diastolicBp} mmHg</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block font-sans">Heart Rate</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{patientVitals.heartRateBpm} bpm</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block font-sans">O2 Sat</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{patientVitals.oxygenSaturationPct}%</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block font-sans">Temp</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{patientVitals.temperatureCelsius}°C</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Section 2: Prescriptions */}
+        <Card>
+          <CardHeader
+            action={
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {prescriptions.length} {prescriptions.length === 1 ? 'Prescription' : 'Prescriptions'}
+              </span>
+            }
+          >
+            <CardTitle>Prescriptions</CardTitle>
+            <CardDescription>
+              e-Prescriptions issued by attending clinic doctors
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {prescriptions.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                No active prescriptions on file.
+              </div>
+            ) : (
+              prescriptions.map((rx) => (
+                <div
+                  key={rx.id}
+                  className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-2"
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <span className="font-mono text-xs font-bold text-teal-600 dark:text-teal-400">
+                      {rx.prescriptionNumber}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                      {rx.date}
+                    </span>
+                  </div>
+                  <div className="text-xs">
+                    <span className="text-slate-500 dark:text-slate-400">Doctor: </span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{rx.doctorName}</span>
+                  </div>
+                  {rx.diagnosis && (
+                    <div className="text-xs text-slate-700 dark:text-slate-300">
+                      <span className="text-slate-500 dark:text-slate-400">Diagnosis: </span>
+                      {rx.diagnosis}
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Medications</span>
+                    {rx.items.map((item, idx) => (
+                      <div key={idx} className="text-xs text-slate-800 dark:text-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <span className="font-medium text-teal-700 dark:text-teal-300">{item.medicineName} {item.dosage}</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">{item.frequency} • {item.duration}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Section 3: Invoices */}
+        <Card>
+          <CardHeader
+            action={
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {invoices.length} {invoices.length === 1 ? 'Invoice' : 'Invoices'}
+              </span>
+            }
+          >
+            <CardTitle>Invoices</CardTitle>
+            <CardDescription>
+              Consultation statements and payment receipts
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {invoices.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                No invoices on record.
+              </div>
+            ) : (
+              invoices.map((inv) => {
+                const balance = Math.max(0, inv.totalAmount - inv.paidAmount);
+                const isPaid = inv.status === 'paid' || balance === 0;
+
+                return (
+                  <div
+                    key={inv.id}
+                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-3"
+                  >
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
+                          {inv.invoiceNumber}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
+                          {inv.date}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            isPaid ? 'bg-teal-500' : 'bg-amber-500'
+                          }`}
+                        />
+                        <span className="text-xs font-semibold capitalize text-slate-700 dark:text-slate-300">
+                          {isPaid ? 'Paid' : inv.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {inv.items && inv.items.length > 0 && (
+                      <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
+                        {inv.items.map((item, idx) => (
+                          <div key={idx} className="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>{item.description} (x{item.quantity})</span>
+                            <span className="font-mono text-slate-800 dark:text-slate-200">${item.total.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400">Billed: </span>
+                        <span className="font-semibold text-slate-900 dark:text-slate-100">${inv.totalAmount.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400">Paid: </span>
+                        <span className="font-semibold text-teal-600 dark:text-teal-400">${inv.paidAmount.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400">Due: </span>
+                        <span className={`font-bold font-mono ${balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                          ${balance.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {!isPaid && balance > 0 && (
+                      <div className="pt-2">
+                        <Button
+                          variant="primary"
+                          className="w-full min-h-[44px] h-11 text-sm font-semibold cursor-pointer"
+                          onClick={() => handlePayInvoice(inv)}
+                        >
+                          Pay Balance (${balance.toFixed(2)})
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Real-time Feedback Notification Banner */}
@@ -252,8 +569,8 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
         </div>
       )}
 
-      {/* Executive Workstation Header (Model: AccessControlView) */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Executive Workstation Header */}
+      <div className="bg-slate-900 rounded-xl p-5 border border-slate-800 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="text-xs text-teal-300 font-medium">
             Central Medical Records & EHR Governance
@@ -337,36 +654,36 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
 
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                <tr>
-                  <th className="px-4 py-3.5 align-middle">MRN</th>
-                  <th className="px-4 py-3.5 align-middle">Patient Name & Contact</th>
-                  <th className="px-4 py-3.5 align-middle">Demographics</th>
-                  <th className="px-4 py-3.5 align-middle">Blood Group</th>
-                  <th className="px-4 py-3.5 align-middle">Allergies</th>
-                  <th className="px-4 py-3.5 align-middle">Chronic Conditions</th>
-                  <th className="px-4 py-3.5 align-middle">Emergency Contact</th>
-                  <th className="px-4 py-3.5 text-right align-middle">Medical File Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <Table stackBelow="md">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>MRN</TableHead>
+                  <TableHead>Patient Name & Contact</TableHead>
+                  <TableHead hideBelow="sm">Demographics</TableHead>
+                  <TableHead hideBelow="md">Blood Group</TableHead>
+                  <TableHead hideBelow="lg">Allergies</TableHead>
+                  <TableHead hideBelow="xl">Chronic Conditions</TableHead>
+                  <TableHead hideBelow="xl">Emergency Contact</TableHead>
+                  <TableHead className="text-right align-middle whitespace-nowrap">Medical File Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredPatients.length > 0 ? (
                   paginatedPatients.map((pat) => {
                     const isSelected = selectedPatientId === pat.id;
                     return (
                       <React.Fragment key={pat.id}>
-                        <tr
+                        <TableRow
                           className={`transition-colors ${
                             isSelected
                               ? 'bg-teal-50/60 dark:bg-teal-950/40'
                               : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
                           }`}
                         >
-                          <td className="px-4 py-3.5 align-middle font-mono font-bold text-slate-900 dark:text-slate-100">
+                          <TableCell label="MRN" className="font-mono font-bold text-slate-900 dark:text-slate-100">
                             {pat.mrn}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle">
+                          </TableCell>
+                          <TableCell label="Patient Name & Contact">
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
@@ -375,14 +692,14 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                               <span>•</span>
                               <span>{pat.email}</span>
                             </div>
-                          </td>
-                          <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 capitalize">
+                          </TableCell>
+                          <TableCell label="Demographics" hideBelow="sm" className="text-slate-700 dark:text-slate-300 capitalize">
                             {pat.age} yrs • {pat.gender}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle">
+                          </TableCell>
+                          <TableCell label="Blood Group" hideBelow="md">
                             <span className="font-medium text-slate-800 dark:text-slate-200">{pat.bloodGroup}</span>
-                          </td>
-                          <td className="px-4 py-3.5 align-middle">
+                          </TableCell>
+                          <TableCell label="Allergies" hideBelow="lg">
                             {pat.allergies && pat.allergies.length > 0 ? (
                               <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
@@ -395,19 +712,19 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                 None Recorded
                               </span>
                             )}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400">
+                          </TableCell>
+                          <TableCell label="Chronic Conditions" hideBelow="xl" className="text-slate-600 dark:text-slate-400">
                             {pat.chronicConditions && pat.chronicConditions.length > 0
                               ? pat.chronicConditions.join(', ')
                               : 'None'}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
+                          </TableCell>
+                          <TableCell label="Emergency Contact" hideBelow="xl" className="text-slate-700 dark:text-slate-300">
                             <div className="font-medium text-xs">{pat.emergencyContact?.name}</div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400">
                               {pat.emergencyContact?.relationship} • {pat.emergencyContact?.phone}
                             </div>
-                          </td>
-                          <td className="px-4 py-3.5 text-right align-middle">
+                          </TableCell>
+                          <TableCell label="Action" fullWidthOnStack className="text-right align-middle">
                             <Button
                               size="xs"
                               variant={isSelected ? 'secondary' : 'outline'}
@@ -422,8 +739,8 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                 )}
                               </span>
                             </Button>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
 
                         {/* Inline Inspection Panel for Selected Patient */}
                         {isSelected && (
@@ -622,16 +939,16 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                     );
                   })
                 ) : (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-xs text-slate-400 dark:text-slate-500">
+                  <TableRow>
+                    <TableCell colSpan={8} className="px-4 py-12 text-center text-xs text-slate-400 dark:text-slate-500">
                       {searchTerm.trim() !== ''
                         ? `No outpatients found matching "${searchTerm}".`
                         : 'No outpatient records found under the current filter scope.'}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           <Pagination
             currentPage={currentPage}
@@ -652,6 +969,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
         title="Register Outpatient Demographic File"
         description="Creates a verified Electronic Health Record (EHR) profile with MRN assignment."
         maxWidth="lg"
+        fullScreenOnMobile={true}
         footer={
           <>
             <Button

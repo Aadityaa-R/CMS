@@ -3,6 +3,14 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/Table';
+import {
   Building2,
   Lock,
   User as UserIcon,
@@ -63,9 +71,6 @@ export const LoginView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-10 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background clinical decorative gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-900/30 via-slate-900 to-slate-950 pointer-events-none" />
-
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
         <div className="flex justify-center">
@@ -108,6 +113,7 @@ export const LoginView: React.FC = () => {
                 }}
                 placeholder="e.g. md or doctor or receptionist"
                 icon={<UserIcon className="w-4 h-4" />}
+                className="min-h-[44px] py-2.5"
                 error={identifierError || undefined}
               />
             </div>
@@ -129,7 +135,7 @@ export const LoginView: React.FC = () => {
                     if (errorMessage) setErrorMessage(null);
                   }}
                   placeholder="Enter role password"
-                  className={`w-full rounded-lg border bg-white pl-11 pr-10 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors ${
+                  className={`w-full rounded-lg border bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors ${
                     passwordError
                       ? 'border-rose-300 focus:border-rose-500'
                       : 'border-slate-300 hover:border-slate-400'
@@ -138,7 +144,7 @@ export const LoginView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer min-h-[44px] min-w-[44px] justify-center"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
@@ -153,20 +159,20 @@ export const LoginView: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-between text-xs pt-1">
-              <label className="flex items-center gap-2 cursor-pointer text-slate-600 select-none">
+            <div className="flex items-center justify-between text-xs pt-1 flex-wrap gap-2">
+              <label className="flex items-center gap-2 cursor-pointer text-slate-600 select-none min-h-[44px]">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  className="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4"
                 />
                 <span>Remember session</span>
               </label>
               <button
                 type="button"
                 onClick={() => setShowCredentialsGuide(!showCredentialsGuide)}
-                className="font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1"
+                className="font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1 min-h-[44px]"
               >
                 <KeyRound className="w-3.5 h-3.5" />
                 <span>{showCredentialsGuide ? 'Hide Credentials Guide' : 'Show Role Credentials'}</span>
@@ -177,7 +183,7 @@ export const LoginView: React.FC = () => {
               type="submit"
               variant="primary"
               size="lg"
-              className="w-full text-sm font-semibold mt-2"
+              className="w-full text-sm font-semibold mt-2 min-h-[44px] h-11"
               isLoading={isSubmitting}
               icon={<ShieldCheck className="w-4 h-4" />}
             >
@@ -199,47 +205,48 @@ export const LoginView: React.FC = () => {
               </div>
 
               <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
-                    <tr>
-                      <th className="px-3 py-2">Role</th>
-                      <th className="px-3 py-2">Username</th>
-                      <th className="px-3 py-2">Password</th>
-                      <th className="px-3 py-2">Assigned Staff</th>
-                      <th className="px-3 py-2 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
+                <Table stackBelow="sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead hideBelow="sm">Password</TableHead>
+                      <TableHead hideBelow="sm">Assigned Staff</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {roleCredentials.map((c) => (
-                      <tr key={c.username} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-3 py-2 font-medium">
+                      <TableRow key={c.username}>
+                        <TableCell label="Role">
                           <span className="font-medium text-teal-700 dark:text-teal-400">
                             {c.label}
                           </span>
-                        </td>
-                        <td className="px-3 py-2 font-mono text-[11px] text-slate-700">
+                        </TableCell>
+                        <TableCell label="Username" className="font-mono text-[11px] text-slate-700">
                           {c.username}
-                        </td>
-                        <td className="px-3 py-2 font-mono text-[11px] text-slate-700">
+                        </TableCell>
+                        <TableCell label="Password" hideBelow="sm" className="font-mono text-[11px] text-slate-700">
                           {c.password}
-                        </td>
-                        <td className="px-3 py-2 text-slate-600 truncate max-w-[140px]">
+                        </TableCell>
+                        <TableCell label="Assigned Staff" hideBelow="sm" className="text-slate-600 truncate max-w-[140px]">
                           {c.fullName}
-                        </td>
-                        <td className="px-3 py-2 text-right">
+                        </TableCell>
+                        <TableCell label="Action" fullWidthOnStack className="text-right">
                           <Button
                             size="xs"
-                            variant="soft"
+                            variant="outline"
                             type="button"
+                            className="min-h-[36px] sm:min-h-0 w-full sm:w-auto"
                             onClick={() => handleFillCredentials(c.username, c.password)}
                           >
                             Fill
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           )}

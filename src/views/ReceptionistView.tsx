@@ -11,6 +11,14 @@ import { StatCard } from '@/components/ui/StatCard';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/Table';
+import {
   Plus,
   Ticket,
   CheckCircle2,
@@ -272,6 +280,13 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const paginatedIntake = filteredIntakePatients.slice((intakePage - 1) * pageSize, intakePage * pageSize);
   const paginatedBookings = filteredBookings.slice((bookingPage - 1) * pageSize, bookingPage * pageSize);
 
+  const initialAgendaDate = filteredBookings[0]?.dateTime?.split('T')[0] || new Date().toISOString().split('T')[0];
+  const [agendaDate, setAgendaDate] = useState(initialAgendaDate);
+
+  const agendaAppointments = React.useMemo(() => {
+    return filteredBookings.filter((apt) => apt.dateTime.startsWith(agendaDate));
+  }, [filteredBookings, agendaDate]);
+
   const receptionistSearchSuggestions: SearchSuggestion[] = React.useMemo(() => {
     const list: SearchSuggestion[] = [];
     const seen = new Set<string>();
@@ -369,7 +384,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       )}
 
       {/* KPI Stats Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="In Waiting Lounge"
           value={waitingCount}
@@ -520,53 +535,50 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                      <tr>
-                        <th className="px-4 py-3.5 align-middle">Token</th>
-                        <th className="px-4 py-3.5 align-middle">Patient Details</th>
-                        <th className="px-4 py-3.5 align-middle">Physician</th>
-                        <th className="px-4 py-3.5 align-middle">Scheduled Time</th>
-                        <th className="px-4 py-3.5 align-middle">Reason for Visit</th>
-                        <th className="px-4 py-3.5 align-middle">Status</th>
-                        {!isMD && <th className="px-4 py-3.5 text-right align-middle">Front Desk Action</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  <Table stackBelow="md">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Token</TableHead>
+                        <TableHead>Patient Details</TableHead>
+                        <TableHead hideBelow="md">Physician</TableHead>
+                        <TableHead hideBelow="sm">Scheduled Time</TableHead>
+                        <TableHead hideBelow="lg">Reason for Visit</TableHead>
+                        <TableHead>Status</TableHead>
+                        {!isMD && <TableHead className="text-right align-middle whitespace-nowrap">Front Desk Action</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {paginatedLounge.map((apt) => (
-                        <tr
-                          key={apt.id}
-                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                        >
-                          <td className="px-4 py-3.5 align-middle font-mono font-bold text-teal-600 dark:text-teal-400">
+                        <TableRow key={apt.id}>
+                          <TableCell label="Token" className="font-mono font-bold text-teal-600 dark:text-teal-400">
                             #{apt.tokenNumber}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle">
+                          </TableCell>
+                          <TableCell label="Patient Details">
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {apt.patientName}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400">
                               {apt.patientPhone}
                             </div>
-                          </td>
-                          <td className="px-4 py-3.5 align-middle">
+                          </TableCell>
+                          <TableCell label="Physician" hideBelow="md">
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {apt.doctorName}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400">
                               {apt.department}
                             </div>
-                          </td>
-                          <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                          </TableCell>
+                          <TableCell label="Scheduled Time" hideBelow="sm" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                             {new Date(apt.dateTime).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400">
+                          </TableCell>
+                          <TableCell label="Reason for Visit" hideBelow="lg" className="text-slate-600 dark:text-slate-400">
                             {apt.reasonForVisit}
-                          </td>
-                          <td className="px-4 py-3.5 align-middle">
+                          </TableCell>
+                          <TableCell label="Status">
                             <div className="flex items-center gap-1.5">
                               <span
                                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -581,9 +593,9 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                                 {apt.status.replace('_', ' ')}
                               </span>
                             </div>
-                          </td>
+                          </TableCell>
                           {!isMD && (
-                            <td className="px-4 py-3.5 text-right align-middle">
+                            <TableCell label="Action" fullWidthOnStack className="text-right align-middle whitespace-nowrap">
                               {apt.status === 'scheduled' || apt.status === 'confirmed' ? (
                                 <Button
                                   size="xs"
@@ -601,12 +613,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                                   {apt.status.replace('_', ' ')}
                                 </span>
                               )}
-                            </td>
+                            </TableCell>
                           )}
-                        </tr>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
                 <Pagination
                   currentPage={loungePage}
@@ -714,50 +726,47 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">Appointment #</th>
-                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                    <th className="px-4 py-3.5 align-middle">Contact Phone</th>
-                    <th className="px-4 py-3.5 align-middle">Scheduled Slot</th>
-                    <th className="px-4 py-3.5 align-middle">Consulting Doctor</th>
-                    <th className="px-4 py-3.5 align-middle">Status</th>
-                    {!isMD && <th className="px-4 py-3.5 text-right align-middle">Action</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <Table stackBelow="md">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead hideBelow="sm">Appointment #</TableHead>
+                    <TableHead>Patient Name</TableHead>
+                    <TableHead hideBelow="md">Contact Phone</TableHead>
+                    <TableHead>Scheduled Slot</TableHead>
+                    <TableHead hideBelow="sm">Consulting Doctor</TableHead>
+                    <TableHead>Status</TableHead>
+                    {!isMD && <TableHead className="text-right align-middle whitespace-nowrap">Action</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {awaitingCheckIn.length > 0 ? (
                     paginatedCheckIn.map((apt) => (
-                      <tr
-                        key={apt.id}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                      >
-                        <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
+                      <TableRow key={apt.id}>
+                        <TableCell label="Appointment #" hideBelow="sm" className="font-mono font-semibold text-slate-900 dark:text-slate-100">
                           {apt.appointmentNumber}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
+                        </TableCell>
+                        <TableCell label="Patient Name" className="font-semibold text-slate-900 dark:text-slate-100">
                           {apt.patientName}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                        </TableCell>
+                        <TableCell label="Contact Phone" hideBelow="md" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                           {apt.patientPhone}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                        </TableCell>
+                        <TableCell label="Scheduled Slot" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                           {new Date(apt.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle text-slate-800 dark:text-slate-200">
+                        </TableCell>
+                        <TableCell label="Consulting Doctor" hideBelow="sm" className="text-slate-800 dark:text-slate-200">
                           {apt.doctorName}
-                        </td>
-                        <td className="px-4 py-3.5 align-middle">
+                        </TableCell>
+                        <TableCell label="Status">
                           <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                             <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
                               {apt.status}
                             </span>
                           </div>
-                        </td>
+                        </TableCell>
                         {!isMD && (
-                          <td className="px-4 py-3.5 text-right align-middle">
+                          <TableCell label="Action" fullWidthOnStack className="text-right align-middle whitespace-nowrap">
                             <Button
                               size="xs"
                               variant="primary"
@@ -766,19 +775,19 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                             >
                               Issue Token & Check In
                             </Button>
-                          </td>
+                          </TableCell>
                         )}
-                      </tr>
+                      </TableRow>
                     ))
                   ) : (
-                    <tr>
-                      <td colSpan={isMD ? 6 : 7} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
+                    <TableRow>
+                      <TableCell colSpan={isMD ? 6 : 7} className="px-4 py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
                         All scheduled patients have been checked in or no further bookings pending.
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
             <Pagination
               currentPage={checkinPage}
@@ -816,59 +825,56 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">MRN</th>
-                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                    <th className="px-4 py-3.5 align-middle">Age & Gender</th>
-                    <th className="px-4 py-3.5 align-middle">Contact Phone</th>
-                    <th className="px-4 py-3.5 align-middle">Blood Group</th>
-                    <th className="px-4 py-3.5 align-middle">Emergency Contact</th>
-                    <th className="px-4 py-3.5 align-middle">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <Table stackBelow="md">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead hideBelow="sm">MRN</TableHead>
+                    <TableHead>Patient Name</TableHead>
+                    <TableHead hideBelow="md">Age & Gender</TableHead>
+                    <TableHead>Contact Phone</TableHead>
+                    <TableHead hideBelow="lg">Blood Group</TableHead>
+                    <TableHead hideBelow="xl">Emergency Contact</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {paginatedIntake.map((pat) => (
-                    <tr
-                      key={pat.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
-                    >
-                      <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
+                    <TableRow key={pat.id}>
+                      <TableCell label="MRN" hideBelow="sm" className="font-mono font-semibold text-slate-900 dark:text-slate-100">
                         {pat.mrn}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle">
+                      </TableCell>
+                      <TableCell label="Patient Name">
                         <div className="font-semibold text-slate-900 dark:text-slate-100">
                           {pat.firstName} {pat.lastName}
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400">
                           {pat.email}
                         </div>
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 capitalize">
+                      </TableCell>
+                      <TableCell label="Age & Gender" hideBelow="md" className="text-slate-700 dark:text-slate-300 capitalize">
                         {pat.age} yrs • {pat.gender}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                      </TableCell>
+                      <TableCell label="Contact Phone" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                         {pat.phone}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle">
+                      </TableCell>
+                      <TableCell label="Blood Group" hideBelow="lg">
                         <span className="font-medium text-slate-800 dark:text-slate-200">{pat.bloodGroup}</span>
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
+                      </TableCell>
+                      <TableCell label="Emergency Contact" hideBelow="xl" className="text-slate-700 dark:text-slate-300">
                         {pat.emergencyContact?.name} ({pat.emergencyContact?.relationship})
-                      </td>
-                      <td className="px-4 py-3.5 align-middle">
+                      </TableCell>
+                      <TableCell label="Status">
                         <div className="flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
                           <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
                             {pat.status}
                           </span>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
             <Pagination
               currentPage={intakePage}
@@ -905,44 +911,123 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3.5 align-middle">Token #</th>
-                    <th className="px-4 py-3.5 align-middle">Appointment ID</th>
-                    <th className="px-4 py-3.5 align-middle">Patient Name</th>
-                    <th className="px-4 py-3.5 align-middle">Physician</th>
-                    <th className="px-4 py-3.5 align-middle">Scheduled Time</th>
-                    <th className="px-4 py-3.5 align-middle">Reason for Visit</th>
-                    <th className="px-4 py-3.5 align-middle">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {paginatedBookings.map((apt) => (
-                    <tr
+            {/* Mobile Day-by-Day Agenda View */}
+            <div className="md:hidden p-4 space-y-4">
+              <div className="w-full">
+                <DatePicker
+                  label="Select Agenda Date"
+                  value={agendaDate}
+                  onChange={setAgendaDate}
+                />
+              </div>
+
+              {agendaAppointments.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                  No appointments scheduled for this date.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Agenda for {agendaDate} ({agendaAppointments.length} {agendaAppointments.length === 1 ? 'consultation' : 'consultations'})
+                  </div>
+                  {agendaAppointments.map((apt) => (
+                    <div
                       key={apt.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors"
+                      className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-2.5"
                     >
-                      <td className="px-4 py-3.5 align-middle font-mono font-bold text-teal-600 dark:text-teal-400">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-bold text-teal-600 dark:text-teal-400">
+                          Token #{apt.tokenNumber}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              apt.status === 'checked_in' || apt.status === 'in_consultation'
+                                ? 'bg-teal-500'
+                                : 'bg-slate-400'
+                            }`}
+                          />
+                          <span className="text-xs capitalize font-medium text-slate-700 dark:text-slate-300">
+                            {apt.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                          {apt.patientName}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          {apt.appointmentNumber} • {new Date(apt.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-slate-700 dark:text-slate-300">
+                        <span className="font-semibold text-slate-900 dark:text-slate-100">{apt.doctorName}</span>
+                        <span className="text-slate-500 dark:text-slate-400"> ({apt.department})</span>
+                      </div>
+
+                      {apt.reasonForVisit && (
+                        <div className="text-xs text-slate-600 dark:text-slate-400 italic">
+                          {apt.reasonForVisit}
+                        </div>
+                      )}
+
+                      {!isMD && (apt.status === 'scheduled' || apt.status === 'confirmed') && (
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <Button
+                            size="xs"
+                            variant="primary"
+                            className="w-full"
+                            icon={<Ticket className="w-3.5 h-3.5" />}
+                            onClick={() => handleCheckIn(apt)}
+                          >
+                            Issue Token & Check In
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop / Tablet Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table stackBelow="md">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Token #</TableHead>
+                    <TableHead hideBelow="sm">Appointment ID</TableHead>
+                    <TableHead>Patient Name</TableHead>
+                    <TableHead hideBelow="md">Physician</TableHead>
+                    <TableHead>Scheduled Time</TableHead>
+                    <TableHead hideBelow="lg">Reason for Visit</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedBookings.map((apt) => (
+                    <TableRow key={apt.id}>
+                      <TableCell label="Token #" className="font-mono font-bold text-teal-600 dark:text-teal-400">
                         #{apt.tokenNumber}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle font-mono text-slate-800 dark:text-slate-200">
+                      </TableCell>
+                      <TableCell label="Appointment ID" hideBelow="sm" className="font-mono text-slate-800 dark:text-slate-200">
                         {apt.appointmentNumber}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
+                      </TableCell>
+                      <TableCell label="Patient Name" className="font-semibold text-slate-900 dark:text-slate-100">
                         {apt.patientName}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300">
+                      </TableCell>
+                      <TableCell label="Physician" hideBelow="md" className="text-slate-700 dark:text-slate-300">
                         {apt.doctorName}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                      </TableCell>
+                      <TableCell label="Scheduled Time" className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
                         {new Date(apt.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400">
+                      </TableCell>
+                      <TableCell label="Reason for Visit" hideBelow="lg" className="text-slate-600 dark:text-slate-400">
                         {apt.reasonForVisit}
-                      </td>
-                      <td className="px-4 py-3.5 align-middle">
+                      </TableCell>
+                      <TableCell label="Status">
                         <div className="flex items-center gap-1.5">
                           <span
                             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -957,18 +1042,18 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                             {apt.status.replace('_', ' ')}
                           </span>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
+              <Pagination
+                currentPage={bookingPage}
+                totalItems={filteredBookings.length}
+                pageSize={pageSize}
+                onPageChange={setBookingPage}
+              />
             </div>
-            <Pagination
-              currentPage={bookingPage}
-              totalItems={filteredBookings.length}
-              pageSize={pageSize}
-              onPageChange={setBookingPage}
-            />
           </CardContent>
         </Card>
       )}

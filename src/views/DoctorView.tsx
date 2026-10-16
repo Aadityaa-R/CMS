@@ -812,9 +812,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {selectedTab === 'overview' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Active Patient Desk (Left 2 cols) */}
-            <div className="lg:col-span-2 space-y-4">
+          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+            {/* Active Patient Desk (Order 1 on mobile, 2 cols on desktop) */}
+            <div className="order-1 lg:col-span-2 space-y-4">
               {activePatient && activeAppointment ? (
                 <Card>
                   <CardHeader>
@@ -906,13 +906,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       )}
                     </div>
 
-                    {/* Clinical Triage Vitals */}
+                    {/* Clinical Triage Vitals: 5 cols on desktop, 3 on tablet, 2 on phones */}
                     <div className="space-y-2">
                       <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
                         Clinical Triage Vitals
                       </span>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
                         <Input
                           label={getVitalLabel('BP Systolic (mmHg)', vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp)}
                           inputMode="numeric"
@@ -994,12 +994,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       )}
                     </div>
 
-                    {/* Action Row */}
+                    {/* Action Row: wraps on mobile with full width buttons and Conclude Visit last */}
                     {!isReadOnlyView && (
-                      <div className="flex items-center justify-end gap-2.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-2">
                         <Button
                           size="sm"
                           variant="outline"
+                          className="w-full sm:w-auto"
                           onClick={() => {
                             setClinicalNotesText(activeAppointment.notes || '');
                             setIsNotesModalOpen(true);
@@ -1010,6 +1011,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <Button
                           size="sm"
                           variant="outline"
+                          className="w-full sm:w-auto"
                           onClick={() => handleOpenPrescriptionModal(activePatient.id)}
                         >
                           Prescribe
@@ -1017,6 +1019,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <Button
                           size="sm"
                           variant="primary"
+                          className="w-full sm:w-auto order-last sm:order-none"
                           onClick={() => setIsConcludeModalOpen(true)}
                         >
                           Conclude Visit
@@ -1032,7 +1035,63 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   </CardContent>
                 </Card>
               )}
+            </div>
 
+            {/* Right Column / Order 2 on Mobile: Patient Summary Card */}
+            <div className="order-2 lg:col-span-1 space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Patient Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-xs">
+                  {summaryPatient ? (
+                    <>
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                          {summaryPatient.lastVisitDate || 'None recorded'}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                          {summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
+                            ? deduplicateList(summaryPatient.chronicConditions).join(', ')
+                            : 'None recorded'}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                          {(() => {
+                            const patientRx = prescriptions.filter(
+                              (rx) => rx.patientId === summaryPatient.id
+                            );
+                            const activeRxMeds = deduplicateList(
+                              patientRx.flatMap((rx) => rx.items.map((i) => i.medicineName))
+                            );
+                            if (activeRxMeds.length > 0) return activeRxMeds.join(', ');
+                            if (summaryPatient.currentMedications && summaryPatient.currentMedications.length > 0) {
+                              return deduplicateList(summaryPatient.currentMedications).join(', ');
+                            }
+                            return 'None recorded';
+                          })()}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-6 text-center text-slate-500 dark:text-slate-400">
+                      No active consultation
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Order 3 / Below Consultation and Summary: Queue Inspector & Worklist */}
+            <div className="order-3 lg:col-span-3 space-y-4">
               {/* MD Clinical Queue Inspector / Staff Doctor Station Governance Bar */}
               {isMD ? (
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
@@ -1121,7 +1180,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 </div>
               )}
 
-              {/* Waiting Consultations Worklist (Table View) */}
+              {/* Waiting Consultations Worklist (Table View with stackBelow="md") */}
               <Card>
                 <CardHeader
                   action={
@@ -1134,15 +1193,15 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     {activeDoctor.name}&apos;s Consultation Worklist
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <Table>
+                <CardContent className="p-0 sm:p-0">
+                  <div className="p-3 sm:p-0">
+                    <Table stackBelow="md">
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-[56px]">#</TableHead>
                           <TableHead className="w-[80px]">Time</TableHead>
                           <TableHead className="w-[180px]">Patient</TableHead>
-                          <TableHead className="w-[140px]">Appt ID</TableHead>
+                          <TableHead hideBelow="md" className="w-[140px]">Appt ID</TableHead>
                           <TableHead className="w-full">Complaint</TableHead>
                           <TableHead className="w-[140px]">Status</TableHead>
                           <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
@@ -1159,31 +1218,32 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 key={apt.id}
                                 className={isCurrent ? 'bg-teal-50/50 dark:bg-teal-950/30' : ''}
                               >
-                                <TableCell className="text-slate-700 dark:text-slate-300 w-[56px]">
+                                <TableCell label="Token #" className="text-slate-700 dark:text-slate-300 w-[56px]">
                                   {apt.tokenNumber}
                                 </TableCell>
-                                <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[80px]">
+                                <TableCell label="Time" className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[80px]">
                                   {new Date(apt.dateTime).toLocaleTimeString([], {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                   })}
                                 </TableCell>
-                                <TableCell className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap w-[180px]">
+                                <TableCell label="Patient" className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap w-[180px]">
                                   {apt.patientName}
                                 </TableCell>
-                                <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
+                                <TableCell label="Appt ID" hideBelow="md" className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
                                   {apt.appointmentNumber}
                                 </TableCell>
                                 <TableCell
+                                  label="Complaint"
                                   className="text-slate-600 dark:text-slate-300 w-full"
                                   title={apt.reasonForVisit}
                                 >
                                   <span className="line-clamp-2">{apt.reasonForVisit}</span>
                                 </TableCell>
-                                <TableCell className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
+                                <TableCell label="Status" className="text-slate-700 dark:text-slate-300 whitespace-nowrap w-[140px]">
                                   {formatAppointmentStatus(apt.status)}
                                 </TableCell>
-                                <TableCell className="text-right whitespace-nowrap">
+                                <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
                                   <div className="flex items-center justify-end gap-2">
                                     {isInConsultation && isCurrent ? (
                                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -1253,59 +1313,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 </CardContent>
               </Card>
             </div>
-
-            {/* Right Column: Patient Summary Card */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Patient Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-xs">
-                  {summaryPatient ? (
-                    <>
-                      <div className="flex justify-between items-baseline gap-2">
-                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
-                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                          {summaryPatient.lastVisitDate || 'None recorded'}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-baseline gap-2">
-                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
-                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                          {summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
-                            ? deduplicateList(summaryPatient.chronicConditions).join(', ')
-                            : 'None recorded'}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-baseline gap-2">
-                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
-                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                          {(() => {
-                            const patientRx = prescriptions.filter(
-                              (rx) => rx.patientId === summaryPatient.id
-                            );
-                            const activeRxMeds = deduplicateList(
-                              patientRx.flatMap((rx) => rx.items.map((i) => i.medicineName))
-                            );
-                            if (activeRxMeds.length > 0) return activeRxMeds.join(', ');
-                            if (summaryPatient.currentMedications && summaryPatient.currentMedications.length > 0) {
-                              return deduplicateList(summaryPatient.currentMedications).join(', ');
-                            }
-                            return 'None recorded';
-                          })()}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="p-6 text-center text-slate-500 dark:text-slate-400">
-                      No active consultation
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </div>
       )}
@@ -1335,18 +1342,18 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 />
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="p-3 sm:p-0">
+              <Table stackBelow="md">
                 <TableHeader>
                   <TableRow>
                     <TableHead>MRN</TableHead>
                     <TableHead>Patient Name</TableHead>
-                    <TableHead>Demographics</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Blood Group</TableHead>
-                    <TableHead>Allergies</TableHead>
-                    <TableHead>Chronic Conditions</TableHead>
-                    {isAdmin(currentUser) && <TableHead>Assigned Doctor</TableHead>}
+                    <TableHead hideBelow="md">Demographics</TableHead>
+                    <TableHead hideBelow="sm">Phone</TableHead>
+                    <TableHead hideBelow="md">Blood Group</TableHead>
+                    <TableHead hideBelow="sm">Allergies</TableHead>
+                    <TableHead hideBelow="lg">Chronic Conditions</TableHead>
+                    {isAdmin(currentUser) && <TableHead hideBelow="md">Assigned Doctor</TableHead>}
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1372,39 +1379,39 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       return (
                         <TableRow key={pat.id}>
-                          <TableCell className="text-slate-700 dark:text-slate-300">
+                          <TableCell label="MRN" className="text-slate-700 dark:text-slate-300 font-mono">
                             {pat.mrn}
                           </TableCell>
-                          <TableCell>
+                          <TableCell label="Patient Name">
                             <div className="font-bold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 break-all">
                               {pat.email}
                             </div>
                           </TableCell>
-                          <TableCell className="text-slate-700 dark:text-slate-300 capitalize">
+                          <TableCell label="Demographics" hideBelow="md" className="text-slate-700 dark:text-slate-300 capitalize">
                             {pat.age} yrs • {pat.gender}
                           </TableCell>
-                          <TableCell className="text-slate-700 dark:text-slate-300">
+                          <TableCell label="Phone" hideBelow="sm" className="text-slate-700 dark:text-slate-300">
                             {pat.phone}
                           </TableCell>
-                          <TableCell className="text-slate-700 dark:text-slate-300">
+                          <TableCell label="Blood Group" hideBelow="md" className="text-slate-700 dark:text-slate-300">
                             {pat.bloodGroup}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-400">
+                          <TableCell label="Allergies" hideBelow="sm" className="text-slate-600 dark:text-slate-400 break-words">
                             {pat.allergies && pat.allergies.length > 0 ? deduplicateList(pat.allergies).join(', ') : 'None recorded'}
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-400">
+                          <TableCell label="Chronic Conditions" hideBelow="lg" className="text-slate-600 dark:text-slate-400 break-words">
                             {pat.chronicConditions && pat.chronicConditions.length > 0 ? deduplicateList(pat.chronicConditions).join(', ') : 'None recorded'}
                           </TableCell>
                           {isAdmin(currentUser) && (
-                            <TableCell className="text-slate-700 dark:text-slate-300">
+                            <TableCell label="Assigned Doctor" hideBelow="md" className="text-slate-700 dark:text-slate-300">
                               {assignedDoc ? assignedDoc.name : <span className="italic text-slate-400">Unassigned</span>}
                             </TableCell>
                           )}
-                          <TableCell className="text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-2">
+                          <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2 flex-wrap sm:flex-nowrap">
                               {canTransfer && (
                                 <Button
                                   size="xs"
@@ -1495,13 +1502,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 />
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="p-3 sm:p-0">
+              <Table stackBelow="md">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Rx #</TableHead>
                     <TableHead>Patient Name</TableHead>
-                    <TableHead>Issue Date</TableHead>
+                    <TableHead hideBelow="sm">Issue Date</TableHead>
                     <TableHead>Diagnosis</TableHead>
                     <TableHead>Prescribed Regimen</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -1511,37 +1518,37 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   {filteredPrescriptions.length > 0 ? (
                     paginatedPrescriptions.map((rx) => (
                       <TableRow key={rx.id}>
-                        <TableCell className="text-slate-700 dark:text-slate-300">
+                        <TableCell label="Rx #" className="text-slate-700 dark:text-slate-300 font-mono">
                           {rx.prescriptionNumber}
                         </TableCell>
-                        <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
+                        <TableCell label="Patient Name" className="font-semibold text-slate-900 dark:text-slate-100">
                           {rx.patientName}
                         </TableCell>
-                        <TableCell className="text-slate-600 dark:text-slate-400">
+                        <TableCell label="Issue Date" hideBelow="sm" className="text-slate-600 dark:text-slate-400">
                           {rx.date}
                         </TableCell>
-                        <TableCell className="text-slate-800 dark:text-slate-200 font-medium">
+                        <TableCell label="Diagnosis" className="text-slate-800 dark:text-slate-200 font-medium break-words">
                           {rx.diagnosis}
                         </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
+                        <TableCell label="Prescribed Regimen">
+                          <div className="space-y-1 whitespace-normal break-words max-w-md">
                             {rx.items && rx.items.length > 0 ? (
                               rx.items.map((item, idx) => {
                                 if (typeof (item as unknown) === 'string') {
                                   return (
-                                    <div key={idx} className="text-slate-700 dark:text-slate-300">
+                                    <div key={idx} className="text-slate-700 dark:text-slate-300 whitespace-normal break-words">
                                       <span className="font-bold text-slate-900 dark:text-slate-100">{item as unknown as string}</span>
                                     </div>
                                   );
                                 }
                                 const details = [item.dosage, item.frequency].filter(Boolean).join(', ');
                                 return (
-                                  <div key={item.id || idx} className="text-slate-700 dark:text-slate-300">
+                                  <div key={item.id || idx} className="text-slate-700 dark:text-slate-300 whitespace-normal break-words">
                                     <span className="font-bold text-slate-900 dark:text-slate-100">
                                       {item.medicineName}
                                     </span>
                                     {details && (
-                                      <span className="text-slate-500 dark:text-slate-400">  {details}</span>
+                                      <span className="text-slate-500 dark:text-slate-400"> • {details}</span>
                                     )}
                                   </div>
                                 );
@@ -1551,7 +1558,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right whitespace-nowrap">
+                        <TableCell label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
                           <div className="flex items-center justify-end">
                             <Button
                               size="xs"
@@ -1820,6 +1827,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         onClose={() => setViewingPrescription(null)}
         title="Electronic Prescription Record"
         maxWidth="lg"
+        fullScreenOnMobile={true}
         footer={
           <div className="flex justify-end w-full">
             <Button

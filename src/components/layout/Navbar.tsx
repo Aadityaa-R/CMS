@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import {
+  Menu,
   Bell,
   Building2,
   User,
@@ -22,7 +23,7 @@ interface NavbarProps {
   onNavigate?: (tab: string) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) => {
   const { currentUser, currentRole, logout, updateCurrentUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -124,9 +125,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
 
   return (
     <>
-      <header className="h-20 bg-slate-50 dark:bg-slate-950 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
+      <header className="h-20 bg-slate-50 dark:bg-slate-950 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
         {/* Brand / Clinic Title */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          {onToggleSidebar && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="p-2 -ml-1 rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0"
+              aria-label="Toggle navigation menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onNavigate?.('dashboard')}

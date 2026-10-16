@@ -147,7 +147,10 @@ export const AppLayout: React.FC = () => {
         {/* Content Shell */}
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           {/* Header with profile & logout - pinned at top */}
-          <Navbar onNavigate={handleNavigate} />
+          <Navbar
+            onNavigate={handleNavigate}
+            onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+          />
 
           {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
           <main className="flex-1 overflow-y-auto w-full p-4 sm:p-6">
