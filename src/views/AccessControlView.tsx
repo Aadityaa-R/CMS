@@ -27,9 +27,10 @@ import {
 import { getRepository } from '@/data/storage';
 import { Account } from '@/types/storage';
 import { DataManagementTab } from './DataManagementTab';
+import { FormularyTab } from './FormularyTab';
 
 interface AccessControlViewProps {
-  activeTab?: 'add_users' | 'edit_users' | 'modules' | 'ledger' | 'data' | string;
+  activeTab?: 'add_users' | 'edit_users' | 'modules' | 'ledger' | 'data' | 'formulary' | string;
 }
 
 type RoleFilterKey = '' | 'doc' | 'receptionist' | 'patient';
@@ -114,8 +115,8 @@ const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
 };
 
 export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab = 'modules' }) => {
-  const [selectedSubTab, setSelectedSubTab] = useState<'add_users' | 'edit_users' | 'modules' | 'ledger' | 'data'>(() => {
-    if (activeTab === 'edit_users' || activeTab === 'add_users' || activeTab === 'ledger' || activeTab === 'data') return activeTab;
+  const [selectedSubTab, setSelectedSubTab] = useState<'add_users' | 'edit_users' | 'modules' | 'ledger' | 'data' | 'formulary'>(() => {
+    if (activeTab === 'edit_users' || activeTab === 'add_users' || activeTab === 'ledger' || activeTab === 'data' || activeTab === 'formulary') return activeTab;
     return 'modules';
   });
 
@@ -126,7 +127,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       activeTab === 'modules' ||
       activeTab === 'roles' ||
       activeTab === 'ledger' ||
-      activeTab === 'data'
+      activeTab === 'data' ||
+      activeTab === 'formulary'
     ) {
       setSelectedSubTab(activeTab === 'roles' ? 'modules' : (activeTab as any));
     }
@@ -155,6 +157,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     removeMember,
     addDoctor,
     doctors = [],
+    medicines = [],
   } = useClinic();
 
   // Module / Role management state
@@ -1096,6 +1099,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           },
           ...(hasCapability(currentUser, 'administrativeAccess')
             ? [
+                {
+                  id: 'formulary' as const,
+                  label: `Formulary (${medicines.length})`,
+                },
                 {
                   id: 'data' as const,
                   label: 'Data',
@@ -2449,6 +2456,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {selectedSubTab === 'formulary' && currentUser && hasCapability(currentUser, 'administrativeAccess') && (
+        <FormularyTab currentUser={currentUser} />
       )}
 
       {selectedSubTab === 'data' && currentUser && hasCapability(currentUser, 'administrativeAccess') && (

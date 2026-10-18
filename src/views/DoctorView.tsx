@@ -15,13 +15,26 @@ import {
   Filter,
   FilePlus,
   Plus,
+  Printer,
+  Trash2,
+  RotateCcw,
 } from 'lucide-react';
-import { Appointment, Prescription, PrescriptionItem, Patient } from '@/types';
+import { Appointment, Patient } from '@/types';
+import {
+  Medicine,
+  Prescription,
+  PrescriptionItem,
+  FrequencyOption,
+  TimingOption,
+  AllergyOverride,
+} from '@/types/prescribing';
 import {
   canTransferPatient,
   getAssignedDoctorId,
   hasCapability,
   isAdmin,
+  canPrescribe,
+  canCancelPrescription,
 } from '@/lib/permissions';
 import {
   getScopedPatients,
@@ -29,6 +42,14 @@ import {
   getScopedPrescriptions,
 } from '@/lib/selectors';
 import { isDoctorAvailable } from '@/lib/availability';
+import {
+  formatRegimen,
+  calculateQuantity,
+  validatePrescription,
+  checkAllergies,
+  checkDuplicates,
+  activeMedications,
+} from '@/lib/prescribing';
 
 interface DoctorViewProps {
   activeTab?: string;
@@ -103,8 +124,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     patients,
     vitals,
     prescriptions,
+    medicines = [],
     patientAssignments = [],
+    modules = [],
     createPrescription,
+    cancelPrescription,
     updateAppointmentStatus,
     updateAppointmentNotes,
     transferPatient,
@@ -343,22 +367,90 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     showNotification(`Allergy record updated for ${activePatient.firstName} ${activePatient.lastName}.`);
   };
 
-  // Prescription Modal State
+  // Prescribe Form Constants
+  const COMMON_DIAGNOSES = [
+    'Essential Hypertension (Stage 1)',
+    'Type 2 Diabetes Mellitus with Dyslipidemia',
+    'Mild Persistent Asthma',
+    'Acute Pharyngitis & Bronchial Irritation',
+    'Acute Bronchitis',
+    'Upper Respiratory Tract Infection',
+    'Gastroesophageal Reflux Disease (GERD)',
+    'Osteoarthritis of the Knee',
+    'Seasonal Allergic Rhinitis',
+    'Generalized Anxiety Disorder',
+    'Chronic Low Back Pain',
+  ];
+
+  const ROUTE_OPTIONS = [
+    'Oral',
+    'Inhalation',
+    'Topical',
+    'Subcutaneous',
+    'Intravenous',
+    'Ophthalmic',
+    'Otic',
+    'Nasal',
+  ];
+
+  const FREQUENCY_OPTIONS: FrequencyOption[] = [
+    'Once daily',
+    'Twice daily',
+    'Three times daily',
+    'Four times daily',
+    'Every 8 hours',
+    'At bedtime',
+    'As needed',
+  ];
+
+  const TIMING_OPTIONS: TimingOption[] = [
+    'Before food',
+    'After food',
+    'With food',
+    'Morning',
+    'Evening',
+    'Any time',
+  ];
+
+  const DURATION_OPTIONS = [
+    '3 days',
+    '5 days',
+    '7 days',
+    '10 days',
+    '14 days',
+    '30 days',
+    '60 days',
+    '90 days',
+    'Ongoing',
+  ];
+
+  const REFILL_OPTIONS = ['0', '1', '2', '3'];
+
+  // Prescribe Form Modal State
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [prescPatientId, setPrescPatientId] = useState<string>('');
-  const [diagnosis, setDiagnosis] = useState('');
-  const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItem[]>([
-    {
-      id: 'item-1',
-      medicineName: '',
-      dosage: '',
-      frequency: 'Once daily',
-      duration: '30 days',
-      instructions: 'Take after meals with water',
-      dispensed: false,
-    },
-  ]);
+  const [diagnosisSelect, setDiagnosisSelect] = useState<string>('Essential Hypertension (Stage 1)');
+  const [diagnosisCustom, setDiagnosisCustom] = useState<string>('');
+  const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItem[]>([]);
   const [prescriptionError, setPrescriptionError] = useState('');
+  const [formHasEdits, setFormHasEdits] = useState(false);
+
+  // Unsaved Changes Discard Confirmation Dialog
+  const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
+
+  // Issue Confirmation Dialog State (with allergy override requirement)
+  const [isConfirmIssueOpen, setIsConfirmIssueOpen] = useState(false);
+  const [allergyOverrideReason, setAllergyOverrideReason] = useState('');
+  const [isSubmittingPrescription, setIsSubmittingPrescription] = useState(false);
+
+  // Prescription Issued Success Dialog State
+  const [lastIssuedRx, setLastIssuedRx] = useState<Prescription | null>(null);
+
+  // Cancellation Modal State
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancellingRx, setCancellingRx] = useState<Prescription | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelError, setCancelError] = useState('');
 
   // Consultation Notes Modal State
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -395,87 +487,274 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     showNotification(`Consultation concluded for ${patientName}. Visit marked completed.`);
   };
 
-  const handleAddMedicationRow = () => {
-    setPrescriptionItems((prev) => [
-      ...prev,
-      {
-        id: `item-${prev.length + 1}`,
-        medicineName: '',
-        dosage: '',
-        frequency: 'Once daily',
-        duration: '14 days',
-        instructions: 'Take after meals',
-        dispensed: false,
-      },
-    ]);
+  // Default Item Factory
+  const createDefaultPrescriptionItem = (medList: Medicine[]): PrescriptionItem => {
+    const defaultMed = medList.find((m) => m.active) || medList[0];
+    const strength = defaultMed?.strengths?.[0] || '10 mg';
+    const form = defaultMed?.form || 'Tablet';
+    const route = defaultMed?.defaultRoute || 'Oral';
+    const doseUnit = form.toLowerCase();
+    const frequency: FrequencyOption = 'Once daily';
+    const duration = '30 days';
+    const quantity = calculateQuantity(1, frequency, duration);
+
+    return {
+      id: `it-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      medicineId: defaultMed?.id || '__other__',
+      customName: defaultMed ? undefined : '',
+      medicineName: defaultMed?.genericName || '',
+      strength,
+      form,
+      route,
+      dose: { amount: 1, unit: doseUnit },
+      frequency,
+      timing: 'Morning',
+      duration,
+      quantity,
+      refills: 0,
+      instructions: '',
+    };
   };
 
-  const handleUpdateMedication = (
-    index: number,
-    field: keyof PrescriptionItem,
-    value: string
-  ) => {
-    setPrescriptionItems((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: value };
-      return copy;
-    });
-  };
+  const prescPatient = useMemo(() => {
+    return patients.find((p) => p.id === prescPatientId) || activePatient || null;
+  }, [patients, prescPatientId, activePatient]);
+
+  const patientAllergies = useMemo(() => {
+    return prescPatient?.allergies || [];
+  }, [prescPatient]);
+
+  const effectiveDiagnosis = useMemo(() => {
+    return diagnosisSelect === '__other__' ? diagnosisCustom.trim() : diagnosisSelect.trim();
+  }, [diagnosisSelect, diagnosisCustom]);
+
+  const currentAllergyMatches = useMemo(() => {
+    return checkAllergies(patientAllergies, prescriptionItems, medicines);
+  }, [patientAllergies, prescriptionItems, medicines]);
+
+  const currentDuplicates = useMemo(() => {
+    const patientExistingPrescriptions = prescriptions.filter(
+      (r) => r.patientId === prescPatientId && r.status !== 'cancelled'
+    );
+    return checkDuplicates(prescriptionItems, patientExistingPrescriptions, medicines, new Date());
+  }, [prescriptionItems, prescriptions, prescPatientId, medicines]);
+
+  const lastPrescriptionForPatient = useMemo(() => {
+    if (!prescPatientId) return null;
+    const patRxs = prescriptions
+      .filter((r) => r.patientId === prescPatientId && r.status !== 'cancelled')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return patRxs[0] || null;
+  }, [prescriptions, prescPatientId]);
 
   const handleOpenPrescriptionModal = (targetPatientId?: string) => {
     const pId = targetPatientId || activePatient?.id || patients[0]?.id || '';
     setPrescPatientId(pId);
-    setDiagnosis('');
+    setDiagnosisSelect('Essential Hypertension (Stage 1)');
+    setDiagnosisCustom('');
     setPrescriptionError('');
-    setPrescriptionItems([
-      {
-        id: 'item-1',
-        medicineName: '',
-        dosage: '',
-        frequency: 'Once daily in morning',
-        duration: '30 days',
-        instructions: 'Take after breakfast',
-        dispensed: false,
-      },
-    ]);
+    setFormHasEdits(false);
+    setAllergyOverrideReason('');
+    setPrescriptionItems([createDefaultPrescriptionItem(medicines)]);
     setIsPrescriptionModalOpen(true);
   };
 
-  const handleSavePrescription = (e: React.FormEvent) => {
+  const handleAddMedicationRow = () => {
+    if (prescriptionItems.length >= 10) return;
+    setFormHasEdits(true);
+    setPrescriptionItems((prev) => [...prev, createDefaultPrescriptionItem(medicines)]);
+  };
+
+  const handleRemoveMedicationRow = (index: number) => {
+    if (prescriptionItems.length <= 1) return;
+    setFormHasEdits(true);
+    setPrescriptionItems((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleUpdateItem = (
+    index: number,
+    field: keyof PrescriptionItem,
+    value: any
+  ) => {
+    setFormHasEdits(true);
+    setPrescriptionItems((prev) => {
+      const copy = [...prev];
+      const cur = { ...copy[index], [field]: value };
+
+      if (field === 'medicineId') {
+        if (value === '__other__') {
+          cur.customName = '';
+          cur.medicineName = '';
+          cur.strength = '';
+          cur.form = 'Tablet';
+          cur.route = 'Oral';
+          cur.dose = { amount: 1, unit: 'tablet' };
+        } else {
+          const med = medicines.find((m) => m.id === value);
+          if (med) {
+            cur.medicineName = med.genericName;
+            cur.customName = undefined;
+            cur.strength = med.strengths[0] || '';
+            cur.form = med.form;
+            cur.route = med.defaultRoute;
+            cur.dose = { amount: cur.dose?.amount || 1, unit: med.form.toLowerCase() };
+          }
+        }
+      }
+
+      const doseAmt = cur.dose?.amount ?? 1;
+      cur.quantity = calculateQuantity(doseAmt, cur.frequency, cur.duration);
+
+      copy[index] = cur;
+      return copy;
+    });
+  };
+
+  const handleUpdateDoseAmount = (index: number, amountStr: string) => {
+    setFormHasEdits(true);
+    const parsed = Math.max(0.1, parseFloat(amountStr) || 1);
+    setPrescriptionItems((prev) => {
+      const copy = [...prev];
+      const cur = { ...copy[index] };
+      cur.dose = { ...cur.dose, amount: parsed };
+      cur.quantity = calculateQuantity(parsed, cur.frequency, cur.duration);
+      copy[index] = cur;
+      return copy;
+    });
+  };
+
+  const handleUpdateDoseUnit = (index: number, unit: string) => {
+    setFormHasEdits(true);
+    setPrescriptionItems((prev) => {
+      const copy = [...prev];
+      copy[index] = {
+        ...copy[index],
+        dose: { ...copy[index].dose, unit },
+      };
+      return copy;
+    });
+  };
+
+  const handleRepeatLastPrescription = () => {
+    if (!lastPrescriptionForPatient || !lastPrescriptionForPatient.items?.length) return;
+    setFormHasEdits(true);
+    const cloned = lastPrescriptionForPatient.items.map((it, idx) => ({
+      ...it,
+      id: `it-rep-${Date.now()}-${idx + 1}`,
+      dispensed: false,
+    }));
+    setPrescriptionItems(cloned);
+    if (lastPrescriptionForPatient.diagnosis) {
+      if (COMMON_DIAGNOSES.includes(lastPrescriptionForPatient.diagnosis)) {
+        setDiagnosisSelect(lastPrescriptionForPatient.diagnosis);
+        setDiagnosisCustom('');
+      } else {
+        setDiagnosisSelect('__other__');
+        setDiagnosisCustom(lastPrescriptionForPatient.diagnosis);
+      }
+    }
+    showNotification('Loaded medication items from previous prescription.');
+  };
+
+  const prescriptionValidation = useMemo(() => {
+    return validatePrescription({
+      diagnosis: effectiveDiagnosis,
+      items: prescriptionItems,
+      patientId: prescPatientId,
+      doctorId: activeDoctor.id,
+    });
+  }, [effectiveDiagnosis, prescriptionItems, prescPatientId, activeDoctor.id]);
+
+  const handleInitiateIssue = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!diagnosis.trim()) {
-      setPrescriptionError('Clinical diagnosis is required.');
+    if (!prescriptionValidation.valid) {
+      setPrescriptionError(prescriptionValidation.errors.join(' '));
       return;
     }
+    setPrescriptionError('');
+    setAllergyOverrideReason('');
+    setIsConfirmIssueOpen(true);
+  };
 
-    const patientObj = patients.find((p) => p.id === prescPatientId);
-    if (!patientObj) {
-      setPrescriptionError('Please select a valid patient.');
+  const handleConfirmIssue = () => {
+    if (currentAllergyMatches.length > 0 && !allergyOverrideReason.trim()) {
       return;
     }
+    if (!prescPatient) return;
 
-    const validItems = prescriptionItems.filter((i) => i.medicineName.trim().length > 0);
-    if (validItems.length === 0) {
-      setPrescriptionError('At least one medicine name is required.');
-      return;
-    }
+    setIsSubmittingPrescription(true);
 
-    const newRx = createPrescription({
-      patientId: patientObj.id,
-      patientName: `${patientObj.firstName} ${patientObj.lastName}`,
+    const overrides: AllergyOverride[] = currentAllergyMatches.map((m) => ({
+      allergen: m.allergen,
+      medicine: m.medicine,
+      reason: allergyOverrideReason.trim(),
+    }));
+
+    const result = createPrescription({
+      patientId: prescPatient.id,
+      patientName: `${prescPatient.firstName} ${prescPatient.lastName}`,
       doctorId: activeDoctor.id,
       doctorName: activeDoctor.name,
       appointmentId: activeAppointment?.id,
-      diagnosis,
-      items: validItems,
+      diagnosis: effectiveDiagnosis,
+      items: prescriptionItems,
+      allergyOverrides: overrides,
     });
 
-    showNotification(
-      `e-Prescription #${newRx.prescriptionNumber} written for ${newRx.patientName}. Transmitted to pharmacy repository.`
-    );
+    setIsSubmittingPrescription(false);
 
+    if (!result.success || !result.prescription) {
+      setPrescriptionError(result.error || 'Failed to issue prescription.');
+      setIsConfirmIssueOpen(false);
+      return;
+    }
+
+    setIsConfirmIssueOpen(false);
     setIsPrescriptionModalOpen(false);
-    setPrescriptionError('');
+    setFormHasEdits(false);
+    setLastIssuedRx(result.prescription);
+    showNotification(`e-Prescription #${result.prescription.prescriptionNumber} issued.`);
+  };
+
+  const handleClosePrescribeModal = () => {
+    if (formHasEdits) {
+      setIsDiscardConfirmOpen(true);
+    } else {
+      setIsPrescriptionModalOpen(false);
+    }
+  };
+
+  const handleConfirmDiscard = () => {
+    setIsDiscardConfirmOpen(false);
+    setIsPrescriptionModalOpen(false);
+    setFormHasEdits(false);
+  };
+
+  const handleOpenCancelModal = (rx: Prescription) => {
+    setCancellingRx(rx);
+    setCancelReason('');
+    setCancelError('');
+    setIsCancelModalOpen(true);
+  };
+
+  const handleConfirmCancelPrescription = async () => {
+    if (!cancellingRx) return;
+    if (!cancelReason.trim()) {
+      setCancelError('A cancellation reason is required.');
+      return;
+    }
+
+    const res = await cancelPrescription(cancellingRx.id, cancelReason.trim());
+    if (!res.success) {
+      setCancelError(res.error || 'Could not cancel prescription.');
+      return;
+    }
+
+    setIsCancelModalOpen(false);
+    setCancellingRx(null);
+    setCancelReason('');
+    setCancelError('');
+    showNotification(`Prescription #${cancellingRx.prescriptionNumber} has been cancelled.`);
   };
 
   const handleSaveConsultationNotes = (e: React.FormEvent) => {
@@ -1030,6 +1309,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           size="sm"
                           variant="outline"
                           className="w-full sm:w-auto"
+                          disabled={!canPrescribe(currentUser, activePatient.id, patientAssignments, modules)}
                           onClick={() => handleOpenPrescriptionModal(activePatient.id)}
                         >
                           Prescribe
@@ -1125,16 +1405,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
                         <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
                           {(() => {
-                            const patientRx = prescriptions.filter(
-                              (rx) => rx.patientId === summaryPatient.id
-                            );
-                            const activeRxMeds = deduplicateList(
-                              patientRx.flatMap((rx) => rx.items.map((i) => i.medicineName))
-                            );
-                            if (activeRxMeds.length > 0) return activeRxMeds.join(', ');
-                            if (summaryPatient.currentMedications && summaryPatient.currentMedications.length > 0) {
-                              return deduplicateList(summaryPatient.currentMedications).join(', ');
-                            }
+                            const activeMeds = activeMedications(summaryPatient.id, prescriptions, new Date());
+                            if (activeMeds.length > 0) return activeMeds.join(', ');
                             return 'None recorded';
                           })()}
                         </span>
@@ -1506,6 +1778,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                     size="xs"
                                     variant="outline"
                                     className="whitespace-nowrap"
+                                    disabled={!canPrescribe(currentUser, pat.id, patientAssignments, modules)}
                                     onClick={() => handleOpenPrescriptionModal(pat.id)}
                                     aria-label={`Prescribe for ${pat.firstName} ${pat.lastName}`}
                                   >
@@ -1567,60 +1840,51 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-2/12 min-w-[150px]">Patient Name</TableHead>
                     <TableHead className="w-1/12 min-w-[90px]">Rx #</TableHead>
-                    <TableHead hideBelow="sm" className="w-1/12 min-w-[100px]">Issue Date</TableHead>
-                    <TableHead className="w-3/12 min-w-[180px]">Diagnosis</TableHead>
-                    <TableHead className="w-4/12 min-w-[240px]">Prescribed Regimen</TableHead>
-                    <TableHead isActions className="w-1/12 min-w-[90px] text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead className="w-2/12 min-w-[140px]">Patient</TableHead>
+                    <TableHead hideBelow="sm" className="w-1/12 min-w-[90px]">Date</TableHead>
+                    <TableHead className="w-2/12 min-w-[150px]">Diagnosis</TableHead>
+                    <TableHead className="w-4/12 min-w-[240px]">Regimen</TableHead>
+                    <TableHead className="w-1/12 min-w-[80px]">Status</TableHead>
+                    <TableHead isActions className="w-1/12 min-w-[100px] text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPrescriptions.length > 0 ? (
                     paginatedPrescriptions.map((rx) => (
                       <TableRow key={rx.id}>
-                        <TableCell isPrimary label="Patient Name" className="w-2/12 min-w-[150px] font-semibold text-slate-900 dark:text-slate-100">
-                          {rx.patientName}
-                        </TableCell>
-                        <TableCell label="Rx #" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300">
+                        <TableCell isPrimary label="Rx #" className="w-1/12 min-w-[90px] font-medium text-slate-700 dark:text-slate-300">
                           <TableTruncate>{rx.prescriptionNumber}</TableTruncate>
                         </TableCell>
-                        <TableCell label="Issue Date" hideBelow="sm" className="w-1/12 min-w-[100px] text-slate-600 dark:text-slate-400">
+                        <TableCell label="Patient" className="w-2/12 min-w-[140px] font-semibold text-slate-900 dark:text-slate-100">
+                          {rx.patientName}
+                        </TableCell>
+                        <TableCell label="Date" hideBelow="sm" className="w-1/12 min-w-[90px] text-slate-600 dark:text-slate-400">
                           {rx.date}
                         </TableCell>
-                        <TableCell label="Diagnosis" className="w-3/12 min-w-[180px] text-slate-800 dark:text-slate-200 font-medium break-words">
+                        <TableCell label="Diagnosis" className="w-2/12 min-w-[150px] text-slate-800 dark:text-slate-200 break-words">
                           {rx.diagnosis}
                         </TableCell>
-                        <TableCell label="Prescribed Regimen" className="w-4/12 min-w-[240px]">
-                          <div className="space-y-1 whitespace-normal break-words">
+                        <TableCell label="Regimen" className="w-4/12 min-w-[240px]">
+                          <div className="space-y-1 text-xs">
                             {rx.items && rx.items.length > 0 ? (
-                              rx.items.map((item, idx) => {
-                                if (typeof (item as unknown) === 'string') {
-                                  return (
-                                    <div key={idx} className="text-slate-700 dark:text-slate-300 whitespace-normal break-words">
-                                      <span className="font-bold text-slate-900 dark:text-slate-100">{item as unknown as string}</span>
-                                    </div>
-                                  );
-                                }
-                                const details = [item.dosage, item.frequency].filter(Boolean).join(', ');
-                                return (
-                                  <div key={item.id || idx} className="text-slate-700 dark:text-slate-300 whitespace-normal break-words">
-                                    <span className="font-bold text-slate-900 dark:text-slate-100">
-                                      {item.medicineName}
-                                    </span>
-                                    {details && (
-                                      <span className="text-slate-500 dark:text-slate-400"> • {details}</span>
-                                    )}
-                                  </div>
-                                );
-                              })
+                              rx.items.map((item, idx) => (
+                                <div key={item.id || idx} className="text-slate-800 dark:text-slate-200 whitespace-normal break-words">
+                                  {formatRegimen(item)}
+                                </div>
+                              ))
                             ) : (
-                              <span className="text-slate-500 dark:text-slate-400">None</span>
+                              <span className="text-slate-400">None</span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell isActions label="Actions" fullWidthOnStack className="w-1/12 min-w-[90px] text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end">
+                        <TableCell label="Status" className="w-1/12 min-w-[80px] text-xs">
+                          <span className={rx.status === 'cancelled' ? 'text-slate-500 dark:text-slate-400 font-medium' : 'text-slate-800 dark:text-slate-200 font-medium'}>
+                            {rx.status === 'cancelled' ? 'Cancelled' : 'Active'}
+                          </span>
+                        </TableCell>
+                        <TableCell isActions label="Actions" fullWidthOnStack className="w-1/12 min-w-[100px] text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
                             <Button
                               size="xs"
                               variant="outline"
@@ -1630,13 +1894,24 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             >
                               View
                             </Button>
+                            {canCancelPrescription(currentUser, rx, modules) && rx.status !== 'cancelled' && (
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                className="whitespace-nowrap"
+                                onClick={() => handleOpenCancelModal(rx)}
+                                aria-label={`Cancel prescription ${rx.prescriptionNumber}`}
+                              >
+                                Cancel
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                      <TableCell colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
                         No prescriptions found
                       </TableCell>
                     </TableRow>
@@ -1659,41 +1934,49 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       <Modal
         isOpen={isPrescriptionModalOpen}
-        onClose={() => setIsPrescriptionModalOpen(false)}
+        onClose={handleClosePrescribeModal}
         title="Issue Medical Prescription (e-Rx)"
         description="Prescribed medications are immediately logged into the central dispensary."
-        maxWidth="lg"
+        maxWidth="2xl"
+        fullScreenOnMobile={true}
         footer={
-          <>
+          <div className="flex items-center justify-between w-full">
             <Button
+              type="button"
               variant="outline"
               size="sm"
-              onClick={() => setIsPrescriptionModalOpen(false)}
+              onClick={handleClosePrescribeModal}
             >
               Cancel
             </Button>
             <Button
+              type="button"
               variant="primary"
               size="sm"
               icon={<FilePlus className="w-4 h-4" />}
-              onClick={handleSavePrescription}
+              disabled={!prescriptionValidation.valid || isSubmittingPrescription}
+              onClick={handleInitiateIssue}
             >
-              Sign & Issue Prescription
+              Issue Prescription
             </Button>
-          </>
+          </div>
         }
       >
-        <form onSubmit={handleSavePrescription} className="space-y-4" noValidate>
-          <div className="text-xs text-slate-600 dark:text-slate-400">
-            Allergies:{' '}
-            <span className="font-semibold text-slate-900 dark:text-slate-100">
-              {(() => {
-                const prescPatient = patients.find((p) => p.id === prescPatientId) || activePatient;
-                return prescPatient?.allergies && prescPatient.allergies.length > 0
-                  ? prescPatient.allergies.join(', ')
-                  : 'None recorded';
-              })()}
-            </span>
+        <form onSubmit={handleInitiateIssue} className="space-y-4" noValidate>
+          {/* Top Sticky Patient & Allergy Banner */}
+          <div className="sticky top-0 bg-white dark:bg-slate-900 z-10 pb-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+            <div>
+              <span className="text-slate-500 dark:text-slate-400">Patient: </span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {prescPatient ? `${prescPatient.firstName} ${prescPatient.lastName} (${prescPatient.mrn})` : 'Select patient'}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-500 dark:text-slate-400">Allergies: </span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {patientAllergies.length > 0 ? patientAllergies.join(', ') : 'None recorded'}
+              </span>
+            </div>
           </div>
 
           {prescriptionError && (
@@ -1702,13 +1985,15 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Patient Selection & Diagnosis */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Select
               label="Select Patient"
               searchable={true}
               searchPlaceholder="Search patient by name or MRN..."
               value={prescPatientId}
               onChange={(e) => {
+                setFormHasEdits(true);
                 setPrescPatientId(e.target.value);
                 if (prescriptionError) setPrescriptionError('');
               }}
@@ -1717,78 +2002,514 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 label: `${p.firstName} ${p.lastName} (${p.mrn})`,
               }))}
             />
-            <Input
-              label="Primary Clinical Diagnosis"
-              value={diagnosis}
-              onChange={(e) => {
-                setDiagnosis(e.target.value);
-                if (prescriptionError) setPrescriptionError('');
-              }}
-              placeholder="e.g. Essential Hypertension, Bronchitis"
-              error={!diagnosis.trim() && prescriptionError ? 'Clinical diagnosis is required' : undefined}
-            />
+            <div className="space-y-2">
+              <Select
+                label="Clinical Diagnosis"
+                searchable={true}
+                searchPlaceholder="Search common diagnosis..."
+                value={diagnosisSelect}
+                onChange={(e) => {
+                  setFormHasEdits(true);
+                  setDiagnosisSelect(e.target.value);
+                  if (prescriptionError) setPrescriptionError('');
+                }}
+                options={[
+                  ...COMMON_DIAGNOSES.map((d) => ({ value: d, label: d })),
+                  { value: '__other__', label: 'Other (type diagnosis)' },
+                ]}
+              />
+              {diagnosisSelect === '__other__' && (
+                <Input
+                  label="Custom Diagnosis"
+                  value={diagnosisCustom}
+                  onChange={(e) => {
+                    setFormHasEdits(true);
+                    setDiagnosisCustom(e.target.value);
+                    if (prescriptionError) setPrescriptionError('');
+                  }}
+                  placeholder="Enter custom clinical diagnosis..."
+                  required
+                />
+              )}
+            </div>
           </div>
 
+          {/* Prescribed Medications Header */}
           <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Prescribed Medications
-              </span>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Prescribed Medications ({prescriptionItems.length}/10)
+                </span>
+                {lastPrescriptionForPatient && (
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    icon={<RotateCcw className="w-3.5 h-3.5" />}
+                    onClick={handleRepeatLastPrescription}
+                    aria-label="Repeat last prescription for this patient"
+                  >
+                    Repeat last prescription
+                  </Button>
+                )}
+              </div>
               <Button
                 type="button"
                 size="xs"
                 variant="outline"
                 icon={<Plus className="w-3.5 h-3.5" />}
                 onClick={handleAddMedicationRow}
+                disabled={prescriptionItems.length >= 10}
               >
-                Add Medication
+                Add medicine
               </Button>
             </div>
 
-            {prescriptionItems.map((item, idx) => (
-              <div
-                key={item.id}
-                className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5"
-              >
-                <div className="grid grid-cols-3 gap-2.5">
-                  <Input
-                    label="Medicine Name"
-                    value={item.medicineName}
-                    onChange={(e) => handleUpdateMedication(idx, 'medicineName', e.target.value)}
-                    placeholder="e.g. Amlodipine Besylate"
-                  />
-                  <Input
-                    label="Dosage"
-                    value={item.dosage}
-                    onChange={(e) => handleUpdateMedication(idx, 'dosage', e.target.value)}
-                    placeholder="e.g. 5 mg"
-                  />
-                  <Input
-                    label="Frequency"
-                    value={item.frequency}
-                    onChange={(e) => handleUpdateMedication(idx, 'frequency', e.target.value)}
-                    placeholder="e.g. Once daily"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <Input
-                    label="Duration"
-                    value={item.duration}
-                    onChange={(e) => handleUpdateMedication(idx, 'duration', e.target.value)}
-                    placeholder="e.g. 30 days"
-                  />
-                  <Input
-                    label="Instructions"
-                    value={item.instructions}
-                    onChange={(e) => handleUpdateMedication(idx, 'instructions', e.target.value)}
-                    placeholder="e.g. Take after breakfast"
-                  />
-                </div>
-              </div>
-            ))}
+            {/* Prescribed Medication Blocks */}
+            <div className="space-y-4">
+              {prescriptionItems.map((item, idx) => {
+                const isCustomMed = item.medicineId === '__other__';
+                const selectedMed = medicines.find((m) => m.id === item.medicineId);
+                const strengthOptions = selectedMed ? selectedMed.strengths.map((s) => ({ value: s, label: s })) : [];
+
+                const itemAllergyMatches = checkAllergies(patientAllergies, [item], medicines);
+                const duplicateForThisItem = currentDuplicates.filter(
+                  (d) => d.medicine.toLowerCase() === (item.medicineName || item.customName || '').toLowerCase()
+                );
+
+                return (
+                  <div
+                    key={item.id}
+                    className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+                  >
+                    <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-700">
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Item #{idx + 1}
+                      </span>
+                      {prescriptionItems.length > 1 && (
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="outline"
+                          icon={<Trash2 className="w-3.5 h-3.5" />}
+                          onClick={() => handleRemoveMedicationRow(idx)}
+                          aria-label={`Remove medication item ${idx + 1}`}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Medicine selection & Custom input */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Select
+                        label="Medicine"
+                        searchable={true}
+                        searchPlaceholder="Type to filter generic medicines..."
+                        value={item.medicineId}
+                        onChange={(e) => handleUpdateItem(idx, 'medicineId', e.target.value)}
+                        options={[
+                          ...medicines
+                            .filter((m) => m.active || m.id === item.medicineId)
+                            .map((m) => ({
+                              value: m.id,
+                              label: m.genericName,
+                              sublabel: `${m.strengths.join(', ')} • ${m.form}`,
+                            })),
+                          { value: '__other__', label: 'Other (type a name)', sublabel: 'Custom medication' },
+                        ]}
+                      />
+
+                      {isCustomMed ? (
+                        <Input
+                          label="Custom Medicine Name"
+                          value={item.customName || ''}
+                          onChange={(e) => handleUpdateItem(idx, 'customName', e.target.value)}
+                          placeholder="e.g. Amoxicillin-Clavulanate"
+                          required
+                        />
+                      ) : (
+                        <Select
+                          label="Strength"
+                          value={item.strength}
+                          onChange={(e) => handleUpdateItem(idx, 'strength', e.target.value)}
+                          options={strengthOptions}
+                        />
+                      )}
+                    </div>
+
+                    {/* If custom, show strength & form selection */}
+                    {isCustomMed && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <Input
+                          label="Custom Strength"
+                          value={item.strength}
+                          onChange={(e) => handleUpdateItem(idx, 'strength', e.target.value)}
+                          placeholder="e.g. 500 mg / 125 mg"
+                          required
+                        />
+                        <Select
+                          label="Dosage Form"
+                          value={item.form}
+                          onChange={(e) => handleUpdateItem(idx, 'form', e.target.value)}
+                          options={[
+                            { value: 'Tablet', label: 'Tablet' },
+                            { value: 'Capsule', label: 'Capsule' },
+                            { value: 'Syrup', label: 'Syrup' },
+                            { value: 'Inhaler', label: 'Inhaler' },
+                            { value: 'Cream', label: 'Cream' },
+                            { value: 'Drops', label: 'Drops' },
+                            { value: 'Injection', label: 'Injection' },
+                          ]}
+                        />
+                      </div>
+                    )}
+
+                    {/* Route, Dose Amount, Dose Unit */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Select
+                        label="Route"
+                        value={item.route}
+                        onChange={(e) => handleUpdateItem(idx, 'route', e.target.value)}
+                        options={ROUTE_OPTIONS.map((r) => ({ value: r, label: r }))}
+                      />
+                      <Input
+                        label="Dose Amount"
+                        type="text"
+                        inputMode="numeric"
+                        value={String(item.dose?.amount ?? 1)}
+                        onChange={(e) => handleUpdateDoseAmount(idx, e.target.value)}
+                        placeholder="1"
+                      />
+                      <Input
+                        label="Dose Unit"
+                        value={item.dose?.unit || item.form.toLowerCase()}
+                        onChange={(e) => handleUpdateDoseUnit(idx, e.target.value)}
+                        placeholder="tablet, puff, mL..."
+                      />
+                    </div>
+
+                    {/* Frequency, Timing, Duration, Refills */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                      <Select
+                        label="Frequency"
+                        value={item.frequency}
+                        onChange={(e) => handleUpdateItem(idx, 'frequency', e.target.value as FrequencyOption)}
+                        options={FREQUENCY_OPTIONS.map((f) => ({ value: f, label: f }))}
+                      />
+                      <Select
+                        label="Timing"
+                        value={item.timing}
+                        onChange={(e) => handleUpdateItem(idx, 'timing', e.target.value as TimingOption)}
+                        options={TIMING_OPTIONS.map((t) => ({ value: t, label: t }))}
+                      />
+                      <Select
+                        label="Duration"
+                        value={item.duration}
+                        onChange={(e) => handleUpdateItem(idx, 'duration', e.target.value)}
+                        options={DURATION_OPTIONS.map((d) => ({ value: d, label: d }))}
+                      />
+                      <Select
+                        label="Refills"
+                        value={String(item.refills ?? 0)}
+                        onChange={(e) => handleUpdateItem(idx, 'refills', parseInt(e.target.value, 10))}
+                        options={REFILL_OPTIONS.map((r) => ({ value: r, label: `${r} refills` }))}
+                      />
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="space-y-1">
+                      <Input
+                        label={`Instructions (${(item.instructions || '').length}/200)`}
+                        value={item.instructions || ''}
+                        onChange={(e) => handleUpdateItem(idx, 'instructions', e.target.value.slice(0, 200))}
+                        placeholder="e.g. Take after breakfast with water"
+                      />
+                    </div>
+
+                    {/* Calculated Quantity */}
+                    <div className="pt-1 text-xs text-slate-600 dark:text-slate-400">
+                      Calculated Quantity:{' '}
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">
+                        {item.quantity} {item.dose?.unit || item.form.toLowerCase()}
+                      </span>
+                      {item.duration === 'Ongoing' && (
+                        <span className="text-slate-500 ml-1.5">(30-day ongoing baseline)</span>
+                      )}
+                    </div>
+
+                    {/* Warnings (Live Allergy & Duplicate Alerts) */}
+                    {(itemAllergyMatches.length > 0 || duplicateForThisItem.length > 0) && (
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-1 text-xs">
+                        {itemAllergyMatches.map((m, mIdx) => (
+                          <div key={mIdx} className="text-rose-600 dark:text-rose-400 font-medium">
+                            {m.message}
+                          </div>
+                        ))}
+                        {duplicateForThisItem.map((d, dIdx) => (
+                          <div key={dIdx} className="text-amber-600 dark:text-amber-400 font-medium">
+                            {d.message}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </form>
       </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL 1B: CONFIRM ISSUE PRESCRIPTION & ALLERGY OVERRIDE                    */}
+      {/* ========================================================================= */}
+      <Modal
+        isOpen={isConfirmIssueOpen}
+        onClose={() => setIsConfirmIssueOpen(false)}
+        title="Confirm Electronic Prescription"
+        maxWidth="lg"
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsConfirmIssueOpen(false)}
+            >
+              Back to Editing
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={
+                isSubmittingPrescription ||
+                (currentAllergyMatches.length > 0 && !allergyOverrideReason.trim())
+              }
+              onClick={handleConfirmIssue}
+            >
+              {isSubmittingPrescription ? 'Issuing...' : 'Confirm & Issue'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <div className="space-y-1">
+            <div className="text-slate-500 dark:text-slate-400">Patient:</div>
+            <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+              {prescPatient ? `${prescPatient.firstName} ${prescPatient.lastName} (${prescPatient.mrn})` : ''}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-slate-500 dark:text-slate-400">Diagnosis:</div>
+            <div className="font-medium text-slate-800 dark:text-slate-200">
+              {effectiveDiagnosis}
+            </div>
+          </div>
+
+          <div>
+            <div className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
+              Medications to Issue:
+            </div>
+            <div className="space-y-1.5 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700">
+              {prescriptionItems.map((item, idx) => (
+                <div key={item.id || idx} className="text-slate-800 dark:text-slate-200">
+                  {formatRegimen(item)}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {currentDuplicates.length > 0 && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-lg space-y-1">
+              <div className="font-semibold text-amber-900 dark:text-amber-200">
+                Therapeutic Warnings:
+              </div>
+              {currentDuplicates.map((d, idx) => (
+                <div key={idx} className="text-amber-800 dark:text-amber-300">
+                  {d.message}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {currentAllergyMatches.length > 0 && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-lg space-y-2">
+              <div className="font-semibold text-rose-900 dark:text-rose-200">
+                Allergy Match Detected:
+              </div>
+              {currentAllergyMatches.map((m, idx) => (
+                <div key={idx} className="text-rose-800 dark:text-rose-300">
+                  {m.message} ({m.medicine})
+                </div>
+              ))}
+              <p className="text-[11px] text-rose-700 dark:text-rose-300 pt-1">
+                The allergy check is an aid and not a substitute for clinical judgment.
+                A clinical override reason is required to issue this prescription.
+              </p>
+              <Textarea
+                label="Clinical Justification Reason *"
+                value={allergyOverrideReason}
+                onChange={(e) => setAllergyOverrideReason(e.target.value)}
+                placeholder="Document clinical rationale for overriding allergy warning..."
+                rows={3}
+                required
+              />
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL 1C: DISCARD PRESCRIPTION CHANGES CONFIRMATION                        */}
+      {/* ========================================================================= */}
+      <Modal
+        isOpen={isDiscardConfirmOpen}
+        onClose={() => setIsDiscardConfirmOpen(false)}
+        title="Discard this prescription?"
+        description="Unsaved prescription changes will be lost."
+        maxWidth="sm"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleConfirmDiscard}
+            >
+              Discard
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => setIsDiscardConfirmOpen(false)}
+            >
+              Keep editing
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-xs text-slate-600 dark:text-slate-400">
+          Are you sure you want to discard this prescription draft? Entered medication details will not be saved.
+        </p>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL 1D: PRESCRIPTION ISSUED SUCCESS                                      */}
+      {/* ========================================================================= */}
+      {lastIssuedRx && (
+        <Modal
+          isOpen={!!lastIssuedRx}
+          onClose={() => setLastIssuedRx(null)}
+          title="Prescription Issued"
+          maxWidth="sm"
+          footer={
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setViewingPrescription(lastIssuedRx);
+                    setLastIssuedRx(null);
+                  }}
+                >
+                  View
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  icon={<Printer className="w-3.5 h-3.5" />}
+                  onClick={() => {
+                    setViewingPrescription(lastIssuedRx);
+                    setLastIssuedRx(null);
+                    setTimeout(() => window.print(), 100);
+                  }}
+                >
+                  Print
+                </Button>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setLastIssuedRx(null)}
+              >
+                Done
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-2 text-xs">
+            <p className="text-slate-800 dark:text-slate-200">
+              Prescription <span className="font-semibold text-slate-900 dark:text-slate-100">{lastIssuedRx.prescriptionNumber}</span> was successfully issued for {lastIssuedRx.patientName}.
+            </p>
+            <p className="text-slate-500 dark:text-slate-400">
+              The prescription is active and logged in the dispensary repository.
+            </p>
+          </div>
+        </Modal>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1E: CANCEL PRESCRIPTION CONFIRMATION                                 */}
+      {/* ========================================================================= */}
+      {cancellingRx && (
+        <Modal
+          isOpen={isCancelModalOpen}
+          onClose={() => setIsCancelModalOpen(false)}
+          title={`Cancel Prescription ${cancellingRx.prescriptionNumber}?`}
+          maxWidth="sm"
+          footer={
+            <div className="flex items-center justify-end gap-2 w-full">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCancelModalOpen(false)}
+              >
+                Keep Prescription
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={handleConfirmCancelPrescription}
+              >
+                Confirm Cancellation
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-3 text-xs">
+            <p className="text-slate-600 dark:text-slate-400">
+              Cancelled prescriptions stay visible on the ledger with status Cancelled and will no longer count as active medications.
+            </p>
+            {cancelError && (
+              <div className="p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
+                {cancelError}
+              </div>
+            )}
+            <Textarea
+              label="Cancellation Reason *"
+              value={cancelReason}
+              onChange={(e) => {
+                setCancelReason(e.target.value);
+                if (cancelError) setCancelError('');
+              }}
+              placeholder="State clinical reason for cancellation..."
+              rows={3}
+              required
+            />
+          </div>
+        </Modal>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL 2: RECORD CONSULTATION NOTES                                        */}
@@ -1892,7 +2613,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         maxWidth="lg"
         fullScreenOnMobile={true}
         footer={
-          <div className="flex justify-end w-full">
+          <div className="flex justify-between items-center w-full">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              icon={<Printer className="w-3.5 h-3.5" />}
+              onClick={() => window.print()}
+            >
+              Print
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -1941,39 +2671,40 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               </div>
             </div>
 
+            {viewingPrescription.status === 'cancelled' && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                <div className="font-semibold text-slate-900 dark:text-slate-100">Prescription Cancelled</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Cancelled by {viewingPrescription.cancelledBy?.name || 'Clinic Staff'}{viewingPrescription.cancelledAt ? ` on ${viewingPrescription.cancelledAt.slice(0, 10)}` : ''}. Reason: {viewingPrescription.cancelReason || 'Not specified'}
+                </div>
+              </div>
+            )}
+
             <div>
               <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-2 text-xs">
                 Prescribed Regimen
               </span>
               <div className="space-y-2.5">
-                {viewingPrescription.items.map((item, idx) => {
-                  if (typeof (item as unknown) === 'string') {
-                    return (
-                      <div key={idx} className="text-slate-700 dark:text-slate-300 font-bold text-slate-900 dark:text-slate-100">
-                        {item as unknown as string}
-                      </div>
-                    );
-                  }
-                  const details = [item.dosage, item.frequency, item.duration].filter(Boolean).join(', ');
-                  return (
-                    <div key={item.id || idx} className="text-slate-700 dark:text-slate-300">
-                      <div className="font-bold text-slate-900 dark:text-slate-100">
-                        {item.medicineName}
-                      </div>
-                      {details && (
-                        <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
-                          {details}
-                        </div>
-                      )}
-                      {item.instructions && (
-                        <div className="text-slate-600 dark:text-slate-400 text-[11px] mt-0.5">
-                          {item.instructions}
-                        </div>
-                      )}
+                {viewingPrescription.items.map((item, idx) => (
+                  <div key={item.id || idx} className="text-slate-700 dark:text-slate-300 pb-2 border-b border-slate-50 dark:border-slate-800/50 last:border-b-0">
+                    <div className="font-medium text-slate-900 dark:text-slate-100">
+                      {formatRegimen(item)}
                     </div>
-                  );
-                })}
+                    {item.instructions && (
+                      <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
+                        Instructions: {item.instructions}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs text-slate-600 dark:text-slate-400">
+              <span>Status: {viewingPrescription.status === 'cancelled' ? 'Cancelled' : 'Active'}</span>
+              <span className="font-medium text-slate-900 dark:text-slate-100">
+                Signed: Dr. {viewingPrescription.doctorName.replace(/^Dr\.\s*/i, '')}
+              </span>
             </div>
           </div>
         )}

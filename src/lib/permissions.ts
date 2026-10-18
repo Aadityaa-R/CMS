@@ -578,6 +578,80 @@ export function canViewPrescription(
 }
 
 /**
+ * Determines whether a user can prescribe medications for a given patient.
+ *
+ * Rules (Milestone M8):
+ * - Must be a staff doctor (isDoctorStaff).
+ * - Must possess Prescription Authoring (prescriptionAuthoring).
+ * - Must possess EMR Records Access (emrRecordsAccess).
+ * - Must be the physician assigned to the patient.
+ */
+export function canPrescribe(
+  user: User | null | undefined,
+  patientId: string,
+  assignments: PatientAssignment[],
+  modules: AccessModule[] = INITIAL_MODULES
+): boolean {
+  if (!user) return false;
+  if (!isDoctorStaff(user)) return false;
+  if (!hasCapability(user, 'prescriptionAuthoring', modules)) return false;
+  if (!hasCapability(user, 'emrRecordsAccess', modules)) return false;
+
+  const assignedDocId = getAssignedDoctorId(patientId, assignments);
+  if (!assignedDocId) return false;
+
+  const isAssignedDoctor =
+    assignedDocId === user.id ||
+    user.id === `usr-${assignedDocId}` ||
+    (assignedDocId === 'doc-1' &&
+      (user.email === 'm.vance@beaconclinic.com' ||
+        user.badgeNumber === 'DOC-101' ||
+        user.badgeNumber === 'MD-001' ||
+        user.id === 'usr-1')) ||
+    (assignedDocId === 'doc-2' &&
+      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
+    (assignedDocId === 'doc-3' &&
+      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103'));
+
+  return isAssignedDoctor;
+}
+
+/**
+ * Determines whether a user can cancel a prescription.
+ *
+ * Rules (Milestone M8):
+ * - An administrator with administrativeAccess can cancel any prescription.
+ * - The original issuing doctor can cancel their own prescription.
+ * - Requires a mandatory reason in the calling handler.
+ */
+export function canCancelPrescription(
+  user: User | null | undefined,
+  rx: Prescription,
+  modules: AccessModule[] = INITIAL_MODULES
+): boolean {
+  if (!user) return false;
+  if (isAdmin(user, modules) || hasCapability(user, 'administrativeAccess', modules)) {
+    return true;
+  }
+
+  const isAuthor =
+    rx.doctorId === user.id ||
+    user.id === `usr-${rx.doctorId}` ||
+    (rx.doctorId === 'doc-1' &&
+      (user.email === 'm.vance@beaconclinic.com' ||
+        user.badgeNumber === 'DOC-101' ||
+        user.badgeNumber === 'MD-001' ||
+        user.id === 'usr-1')) ||
+    (rx.doctorId === 'doc-2' &&
+      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
+    (rx.doctorId === 'doc-3' &&
+      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103')) ||
+    rx.doctorName === user.name;
+
+  return isAuthor;
+}
+
+/**
  * Determines if a user can transfer a patient to another physician.
  * - Admins can transfer any patient.
  * - Doctor can transfer only patients currently assigned to them.

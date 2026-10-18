@@ -8,6 +8,7 @@ import {
   PatientAssignment,
   AccessModule,
   InAppNotification,
+  Medicine,
 } from './index';
 import { Invoice, Payment } from './billing';
 import { Shift, AttendanceRecord, LeaveRequest } from './attendance';
@@ -80,6 +81,7 @@ export interface BackupCollections {
   claimRequests: ClaimRequest[];
   ledger: AccessAuditLogEntry[];
   notifications: InAppNotification[];
+  formulary?: Medicine[];
   settings: StorageSettings;
 }
 

@@ -367,6 +367,58 @@ Every feature and line of code in this project strictly adheres to the governing
   - Real-time notification store persisted in browser repository under collection `notifications`.
   - Accessible via bell icon in Navbar: shows unread counter, notification list with timestamp and context, "Mark all as read", "Dismiss", and deep links.
 
+### 2.18 E-Prescribing, Formulary, Allergy Checks and Medication Management (Milestone M8)
+- **Clinical Governance & Access Rules**:
+  - Notice: The formulary, medication dosages, and allergy rules contained in this application are demonstration data only and do not constitute clinical guidance.
+  - Only a staff member whose staff type is Doctor, possessing both Prescription Authoring (`prescriptionAuthoring`) and EMR Records Access (`emrRecordsAccess`), and who is the active assigned physician for the patient, can issue prescriptions.
+  - Prescriptions are immutable once issued. Corrections cannot be made by editing or deleting records; a mistake is resolved by cancelling the prescription with a mandatory clinical reason and issuing a replacement.
+  - Cancellations are restricted to the original issuing physician or a clinic administrator with `administrativeAccess`.
+  - Receptionists have zero access to prescriptions or medication data. Patients can view only their own prescriptions and active medications through the Patient Portal.
+  - Allergy and duplicate warnings are clinical decision support aids: they warn the prescriber and require an explicit clinical rationale to override, but they do not replace physician judgment.
+- **Formulary Architecture (`src/types/prescribing.ts`, `src/data/formularySeed.ts`)**:
+  - `Medicine`: Unique identifier (`id`), case-insensitively unique generic name (`genericName`), optional brand names list (`brandNames`), fixed drug category (`drugClass`: analgesic, antibiotic, antihypertensive, antidiabetic, lipid_lowering, gastric, respiratory, antihistamine, vitamin, other), dosage form (`form`: Tablet, Capsule, Syrup, Inhaler, Cream, Drops, Injection), approved strengths list (`strengths`), default route of administration (`defaultRoute`), and active status (`active`).
+  - Seed catalog contains 43 essential clinic medications spanning the 9 primary classes, including all 8 medications present in existing seeded patient records.
+  - Persisted in the browser repository under the `formulary` collection, synchronizing across tabs and persisted through backups.
+- **Pure Prescribing Engine (`src/lib/prescribing.ts`)**:
+  - `formatRegimen(item)`: Formats structured dosage regimens into standardized natural language sentences (e.g. "Amlodipine Besylate 5 mg tablet, 1 tablet, once daily in the morning, for 30 days, 0 refills.").
+  - `calculateQuantity(doseAmount, frequency, durationDays)`: Computes dispense package quantities based on daily dose frequency and duration days, rounded up to the nearest whole unit. For ongoing regimens, a standardized 30-day supply baseline is calculated.
+  - `validatePrescription(prescription)`: Validates that prescriptions contain between 1 and 10 items, positive dosage quantities, durations not exceeding 365 days (or "Ongoing"), refill counts between 0 and 3, and mandatory custom generic names (3 to 80 characters) when using the unlisted "Other" formulary option.
+  - `ALLERGEN_RULES`: Seeded demonstration rules covering Penicillin (cross-reactivity with penicillin and amoxicillin derivatives), Sulfa (sulfonamides and cross-reactivity warnings), and Aspirin/NSAID (cross-reactivity with ibuprofen, naproxen, celecoxib, diclofenac). Clearly labeled: "Demo allergy rules. A clinician should review them."
+  - `checkAllergies(patientAllergies, items, formulary)`: Cross-references patient allergy records against planned medication classes, generic names, and brand names. Warns prescriber on cross-reactivity matches and surfaces manual review advisories for unmapped reported allergens.
+  - `checkDuplicates(items, activePrescriptions, formulary, now)`: Detects and warns against duplicate medications or concurrent prescriptions within the same therapeutic drug class actively taken by the patient.
+  - `activeMedications(patientId, prescriptions, now)`: Computes the current active medication list for a patient based on prescription issue date and regimen duration. Cancelled prescriptions and expired courses are cleanly excluded, while ongoing regimens remain active until cancelled.
+  - `migrateLegacyPrescription(legacy)`: Safely upgrades unstructured legacy text prescriptions to structured M8 items, ensuring backward compatibility.
+- **Prescribing Workstation Flow (`DoctorView.tsx`)**:
+  - Accessible via "Prescribe" actions on the Active Consultation desk card and Patient Summary table (both disabled with clear attribution when the patient is not assigned to the signed-in physician or the physician lacks `prescriptionAuthoring`).
+  - Phone-first full-screen modal on mobile devices (max 720px on desktop) with a persistent, sticky patient banner displaying MRN, age, blood group, and allergy list across the top.
+  - Common diagnosis combobox with free-text "Other" support.
+  - Dynamic medication items builder (1 to 10 rows) featuring searchable combobox with muted brand name and strength sublabels, automated dosage form and route prefilling, numeric dose input without spinners, frequency and timing selects, duration select, live computed quantity readouts, refill count selects, and optional 200-character instructions.
+  - Real-time inline amber warning banners beneath each item for allergy cross-reactivity matches and duplicate class/medication alerts.
+  - "Repeat last prescription" action to populate the form from the patient's previous prescription with one click.
+  - Unsaved changes confirmation dialog preventing accidental modal dismissal.
+  - Two-step safety issue gate: if any allergy warnings exist, the system requires a mandatory clinical override reason (minimum 10 characters) logged permanently to the security ledger.
+  - Post-issue confirmation screen showing the generated Rx number with immediate "View Prescription" and "Print" actions.
+- **e-Prescriptions Master Ledger (`DoctorView.tsx`)**:
+  - Full clinic prescription ledger with search (Rx number, patient name, diagnosis) and status filtering (All, Active, Cancelled).
+  - Columns: Rx #, Patient, Date, Diagnosis, Regimen (formatted by `formatRegimen`), Status (plain text: "Active" or "Cancelled"), and Actions.
+  - Printable modal view presenting formal outpatient prescription layout, formatted regimens, plain-text status, and a "Signed: Dr. <Name>" closing line.
+  - Cancellation dialog requiring a mandatory clinical reason.
+- **Patient Portal Integration (`PatientPortal.tsx`)**:
+  - Prescriptions tab upgraded to display formatted regimens, plain-text status ("Active" or "Cancelled by the clinic"), and printable prescription view modal with window.print invocation. Internal doctor notes are strictly excluded from patient-facing views.
+  - Medical Profile card displays "Current Medications" dynamically computed by `activeMedications`.
+- **Administrative Formulary Management (`FormularyTab.tsx` in `AccessControlView.tsx`)**:
+  - Dedicated "Formulary" sub-tab in the Admin Console, gated by `administrativeAccess`.
+  - Title count displaying total registered medications: `Formulary (43)`.
+  - Search by generic and brand name, and filter by drug class.
+  - Shared Table displaying Medicine, Class, Form, Strengths, Status (plain text "Active" or "Inactive"), and Actions ("Edit", "Deactivate" / "Activate"). Deletion is prohibited to preserve historical prescription integrity.
+  - Add / Edit Medicine modal validating unique generic names, comma-separated brand names and strengths, dosage forms, and routes.
+  - Read-only review section displaying all active `ALLERGEN_RULES` with explicit demo disclaimer.
+- **Security Ledger Audit Tracking**:
+  - `prescription_issued`: Logs Rx number, patient ID, doctor ID, item count, and allergy override flag.
+  - `prescription_cancelled`: Logs Rx number, patient ID, doctor ID, and cancellation reason.
+  - `allergy_override`: Logs Rx number, patient ID, doctor ID, allergen, medication, and clinical rationale.
+  - `formulary_medicine_created`, `formulary_medicine_updated`, `formulary_medicine_status_changed`: Logs administrator ID and formulary modifications.
+
 ---
 
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS

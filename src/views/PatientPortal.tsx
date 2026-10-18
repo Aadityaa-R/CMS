@@ -14,6 +14,7 @@ import {
   CANCEL_CUTOFF_MINUTES,
   BOOKING_WINDOW_DAYS,
 } from '@/lib/scheduling';
+import { formatRegimen, activeMedications } from '@/lib/prescribing';
 import { getAssignedDoctorId } from '@/lib/permissions';
 import { Appointment, Prescription } from '@/types';
 import {
@@ -968,6 +969,16 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                       : 'None reported'}
                   </span>
                 </div>
+                <div className="flex justify-between items-baseline gap-2 pt-2">
+                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                    {(() => {
+                      const activeMeds = activeMedications(patient.id, scopedPrescriptions, new Date());
+                      if (activeMeds.length > 0) return activeMeds.join(', ');
+                      return 'None recorded';
+                    })()}
+                  </span>
+                </div>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 pt-1">
                 Contact your doctor to update clinical records.
@@ -1096,23 +1107,23 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   <TableRow>
                     <TableHead className="w-2/12 min-w-[90px]">Date</TableHead>
                     <TableHead className="w-2/12 min-w-[120px]">Doctor</TableHead>
-                    <TableHead className="w-3/12 min-w-[130px]">Diagnosis</TableHead>
-                    <TableHead className="w-4/12 min-w-[180px]">Medicines</TableHead>
+                    <TableHead className="w-2/12 min-w-[130px]">Diagnosis</TableHead>
+                    <TableHead className="w-3/12 min-w-[180px]">Regimen</TableHead>
+                    <TableHead className="w-2/12 min-w-[120px]">Status</TableHead>
                     <TableHead className="w-1/12 min-w-[80px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedPrescriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-8 text-center text-slate-500">
+                      <TableCell colSpan={6} className="py-8 text-center text-slate-500">
                         No prescriptions on record.
                       </TableCell>
                     </TableRow>
                   ) : (
                     paginatedPrescriptions.map((rx) => {
-                      const summary = rx.items
-                        .map((i) => `${i.medicineName} (${i.dosage}, ${i.frequency}, ${i.duration})`)
-                        .join('; ');
+                      const summary = rx.items.map((it) => formatRegimen(it)).join('; ');
+                      const statusText = rx.status === 'cancelled' ? 'Cancelled by the clinic' : 'Active';
 
                       return (
                         <TableRow key={rx.id}>
@@ -1122,11 +1133,14 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                           <TableCell label="Doctor" className="w-2/12 min-w-[120px] font-medium text-slate-900 dark:text-slate-100">
                             Dr. {rx.doctorName}
                           </TableCell>
-                          <TableCell label="Diagnosis" className="w-3/12 min-w-[130px] text-slate-600 dark:text-slate-300">
+                          <TableCell label="Diagnosis" className="w-2/12 min-w-[130px] text-slate-600 dark:text-slate-300">
                             {rx.diagnosis}
                           </TableCell>
-                          <TableCell label="Medicines" className="w-4/12 min-w-[180px] text-slate-600 dark:text-slate-300">
+                          <TableCell label="Regimen" className="w-3/12 min-w-[180px] text-slate-600 dark:text-slate-300">
                             {summary}
+                          </TableCell>
+                          <TableCell label="Status" className="w-2/12 min-w-[120px] text-slate-600 dark:text-slate-300">
+                            {statusText}
                           </TableCell>
                           <TableCell label="Actions" className="w-1/12 min-w-[80px] text-right whitespace-nowrap">
                             <Button
@@ -1779,41 +1793,38 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   {viewingPrescription.diagnosis}
                 </span>
               </div>
+              <div className="flex justify-between">
+                <span>Status:</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">
+                  {viewingPrescription.status === 'cancelled' ? 'Cancelled by the clinic' : 'Active'}
+                </span>
+              </div>
             </div>
 
             <div>
               <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
-                Prescribed Medications
+                Prescribed Regimen
               </div>
-              <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    <tr>
-                      <th className="p-2.5">Medicine</th>
-                      <th className="p-2.5">Dosage</th>
-                      <th className="p-2.5">Frequency</th>
-                      <th className="p-2.5">Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                    {viewingPrescription.items.map((it) => (
-                      <tr key={it.id}>
-                        <td className="p-2.5 font-medium text-slate-900 dark:text-slate-100">
-                          {it.medicineName}
-                          {it.instructions && (
-                            <span className="block text-[11px] text-slate-500 dark:text-slate-400 font-normal">
-                              {it.instructions}
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-2.5 text-slate-600 dark:text-slate-300">{it.dosage}</td>
-                        <td className="p-2.5 text-slate-600 dark:text-slate-300">{it.frequency}</td>
-                        <td className="p-2.5 text-slate-600 dark:text-slate-300">{it.duration}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2.5">
+                {viewingPrescription.items.map((it) => (
+                  <div key={it.id} className="text-slate-700 dark:text-slate-300 pb-2 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+                    <div className="font-medium text-slate-900 dark:text-slate-100">
+                      {formatRegimen(it)}
+                    </div>
+                    {it.instructions && (
+                      <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
+                        Instructions: {it.instructions}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
+            </div>
+
+            <div className="pt-2 text-right text-xs text-slate-600 dark:text-slate-400">
+              <span className="font-medium text-slate-900 dark:text-slate-100">
+                Signed: Dr. {viewingPrescription.doctorName.replace(/^Dr\.\s*/i, '')}
+              </span>
             </div>
           </div>
         </Modal>

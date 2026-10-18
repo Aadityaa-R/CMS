@@ -28,6 +28,7 @@ import {
 } from './mockData';
 import { INITIAL_SHIFTS, INITIAL_ATTENDANCE_RECORDS, INITIAL_LEAVE_REQUESTS } from './attendanceSeed';
 import { INITIAL_SEED_INVOICES, INITIAL_SEED_PAYMENTS } from './billingSeed';
+import { INITIAL_FORMULARY } from './formularySeed';
 import { InAppNotification } from '../types';
 
 export const INITIAL_NOTIFICATIONS: InAppNotification[] = [
@@ -218,6 +219,7 @@ export async function seedInitialData(force = false): Promise<void> {
   const repoVisits = getRepository<any>('visits');
   const repoPayments = getRepository<any>('payments');
   const repoNotifications = getRepository<InAppNotification>('notifications');
+  const repoFormulary = getRepository<any>('formulary');
 
   await repoAccounts.replaceAll(seedAccounts);
   await repoStaff.replaceAll(INITIAL_STAFF_ACCESS);
@@ -236,6 +238,7 @@ export async function seedInitialData(force = false): Promise<void> {
   await repoVisits.replaceAll([]);
   await repoPayments.replaceAll(INITIAL_SEED_PAYMENTS);
   await repoNotifications.replaceAll(INITIAL_NOTIFICATIONS);
+  await repoFormulary.replaceAll(INITIAL_FORMULARY);
 
   setStorageSettings({
     mode: 'browser',
@@ -300,6 +303,7 @@ export async function exportBackupData(): Promise<BackupData> {
     'claimRequests',
     'ledger',
     'notifications',
+    'formulary',
     'settings',
   ];
 
@@ -417,6 +421,8 @@ export async function getStorageStats(): Promise<{
     'approvals',
     'claimRequests',
     'ledger',
+    'notifications',
+    'formulary',
     'settings',
   ];
 

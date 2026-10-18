@@ -29,6 +29,8 @@ import {
   canRemoveAccess,
   canAddMember,
   canRemoveMember,
+  canPrescribe,
+  canCancelPrescription,
 } from '@/lib/permissions';
 import { isDoctorAvailable, getStoredAttendanceData } from '@/lib/availability';
 import {
@@ -39,6 +41,8 @@ import {
 } from '@/lib/scheduling';
 import { getNextTokenNumberForDate } from '@/lib/reception';
 import { buildInvoiceForVisit } from '@/lib/billing';
+import { validatePrescription } from '@/lib/prescribing';
+import { Medicine } from '@/types/prescribing';
 import {
   INITIAL_PATIENTS,
   INITIAL_DOCTORS,
@@ -50,6 +54,7 @@ import {
   INITIAL_PATIENT_ASSIGNMENTS,
   INITIAL_MODULES,
 } from '@/data/mockData';
+import { INITIAL_FORMULARY } from '@/data/formularySeed';
 import { ACCESS_CATALOG, AccessItem, registerCustomAccess } from '@/data/accessCatalog';
 import { getRepository } from '@/data/storage';
 import { STORAGE_KEY_PREFIX } from '@/lib/authConstants';
@@ -97,6 +102,7 @@ interface ClinicContextType {
   invoices: Invoice[];
   patientAssignments: PatientAssignment[];
   modules: AccessModule[];
+  medicines: Medicine[];
 
   // Patient Actions
   addPatient: (
@@ -176,8 +182,31 @@ interface ClinicContextType {
   ) => VitalSigns;
 
   // Prescription Actions
-  createPrescription: (data: Omit<Prescription, 'id' | 'prescriptionNumber' | 'date' | 'status'>) => Prescription;
+  createPrescription: (
+    data: Omit<Prescription, 'id' | 'prescriptionNumber' | 'date' | 'status'>,
+    actingUser?: User | null
+  ) => { success: boolean; prescription?: Prescription; error?: string };
+  cancelPrescription: (
+    prescriptionId: string,
+    reason: string,
+    actingUser?: User | null
+  ) => Promise<{ success: boolean; error?: string }>;
   dispensePrescriptionItem: (prescriptionId: string, itemId: string, pharmacistName: string) => void;
+
+  // Formulary Actions
+  addMedicine: (
+    medicine: Omit<Medicine, 'id'>,
+    actingUser?: User | null
+  ) => Promise<{ success: boolean; medicine?: Medicine; error?: string }>;
+  updateMedicine: (
+    id: string,
+    updates: Partial<Medicine>,
+    actingUser?: User | null
+  ) => Promise<{ success: boolean; medicine?: Medicine; error?: string }>;
+  toggleMedicineStatus: (
+    id: string,
+    actingUser?: User | null
+  ) => Promise<{ success: boolean; active?: boolean; error?: string }>;
 
   // Lab Test Actions
   createLabTest: (data: Omit<LabTest, 'id' | 'testOrderNumber' | 'orderedAt' | 'status'>) => LabTest;
@@ -251,6 +280,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
   const [patientAssignments, setPatientAssignments] = useState<PatientAssignment[]>(INITIAL_PATIENT_ASSIGNMENTS);
   const [modules, setModules] = useState<AccessModule[]>(INITIAL_MODULES);
+  const [medicines, setMedicines] = useState<Medicine[]>(INITIAL_FORMULARY);
 
   // Load from repository on startup
   useEffect(() => {
@@ -262,14 +292,16 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const repoInvoices = getRepository<Invoice>('invoices');
         const repoAssignments = getRepository<PatientAssignment>('assignments');
         const repoRoles = getRepository<AccessModule>('roles');
+        const repoFormulary = getRepository<Medicine>('formulary');
 
-        const [pats, apts, rxs, invs, asgns, rols] = await Promise.all([
+        const [pats, apts, rxs, invs, asgns, rols, meds] = await Promise.all([
           repoPatients.list(),
           repoAppointments.list(),
           repoPrescriptions.list(),
           repoInvoices.list(),
           repoAssignments.list(),
           repoRoles.list(),
+          repoFormulary.list(),
         ]);
 
         if (pats.length > 0) setPatients(pats);
@@ -278,6 +310,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (invs.length > 0) setInvoices(invs);
         if (asgns.length > 0) setPatientAssignments(asgns);
         if (rols.length > 0) setModules(rols);
+        if (meds.length > 0) setMedicines(meds);
       } catch {
         // Fallback
       }
@@ -309,6 +342,10 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const repo = getRepository<AccessModule>('roles');
         setModules(await repo.list());
       }
+      if (e.key === `${STORAGE_KEY_PREFIX}formulary`) {
+        const repo = getRepository<Medicine>('formulary');
+        setMedicines(await repo.list());
+      }
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
@@ -338,6 +375,12 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       getRepository<PatientAssignment>('assignments').replaceAll(patientAssignments).catch(() => {});
     }
   }, [patientAssignments]);
+
+  useEffect(() => {
+    if (medicines.length > 0) {
+      getRepository<Medicine>('formulary').replaceAll(medicines).catch(() => {});
+    }
+  }, [medicines]);
 
   useEffect(() => {
     if (modules.length > 0) {
@@ -1102,8 +1145,31 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const createPrescription = (
-    data: Omit<Prescription, 'id' | 'prescriptionNumber' | 'date' | 'status'>
-  ): Prescription => {
+    data: Omit<Prescription, 'id' | 'prescriptionNumber' | 'date' | 'status'>,
+    actingUser?: User | null
+  ): { success: boolean; prescription?: Prescription; error?: string } => {
+    const actor = actingUser || authUser;
+    if (!actor) {
+      return { success: false, error: 'Authentication required to issue prescriptions.' };
+    }
+
+    if (!canPrescribe(actor, data.patientId, patientAssignments, modules)) {
+      return {
+        success: false,
+        error: 'Only the assigned physician with Prescription Authoring and EMR Records Access can issue prescriptions.',
+      };
+    }
+
+    const val = validatePrescription({
+      diagnosis: data.diagnosis,
+      items: data.items,
+      patientId: data.patientId,
+      doctorId: data.doctorId,
+    });
+    if (!val.valid) {
+      return { success: false, error: val.errors.join(' ') };
+    }
+
     const newId = `rx-${prescriptions.length + 1}`;
     const prescriptionNumber = `RX-2026-${String(prescriptions.length + 85).padStart(4, '0')}`;
     const newRx: Prescription = {
@@ -1111,10 +1177,206 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       id: newId,
       prescriptionNumber,
       date: new Date().toISOString().split('T')[0],
-      status: 'pending',
+      status: 'active',
     };
+
     setPrescriptions((prev) => [newRx, ...prev]);
-    return newRx;
+
+    // Log to security audit ledger
+    addAuditLogEntry({
+      action: 'prescription_issued',
+      targetRole: 'patient',
+      targetUserId: data.patientId,
+      targetStaffName: data.patientName,
+      description: `e-Prescription #${prescriptionNumber} issued by Dr. ${data.doctorName} for ${data.patientName}. Diagnosis: ${data.diagnosis}.`,
+      authorizedBy: actor.name,
+    });
+
+    if (data.allergyOverrides && data.allergyOverrides.length > 0) {
+      data.allergyOverrides.forEach((override) => {
+        addAuditLogEntry({
+          action: 'allergy_override',
+          targetRole: 'patient',
+          targetUserId: data.patientId,
+          targetStaffName: data.patientName,
+          description: `Allergy warning overridden for ${override.allergen} when prescribing ${override.medicine}. Reason: ${override.reason}`,
+          authorizedBy: actor.name,
+        });
+      });
+    }
+
+    return { success: true, prescription: newRx };
+  };
+
+  const cancelPrescription = async (
+    prescriptionId: string,
+    reason: string,
+    actingUser?: User | null
+  ): Promise<{ success: boolean; error?: string }> => {
+    const actor = actingUser || authUser;
+    if (!actor) {
+      return { success: false, error: 'Authentication required.' };
+    }
+
+    const cleanReason = reason.trim();
+    if (!cleanReason) {
+      return { success: false, error: 'A cancellation reason is required.' };
+    }
+
+    const targetRx = prescriptions.find((rx) => rx.id === prescriptionId);
+    if (!targetRx) {
+      return { success: false, error: 'Prescription not found.' };
+    }
+
+    if (targetRx.status === 'cancelled') {
+      return { success: false, error: 'Prescription is already cancelled.' };
+    }
+
+    if (!canCancelPrescription(actor, targetRx, modules)) {
+      return {
+        success: false,
+        error: 'Only the original issuing doctor or an administrator can cancel a prescription.',
+      };
+    }
+
+    const nowIso = new Date().toISOString();
+    const updatedRx: Prescription = {
+      ...targetRx,
+      status: 'cancelled',
+      cancelledBy: {
+        id: actor.id,
+        name: actor.name,
+        role: actor.role,
+      },
+      cancelledAt: nowIso,
+      cancelReason: cleanReason,
+    };
+
+    setPrescriptions((prev) =>
+      prev.map((r) => (r.id === prescriptionId ? updatedRx : r))
+    );
+
+    addAuditLogEntry({
+      action: 'prescription_cancelled',
+      targetRole: 'patient',
+      targetUserId: targetRx.patientId,
+      targetStaffName: targetRx.patientName,
+      description: `Prescription #${targetRx.prescriptionNumber} cancelled by ${actor.name}. Reason: ${cleanReason}`,
+      authorizedBy: actor.name,
+    });
+
+    return { success: true };
+  };
+
+  const addMedicine = async (
+    medicineData: Omit<Medicine, 'id'>,
+    actingUser?: User | null
+  ): Promise<{ success: boolean; medicine?: Medicine; error?: string }> => {
+    const actor = actingUser || authUser;
+    if (!isAdmin(actor, modules) && !hasCapability(actor, 'administrativeAccess', modules)) {
+      return { success: false, error: 'Administrative access required to manage formulary.' };
+    }
+
+    const cleanName = medicineData.genericName.trim();
+    if (!cleanName) {
+      return { success: false, error: 'Generic name is required.' };
+    }
+
+    const nameExists = medicines.some(
+      (m) => m.genericName.toLowerCase() === cleanName.toLowerCase()
+    );
+    if (nameExists) {
+      return { success: false, error: `A medicine named "${cleanName}" already exists in the formulary.` };
+    }
+
+    const newMed: Medicine = {
+      ...medicineData,
+      id: `med-${Date.now()}`,
+      genericName: cleanName,
+    };
+
+    setMedicines((prev) => [newMed, ...prev]);
+
+    addAuditLogEntry({
+      action: 'formulary_medicine_created',
+      targetRole: 'admin',
+      description: `Formulary medicine added: ${cleanName} (${medicineData.drugClass}, ${medicineData.form}).`,
+      authorizedBy: actor?.name,
+    });
+
+    return { success: true, medicine: newMed };
+  };
+
+  const updateMedicine = async (
+    id: string,
+    updates: Partial<Medicine>,
+    actingUser?: User | null
+  ): Promise<{ success: boolean; medicine?: Medicine; error?: string }> => {
+    const actor = actingUser || authUser;
+    if (!isAdmin(actor, modules) && !hasCapability(actor, 'administrativeAccess', modules)) {
+      return { success: false, error: 'Administrative access required to manage formulary.' };
+    }
+
+    const target = medicines.find((m) => m.id === id);
+    if (!target) {
+      return { success: false, error: 'Medicine not found.' };
+    }
+
+    if (updates.genericName) {
+      const cleanName = updates.genericName.trim();
+      const duplicate = medicines.some(
+        (m) => m.id !== id && m.genericName.toLowerCase() === cleanName.toLowerCase()
+      );
+      if (duplicate) {
+        return { success: false, error: `A medicine named "${cleanName}" already exists in the formulary.` };
+      }
+    }
+
+    const updatedMed: Medicine = {
+      ...target,
+      ...updates,
+      genericName: updates.genericName ? updates.genericName.trim() : target.genericName,
+    };
+
+    setMedicines((prev) => prev.map((m) => (m.id === id ? updatedMed : m)));
+
+    addAuditLogEntry({
+      action: 'formulary_medicine_updated',
+      targetRole: 'admin',
+      description: `Formulary medicine updated: ${updatedMed.genericName}.`,
+      authorizedBy: actor?.name,
+    });
+
+    return { success: true, medicine: updatedMed };
+  };
+
+  const toggleMedicineStatus = async (
+    id: string,
+    actingUser?: User | null
+  ): Promise<{ success: boolean; active?: boolean; error?: string }> => {
+    const actor = actingUser || authUser;
+    if (!isAdmin(actor, modules) && !hasCapability(actor, 'administrativeAccess', modules)) {
+      return { success: false, error: 'Administrative access required to manage formulary.' };
+    }
+
+    const target = medicines.find((m) => m.id === id);
+    if (!target) {
+      return { success: false, error: 'Medicine not found.' };
+    }
+
+    const nextActive = !target.active;
+    const updatedMed = { ...target, active: nextActive };
+
+    setMedicines((prev) => prev.map((m) => (m.id === id ? updatedMed : m)));
+
+    addAuditLogEntry({
+      action: 'formulary_medicine_status_changed',
+      targetRole: 'admin',
+      description: `Formulary medicine ${target.genericName} marked ${nextActive ? 'Active' : 'Inactive'}.`,
+      authorizedBy: actor?.name,
+    });
+
+    return { success: true, active: nextActive };
   };
 
   const dispensePrescriptionItem = (
@@ -1608,8 +1870,13 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateAppointmentNotes,
         recordVitals,
         saveVitals,
+        medicines,
         createPrescription,
+        cancelPrescription,
         dispensePrescriptionItem,
+        addMedicine,
+        updateMedicine,
+        toggleMedicineStatus,
         createLabTest,
         updateLabTestStatus,
         createInvoice,

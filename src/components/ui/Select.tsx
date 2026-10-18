@@ -4,6 +4,7 @@ import { ChevronDown, Check, X } from 'lucide-react';
 export interface SelectOption {
   value: string;
   label: string;
+  sublabel?: string;
 }
 
 export interface SelectProps {
@@ -95,6 +96,7 @@ export const Select: React.FC<SelectProps> = ({
         if (!opt.value && opt.label.toLowerCase().includes('select ')) return false;
         return (
           opt.label.toLowerCase().includes(q) ||
+          (opt.sublabel && opt.sublabel.toLowerCase().includes(q)) ||
           String(opt.value).toLowerCase().includes(q)
         );
       })
@@ -361,7 +363,14 @@ export const Select: React.FC<SelectProps> = ({
                       : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span className="truncate">{opt.label}</span>
+                  <div className="flex items-center gap-2 truncate min-w-0">
+                    <span className="truncate">{opt.label}</span>
+                    {opt.sublabel && (
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-normal shrink-0">
+                        {opt.sublabel}
+                      </span>
+                    )}
+                  </div>
                   {isSelected && <Check className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 ml-2" />}
                 </button>
               );

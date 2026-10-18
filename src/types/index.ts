@@ -153,31 +153,7 @@ export interface VitalSigns {
   bmi: number;
 }
 
-export interface PrescriptionItem {
-  id: string;
-  medicineName: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  instructions: string;
-  dispensed: boolean;
-}
-
-export interface Prescription {
-  id: string;
-  prescriptionNumber: string;
-  patientId: string;
-  patientName: string;
-  doctorId: string;
-  doctorName: string;
-  appointmentId?: string;
-  date: string;
-  diagnosis: string;
-  items: PrescriptionItem[];
-  status: 'pending' | 'partially_dispensed' | 'dispensed';
-  dispensedBy?: string;
-  dispensedAt?: string;
-}
+export * from './prescribing';
 
 export type LabTestStatus =
   | 'ordered'
