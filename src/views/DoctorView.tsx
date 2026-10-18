@@ -533,11 +533,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   }, [patientAllergies, prescriptionItems, medicines]);
 
   const currentDuplicates = useMemo(() => {
-    const patientExistingPrescriptions = prescriptions.filter(
-      (r) => r.patientId === prescPatientId && r.status !== 'cancelled'
-    );
-    return checkDuplicates(prescriptionItems, patientExistingPrescriptions, medicines, new Date());
-  }, [prescriptionItems, prescriptions, prescPatientId, medicines]);
+    return checkDuplicates(prescriptionItems, medicines);
+  }, [prescriptionItems, medicines]);
 
   const lastPrescriptionForPatient = useMemo(() => {
     if (!prescPatientId) return null;

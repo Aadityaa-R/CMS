@@ -419,6 +419,71 @@ Every feature and line of code in this project strictly adheres to the governing
   - `allergy_override`: Logs Rx number, patient ID, doctor ID, allergen, medication, and clinical rationale.
   - `formulary_medicine_created`, `formulary_medicine_updated`, `formulary_medicine_status_changed`: Logs administrator ID and formulary modifications.
 
+### 2.19 Dashboard Architecture, Access-Gated Widgets, and Daily Summary (Milestone M9)
+- **Access-First Governance & Role Decoupling**:
+  - Dashboard widgets, figures, charts, and quick actions are gated strictly by capabilities/accesses, never by job title or role strings.
+  - Each widget declares its required accesses (any one match is sufficient for display). A user sees every widget they qualify for based on their effective module memberships.
+  - When an account gains cross-functional capabilities (e.g. a doctor assigned Front Desk check-in or a receptionist granted Administrative access), the dashboard automatically reflects the newly unlocked widgets and actions without any title changes.
+  - Patients possess their own simplified dashboard displaying next appointment, balance due, active prescriptions, and visits this year, with zero charts or administrative clutter.
+- **Pure Metric Figure Definitions**:
+  - All "today" and "now" calculations receive an explicit `now` parameter and never read from system clocks internally.
+  - `New Patients`: Count of patients registered within the active date range (`p.registeredDate` within range).
+  - `Visits`: Count of completed clinical appointments within the range (`status === 'completed'` and `dateTime` within range).
+  - `Appointments`: Count of appointments dated in the range, strictly excluding cancelled appointments.
+  - `Missed Appointments`: Count of past appointments within the range that were never checked in (`dateTime < now` and status was never checked in or completed, or marked `no_show`).
+  - `Billed`: Sum of invoice total amounts issued in the range, strictly excluding void invoices (`issuedAt` within range, minor unit integer math).
+  - `Collected`: Payments received in the range minus reversals received in the range (`receivedAt` within range).
+  - `Outstanding now`: Total balance due across all non-void invoices clinic-wide as of today, independent of the selected range filter (labeled "Outstanding now").
+  - `Staff present`: Real-time count of staff currently present, derived from the attendance engine (`staffPresentToday`).
+- **Widget Registry Architecture (`src/lib/dashboardWidgets.ts`, `src/lib/dashboardMetrics.ts`)**:
+  - `dashboardWidgets.ts`: Definitive registry containing widget identifiers, titles, required capability accesses, and selector bindings.
+  - Clinic Summary Card:
+    - `administrativeAccess`: Clinic-wide visibility across New Patients, Visits, Appointments, Missed Appointments, Billed, Collected, Outstanding now, and Staff present.
+    - `consultationWorkstation`: Scoped exclusively to the doctor's assigned patients for New Patients, Visits, Appointments, Missed Appointments, and Staff present. Financial metrics are strictly blocked.
+    - Front Desk accesses (`patientRegistration`, `patientCheckIn`): Scoped to appointment activity (Appointments, Missed, Waiting, Checked In Today).
+  - Financial Metrics & Fees and Payments Chart:
+    - Gated to `paymentRecording` or `administrativeAccess`. Doctors without billing access never see billing figures or charts.
+  - Patients and Visits Chart:
+    - Gated to `administrativeAccess` (clinic-wide data) or `consultationWorkstation` (physician's own patient data).
+  - Today's Appointments List:
+    - Visible to `consultationWorkstation` (doctor's own patients), `patientCheckIn` or `patientRegistration` (all scheduled patients, clinical fields excluded), or `administrativeAccess` (all patients).
+  - Needs Attention List:
+    - Rows are dynamically rendered only when the user holds the access required to act on them:
+      - Pending Clearances (`administrativeAccess`)
+      - Leave Requests (`administrativeAccess` or `attendanceManagement`)
+      - Account Link Requests (`patientRegistration` or `patientCheckIn`)
+      - Needs Rescheduling (`patientRegistration` or `patientCheckIn`)
+      - Unpaid Invoices over 30 days (`paymentRecording` or `administrativeAccess`)
+    - Displays Item, Count, and "Review" navigation link. Rows with a count of 0 are omitted; if all counts are 0, displays plain text "Nothing needs attention."
+  - Staff Presence:
+    - Gated to `attendanceManagement` or `administrativeAccess`. Displays plain-text summary counts ("X in, Y out, Z on leave, W not in yet") and a table of staff who are late or not in yet (Name, Shift start, Status).
+  - My Attendance:
+    - Visible to every staff account. Displays today's Clock In / Clock Out action control, shift status, and cumulative hours worked today.
+  - Front Desk Today:
+    - Gated to `patientCheckIn` or `patientRegistration`. Displays Waiting, In Consultation, Booked Today, Checked In Today, and "Outstanding now" (only if the user also holds `paymentRecording`).
+  - Omitted Widget Report:
+    - The "Follow-ups Due" widget is omitted from the registry because neither appointments nor completed visits contain a structured target follow-up date data source in the clinical domain model.
+- **Quick Action Button Governance**:
+  - Action buttons derive purely from capabilities:
+    - "Register Patient" and "Walk-in Check-In": Gated to `patientRegistration` or `patientCheckIn`.
+    - "Consultation Desk": Gated to `consultationWorkstation`.
+    - "Add Staff": Gated to `administrativeAccess`.
+    - "Clock In": Gated to staff accounts.
+  - Physicians and administrators without front desk capabilities never see patient intake action buttons.
+- **Overview Layout (`DashboardView.tsx`)**:
+  - Two persistent physician-style tabs with static underline: "Overview" and "Daily Summary". The "Daily Summary" tab is conditionally rendered only to accounts qualifying for at least one of its sub-sections.
+  - Overview displays greeting, date range Select (Today, Last 7 days, This month default, Last 30 days), single outlined summary card (4 columns on desktop, 2 on tablet/mobile), static SVG charts, and 10-per-page paginated tables.
+  - Empty periods display plain text "No data for this period." inside widgets, avoiding blank cards.
+- **Daily Summary Tab (`DashboardView.tsx`)**:
+  - Features custom DatePicker (default today, future dates disabled), outline "Print" button with dedicated print stylesheet scoped to clinic name, date, and summary data, and outline "Export CSV" button generating `daily-summary-YYYY-MM-DD.csv`.
+  - Sections rendered according to access permissions:
+    - Patients: Registrations, check-ins, completed visits, cancellations, no-shows, and online bookings for the chosen date (`administrativeAccess` or any patient access).
+    - By Doctor: Table of Doctor, Booked, Checked In, Completed, Prescriptions issued (`administrativeAccess`; individual doctors see only their own row).
+    - By Receptionist: Table of Receptionist, Registrations, Check-ins, Bookings made, Payments recorded (`administrativeAccess`, or `patientCheckIn` for own row only).
+    - Collections: Totals per payment method (Cash, Card, UPI, Portal), reversals, net total, and daily billed (`paymentRecording` or `administrativeAccess`). Front desk staff see only their own collections ("My collections") and a plain-text line "Cash to hand over: <amount>".
+    - Attendance: Present, Late, On leave, Absent counts, names of late/absent staff, and total hours worked (`attendanceManagement` or `administrativeAccess`; individual staff see only their own line).
+    - Displays plain text "No activity on this date." on days with zero activity across all accessible sections.
+
 ---
 
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
@@ -427,6 +492,9 @@ The table below outlines the evolution of the codebase from initial repository s
 
 | Commit Hash | Commit Message / Feature Description | User Intent & Key Actions |
 | :--- | :--- | :--- |
+| `3da707c` | `feat(dashboard): implement capability-gated widgets, daily summary, and CSV export (M9)` | User requested: "TASK: M9, Dashboard update and daily summary. Prerequisites: M1 to M8 merged. Branch: m9-dashboard...". Decoupled dashboard widgets, figures, charts, and quick actions from role strings to capability accesses. Created widget registry in src/lib/dashboardWidgets.ts and pure metrics engine in src/lib/dashboardMetrics.ts with explicit now parameters. Rebuilt DashboardView with Overview and Daily Summary tabs, single outlined summary card with 4-col/2-col grid, static non-animated SVG charts, and 10-per-page paginated tables. Built Daily Summary tab with custom DatePicker, print stylesheet scoped to summary, and daily-summary-YYYY-MM-DD.csv export. Enhanced Patient Portal with summary figures (Visits this year, Active Prescriptions). Omitted Follow-ups Due widget due to absence of clinical target follow-up date data source. Automated unit test suite with 76 tests (scripts/test-dashboard-metrics.ts). 0 TypeScript compiler errors, 0 lint warnings, 0 emojis. |
+| `aad92a9` | `feat(prescribing): implement medicine formulary, allergy checks, and e-prescriptions (M8)` | User requested: "TASK: M8, Prescribing: medicine dropdowns, allergy checks and formulary. Prerequisites: M1 to M7 merged. Branch: m8-prescribing...". Implemented medicine formulary seed and repository with 42 common medicines, structured prescription items with calculateQuantity, formatRegimen, and legacy migration. Added allergy conflict detection requiring override reasons and duplicate drug class checks. Gated prescribing to doctors with consultationWorkstation and emrRecordsAccess. 0 TypeScript compiler errors, 0 lint warnings, 0 emojis. |
+| `ca820ff` | `feat(patient-portal): implement outpatient portal, pure scheduling engine, and in-app notifications (M7)` | User requested: "TASK: M7, Patient portal and online booking. Prerequisites: M1 to M6 merged. Branch: m7-patient-portal...". Implemented pure scheduling engine (src/lib/scheduling.ts) with pure now parameter, unified constants (SLOT_MINUTES 20, BOOKING_LEAD_MINUTES 120, BOOKING_WINDOW_DAYS 30, CANCEL_CUTOFF_MINUTES 120, MAX_ACTIVE_BOOKINGS 2). Integrated into Reception and Patient Portal. Redesigned phone-first Patient Portal with 5 underline tabs. Built in-app notification center behind bell icon. 0 TypeScript compiler errors, 0 lint warnings, 0 emojis. |
 | `dd472e4` | `feat(billing): implement billing workstation, payments engine, receipts, and minor unit calculations (M6)` | User requested: "TASK: M6, Billing and payments. Prerequisites: M1 to M5 merged. Branch: m6-billing...". Implemented minor-unit billing engine (src/lib/billing.ts) with pure functions. Built BillingView with Invoices and Payments tabs, collections summary, and 10-per-page Pagination. Automated invoice creation on visit conclusion using doctor's consultation fee. Receptionist outstanding balance alert on check-in. Simulated patient portal payment flow producing official printable receipts. Complete test suite in scripts/test-billing.ts (10 test groups; 100% passing). 0 TS errors, 0 lint warnings, 0 emojis. |
 | `e0e3624` | `feat(persistence): implement sign-up, browser storage repository, and data persistence (M5)` | User requested: "TASK: M5, Sign-up and data persistence (browser storage, demo build)...". Implemented complete asynchronous Repository layer (BrowserRepository with versioned keys, debounced writes, and quota error handling; MemoryRepository for tests/in-memory mode). Added schema versioning (SCHEMA_VERSION = 1), empty-state seeding, and corrupted storage recovery fallback. Built cryptographic authentication service in src/lib/auth.ts using Web Crypto PBKDF2-SHA256 with 16-byte random salts, 100,000 iterations, 10-character password policy, 5-attempt lockout for 5 minutes, and session lifecycle tracking (8h standard, 7d remember, 30m inactivity auto-logout). Created patient self-registration with duplicate detection creating account link claim requests held in pending state, and receptionist workstation Account Link Requests table on Intake Registry tab with Approve/Reject actions and Security Ledger logging. Added staff sign-up (Doctor or Receptionist; Admin prohibited) creating pending applications in pendingApprovals for administrator review and default module assignment. Controlled login demo directory and autofill helpers via VITE_DEMO_MODE environment variable. Built Administrative Data Management tab in AccessControlView gated by administrativeAccess featuring storage telemetry, mode switching ('Save in browser' vs 'Do not save'), structured JSON backup export (cms-backup-YYYY-MM-DD.json), import with RESTORE confirmation and undo snapshot, and demo reset with RESET confirmation. Full automated test suite in scripts/test-storage.ts (51 tests; all 6 test suites passing 100% with 228 total tests). 0 TypeScript errors, 0 lint warnings, 0 emojis across codebase and logs. Responsive verification screenshots captured at 1920x1080 and 360x800 in docs/responsive-check/. |
 | `8da8904` | `feat(reception): implement reception workstation and patient intake flows (M4)` | User requested: "TASK: M4, Reception workstation. Prerequisites: M1 to M3 merged...". Built reception workstation with 4 tabs (Waiting Lounge, Appointments, Patient Directory, Intake Registry). Enforced demographics-only intake and scoping (zero clinical fields, allergies, conditions, vitals, or blood group at reception). Implemented three arrival flows: Flow A (new walk-in with demographics registration, available doctor assignment, and immediate check-in), Flow B (registered walk-in locked to assigned physician with doctor availability validation and admin reassignment notice), and Flow C (booked appointment check-in with doctor availability verification). Implemented daily unique token numbering resetting to 1 each day. Added intake metadata tracking (source: walk_in, reception, web; checkedInAt, checkedInBy, registeredAt, registeredBy). Wired permission guards via hasCapability across registerPatient, checkInAppointment, checkInWalkIn, and bookAppointment. Shared Table with stackBelow="lg" and 10-per-page Pagination across all workstation views. Comprehensive automated test suite in scripts/test-reception.ts with 45 unit tests. 0 TypeScript errors, 0 lint warnings, 0 emojis; 12 responsive verification screenshots captured at 1920x1080, 768x1024, and 360x800. |

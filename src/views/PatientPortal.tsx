@@ -439,6 +439,18 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     return scopedInvoices.reduce((acc, inv) => acc + balanceDue(inv, billingPayments), 0);
   }, [scopedInvoices, billingPayments]);
 
+  const currentYear = new Date().getFullYear();
+  const visitsThisYear = useMemo(() => {
+    return scopedAppointments.filter((a) => {
+      const yr = new Date(a.dateTime).getFullYear();
+      return yr === currentYear && a.status === 'completed';
+    }).length;
+  }, [scopedAppointments, currentYear]);
+
+  const activePrescriptionsCount = useMemo(() => {
+    return scopedPrescriptions.filter((p) => p.status !== 'cancelled' && p.status !== 'dispensed').length;
+  }, [scopedPrescriptions]);
+
   const [payTargetInvoice, setPayTargetInvoice] = useState<BillingInvoice | null>(null);
   const [payMethod, setPayMethod] = useState<'card' | 'upi'>('card');
   const [payCardRef, setPayCardRef] = useState('');
@@ -708,6 +720,46 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       {/* TAB 1: APPOINTMENTS */}
       {activeTab === 'appointments' && (
         <div className="space-y-6">
+          {/* Patient Summary Card: Plain figures, standard font, zero charts */}
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="flex flex-col">
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  {upcomingAppointments.length > 0
+                    ? `${upcomingAppointments[0].dateTime.slice(0, 10)} ${upcomingAppointments[0].dateTime.slice(11, 16)}`
+                    : 'None scheduled'}
+                </span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                  Next Appointment
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  {formatCurrency(totalBalanceDue)}
+                </span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                  Balance Due
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  {activePrescriptionsCount}
+                </span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                  Active Prescriptions
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  {visitsThisYear}
+                </span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                  Visits this year
+                </span>
+              </div>
+            </div>
+          </Card>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <span className="text-xs text-slate-500 dark:text-slate-400">
