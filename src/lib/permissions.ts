@@ -11,6 +11,12 @@ import {
 } from '@/types';
 import { INITIAL_MODULES, INITIAL_STAFF_ACCESS } from '@/data/mockData';
 import { isValidAccessId } from '@/data/accessCatalog';
+import {
+  resolveStaffId,
+  CANONICAL_STAFF_IDS,
+  isSameStaff,
+  resolveDoctorId,
+} from '@/lib/staffIds';
 
 export type { StandardCapability };
 
@@ -57,6 +63,7 @@ export function isDoctorStaff(
     | undefined
 ): boolean {
   if (!user) return false;
+  if (resolveDoctorId(user)) return true;
   if ('specialization' in user && Boolean(user.specialization)) return true;
   const role = 'role' in user ? user.role : undefined;
   if (role === 'doctor' || role === 'md') return true;
@@ -90,43 +97,34 @@ export function resolveStaffIds(
   if (user.id) ids.add(user.id);
   if ('badgeNumber' in user && user.badgeNumber) ids.add(user.badgeNumber);
 
-  // Link known demo ID cross-references
-  if (
-    user.id === 'usr-doc-1' ||
-    user.id === 'doc-1' ||
-    user.id === 'usr-1' ||
-    ('badgeNumber' in user && user.badgeNumber === 'MD-001')
-  ) {
-    ids.add('acc-doc-1');
-    ids.add('usr-doc-1');
-    ids.add('doc-1');
-    ids.add('usr-1');
-  }
-  if (
-    user.id === 'usr-doc-2' ||
-    user.id === 'doc-2' ||
-    ('badgeNumber' in user && user.badgeNumber === 'DOC-102')
-  ) {
-    ids.add('acc-doc-2');
-    ids.add('usr-doc-2');
-    ids.add('doc-2');
-  }
-  if (
-    user.id === 'usr-doc-3' ||
-    user.id === 'doc-3' ||
-    ('badgeNumber' in user && user.badgeNumber === 'DOC-103')
-  ) {
-    ids.add('acc-doc-3');
-    ids.add('usr-doc-3');
-    ids.add('doc-3');
-  }
-  if (user.id === 'usr-rec-1' || ('badgeNumber' in user && user.badgeNumber === 'REC-301')) {
-    ids.add('acc-rec-1');
-    ids.add('usr-rec-1');
-  }
-  if (user.id === 'usr-rec-2' || ('badgeNumber' in user && user.badgeNumber === 'REC-302')) {
-    ids.add('acc-rec-2');
-    ids.add('usr-rec-2');
+  const canonical = resolveStaffId(user);
+  if (canonical) {
+    ids.add(canonical);
+    if (canonical === CANONICAL_STAFF_IDS.VANCE) {
+      ids.add('acc-doc-1');
+      ids.add('usr-doc-1');
+      ids.add('doc-1');
+      ids.add('usr-1');
+      ids.add('MD-001');
+    } else if (canonical === CANONICAL_STAFF_IDS.HAYES) {
+      ids.add('acc-doc-2');
+      ids.add('usr-doc-2');
+      ids.add('doc-2');
+      ids.add('DOC-102');
+    } else if (canonical === CANONICAL_STAFF_IDS.REED) {
+      ids.add('acc-doc-3');
+      ids.add('usr-doc-3');
+      ids.add('doc-3');
+      ids.add('DOC-103');
+    } else if (canonical === CANONICAL_STAFF_IDS.SHARMA) {
+      ids.add('acc-rec-1');
+      ids.add('usr-rec-1');
+      ids.add('REC-301');
+    } else if (canonical === CANONICAL_STAFF_IDS.KIM) {
+      ids.add('acc-rec-2');
+      ids.add('usr-rec-2');
+      ids.add('REC-302');
+    }
   }
 
   return Array.from(ids);
@@ -136,6 +134,12 @@ export function resolveStaffIds(
  * Returns the effective accesses of a person computed as the union across all modules
  * they belong to. Suspended or revoked accounts return an empty array (no access).
  * Prescription Authoring is omitted for non-doctor staff types.
+ *
+ * Rules (Milestone M9.5):
+ * - One source of truth: active status and live module memberships.
+ * - Leftover capabilities field grants nothing.
+ * - Role name alone grants nothing.
+ * - The original MD stays admin.
  */
 export function getEffectiveAccesses(
   user:
@@ -149,6 +153,7 @@ export function getEffectiveAccesses(
         status?: string;
         badgeNumber?: string;
         id?: string;
+        isOriginalAdmin?: boolean;
       }
     | null
     | undefined,
@@ -156,7 +161,7 @@ export function getEffectiveAccesses(
 ): StandardCapability[] {
   if (!user) return [];
 
-  // Suspended or revoked accounts have zero effective access
+  // Suspended, revoked, or inactive accounts have zero effective access
   if (
     'status' in user &&
     (user.status === 'revoked' || user.status === 'suspended' || user.status === 'inactive')
@@ -181,14 +186,12 @@ export function getEffectiveAccesses(
     }
   }
 
-  // Also include direct capabilities if explicitly provided (e.g., test mocks)
-  if ('capabilities' in user && Array.isArray(user.capabilities)) {
-    for (const cap of user.capabilities) {
-      const canonical = CAPABILITY_ALIAS_MAP[cap] || (cap as StandardCapability);
-      if (isValidAccessId(canonical)) {
-        accessSet.add(canonical);
-      }
-    }
+  // The original MD always retains administrativeAccess while account is active
+  const isOriginalMD =
+    ('isOriginalAdmin' in user && Boolean(user.isOriginalAdmin)) ||
+    resolveStaffId(user) === CANONICAL_STAFF_IDS.VANCE;
+  if (isOriginalMD) {
+    accessSet.add('administrativeAccess');
   }
 
   // Prescription Authoring takes effect strictly for staff whose staff type is Doctor
@@ -445,7 +448,8 @@ export function canViewPatient(
     return (
       user.patientId === patientId ||
       user.badgeNumber === patientId ||
-      user.id === `usr-${patientId}`
+      user.id === `usr-${patientId}` ||
+      user.id === patientId
     );
   }
 
@@ -463,14 +467,7 @@ export function canViewPatient(
   const assignedDocId = getAssignedDoctorId(patientId, assignments);
   if (!assignedDocId) return false;
 
-  return (
-    assignedDocId === user.id ||
-    user.id === `usr-${assignedDocId}` ||
-    (assignedDocId === 'doc-2' &&
-      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
-    (assignedDocId === 'doc-3' &&
-      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103'))
-  );
+  return isSameStaff(assignedDocId, user);
 }
 
 /**
@@ -488,7 +485,8 @@ export function canViewVisit(
     return (
       visit.patientId === user.patientId ||
       visit.patientId === user.badgeNumber ||
-      user.id === `usr-${visit.patientId}`
+      user.id === `usr-${visit.patientId}` ||
+      user.id === visit.patientId
     );
   }
 
@@ -501,26 +499,12 @@ export function canViewVisit(
 
   // Doctor with EMR Records Access: current doctor or author of the visit
   const assignedDocId = getAssignedDoctorId(visit.patientId, assignments);
-  const isCurrentDoctor =
-    assignedDocId === user.id ||
-    user.id === `usr-${assignedDocId}` ||
-    (assignedDocId === 'doc-2' &&
-      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
-    (assignedDocId === 'doc-3' &&
-      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103'));
+  if (assignedDocId && isSameStaff(assignedDocId, user)) return true;
 
-  if (isCurrentDoctor) return true;
-
-  const isAuthor =
-    visit.doctorId === user.id ||
-    user.id === `usr-${visit.doctorId}` ||
-    (visit.doctorId === 'doc-2' &&
-      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
-    (visit.doctorId === 'doc-3' &&
-      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103')) ||
-    visit.doctorName === user.name;
-
-  return isAuthor;
+  return (
+    isSameStaff(visit.doctorId, user) ||
+    Boolean(visit.doctorName && user.name && visit.doctorName === user.name)
+  );
 }
 
 /**
@@ -542,7 +526,8 @@ export function canViewPrescription(
     return (
       rx.patientId === user.patientId ||
       rx.patientId === user.badgeNumber ||
-      user.id === `usr-${rx.patientId}`
+      user.id === `usr-${rx.patientId}` ||
+      user.id === rx.patientId
     );
   }
 
@@ -555,26 +540,12 @@ export function canViewPrescription(
 
   // Non-admin with EMR: current doctor or author
   const assignedDocId = getAssignedDoctorId(rx.patientId, assignments);
-  const isCurrentDoctor =
-    assignedDocId === user.id ||
-    user.id === `usr-${assignedDocId}` ||
-    (assignedDocId === 'doc-2' &&
-      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
-    (assignedDocId === 'doc-3' &&
-      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103'));
+  if (assignedDocId && isSameStaff(assignedDocId, user)) return true;
 
-  if (isCurrentDoctor) return true;
-
-  const isAuthor =
-    rx.doctorId === user.id ||
-    user.id === `usr-${rx.doctorId}` ||
-    (rx.doctorId === 'doc-2' &&
-      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
-    (rx.doctorId === 'doc-3' &&
-      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103')) ||
-    rx.doctorName === user.name;
-
-  return isAuthor;
+  return (
+    isSameStaff(rx.doctorId, user) ||
+    Boolean(rx.doctorName && user.name && rx.doctorName === user.name)
+  );
 }
 
 /**
@@ -600,20 +571,7 @@ export function canPrescribe(
   const assignedDocId = getAssignedDoctorId(patientId, assignments);
   if (!assignedDocId) return false;
 
-  const isAssignedDoctor =
-    assignedDocId === user.id ||
-    user.id === `usr-${assignedDocId}` ||
-    (assignedDocId === 'doc-1' &&
-      (user.email === 'm.vance@beaconclinic.com' ||
-        user.badgeNumber === 'DOC-101' ||
-        user.badgeNumber === 'MD-001' ||
-        user.id === 'usr-1')) ||
-    (assignedDocId === 'doc-2' &&
-      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
-    (assignedDocId === 'doc-3' &&
-      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103'));
-
-  return isAssignedDoctor;
+  return isSameStaff(assignedDocId, user);
 }
 
 /**
@@ -634,21 +592,10 @@ export function canCancelPrescription(
     return true;
   }
 
-  const isAuthor =
-    rx.doctorId === user.id ||
-    user.id === `usr-${rx.doctorId}` ||
-    (rx.doctorId === 'doc-1' &&
-      (user.email === 'm.vance@beaconclinic.com' ||
-        user.badgeNumber === 'DOC-101' ||
-        user.badgeNumber === 'MD-001' ||
-        user.id === 'usr-1')) ||
-    (rx.doctorId === 'doc-2' &&
-      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
-    (rx.doctorId === 'doc-3' &&
-      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103')) ||
-    rx.doctorName === user.name;
-
-  return isAuthor;
+  return (
+    isSameStaff(rx.doctorId, user) ||
+    Boolean(rx.doctorName && user.name && rx.doctorName === user.name)
+  );
 }
 
 /**
@@ -668,15 +615,7 @@ export function canTransferPatient(
   const assignedDocId = getAssignedDoctorId(patientId, assignments);
   if (!assignedDocId) return false;
 
-  const isAssigned =
-    assignedDocId === user.id ||
-    user.id === `usr-${assignedDocId}` ||
-    (assignedDocId === 'doc-2' &&
-      (user.email === 'n.hayes@beaconclinic.com' || user.badgeNumber === 'DOC-102')) ||
-    (assignedDocId === 'doc-3' &&
-      (user.email === 's.reed@beaconclinic.com' || user.badgeNumber === 'DOC-103'));
-
-  return isAssigned && hasCapability(user, 'consultationWorkstation', modules);
+  return isSameStaff(assignedDocId, user) && hasCapability(user, 'consultationWorkstation', modules);
 }
 
 /**
@@ -856,11 +795,10 @@ export function canRemoveMember(
 
   const isMember =
     module.memberIds.some((mid) => staffIds.includes(mid)) ||
-    (isAdministration && (
-      ('moduleIds' in staffMember && (staffMember as any).moduleIds?.includes(module.id)) ||
-      ('capabilities' in staffMember && (staffMember as any).capabilities?.includes('administrativeAccess')) ||
-      ('permissions' in staffMember && (staffMember as any).permissions?.some((p: any) => p.id === 'perm-admin' && p.enabled))
-    ));
+    (isAdministration &&
+      'moduleIds' in staffMember &&
+      Array.isArray((staffMember as any).moduleIds) &&
+      (staffMember as any).moduleIds.includes(module.id));
 
   if (!isMember) {
     return { allowed: false, reason: 'Staff member is not a member of this module.' };
@@ -868,11 +806,8 @@ export function canRemoveMember(
 
   if (isAdministration) {
     const isOriginal =
-      ('isOriginalAdmin' in staffMember && staffMember.isOriginalAdmin) ||
-      ('badgeNumber' in staffMember && staffMember.badgeNumber === 'MD-001') ||
-      staffMember.id === 'acc-doc-1' ||
-      staffMember.id === 'usr-doc-1' ||
-      ('staffName' in staffMember && staffMember.staffName === 'Dr. Marcus Vance');
+      ('isOriginalAdmin' in staffMember && Boolean(staffMember.isOriginalAdmin)) ||
+      resolveStaffId(staffMember) === CANONICAL_STAFF_IDS.VANCE;
 
     if (isOriginal) {
       return {
@@ -890,8 +825,7 @@ export function canRemoveMember(
         s.status !== 'revoked' &&
         ((adminModule && adminModule.memberIds.some((mid) => resolveStaffIds(s).includes(mid))) ||
           s.moduleIds?.includes('mod-admin') ||
-          s.capabilities?.includes('administrativeAccess') ||
-          s.permissions?.some((p) => p.id === 'perm-admin' && p.enabled))
+          resolveStaffId(s) === CANONICAL_STAFF_IDS.VANCE)
     );
 
     const activeAdminMemberCount = Math.max(
@@ -932,9 +866,7 @@ export function canDeleteStaff(
   // Original MD protection
   if (
     target.isOriginalAdmin ||
-    target.id === 'acc-doc-1' ||
-    target.badgeNumber === 'MD-001' ||
-    target.staffName === 'Dr. Marcus Vance'
+    resolveStaffId(target) === CANONICAL_STAFF_IDS.VANCE
   ) {
     return {
       allowed: false,

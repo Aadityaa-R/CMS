@@ -15,9 +15,11 @@ export interface User {
   title?: string;
   badgeNumber?: string;
   isOriginalAdmin?: boolean;
-  capabilities?: string[];
   patientId?: string;
   claimPending?: boolean;
+  status?: string;
+  moduleIds?: string[];
+  capabilities?: string[];
 }
 
 export interface PatientAssignment {
@@ -71,6 +73,7 @@ export interface Patient {
   registeredAt?: string;
   registeredBy?: { id: string; name: string } | null;
   source?: 'walk_in' | 'reception' | 'web' | 'online' | string;
+  createdAt?: string;
 }
 
 export interface Doctor {
@@ -123,6 +126,8 @@ export interface Appointment {
   cancelReason?: string | null;
   rescheduledFrom?: string | null;
   needsReschedule?: boolean;
+  consultationRoom?: string;
+  chiefComplaint?: string;
 }
 
 export interface InAppNotification {
@@ -293,7 +298,6 @@ export interface StaffAccessRecord {
   permissions?: StaffPermission[];
   moduleIds?: string[];
   isOriginalAdmin?: boolean;
-  capabilities?: string[];
 }
 
 export interface AccessAuditLogEntry {

@@ -13,10 +13,12 @@ import {
   TimingOption,
   AllergenRule,
   AllergyCheckResult,
+  AllergyCheckOutput,
   DuplicateWarning,
   DrugClass,
   MedicineForm,
 } from '../types/prescribing';
+import { formatLocalDate } from '@/lib/time';
 
 /**
  * Standard allergen rules mapping common reported allergies to formulary drug classes
@@ -284,108 +286,164 @@ export function validatePrescription(params: {
  * Notice: The allergy check is an aid: it warns and requires a reason to override.
  * It is not a substitute for clinical judgment.
  */
+function normalizeAllergyText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function stripPunctuation(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Check prescribed items against the patient's recorded allergies.
+ *
+ * Rules (Milestone M9.5):
+ * - Returns { matches, unchecked }.
+ * - Only matches require override reason.
+ * - Unchecked appear once as plain text ("No rule for Peanuts: check manually.").
+ * - Matches direct drug names (including case/punctuation variants).
+ * - Matches custom medicines by name.
+ *
+ * Notice: The allergy check is an aid: it warns and requires a reason to override.
+ * It is not a substitute for clinical judgment.
+ */
 export function checkAllergies(
   allergies: string[],
   items: PrescriptionItem[],
   formulary: Medicine[]
-): AllergyCheckResult[] {
-  const results: AllergyCheckResult[] = [];
+): AllergyCheckOutput {
+  const matches: AllergyCheckResult[] = [];
+  const unchecked: string[] = [];
+
   if (!allergies || allergies.length === 0 || !items || items.length === 0) {
-    return results;
+    return { matches, unchecked };
   }
 
   const formularyMap = new Map<string, Medicine>();
   formulary.forEach((m) => formularyMap.set(m.id, m));
 
   for (const rawAllergy of allergies) {
-    const cleanAllergy = rawAllergy.trim().toLowerCase();
+    const trimmedAllergy = rawAllergy.trim();
+    const cleanAllergy = trimmedAllergy.toLowerCase();
     if (!cleanAllergy || cleanAllergy === 'none' || cleanAllergy === 'none recorded') {
       continue;
     }
 
-    // Locate matching rule in ALLERGEN_RULES
+    const normAllergy = normalizeAllergyText(trimmedAllergy);
+    const strippedAllergy = stripPunctuation(trimmedAllergy);
+
+    // 1. Locate matching rule in ALLERGEN_RULES
     const rule = ALLERGEN_RULES.find((r) => {
-      const k = r.allergenKey.toLowerCase();
-      return cleanAllergy.includes(k) || k.includes(cleanAllergy);
+      const normKey = normalizeAllergyText(r.allergenKey);
+      const strippedKey = stripPunctuation(r.allergenKey);
+      return (
+        normAllergy === normKey ||
+        normAllergy.includes(normKey) ||
+        normKey.includes(normAllergy) ||
+        strippedAllergy.includes(strippedKey) ||
+        strippedKey.includes(strippedAllergy)
+      );
     });
 
-    if (!rule) {
-      // Unmapped allergen: explicit clinician manual check notice
-      results.push({
-        allergen: rawAllergy.trim(),
-        medicine: 'All prescribed items',
-        message: `Patient is allergic to ${rawAllergy.trim()}. Check manually.`,
-        isCustomRule: true,
-      });
-      continue;
-    }
+    let foundAnyMatchForThisAllergy = false;
 
-    // Check each prescribed medication against rule
+    // 2. Check each prescribed item against rule and directly by name
     for (const item of items) {
       let isMatch = false;
       let matchedMedicineName = item.medicineName || item.customName || 'Custom medication';
 
-      if (item.medicineId === '__other__') {
-        const customLower = (item.customName || '').toLowerCase();
-        if (rule.targetMedicines?.some((tm) => customLower.includes(tm.toLowerCase()))) {
-          isMatch = true;
-        }
-      } else {
-        let med = formularyMap.get(item.medicineId);
+      const itemNames: string[] = [];
+      if (item.customName) itemNames.push(item.customName);
+      if (item.medicineName) itemNames.push(item.medicineName);
+
+      let med: Medicine | undefined = undefined;
+      if (item.medicineId && item.medicineId !== '__other__') {
+        med = formularyMap.get(item.medicineId);
         if (!med && item.medicineName) {
           med = formulary.find(
             (m) => m.genericName.toLowerCase() === item.medicineName?.toLowerCase()
           );
         }
-        if (med) {
-          matchedMedicineName = med.genericName;
-          const genericLower = med.genericName.toLowerCase();
+      }
 
-          // Check drug class match
-          if (rule.targetClasses && rule.targetClasses.includes(med.drugClass)) {
-            // If rule has specific target medicines, check those; otherwise class match applies
-            if (rule.targetMedicines && rule.targetMedicines.length > 0) {
-              if (rule.targetMedicines.some((tm) => genericLower.includes(tm.toLowerCase()))) {
-                isMatch = true;
-              }
-            } else {
-              isMatch = true;
-            }
-          }
+      if (med) {
+        matchedMedicineName = med.genericName;
+        itemNames.push(med.genericName);
+        if (med.brandNames) {
+          itemNames.push(...med.brandNames);
+        }
+      }
 
-          // Check direct name match
-          if (!isMatch && rule.targetMedicines) {
-            if (rule.targetMedicines.some((tm) => genericLower.includes(tm.toLowerCase()))) {
+      // 2A. Direct match by drug name (case, punctuation variants, substring)
+      for (const name of itemNames) {
+        const normName = normalizeAllergyText(name);
+        const strippedName = stripPunctuation(name);
+        if (
+          normName === normAllergy ||
+          strippedName === strippedAllergy ||
+          (strippedAllergy.length >= 4 && strippedName.includes(strippedAllergy)) ||
+          (strippedName.length >= 4 && strippedAllergy.includes(strippedName))
+        ) {
+          isMatch = true;
+          break;
+        }
+      }
+
+      // 2B. Rule match (drug class or target medicines)
+      if (!isMatch && rule) {
+        if (med && rule.targetClasses && rule.targetClasses.includes(med.drugClass)) {
+          if (rule.targetMedicines && rule.targetMedicines.length > 0) {
+            const genericStripped = stripPunctuation(med.genericName);
+            if (rule.targetMedicines.some((tm) => genericStripped.includes(stripPunctuation(tm)))) {
               isMatch = true;
             }
-            if (
-              !isMatch &&
-              med.brandNames?.some((bn) =>
-                rule.targetMedicines?.some((tm) => bn.toLowerCase().includes(tm.toLowerCase()))
-              )
-            ) {
-              isMatch = true;
-            }
-          }
-        } else if (item.medicineName) {
-          const nameLower = item.medicineName.toLowerCase();
-          if (rule.targetMedicines?.some((tm) => nameLower.includes(tm.toLowerCase()))) {
+          } else {
             isMatch = true;
+          }
+        }
+
+        if (!isMatch && rule.targetMedicines) {
+          for (const tm of rule.targetMedicines) {
+            const strippedTm = stripPunctuation(tm);
+            if (itemNames.some((n) => stripPunctuation(n).includes(strippedTm))) {
+              isMatch = true;
+              break;
+            }
           }
         }
       }
 
       if (isMatch) {
-        results.push({
-          allergen: rawAllergy.trim(),
-          medicine: matchedMedicineName,
-          message: rule.warningMessage || `Allergy match: ${rawAllergy.trim()}`,
-        });
+        foundAnyMatchForThisAllergy = true;
+        const alreadyAdded = matches.some(
+          (m) =>
+            m.allergen.toLowerCase() === trimmedAllergy.toLowerCase() &&
+            m.medicine.toLowerCase() === matchedMedicineName.toLowerCase()
+        );
+        if (!alreadyAdded) {
+          matches.push({
+            allergen: trimmedAllergy,
+            medicine: matchedMedicineName,
+            message:
+              rule?.warningMessage ||
+              `Allergy match: ${trimmedAllergy} with ${matchedMedicineName}.`,
+          });
+        }
+      }
+    }
+
+    // 3. If no rule exists and no direct match occurred with prescribed items, it is unchecked
+    if (!rule && !foundAnyMatchForThisAllergy) {
+      if (!unchecked.includes(trimmedAllergy)) {
+        unchecked.push(trimmedAllergy);
       }
     }
   }
 
-  return results;
+  return { matches, unchecked };
 }
 
 /**
@@ -546,7 +604,7 @@ export function activeMedications(
 ): string[] {
   if (!prescriptions || prescriptions.length === 0) return [];
 
-  const nowDateStr = now.toISOString().split('T')[0];
+  const nowDateStr = formatLocalDate(now);
   const nowTime = new Date(`${nowDateStr}T23:59:59.999Z`).getTime();
 
   const activeMeds = new Set<string>();

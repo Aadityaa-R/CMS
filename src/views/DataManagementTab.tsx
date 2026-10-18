@@ -17,6 +17,7 @@ import { User } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { BackupData } from '@/types/storage';
 import { Download, Upload, RotateCcw, AlertCircle, HardDrive, Database, Undo2 } from 'lucide-react';
+import { formatLocalDate } from '@/lib/time';
 
 interface DataManagementTabProps {
   currentUser: User;
@@ -95,7 +96,7 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
   const handleConfirmExport = async () => {
     try {
       const backup = await exportBackupData();
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = formatLocalDate();
       const filename = `cms-backup-${todayStr}.json`;
       const blob = new Blob([JSON.stringify(backup, null, 2)], {
         type: 'application/json',

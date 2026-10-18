@@ -44,6 +44,8 @@ import {
   hoursWorked,
   isOnLeave,
 } from '@/lib/attendance';
+import { formatCurrency } from '@/lib/money';
+import { formatDoctorName } from '@/lib/doctorNames';
 
 export type DateRangePreset = 'today' | 'last_7_days' | 'this_month' | 'last_30_days';
 export type ChartBucketType = 'day' | 'week' | 'month';
@@ -199,26 +201,7 @@ export interface DashboardMetricsResult {
   activeBucketType: ChartBucketType;
 }
 
-/**
- * Formats monetary amounts. Handles both integer minor unit cents (default)
- * and fractional dollars for backward compatibility.
- */
-export function formatCurrency(amount: number, isCents = true): string {
-  if (!isCents || (!Number.isInteger(amount) && Math.abs(amount) < 1000000 && amount !== 0)) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  }
-  const isNegative = amount < 0;
-  const abs = Math.abs(amount);
-  const dollars = Math.floor(abs / 100);
-  const remainder = abs % 100;
-  const formatted = `$${dollars.toLocaleString('en-US')}.${String(remainder).padStart(2, '0')}`;
-  return isNegative ? `-${formatted}` : formatted;
-}
+export { formatCurrency };
 
 /**
  * Computes start and end date boundaries for preset date ranges.
@@ -819,7 +802,7 @@ export function calculateDashboardMetrics(
         patientId: a.patientId,
         patientName: a.patientName,
         doctorId: a.doctorId,
-        doctorName: a.doctorName,
+        doctorName: formatDoctorName(a.doctorName),
         status: a.status,
       }));
   }
@@ -1051,7 +1034,7 @@ export function calculateDashboardMetrics(
         id: a.id,
         date: formatDate(a.dateTime),
         time: formatTime(a.dateTime),
-        doctorName: a.doctorName,
+        doctorName: formatDoctorName(a.doctorName),
         department: a.department,
         reason: a.reasonForVisit,
         status: a.status,
@@ -1064,7 +1047,7 @@ export function calculateDashboardMetrics(
         id: p.id,
         date: formatDate(p.date),
         prescriptionNumber: p.prescriptionNumber,
-        doctorName: p.doctorName,
+        doctorName: formatDoctorName(p.doctorName),
         diagnosis: p.diagnosis,
         medications: p.items.map((i) => `${i.medicineName || i.customName || 'Medication'} (${i.dosage || i.strength || ''})`).join(', '),
         status: p.status,
@@ -1264,7 +1247,7 @@ export function calculateDailySummary(options: CalculateDailySummaryOptions): Da
 
       return {
         doctorId: doc.id,
-        doctorName: doc.name,
+        doctorName: formatDoctorName(doc.name),
         booked,
         checkedIn,
         completed,

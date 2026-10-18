@@ -57,11 +57,17 @@ export function clockIn(
   _shift: Shift | undefined,
   now: Date,
   staffId: string,
-  staffName?: string
+  staffName?: string,
+  leaves: LeaveRequest[] = [],
+  overrideLeave: boolean = false
 ): AttendanceRecord {
   const todayStr = formatDate(now);
   if (record && record.clockIn) {
     throw new Error('Staff member is already clocked in for today.');
+  }
+
+  if (!overrideLeave && isOnLeave(staffId, todayStr, leaves)) {
+    throw new Error('Clock-in refused: staff member is on approved leave for today.');
   }
 
   return {

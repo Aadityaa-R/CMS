@@ -43,6 +43,8 @@ import { getNextTokenNumberForDate } from '@/lib/reception';
 import { buildInvoiceForVisit } from '@/lib/billing';
 import { validatePrescription } from '@/lib/prescribing';
 import { Medicine } from '@/types/prescribing';
+import { formatDoctorName } from '@/lib/doctorNames';
+import { formatLocalDate } from '@/lib/time';
 import {
   INITIAL_PATIENTS,
   INITIAL_DOCTORS,
@@ -567,7 +569,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
+    const dateStr = formatLocalDate(now);
     const nowIso = now.toISOString();
     const newId = `pat-${patients.length + 1}`;
     const newMrn = `MRN-${Math.floor(10000 + Math.random() * 90000)}`;
@@ -655,7 +657,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
     }
 
-    const todayStr = dateOverride || new Date().toISOString().split('T')[0];
+    const todayStr = dateOverride || formatLocalDate();
 
     // Doctor availability check
     if (!isDoctorAvailable(apt.doctorId, todayStr)) {
@@ -709,7 +711,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         targetStaffName: apt.patientName,
         targetUserId: apt.patientId,
         action: 'patient_checked_in',
-        description: `Patient checked in with Token #${nextToken} for Dr. ${apt.doctorName} by ${actor?.name || 'Reception Staff'}`,
+        description: `Patient checked in with Token #${nextToken} for ${formatDoctorName(apt.doctorName)} by ${actor?.name || 'Reception Staff'}`,
         authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Front Desk Coordination',
       });
     }
@@ -740,7 +742,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return { success: false, error: 'Patient not found.' };
     }
 
-    const todayStr = dateOverride || new Date().toISOString().split('T')[0];
+    const todayStr = dateOverride || formatLocalDate();
 
     let targetDocId = params.doctorId;
     if (!params.isNewPatient) {
@@ -819,7 +821,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         targetStaffName: newApt.patientName,
         targetUserId: newApt.patientId,
         action: 'walkin_checked_in',
-        description: `Walk-in patient admitted with Token #${nextToken} for Dr. ${newApt.doctorName} by ${actor?.name || 'Reception Staff'}`,
+        description: `Walk-in patient admitted with Token #${nextToken} for ${formatDoctorName(newApt.doctorName)} by ${actor?.name || 'Reception Staff'}`,
         authorizedBy: actor ? `${actor.name} (${actor.title || actor.role})` : 'Front Desk Coordination',
       });
     }
@@ -1007,7 +1009,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addAppointment = (
     data: Omit<Appointment, 'id' | 'appointmentNumber' | 'tokenNumber'>
   ): Appointment => {
-    const todayStr = data.dateTime ? data.dateTime.slice(0, 10) : new Date().toISOString().split('T')[0];
+    const todayStr = data.dateTime ? data.dateTime.slice(0, 10) : formatLocalDate();
     const newId = `apt-${appointments.length + 1}`;
     const tokenNumber = data.status === 'checked_in' ? getNextTokenNumberForDate(appointments, todayStr) : 0;
     const appointmentNumber = `APT-2026-${String(appointments.length + 1).padStart(3, '0')}`;
@@ -1072,7 +1074,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       prev.map((apt) => {
         if (apt.id !== id) return apt;
         if (status === 'checked_in') {
-          const todayStr = new Date().toISOString().split('T')[0];
+          const todayStr = formatLocalDate();
           const nextToken = apt.tokenNumber > 0 ? apt.tokenNumber : getNextTokenNumberForDate(prev, todayStr);
           return {
             ...apt,
@@ -1176,7 +1178,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       ...data,
       id: newId,
       prescriptionNumber,
-      date: new Date().toISOString().split('T')[0],
+      date: formatLocalDate(),
       status: 'active',
     };
 
@@ -1450,7 +1452,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       ...data,
       id: newId,
       invoiceNumber,
-      date: new Date().toISOString().split('T')[0],
+      date: formatLocalDate(),
       status: data.paidAmount >= data.totalAmount ? 'paid' : data.paidAmount > 0 ? 'partially_paid' : 'unpaid',
     };
     setInvoices((prev) => [newInv, ...prev]);

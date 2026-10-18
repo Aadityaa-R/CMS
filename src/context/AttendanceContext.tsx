@@ -204,7 +204,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const existingRec = records.find((r) => r.staffId === canonical && r.date === todayStr) || null;
 
     try {
-      const updatedRec = clockIn(existingRec, shift, now, canonical, staffName);
+      const updatedRec = clockIn(existingRec, shift, now, canonical, staffName, leaveRequests, Boolean(overrideLeave || canManage));
       if (isLeave && (overrideLeave || canManage)) {
         updatedRec.note = updatedRec.note
           ? `${updatedRec.note} (Approved leave overridden by ${currentUser.name})`
@@ -465,7 +465,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const existingRec = records.find((r) => r.staffId === canonical && r.date === todayStr) || null;
 
     try {
-      const updated = clockIn(existingRec, shift, now, canonical, staffName);
+      const updated = clockIn(existingRec, shift, now, canonical, staffName, leaveRequests, true);
       if (note && note.trim()) {
         updated.note = note.trim();
       }

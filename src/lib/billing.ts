@@ -16,17 +16,10 @@ import {
 export const DEFAULT_CONSULTATION_FEE_CENTS = 10000; // $100.00
 export const CLINIC_NAME = 'Beacon Health Clinic';
 
-/**
- * Formats integer cents into standard USD string format ($X.XX).
- */
-export function formatCurrency(cents: number): string {
-  const isNegative = cents < 0;
-  const abs = Math.abs(cents);
-  const dollars = Math.floor(abs / 100);
-  const remainder = abs % 100;
-  const formatted = `$${dollars.toLocaleString('en-US')}.${String(remainder).padStart(2, '0')}`;
-  return isNegative ? `-${formatted}` : formatted;
-}
+import { formatCurrency, migrateConsultationFee } from '@/lib/money';
+import { formatDoctorName } from '@/lib/doctorNames';
+
+export { formatCurrency, migrateConsultationFee };
 
 /**
  * Converts dollars to integer minor units (cents).
@@ -183,13 +176,14 @@ export function buildInvoiceForVisit(
 
   const feeCents =
     typeof doctor?.consultationFee === 'number' && doctor.consultationFee > 0
-      ? Math.round(doctor.consultationFee * 100)
+      ? migrateConsultationFee(doctor.consultationFee)
       : DEFAULT_CONSULTATION_FEE_CENTS;
 
   const invoiceNumber = generateNextInvoiceNumber(existingInvoices, now);
   const invoiceId = `inv-${now.getFullYear()}-${String(existingInvoices.length + 1).padStart(4, '0')}`;
 
-  const doctorLabel = doctor?.name || appointment.doctorName || 'Attending Physician';
+  const rawDoctorName = doctor?.name || appointment.doctorName;
+  const doctorLabel = rawDoctorName ? formatDoctorName(rawDoctorName) : 'Attending Physician';
   const initialItem: InvoiceItem = {
     id: `item-${invoiceId}-1`,
     description: `Specialist Consultation (${doctorLabel})`,
@@ -205,7 +199,7 @@ export function buildInvoiceForVisit(
     visitId: appointment.id,
     appointmentId: appointment.id,
     doctorId: appointment.doctorId,
-    doctorName: appointment.doctorName || doctor?.name,
+    doctorName: rawDoctorName ? formatDoctorName(rawDoctorName) : undefined,
     issuedAt: now.toISOString(),
     items: [initialItem],
     status: 'unpaid',

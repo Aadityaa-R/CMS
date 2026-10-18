@@ -28,6 +28,8 @@ import {
 } from '@/lib/reception';
 import { useBilling } from '@/context/BillingContext';
 import { formatCurrency, balanceDue } from '@/lib/billing';
+import { formatDoctorName } from '@/lib/doctorNames';
+import { formatLocalDate } from '@/lib/time';
 
 interface ReceptionistViewProps {
   activeTab?: string;
@@ -75,7 +77,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     return getScopedAppointments(currentUser, rawAppointments, patientAssignments);
   }, [currentUser, rawAppointments, patientAssignments]);
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => formatLocalDate(), []);
 
   // Notification Banner State
   const [notification, setNotification] = useState<string | null>(null);
@@ -557,7 +559,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
       setIsWalkInOpen(false);
       showNotification(
-        `New walk-in registered and admitted. Token #${checkInRes.appointment.tokenNumber} issued for Dr. ${checkInRes.appointment.doctorName}.`
+        `New walk-in registered and admitted. Token #${checkInRes.appointment.tokenNumber} issued for ${formatDoctorName(checkInRes.appointment.doctorName)}.`
       );
 
       // Reset
@@ -607,7 +609,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
       setIsWalkInOpen(false);
       showNotification(
-        `Walk-in admitted. Token #${checkInRes.appointment.tokenNumber} issued for Dr. ${checkInRes.appointment.doctorName}.`
+        `Walk-in admitted. Token #${checkInRes.appointment.tokenNumber} issued for ${formatDoctorName(checkInRes.appointment.doctorName)}.`
       );
       setWalkInReason('');
     }

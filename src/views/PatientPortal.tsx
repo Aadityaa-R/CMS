@@ -17,6 +17,7 @@ import {
 import { formatRegimen, activeMedications } from '@/lib/prescribing';
 import { getAssignedDoctorId } from '@/lib/permissions';
 import { Appointment, Prescription } from '@/types';
+import { formatDoctorName } from '@/lib/doctorNames';
 import {
   Invoice as BillingInvoice,
   Receipt as BillingReceipt,
@@ -811,7 +812,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                             {apt.dateTime.slice(11, 16)}
                           </TableCell>
                           <TableCell label="Doctor" className="w-3/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
-                            Dr. {apt.doctorName}
+                            {formatDoctorName(apt.doctorName)}
                           </TableCell>
                           <TableCell label="Reason" className="w-3/12 min-w-[140px] text-slate-600 dark:text-slate-300">
                             {apt.reasonForVisit}
@@ -909,7 +910,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                           {apt.dateTime.slice(11, 16)}
                         </TableCell>
                         <TableCell label="Doctor" className="w-4/12 min-w-[150px] font-medium text-slate-900 dark:text-slate-100">
-                          Dr. {apt.doctorName}
+                          {formatDoctorName(apt.doctorName)}
                         </TableCell>
                         <TableCell label="Status" className="w-2/12 min-w-[100px] text-slate-600 dark:text-slate-300">
                           {formatAppointmentStatus(apt)}
@@ -1120,7 +1121,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                           {v.dateTime.slice(0, 10)}
                         </TableCell>
                         <TableCell label="Doctor" className="w-3/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
-                          Dr. {v.doctorName}
+                          {formatDoctorName(v.doctorName)}
                         </TableCell>
                         <TableCell label="Department" className="w-3/12 min-w-[130px] text-slate-600 dark:text-slate-300">
                           {v.department}
@@ -1183,7 +1184,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                             {rx.date}
                           </TableCell>
                           <TableCell label="Doctor" className="w-2/12 min-w-[120px] font-medium text-slate-900 dark:text-slate-100">
-                            Dr. {rx.doctorName}
+                            {formatDoctorName(rx.doctorName)}
                           </TableCell>
                           <TableCell label="Diagnosis" className="w-2/12 min-w-[130px] text-slate-600 dark:text-slate-300">
                             {rx.diagnosis}
@@ -1669,7 +1670,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Current Doctor:</span>
                 <span className="font-medium text-slate-900 dark:text-slate-100">
-                  Dr. {rescheduleTarget.doctorName}
+                  {formatDoctorName(rescheduleTarget.doctorName)}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -1766,7 +1767,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             )}
 
             <p className="text-slate-700 dark:text-slate-300">
-              Are you sure you want to cancel your consultation with Dr. {cancelTarget.doctorName} on{' '}
+              Are you sure you want to cancel your consultation with {formatDoctorName(cancelTarget.doctorName)} on{' '}
               {cancelTarget.dateTime.replace('T', ' ')}?
             </p>
 
@@ -1830,7 +1831,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <div className="flex justify-between">
                 <span>Doctor:</span>
                 <span className="font-medium text-slate-900 dark:text-slate-100">
-                  Dr. {viewingPrescription.doctorName}
+                  {formatDoctorName(viewingPrescription.doctorName)}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -1875,7 +1876,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
             <div className="pt-2 text-right text-xs text-slate-600 dark:text-slate-400">
               <span className="font-medium text-slate-900 dark:text-slate-100">
-                Signed: Dr. {viewingPrescription.doctorName.replace(/^Dr\.\s*/i, '')}
+                Signed: {formatDoctorName(viewingPrescription.doctorName)}
               </span>
             </div>
           </div>

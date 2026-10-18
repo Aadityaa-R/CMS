@@ -5,10 +5,8 @@ import {
   ROLE_CREDENTIALS,
   INITIAL_STAFF_ACCESS,
   INITIAL_ACCESS_AUDIT_LOG,
-  INITIAL_MODULES,
 } from '@/data/mockData';
 import {
-  getEffectiveAccesses,
   canGrantAdmin,
   canRevokeAdmin,
   canDeleteStaff,
@@ -28,6 +26,7 @@ import {
 import { Account, ClaimRequest } from '@/types/storage';
 import { STORAGE_KEY_PREFIX, SESSION_STORAGE_KEY } from '@/lib/authConstants';
 import { Patient } from '@/types';
+import { formatLocalDate } from '@/lib/time';
 import { PendingStaffApproval } from '@/data/mockData';
 
 export interface RoleMeta {
@@ -302,28 +301,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     (s) => s.id === baseUser.id || s.badgeNumber === baseUser.badgeNumber || s.staffName === baseUser.name
   );
 
-  let currentModules = INITIAL_MODULES;
-  try {
-    const savedMods = sessionStorage.getItem('cms_modules_v2');
-    if (savedMods) {
-      const parsed = JSON.parse(savedMods);
-      if (Array.isArray(parsed) && parsed.length >= 3) {
-        currentModules = parsed;
-      }
-    }
-  } catch {
-    // fallback
-  }
 
-  const effectiveCapabilities = getEffectiveAccesses(
-    currentStaffRecord || baseUser,
-    currentModules
-  );
 
   const currentUser: User = {
     ...baseUser,
     isOriginalAdmin: baseUser.isOriginalAdmin || currentStaffRecord?.isOriginalAdmin || false,
-    capabilities: effectiveCapabilities,
   };
 
   const updateCurrentUser = (updates: Partial<User>) => {
@@ -349,7 +331,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ? {
             ...record,
             status: 'granted' as const,
-            grantedAt: new Date().toISOString().split('T')[0],
+            grantedAt: formatLocalDate(),
             grantedBy: currentUser.name,
           }
         : record

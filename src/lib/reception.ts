@@ -1,6 +1,7 @@
 import { Appointment, Patient, User, PatientAssignment } from '@/types';
 import { isDoctorAvailable } from '@/lib/availability';
 import { canRegisterPatient, canCheckIn, canBookAppointment, getAssignedDoctorId } from '@/lib/permissions';
+import { formatDoctorName } from '@/lib/doctorNames';
 
 /**
  * Returns the next unique daily token number for a given calendar date (YYYY-MM-DD).
@@ -290,7 +291,7 @@ export function getTodayIntakeLogs(
         type: 'Check-in',
         patientName: a.patientName,
         performedBy: formatCheckedInBy(a.checkedInBy),
-        details: `Token #${a.tokenNumber} - Dr. ${a.doctorName}`,
+        details: `Token #${a.tokenNumber} - ${formatDoctorName(a.doctorName)}`,
       });
     }
   });

@@ -50,6 +50,7 @@ import {
   checkDuplicates,
   activeMedications,
 } from '@/lib/prescribing';
+import { formatDoctorName } from '@/lib/doctorNames';
 
 interface DoctorViewProps {
   activeTab?: string;
@@ -70,26 +71,8 @@ const formatAppointmentStatus = (status: string) => {
   }
 };
 
-export const NORMAL_VITAL_RANGES = {
-  systolicBp: { min: 90, max: 139 },
-  diastolicBp: { min: 60, max: 89 },
-  heartRateBpm: { min: 60, max: 100 },
-  oxygenSaturationPct: { min: 95, max: 100 },
-  temperatureCelsius: { min: 36.0, max: 37.9 },
-};
-
-export const getVitalLabel = (
-  baseLabel: string,
-  value: string,
-  range: { min: number; max: number }
-): string => {
-  if (!value.trim()) return baseLabel;
-  const num = Number(value);
-  if (isNaN(num)) return baseLabel;
-  if (num < range.min) return `${baseLabel} Low`;
-  if (num > range.max) return `${baseLabel} High`;
-  return baseLabel;
-};
+import { NORMAL_VITAL_RANGES, getVitalLabel } from '@/lib/vitals';
+export { NORMAL_VITAL_RANGES, getVitalLabel };
 
 export const deduplicateList = (items?: (string | null | undefined)[]): string[] => {
   if (!items || !Array.isArray(items)) return [];
@@ -156,8 +139,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   const activeDoctor = doctors.find((d) => d.id === activeDoctorId) || doctors[0];
   const doctorAppointments = useMemo(() => {
-    return getScopedAppointments(currentUser, appointments, patientAssignments, activeDoctorId);
-  }, [currentUser, appointments, patientAssignments, activeDoctorId]);
+    return getScopedAppointments(currentUser, appointments, patientAssignments, activeDoctorId, modules);
+  }, [currentUser, appointments, patientAssignments, activeDoctorId, modules]);
 
   // Search & Filter State (Equal Authority Governance pattern)
   const [searchTerm, setSearchTerm] = useState('');
@@ -528,9 +511,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return diagnosisSelect === '__other__' ? diagnosisCustom.trim() : diagnosisSelect.trim();
   }, [diagnosisSelect, diagnosisCustom]);
 
-  const currentAllergyMatches = useMemo(() => {
+  const currentAllergyCheck = useMemo(() => {
     return checkAllergies(patientAllergies, prescriptionItems, medicines);
   }, [patientAllergies, prescriptionItems, medicines]);
+
+  const currentAllergyMatches = currentAllergyCheck.matches;
+  const currentUncheckedAllergies = currentAllergyCheck.unchecked;
 
   const currentDuplicates = useMemo(() => {
     return checkDuplicates(prescriptionItems, medicines);
@@ -877,8 +863,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   };
 
   const doctorPrescriptions = useMemo(() => {
-    return getScopedPrescriptions(currentUser, prescriptions, patientAssignments, activeDoctorId);
-  }, [prescriptions, currentUser, patientAssignments, activeDoctorId]);
+    return getScopedPrescriptions(currentUser, prescriptions, patientAssignments, activeDoctorId, modules);
+  }, [prescriptions, currentUser, patientAssignments, activeDoctorId, modules]);
 
   // Filter Helper with Equal Authority
   const query = searchTerm.toLowerCase().trim();
@@ -898,8 +884,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   });
 
   const doctorPatients = useMemo(() => {
-    return getScopedPatients(currentUser, patients, patientAssignments, activeDoctorId);
-  }, [patients, currentUser, patientAssignments, activeDoctorId]);
+    return getScopedPatients(currentUser, patients, patientAssignments, activeDoctorId, modules);
+  }, [patients, currentUser, patientAssignments, activeDoctorId, modules]);
 
   // Dedicated Patients Medical Directory Search State
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
@@ -2070,7 +2056,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 const selectedMed = medicines.find((m) => m.id === item.medicineId);
                 const strengthOptions = selectedMed ? selectedMed.strengths.map((s) => ({ value: s, label: s })) : [];
 
-                const itemAllergyMatches = checkAllergies(patientAllergies, [item], medicines);
+                const itemAllergyMatches = checkAllergies(patientAllergies, [item], medicines).matches;
                 const duplicateForThisItem = currentDuplicates.filter(
                   (d) => d.medicine.toLowerCase() === (item.medicineName || item.customName || '').toLowerCase()
                 );
@@ -2355,6 +2341,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 rows={3}
                 required
               />
+            </div>
+          )}
+
+          {currentUncheckedAllergies.length > 0 && (
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg space-y-1">
+              {currentUncheckedAllergies.map((u, idx) => (
+                <div key={idx} className="text-xs text-slate-600 dark:text-slate-400">
+                  No rule for {u}: check manually.
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -2649,7 +2645,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               </div>
               <div>
                 <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Issuing Physician</span>
-                <span className="text-slate-900 dark:text-slate-100">{viewingPrescription.doctorName}</span>
+                <span className="text-slate-900 dark:text-slate-100">{formatDoctorName(viewingPrescription.doctorName)}</span>
               </div>
             </div>
 
@@ -2700,7 +2696,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs text-slate-600 dark:text-slate-400">
               <span>Status: {viewingPrescription.status === 'cancelled' ? 'Cancelled' : 'Active'}</span>
               <span className="font-medium text-slate-900 dark:text-slate-100">
-                Signed: Dr. {viewingPrescription.doctorName.replace(/^Dr\.\s*/i, '')}
+                Signed: {formatDoctorName(viewingPrescription.doctorName)}
               </span>
             </div>
           </div>

@@ -131,6 +131,11 @@ export interface AllergyCheckResult {
   isCustomRule?: boolean;
 }
 
+export interface AllergyCheckOutput {
+  matches: AllergyCheckResult[];
+  unchecked: string[];
+}
+
 export interface DuplicateWarning {
   type: 'same_medicine' | 'same_class';
   medicine: string;

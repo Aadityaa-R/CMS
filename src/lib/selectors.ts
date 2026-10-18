@@ -17,6 +17,10 @@ import {
   scopePatientForReceptionist,
   scopeAppointmentForReceptionist,
 } from '@/lib/permissions';
+import {
+  resolveDoctorId,
+  isSameStaff,
+} from '@/lib/staffIds';
 import { INITIAL_MODULES } from '@/data/mockData';
 
 /**
@@ -28,24 +32,7 @@ import { INITIAL_MODULES } from '@/data/mockData';
  * Resolves doctorId ('doc-1', 'doc-2', 'doc-3') from a user record or identifier.
  */
 export function resolveDoctorIdForUser(user: User | null | undefined): string | null {
-  if (!user) return null;
-  if (
-    user.id === 'usr-1' ||
-    user.id === 'usr-doc-1' ||
-    user.id === 'doc-1' ||
-    user.badgeNumber === 'MD-001'
-  ) {
-    return 'doc-1';
-  }
-  if (user.id === 'usr-doc-2' || user.id === 'doc-2' || user.badgeNumber === 'DOC-102') {
-    return 'doc-2';
-  }
-  if (user.id === 'usr-doc-3' || user.id === 'doc-3' || user.badgeNumber === 'DOC-103') {
-    return 'doc-3';
-  }
-  if (user.id.startsWith('doc-')) return user.id;
-  if (user.id.startsWith('usr-doc-')) return user.id.replace('usr-', '');
-  return null;
+  return resolveDoctorId(user);
 }
 
 /**
@@ -215,14 +202,27 @@ export function getScopedPrescriptions(
     if (activeDoctorId && activeDoctorId !== 'all') {
       return prescriptions.filter((rx) => {
         const assignedDocId = getAssignedDoctorId(rx.patientId, assignments);
-        return assignedDocId === activeDoctorId || rx.doctorId === activeDoctorId;
+        return (
+          (assignedDocId && isSameStaff(assignedDocId, activeDoctorId)) ||
+          isSameStaff(rx.doctorId, activeDoctorId)
+        );
       });
     }
     return prescriptions;
   }
 
   // 4. Non-admin with EMR Records Access: assigned patients or authored prescriptions
-  return prescriptions.filter((rx) => canViewPrescription(currentUser, rx, assignments, modules));
+  let scoped = prescriptions.filter((rx) => canViewPrescription(currentUser, rx, assignments, modules));
+  if (activeDoctorId && activeDoctorId !== 'all') {
+    scoped = scoped.filter((rx) => {
+      const assignedDocId = getAssignedDoctorId(rx.patientId, assignments);
+      return (
+        (assignedDocId && isSameStaff(assignedDocId, activeDoctorId)) ||
+        isSameStaff(rx.doctorId, activeDoctorId)
+      );
+    });
+  }
+  return scoped;
 }
 
 /**

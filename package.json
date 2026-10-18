@@ -7,7 +7,15 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "tsx scripts/test-permissions.ts && tsx scripts/test-dashboard-metrics.ts && tsx scripts/test-table-columns.ts && tsx scripts/test-attendance.ts && tsx scripts/test-reception.ts && tsx scripts/test-storage.ts && tsx scripts/test-billing.ts && tsx scripts/test-scheduling.ts && tsx scripts/test-prescribing.ts && tsx scripts/scan-emojis.ts"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:tz:utc": "cross-env TZ=UTC vitest run",
+    "test:tz:la": "cross-env TZ=America/Los_Angeles vitest run",
+    "test:tz:kolkata": "cross-env TZ=Asia/Kolkata vitest run",
+    "test:all-zones": "npm run test:tz:utc && npm run test:tz:la && npm run test:tz:kolkata",
+    "scan:emojis": "tsx scripts/scan-emojis.ts",
+    "scan:commits": "tsx scripts/scan-commits.ts",
+    "verify": "npm run build && npm run typecheck && npm run test:all-zones && npm run scan:emojis && npm run scan:commits"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",
@@ -15,14 +23,19 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^10.1.0",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "tsx": "^4.23.15",
     "typescript": "~5.6.2",
-    "vite": "^6.0.1"
+    "vite": "^6.0.1",
+    "vitest": "^5.0.5"
   }
 }

@@ -20,6 +20,7 @@ import {
   isAdmin,
 } from '@/lib/permissions';
 import { getScopedInvoices, getScopedPayments } from '@/lib/selectors';
+import { formatLocalDate } from '@/lib/time';
 import { Invoice, Payment, PaymentMethod, Receipt } from '@/types/billing';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -76,7 +77,7 @@ export const BillingView: React.FC = () => {
   }, [currentUser, allPayments, allInvoices, modules]);
 
   // Daily collections summary
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => formatLocalDate(), []);
   const isAdministrator = isAdmin(currentUser, modules);
   const collectionsSummary = useMemo(() => {
     return isAdministrator

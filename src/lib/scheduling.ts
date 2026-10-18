@@ -225,7 +225,7 @@ export function bookAppointment(
     dateTime: `${params.date}T${params.time}:00`,
     durationMinutes: SLOT_MINUTES,
     status: 'scheduled',
-    reasonForVisit: params.reasonForVisit.trim(),
+    reasonForVisit: (params.reasonForVisit || 'Consultation').trim(),
     tokenNumber: 0,
     source: params.source || 'web',
     checkedInAt: null,
