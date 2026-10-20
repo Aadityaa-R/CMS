@@ -21,7 +21,6 @@ import {
   resolveDoctorId,
   isSameStaff,
 } from '@/lib/staffIds';
-import { INITIAL_MODULES } from '@/data/mockData';
 
 /**
  * Pure selector functions for patient, appointment, prescription, and invoice data.
@@ -46,16 +45,9 @@ export function getScopedPatients(
   currentUser: User | null | undefined,
   patients: Patient[],
   assignments: PatientAssignment[],
-  activeDoctorIdOrModules?: string | null | AccessModule[],
-  modules: AccessModule[] = INITIAL_MODULES
+  activeDoctorId: string | null,
+  modules: AccessModule[]
 ): Patient[] {
-  let activeDoctorId: string | null | undefined = undefined;
-  if (Array.isArray(activeDoctorIdOrModules)) {
-    modules = activeDoctorIdOrModules;
-  } else {
-    activeDoctorId = activeDoctorIdOrModules;
-  }
-
   if (!currentUser) return [];
 
   // 1. Patient view
@@ -110,16 +102,9 @@ export function getScopedAppointments(
   currentUser: User | null | undefined,
   appointments: Appointment[],
   assignments: PatientAssignment[],
-  activeDoctorIdOrModules?: string | null | AccessModule[],
-  modules: AccessModule[] = INITIAL_MODULES
+  activeDoctorId: string | null,
+  modules: AccessModule[]
 ): Appointment[] {
-  let activeDoctorId: string | null | undefined = undefined;
-  if (Array.isArray(activeDoctorIdOrModules)) {
-    modules = activeDoctorIdOrModules;
-  } else {
-    activeDoctorId = activeDoctorIdOrModules;
-  }
-
   if (!currentUser) return [];
 
   // 1. Patient view
@@ -165,16 +150,9 @@ export function getScopedPrescriptions(
   currentUser: User | null | undefined,
   prescriptions: Prescription[],
   assignments: PatientAssignment[],
-  activeDoctorIdOrModules?: string | null | AccessModule[],
-  modules: AccessModule[] = INITIAL_MODULES
+  activeDoctorId: string | null,
+  modules: AccessModule[]
 ): Prescription[] {
-  let activeDoctorId: string | null | undefined = undefined;
-  if (Array.isArray(activeDoctorIdOrModules)) {
-    modules = activeDoctorIdOrModules;
-  } else {
-    activeDoctorId = activeDoctorIdOrModules;
-  }
-
   if (!currentUser) return [];
 
   // 1. Patient view: patients always see all their own prescriptions regardless of authoring doctor
@@ -234,8 +212,7 @@ export function getScopedPrescriptions(
 export function getScopedInvoices<T extends { id: string; patientId: string } = Invoice>(
   currentUser: User | null | undefined,
   invoices: T[],
-  _assignments?: PatientAssignment[],
-  modules: AccessModule[] = INITIAL_MODULES
+  modules: AccessModule[]
 ): T[] {
   if (!currentUser) return [];
 
@@ -277,12 +254,12 @@ export function getScopedPayments<
   currentUser: User | null | undefined,
   payments: TPay[],
   invoices: TInv[],
-  modules: AccessModule[] = INITIAL_MODULES
+  modules: AccessModule[]
 ): TPay[] {
   if (!currentUser) return [];
 
   if (currentUser.role === 'patient') {
-    const userInvoices = getScopedInvoices(currentUser, invoices, undefined, modules);
+    const userInvoices = getScopedInvoices(currentUser, invoices, modules);
     const userInvoiceIds = new Set(userInvoices.map((inv) => inv.id));
     return payments.filter((p) => userInvoiceIds.has(p.invoiceId));
   }

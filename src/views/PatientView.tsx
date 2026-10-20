@@ -47,21 +47,22 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
     prescriptions: rawPrescriptions,
     vitals: rawVitals,
     patientAssignments = [],
+    modules = [],
     addPatient,
     updatePatient,
   } = useClinic();
 
   const patients = React.useMemo(() => {
-    return getScopedPatients(currentUser, rawPatients, patientAssignments);
-  }, [currentUser, rawPatients, patientAssignments]);
+    return getScopedPatients(currentUser, rawPatients, patientAssignments, null, modules);
+  }, [currentUser, rawPatients, patientAssignments, modules]);
 
   const appointments = React.useMemo(() => {
-    return getScopedAppointments(currentUser, rawAppointments, patientAssignments);
-  }, [currentUser, rawAppointments, patientAssignments]);
+    return getScopedAppointments(currentUser, rawAppointments, patientAssignments, null, modules);
+  }, [currentUser, rawAppointments, patientAssignments, modules]);
 
   const prescriptions = React.useMemo(() => {
-    return getScopedPrescriptions(currentUser, rawPrescriptions, patientAssignments);
-  }, [currentUser, rawPrescriptions, patientAssignments]);
+    return getScopedPrescriptions(currentUser, rawPrescriptions, patientAssignments, null, modules);
+  }, [currentUser, rawPrescriptions, patientAssignments, modules]);
 
   const vitals = React.useMemo(() => {
     if (!currentUser) return [];

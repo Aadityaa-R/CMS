@@ -61,6 +61,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     patients: rawPatients,
     doctors,
     patientAssignments = [],
+    modules = [],
     registerPatient,
     checkInAppointment,
     checkInWalkIn,
@@ -70,12 +71,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const { invoices: billingInvoices, payments: billingPayments } = useBilling();
 
   const patients = useMemo(() => {
-    return getScopedPatients(currentUser, rawPatients, patientAssignments);
-  }, [currentUser, rawPatients, patientAssignments]);
+    return getScopedPatients(currentUser, rawPatients, patientAssignments, null, modules);
+  }, [currentUser, rawPatients, patientAssignments, modules]);
 
   const appointments = useMemo(() => {
-    return getScopedAppointments(currentUser, rawAppointments, patientAssignments);
-  }, [currentUser, rawAppointments, patientAssignments]);
+    return getScopedAppointments(currentUser, rawAppointments, patientAssignments, null, modules);
+  }, [currentUser, rawAppointments, patientAssignments, modules]);
 
   const todayStr = useMemo(() => formatLocalDate(), []);
 

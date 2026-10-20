@@ -1,0 +1,283 @@
+import { describe, it, expect } from 'vitest';
+import React from 'react';
+import { render } from '@testing-library/react';
+import { DashboardView } from '../src/views/DashboardView';
+import { DoctorView } from '../src/views/DoctorView';
+import { ReceptionistView } from '../src/views/ReceptionistView';
+import { AccessControlView } from '../src/views/AccessControlView';
+import { AttendanceView } from '../src/views/AttendanceView';
+import { BillingView } from '../src/views/BillingView';
+import { PatientPortal } from '../src/views/PatientPortal';
+
+import { AuthContext } from '../src/context/AuthContext';
+import { ClinicContext } from '../src/context/ClinicContext';
+import { BillingContext } from '../src/context/BillingContext';
+import { AttendanceContext } from '../src/context/AttendanceContext';
+import { ThemeContext } from '../src/context/ThemeContext';
+import { NotificationContext } from '../src/context/NotificationContext';
+
+import { INITIAL_MODULES, INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_PRESCRIPTIONS } from '../src/data/mockData';
+import { INITIAL_SEED_INVOICES, INITIAL_SEED_PAYMENTS } from '../src/data/billingSeed';
+import { INITIAL_SHIFTS, INITIAL_ATTENDANCE_RECORDS, INITIAL_LEAVE_REQUESTS } from '../src/data/attendanceSeed';
+import { INITIAL_FORMULARY } from '../src/data/formularySeed';
+import { User } from '../src/types';
+
+const mdUser: User = {
+  id: 'usr-md-1',
+  name: 'Dr. Marcus Vance',
+  email: 'm.vance@beaconclinic.com',
+  role: 'md',
+  badgeNumber: 'DOC-101',
+};
+
+const docHayes: User = {
+  id: 'usr-doc-2',
+  name: 'Dr. Nathan Hayes',
+  email: 'n.hayes@beaconclinic.com',
+  role: 'doctor',
+  badgeNumber: 'DOC-102',
+};
+
+const receptionistUser: User = {
+  id: 'usr-rec-1',
+  name: 'Priya Sharma',
+  email: 'p.sharma@beaconclinic.com',
+  role: 'receptionist',
+  badgeNumber: 'REC-201',
+};
+
+const patientUser: User = {
+  id: 'usr-pat-1',
+  name: 'Eleanor Wright',
+  email: 'e.wright@example.com',
+  role: 'patient',
+  patientId: 'pat-1',
+};
+
+function createMockProviders(currentUser: User, customInvoices = INITIAL_SEED_INVOICES, customPayments = INITIAL_SEED_PAYMENTS) {
+  const authVal: any = {
+    currentUser,
+    currentRole: currentUser.role,
+    isAuthenticated: true,
+    addAuditLogEntry: () => {},
+  };
+
+  const clinicVal: any = {
+    modules: INITIAL_MODULES,
+    patients: INITIAL_PATIENTS,
+    appointments: INITIAL_APPOINTMENTS,
+    prescriptions: INITIAL_PRESCRIPTIONS,
+    assignments: [
+      { id: 'asgn-1', patientId: 'pat-1', doctorId: 'doc-2', active: true, assignedAt: '2026-10-01' },
+      { id: 'asgn-2', patientId: 'pat-2', doctorId: 'doc-3', active: true, assignedAt: '2026-10-01' },
+    ],
+    doctors: [
+      { id: 'doc-1', name: 'Dr. Marcus Vance', role: 'md', consultationFee: 12000, active: true },
+      { id: 'doc-2', name: 'Dr. Nathan Hayes', role: 'doctor', consultationFee: 9000, active: true },
+      { id: 'doc-3', name: 'Dr. Sophia Reed', role: 'doctor', consultationFee: 11000, active: true },
+    ],
+    formulary: INITIAL_FORMULARY,
+    pendingApprovals: [],
+    staffAccess: [],
+    shifts: INITIAL_SHIFTS,
+    records: INITIAL_ATTENDANCE_RECORDS,
+    attendanceRecords: INITIAL_ATTENDANCE_RECORDS,
+    leaveRequests: INITIAL_LEAVE_REQUESTS,
+    auditLogs: [],
+    claimRequests: [],
+  };
+
+  const billingVal: any = {
+    invoices: customInvoices,
+    payments: customPayments,
+    recordPayment: async () => ({ success: true }),
+    reversePayment: async () => ({ success: true }),
+    addCharge: async () => ({ success: true }),
+    applyDiscount: async () => ({ success: true }),
+    voidInvoice: async () => ({ success: true }),
+    getReceipt: () => null,
+    getDailyCollections: () => ({ cash: 0, card: 0, upi: 0, portal: 0, total: 0 }),
+  };
+
+  const attendanceVal: any = {
+    shifts: INITIAL_SHIFTS,
+    records: INITIAL_ATTENDANCE_RECORDS,
+    attendanceRecords: INITIAL_ATTENDANCE_RECORDS,
+    leaveRequests: INITIAL_LEAVE_REQUESTS,
+    recordClockIn: async () => {},
+    recordClockOut: async () => {},
+    submitLeaveRequest: async () => {},
+    updateLeaveRequestStatus: async () => {},
+    refreshRecords: async () => {},
+    getCanonicalStaffId: (id?: string) => id || 'acc-md',
+    getStaffShift: () => undefined,
+    getTodayRecord: () => undefined,
+  };
+
+  const themeVal: any = {
+    theme: 'light',
+    toggleTheme: () => {},
+  };
+
+  const notificationVal: any = {
+    notifications: [],
+    userNotifications: [],
+    unreadCount: 0,
+    addNotification: async () => {},
+    markAsRead: async () => {},
+    markAllAsRead: async () => {},
+    dismissNotification: async () => {},
+  };
+
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <ThemeContext.Provider value={themeVal}>
+      <AuthContext.Provider value={authVal}>
+        <ClinicContext.Provider value={clinicVal}>
+          <BillingContext.Provider value={billingVal}>
+            <AttendanceContext.Provider value={attendanceVal}>
+              <NotificationContext.Provider value={notificationVal}>
+                {children}
+              </NotificationContext.Provider>
+            </AttendanceContext.Provider>
+          </BillingContext.Provider>
+        </ClinicContext.Provider>
+      </AuthContext.Provider>
+    </ThemeContext.Provider>
+  );
+
+  return Wrapper;
+}
+
+describe('All Tabs and Roles Safety Audit (M9.5 / fix-payments-blank)', () => {
+  it('renders DashboardView for all 4 roles without throwing', () => {
+    [mdUser, docHayes, receptionistUser, patientUser].forEach((user) => {
+      const Wrapper = createMockProviders(user);
+      expect(() => {
+        render(
+          <Wrapper>
+            <DashboardView onNavigate={() => {}} />
+          </Wrapper>
+        );
+      }).not.toThrow();
+    });
+  });
+
+  it('renders all DoctorView tabs without throwing', () => {
+    const Wrapper = createMockProviders(docHayes);
+    ['overview', 'patients', 'prescriptions'].forEach((tab) => {
+      expect(() => {
+        render(
+          <Wrapper>
+            <DoctorView activeTab={tab} />
+          </Wrapper>
+        );
+      }).not.toThrow();
+    });
+  });
+
+  it('renders all ReceptionistView tabs without throwing', () => {
+    const Wrapper = createMockProviders(receptionistUser);
+    ['lounge', 'appointments', 'patients', 'registry'].forEach((tab) => {
+      expect(() => {
+        render(
+          <Wrapper>
+            <ReceptionistView activeTab={tab} />
+          </Wrapper>
+        );
+      }).not.toThrow();
+    });
+  });
+
+  it('renders all BillingView tabs without throwing', () => {
+    const Wrapper = createMockProviders(mdUser);
+    ['invoices', 'payments'].forEach((tab) => {
+      expect(() => {
+        render(
+          <Wrapper>
+            <BillingView initialTab={tab as any} />
+          </Wrapper>
+        );
+      }).not.toThrow();
+    });
+  });
+
+  it('renders all AccessControlView tabs without throwing', () => {
+    const Wrapper = createMockProviders(mdUser);
+    ['modules', 'edit_users', 'add_users', 'ledger', 'formulary', 'data'].forEach((tab) => {
+      expect(() => {
+        render(
+          <Wrapper>
+            <AccessControlView activeTab={tab} />
+          </Wrapper>
+        );
+      }).not.toThrow();
+    });
+  });
+
+  it('renders all AttendanceView tabs without throwing', () => {
+    const Wrapper = createMockProviders(mdUser);
+    ['today', 'sheet', 'leaves', 'shifts', 'my_attendance'].forEach((tab) => {
+      expect(() => {
+        render(
+          <Wrapper>
+            <AttendanceView activeTab={tab} />
+          </Wrapper>
+        );
+      }).not.toThrow();
+    });
+  });
+
+  it('renders all PatientPortal tabs without throwing', () => {
+    const Wrapper = createMockProviders(patientUser);
+    ['appointments', 'records', 'prescriptions', 'invoices', 'profile'].forEach((tab) => {
+      expect(() => {
+        render(
+          <Wrapper>
+            <PatientPortal activeTab={tab} />
+          </Wrapper>
+        );
+      }).not.toThrow();
+    });
+  });
+
+  it('renders every view safely with unmigrated legacy version-1 data', () => {
+    const legacyInvoices: any[] = [
+      {
+        id: 'inv-v1',
+        invoiceNumber: 'INV-LEGACY-001',
+        patientId: 'pat-1',
+        patientName: 'Eleanor Wright',
+        doctorId: 'doc-1',
+        doctorName: 'Dr. Marcus Vance',
+        date: '2025-11-20',
+        items: [{ id: '1', description: 'Office visit', amount: 95, kind: 'consultation' }],
+        status: 'unpaid',
+        createdBy: 'Dr. Marcus Vance',
+      },
+    ];
+
+    const legacyPayments: any[] = [
+      {
+        id: 'pay-v1',
+        invoiceId: 'inv-v1',
+        amount: 95,
+        method: 'cash',
+        date: '2025-11-20',
+        receivedBy: 'Priya Sharma',
+      },
+    ];
+
+    const Wrapper = createMockProviders(mdUser, legacyInvoices, legacyPayments);
+
+    expect(() => {
+      render(
+        <Wrapper>
+          <DashboardView onNavigate={() => {}} />
+          <BillingView initialTab="invoices" />
+          <BillingView initialTab="payments" />
+          <PatientPortal activeTab="invoices" />
+        </Wrapper>
+      );
+    }).not.toThrow();
+  });
+});

@@ -37,3 +37,4 @@ describe('Clinic Local Time and Date Helpers (M9.5 Requirement F)', () => {
     expect(formatLocalDate(early)).toBe('2026-10-19');
   });
 });
+

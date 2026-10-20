@@ -411,22 +411,23 @@ describe('Billing and Payments Engine (M6 & M9.5 Hardening)', () => {
     });
 
     it('doctors receive strictly zero invoices and zero payments', () => {
-      expect(getScopedInvoices(doctorUser, testInvoices, undefined, INITIAL_MODULES)).toEqual([]);
+      expect(getScopedInvoices(doctorUser, testInvoices, INITIAL_MODULES)).toEqual([]);
       expect(getScopedPayments(doctorUser, testPayments, testInvoices, INITIAL_MODULES)).toEqual([]);
     });
 
     it('patients see only their own invoices and payments', () => {
-      const pInvs = getScopedInvoices(patientUser, testInvoices, undefined, INITIAL_MODULES);
+      const pInvs = getScopedInvoices(patientUser, testInvoices, INITIAL_MODULES);
       expect(pInvs.map((i) => i.id)).toEqual(['inv-1']);
       const pPays = getScopedPayments(patientUser, testPayments, testInvoices, INITIAL_MODULES);
       expect(pPays.map((p) => p.id)).toEqual(['pay-1']);
     });
 
     it('admin sees clinic-wide invoices and payments', () => {
-      const aInvs = getScopedInvoices(adminUser, testInvoices, undefined, INITIAL_MODULES);
+      const aInvs = getScopedInvoices(adminUser, testInvoices, INITIAL_MODULES);
       expect(aInvs.length).toBe(2);
       const aPays = getScopedPayments(adminUser, testPayments, testInvoices, INITIAL_MODULES);
       expect(aPays.length).toBe(2);
     });
   });
 });
+

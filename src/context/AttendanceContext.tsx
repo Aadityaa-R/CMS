@@ -52,7 +52,7 @@ interface AttendanceContextType {
   getTodayRecord: (staffId: string) => AttendanceRecord | undefined;
 }
 
-const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
+export const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
 
 export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, staffAccessList, addAuditLogEntry } = useAuth();

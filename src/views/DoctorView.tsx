@@ -105,7 +105,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     doctors,
     appointments,
     patients,
-    vitals,
+    vitals = [],
     prescriptions,
     medicines = [],
     patientAssignments = [],

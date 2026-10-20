@@ -309,7 +309,7 @@ export function resolveDoctorId(user: User | null | undefined, doctors: Doctor[]
   if (user.badgeNumber === 'DOC-102') return 'doc-2';
   if (user.badgeNumber === 'DOC-103') return 'doc-3';
   const found = doctors.find(
-    (d) => d.id === userId || (user.email && d.email.toLowerCase() === user.email.toLowerCase())
+    (d) => d.id === userId || (user.email && d.email && d.email.toLowerCase() === user.email.toLowerCase())
   );
   return found ? found.id : '';
 }
@@ -321,7 +321,7 @@ export function resolvePatientId(user: User | null | undefined, patients: Patien
   if (userId.startsWith('pat-')) return userId;
   if (userId === 'usr-pat-1' || userId === 'patient') return 'pat-1';
   const found = patients.find(
-    (p) => p.id === userId || (user.email && p.email.toLowerCase() === user.email.toLowerCase())
+    (p) => p.id === userId || (user.email && p.email && p.email.toLowerCase() === user.email.toLowerCase())
   );
   return found ? found.id : 'pat-1';
 }

@@ -22,6 +22,65 @@ import { formatDoctorName } from '@/lib/doctorNames';
 export { formatCurrency, migrateConsultationFee };
 
 /**
+ * Formats an actor (createdBy, receivedBy, cancelledBy, etc.) safely into a display string.
+ * Accepts both a string and an object ({ id?: string; name?: string }).
+ * Returns fallback (default "Unknown") if null, undefined, empty, or unresolvable.
+ */
+export function formatActor(
+  actor: { id?: string; name?: string } | string | null | undefined,
+  fallback = 'Unknown'
+): string {
+  if (!actor) return fallback;
+  if (typeof actor === 'string') {
+    const trimmed = actor.trim();
+    return trimmed || fallback;
+  }
+  if (typeof actor === 'object') {
+    if (actor.name && typeof actor.name === 'string' && actor.name.trim()) {
+      return actor.name.trim();
+    }
+    if (actor.id && typeof actor.id === 'string' && actor.id.trim()) {
+      return actor.id.trim();
+    }
+  }
+  return fallback;
+}
+
+/**
+ * Resolves the actor identifier safely from string or object.
+ */
+export function getActorId(
+  actor: { id?: string; name?: string } | string | null | undefined
+): string | undefined {
+  if (!actor) return undefined;
+  if (typeof actor === 'string') return actor.trim() || undefined;
+  if (typeof actor === 'object' && actor.id) return String(actor.id).trim() || undefined;
+  return undefined;
+}
+
+/**
+ * Normalizes an actor representation into a canonical { id, name } structure.
+ */
+export function normalizeActor(
+  actor: { id?: string; name?: string } | string | null | undefined,
+  defaultId = 'unknown',
+  defaultName = 'Unknown'
+): { id: string; name: string } {
+  if (!actor) return { id: defaultId, name: defaultName };
+  if (typeof actor === 'string') {
+    const trimmed = actor.trim() || defaultName;
+    return { id: defaultId, name: trimmed };
+  }
+  if (typeof actor === 'object') {
+    return {
+      id: (actor.id && String(actor.id).trim()) || defaultId,
+      name: (actor.name && String(actor.name).trim()) || defaultName,
+    };
+  }
+  return { id: defaultId, name: defaultName };
+}
+
+/**
  * Converts dollars to integer minor units (cents).
  */
 export function dollarsToCents(dollars: number): number {
@@ -515,18 +574,26 @@ export function calculateDailyCollections(
     total: 0,
   };
 
+  if (!Array.isArray(payments)) {
+    return summary;
+  }
+
   for (const p of payments) {
+    if (!p) continue;
+
     if (targetDateStr) {
-      const pDate = p.receivedAt.split('T')[0];
+      const rawDate = p.receivedAt || (p as any).date || '';
+      const pDate = rawDate ? rawDate.split('T')[0] : '';
       if (pDate !== targetDateStr) continue;
     }
 
     if (actorId) {
-      const recId = typeof p.receivedBy === 'object' ? p.receivedBy.id : p.receivedBy;
+      const recId = getActorId(p.receivedBy);
       if (recId !== actorId) continue;
     }
 
-    const netAmount = p.kind === 'payment' ? p.amount : -p.amount;
+    const amount = typeof p.amount === 'number' && !isNaN(p.amount) ? p.amount : 0;
+    const netAmount = p.kind === 'reversal' ? -amount : amount;
 
     if (p.method === 'cash') summary.cash += netAmount;
     else if (p.method === 'card') summary.card += netAmount;

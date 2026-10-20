@@ -46,13 +46,13 @@ interface AttendanceViewProps {
 }
 
 export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => {
-  const { currentUser, staffAccessList } = useAuth();
+  const { currentUser, staffAccessList = [] } = useAuth();
   const { modules, appointments, updateAppointment } = useClinic();
   const { addNotification } = useNotifications();
   const {
-    shifts,
-    records,
-    leaveRequests,
+    shifts = [],
+    records = [],
+    leaveRequests = [],
     clockInUser,
     clockOutUser,
     requestLeave,
@@ -79,9 +79,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
     }, 6000);
   };
 
-  const canonicalUserId = getCanonicalStaffId(currentUser.id);
-  const userShift = getStaffShift(canonicalUserId);
-  const todayRecord = getTodayRecord(canonicalUserId);
+  const canonicalUserId = typeof getCanonicalStaffId === 'function' ? getCanonicalStaffId(currentUser?.id) : currentUser?.id || '';
+  const userShift = typeof getStaffShift === 'function' ? getStaffShift(canonicalUserId) : undefined;
+  const todayRecord = typeof getTodayRecord === 'function' ? getTodayRecord(canonicalUserId) : undefined;
   const todayStr = formatDate(new Date());
   const isUserOnLeaveToday = isOnLeave(canonicalUserId, todayStr, leaveRequests);
 

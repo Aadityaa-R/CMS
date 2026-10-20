@@ -62,7 +62,7 @@ const FORM_OPTIONS: { value: MedicineForm; label: string }[] = [
 ];
 
 export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
-  const { medicines, addMedicine, updateMedicine, toggleMedicineStatus, modules } = useClinic();
+  const { medicines = [], addMedicine, updateMedicine, toggleMedicineStatus, modules = [] } = useClinic();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState<string>('all');
@@ -92,11 +92,12 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
   // Filtered medicines
   const filteredMedicines = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return medicines.filter((m) => {
+    return (medicines || []).filter((m) => {
+      const generic = (m.genericName || '').toLowerCase();
       const matchSearch =
         !q ||
-        m.genericName.toLowerCase().includes(q) ||
-        (m.brandNames && m.brandNames.some((b) => b.toLowerCase().includes(q)));
+        generic.includes(q) ||
+        (m.brandNames && m.brandNames.some((b) => (b || '').toLowerCase().includes(q)));
 
       const matchClass = selectedClass === 'all' || m.drugClass === selectedClass;
       return matchSearch && matchClass;

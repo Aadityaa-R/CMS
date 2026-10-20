@@ -58,3 +58,4 @@ export function migrateConsultationFee(fee: number | null | undefined): number {
   }
   return Math.round(fee);
 }
+

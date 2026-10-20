@@ -10,6 +10,7 @@ import {
   amountPaid,
   balanceDue,
   deriveStatus,
+  formatActor,
 } from '@/lib/billing';
 import {
   canRecordPayment,
@@ -25,6 +26,7 @@ import { Invoice, Payment, PaymentMethod, Receipt } from '@/types/billing';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
@@ -42,7 +44,11 @@ import {
 } from '@/components/ui/Table';
 import { Printer } from 'lucide-react';
 
-export const BillingView: React.FC = () => {
+export interface BillingViewProps {
+  initialTab?: 'invoices' | 'payments';
+}
+
+export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices' }) => {
   const { currentUser } = useAuth();
   const { modules, patients } = useClinic();
   const {
@@ -58,7 +64,7 @@ export const BillingView: React.FC = () => {
   } = useBilling();
 
   // Active top-level tab
-  const [activeTab, setActiveTab] = useState<'invoices' | 'payments'>('invoices');
+  const [activeTab, setActiveTab] = useState<'invoices' | 'payments'>(initialTab);
 
   // Notification Banner
   const [notification, setNotification] = useState<string | null>(null);
@@ -69,7 +75,7 @@ export const BillingView: React.FC = () => {
 
   // Scope invoices and payments based on user permissions
   const scopedInvoices = useMemo(() => {
-    return getScopedInvoices(currentUser, allInvoices, undefined, modules);
+    return getScopedInvoices(currentUser, allInvoices, modules);
   }, [currentUser, allInvoices, modules]);
 
   const scopedPayments = useMemo(() => {
@@ -97,18 +103,19 @@ export const BillingView: React.FC = () => {
     const list: SearchSuggestion[] = [];
     const seen = new Set<string>();
     scopedInvoices.forEach((inv) => {
+      const invNum = inv.number || (inv as any).invoiceNumber || inv.id || '';
       if (inv.patientName && !seen.has(inv.patientName.toLowerCase())) {
         seen.add(inv.patientName.toLowerCase());
         list.push({
           label: inv.patientName,
           category: 'Patient',
-          sublabel: `Invoice ${inv.number}`,
+          sublabel: `Invoice ${invNum || 'Unknown'}`,
         });
       }
-      if (!seen.has(inv.number.toLowerCase())) {
-        seen.add(inv.number.toLowerCase());
+      if (invNum && !seen.has(invNum.toLowerCase())) {
+        seen.add(invNum.toLowerCase());
         list.push({
-          label: inv.number,
+          label: invNum,
           category: 'Invoice',
           sublabel: inv.patientName || 'Patient invoice',
         });
@@ -125,9 +132,10 @@ export const BillingView: React.FC = () => {
         return false;
       }
       if (!query) return true;
-      const matchNumber = inv.number.toLowerCase().includes(query);
+      const invNum = inv.number || (inv as any).invoiceNumber || inv.id || '';
+      const matchNumber = invNum.toLowerCase().includes(query);
       const matchPatient = (inv.patientName || '').toLowerCase().includes(query);
-      const matchPatientId = inv.patientId.toLowerCase().includes(query);
+      const matchPatientId = (inv.patientId || '').toLowerCase().includes(query);
       return matchNumber || matchPatient || matchPatientId;
     });
   }, [scopedInvoices, invoiceSearchTerm, invoiceStatusFilter, allPayments]);
@@ -146,8 +154,10 @@ export const BillingView: React.FC = () => {
 
   const filteredPayments = useMemo(() => {
     return scopedPayments.filter((p) => {
+      if (!p) return false;
       if (paymentDateFilter) {
-        const paymentDate = p.receivedAt.split('T')[0];
+        const rawDate = p.receivedAt || (p as any).date || '';
+        const paymentDate = rawDate ? rawDate.split('T')[0] : '';
         if (paymentDate !== paymentDateFilter) return false;
       }
       if (paymentMethodFilter && p.method !== paymentMethodFilter) {
@@ -508,7 +518,8 @@ export const BillingView: React.FC = () => {
       {/* ========================================================================= */}
       {/* TAB 1: INVOICES                                                           */}
       {/* ========================================================================= */}
-      {activeTab === 'invoices' && (
+      <ErrorBoundary key="invoices-tab">
+        {activeTab === 'invoices' && (
         <Card>
           <CardHeader
             action={
@@ -594,11 +605,11 @@ export const BillingView: React.FC = () => {
                         <TableRow key={inv.id}>
                           <TableCell isPrimary label="Invoice #" className="w-36">
                             <span className="font-medium text-slate-900 dark:text-slate-100">
-                              {inv.number}
+                              {inv.number || (inv as any).invoiceNumber || 'Unknown'}
                             </span>
                           </TableCell>
                           <TableCell hideBelow="sm" label="Date" className="w-28 text-slate-600 dark:text-slate-400">
-                            {inv.issuedAt ? inv.issuedAt.split('T')[0] : '2026-10-16'}
+                            {inv.issuedAt ? inv.issuedAt.split('T')[0] : (inv as any).date ? (inv as any).date.split('T')[0] : 'Unknown'}
                           </TableCell>
                           <TableCell label="Patient" className="w-48">
                             <div className="font-medium text-slate-900 dark:text-slate-100">
@@ -676,11 +687,13 @@ export const BillingView: React.FC = () => {
           </CardContent>
         </Card>
       )}
+      </ErrorBoundary>
 
       {/* ========================================================================= */}
       {/* TAB 2: PAYMENTS                                                           */}
       {/* ========================================================================= */}
-      {activeTab === 'payments' && (
+      <ErrorBoundary key="payments-tab">
+        {activeTab === 'payments' && (
         <Card>
           <CardHeader
             action={
@@ -753,9 +766,9 @@ export const BillingView: React.FC = () => {
                   {paginatedPayments.length > 0 ? (
                     paginatedPayments.map((p) => {
                       const matchedInvoice = allInvoices.find((i) => i.id === p.invoiceId);
-                      const patientName = matchedInvoice?.patientName || 'Registered Patient';
-                      const receiver =
-                        typeof p.receivedBy === 'object' ? p.receivedBy.name : p.receivedBy || 'Staff';
+                      const invoiceNumberDisplay = matchedInvoice?.number || 'Unknown';
+                      const patientNameDisplay = (matchedInvoice?.patientName && matchedInvoice.patientName.trim()) || 'Unknown';
+                      const receiver = formatActor(p.receivedBy, 'Unknown');
 
                       const isReversed =
                         p.kind === 'reversal' ||
@@ -766,24 +779,30 @@ export const BillingView: React.FC = () => {
                         p.kind === 'payment' &&
                         !isReversed;
 
+                      const displayDate = p.receivedAt
+                        ? p.receivedAt.replace('T', ' ').slice(0, 16)
+                        : (p as any).date
+                        ? (p as any).date.replace('T', ' ').slice(0, 16)
+                        : 'Unknown';
+
                       return (
                         <TableRow key={p.id}>
                           <TableCell isPrimary label="Receipt #" className="w-36">
                             <span className="font-medium text-slate-900 dark:text-slate-100">
-                              {p.receiptNumber}
+                              {p.receiptNumber || p.id || 'Unknown'}
                             </span>
                           </TableCell>
                           <TableCell hideBelow="sm" label="Date & Time" className="w-32 text-slate-600 dark:text-slate-400">
-                            {p.receivedAt ? p.receivedAt.replace('T', ' ').slice(0, 16) : '2026-10-16'}
+                            {displayDate}
                           </TableCell>
                           <TableCell label="Invoice #" className="w-32 text-slate-700 dark:text-slate-300">
-                            {matchedInvoice?.number || p.invoiceId}
+                            {invoiceNumberDisplay}
                           </TableCell>
                           <TableCell label="Patient" className="w-44 font-medium text-slate-900 dark:text-slate-100">
-                            {patientName}
+                            {patientNameDisplay}
                           </TableCell>
                           <TableCell hideBelow="md" label="Method" className="w-24 uppercase text-slate-600 dark:text-slate-400">
-                            {p.method}
+                            {p.method || 'Unknown'}
                           </TableCell>
                           <TableCell label="Amount" className="w-28 text-right font-medium text-slate-900 dark:text-slate-100">
                             <span className={p.kind === 'reversal' ? 'text-rose-600 dark:text-rose-400' : ''}>
@@ -850,6 +869,7 @@ export const BillingView: React.FC = () => {
           </CardContent>
         </Card>
       )}
+      </ErrorBoundary>
 
       {/* ========================================================================= */}
       {/* MODAL 1: RECORD PAYMENT                                                   */}
@@ -1009,8 +1029,8 @@ export const BillingView: React.FC = () => {
         <Modal
           isOpen={Boolean(activeViewingInvoice)}
           onClose={() => setViewingInvoice(null)}
-          title={`Invoice ${activeViewingInvoice.number}`}
-          description={`Issued on ${activeViewingInvoice.issuedAt ? activeViewingInvoice.issuedAt.split('T')[0] : '2026-10-16'}`}
+          title={`Invoice ${activeViewingInvoice.number || (activeViewingInvoice as any).invoiceNumber || 'Details'}`}
+          description={`Issued on ${activeViewingInvoice.issuedAt ? activeViewingInvoice.issuedAt.split('T')[0] : (activeViewingInvoice as any).date ? (activeViewingInvoice as any).date.split('T')[0] : 'Unknown'}`}
           maxWidth="lg"
           footer={
             <Button
@@ -1310,9 +1330,9 @@ export const BillingView: React.FC = () => {
                           allPayments.some((o) => o.reversesPaymentId === p.id);
                         return (
                           <tr key={p.id}>
-                            <td className="p-2 font-medium text-slate-900 dark:text-slate-100">{p.receiptNumber}</td>
+                            <td className="p-2 font-medium text-slate-900 dark:text-slate-100">{p.receiptNumber || 'Receipt'}</td>
                             <td className="p-2 text-slate-600 dark:text-slate-400">
-                              {p.receivedAt ? p.receivedAt.split('T')[0] : '2026-10-16'}
+                              {p.receivedAt ? p.receivedAt.split('T')[0] : (p as any).date ? (p as any).date.split('T')[0] : 'Unknown'}
                             </td>
                             <td className="p-2 uppercase text-slate-600 dark:text-slate-400">{p.method}</td>
                             <td className="p-2 text-right font-medium text-slate-900 dark:text-slate-100">

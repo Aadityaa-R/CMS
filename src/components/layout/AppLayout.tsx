@@ -14,6 +14,7 @@ import { AccessControlView } from '@/views/AccessControlView';
 import { AttendanceView } from '@/views/AttendanceView';
 import { BillingView } from '@/views/BillingView';
 import { Button } from '@/components/ui/Button';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isAdmin, hasCapability, canViewBilling } from '@/lib/permissions';
 import { useClinic } from '@/context/ClinicContext';
 
@@ -176,7 +177,9 @@ export const AppLayout: React.FC = () => {
 
           {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
           <main className="flex-1 overflow-y-auto w-full p-4 sm:p-6">
-            {renderActiveView()}
+            <ErrorBoundary>
+              {renderActiveView()}
+            </ErrorBoundary>
           </main>
         </div>
       </div>

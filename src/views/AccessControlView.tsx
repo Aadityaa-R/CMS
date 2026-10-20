@@ -135,8 +135,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   }, [activeTab]);
   const {
     currentUser,
-    staffAccessList,
-    accessAuditLog,
+    staffAccessList = [],
+    accessAuditLog = [],
     grantStaffAccess,
     revokeStaffAccess,
     deleteStaffAccount,

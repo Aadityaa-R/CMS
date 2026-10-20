@@ -9,7 +9,7 @@ export const PASSWORD_MIN_LENGTH = 10;
 export const PBKDF2_ITERATIONS = 100000;
 
 export const STORAGE_KEY_PREFIX = 'cms_v1_';
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const STORAGE_SETTINGS_KEY = 'cms_v1_settings';
 export const STORAGE_BACKUP_UNDO_KEY = 'cms_v1_backup_undo';
 export const SESSION_STORAGE_KEY = 'cms_v1_session';

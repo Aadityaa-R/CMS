@@ -15,6 +15,10 @@ import {
 } from '../types/storage';
 import { BrowserRepository, MemoryRepository, Repository } from './repository';
 import { hashPassword } from '../lib/auth';
+import { normalizeActor } from '../lib/billing';
+import { migrateConsultationFee } from '../lib/money';
+import { migrateLegacyPrescription } from '../lib/prescribing';
+import { Medicine } from '../types/prescribing';
 import {
   ROLE_CREDENTIALS,
   INITIAL_STAFF_ACCESS,
@@ -72,7 +76,10 @@ export function getStorageSettings(): StorageSettings {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && (parsed.mode === 'browser' || parsed.mode === 'memory')) {
-        return parsed;
+        return {
+          ...parsed,
+          schemaVersion: typeof parsed.schemaVersion === 'number' ? parsed.schemaVersion : 1,
+        };
       }
     }
   } catch {
@@ -80,7 +87,7 @@ export function getStorageSettings(): StorageSettings {
   }
   return {
     mode: 'browser',
-    schemaVersion: SCHEMA_VERSION,
+    schemaVersion: isStorageEmpty() ? SCHEMA_VERSION : 1,
     lastSaved: new Date().toISOString(),
   };
 }
@@ -196,8 +203,210 @@ export function isStorageCorrupted(): boolean {
   }
 }
 
+/**
+ * Normalizes an array of invoices from earlier schema versions to schema version 2.
+ * Converts legacy dollar amounts to integer cents, ensures canonical { id, name } createdBy,
+ * and standardizes field keys.
+ */
+export function migrateInvoices(invoices: any[]): any[] {
+  if (!Array.isArray(invoices)) return [];
+  return invoices.map((inv, idx) => {
+    const rawItems = Array.isArray(inv.items) ? inv.items : [];
+    const normalizedItems = rawItems.map((item: any, itemIdx: number) => {
+      let amount = 0;
+      if (typeof item.amount === 'number') {
+        amount = item.amount > 0 && item.amount < 1000 ? Math.round(item.amount * 100) : Math.round(item.amount);
+      } else if (typeof item.price === 'number') {
+        amount = item.price > 0 && item.price < 1000 ? Math.round(item.price * 100) : Math.round(item.price);
+      }
+      return {
+        id: item.id || `item-migrated-${idx}-${itemIdx + 1}`,
+        description: item.description || 'Medical Service',
+        amount,
+        kind: (item.kind === 'consultation' || item.kind === 'charge' || item.kind === 'discount')
+          ? item.kind
+          : 'charge',
+      };
+    });
+
+    const doctorId = inv.doctorId || 'unknown';
+    const doctorName = inv.doctorName || 'Staff Doctor';
+
+    return {
+      ...inv,
+      id: inv.id || `inv-${idx + 1}`,
+      number: inv.number || inv.invoiceNumber || `INV-${inv.id || idx + 1}`,
+      patientId: inv.patientId || '',
+      patientName: inv.patientName || undefined,
+      visitId: inv.visitId || inv.appointmentId || undefined,
+      appointmentId: inv.appointmentId || inv.visitId || undefined,
+      doctorId,
+      doctorName,
+      issuedAt: inv.issuedAt || inv.date || inv.createdAt || new Date().toISOString(),
+      items: normalizedItems,
+      status: ['unpaid', 'partially_paid', 'paid', 'void'].includes(inv.status) ? inv.status : 'unpaid',
+      createdBy: normalizeActor(inv.createdBy, doctorId, doctorName),
+    };
+  });
+}
+
+/**
+ * Normalizes an array of payments from earlier schema versions to schema version 2.
+ * Converts legacy dollar amounts to integer cents, ensures canonical { id, name } receivedBy,
+ * and sets default kind and sequential receipt number.
+ */
+export function migratePayments(payments: any[]): any[] {
+  if (!Array.isArray(payments)) return [];
+  return payments.map((p, idx) => {
+    let amount = 0;
+    if (typeof p.amount === 'number') {
+      amount = p.amount > 0 && p.amount < 1000 ? Math.round(p.amount * 100) : Math.round(p.amount);
+    }
+
+    return {
+      ...p,
+      id: p.id || `pay-${idx + 1}`,
+      invoiceId: p.invoiceId || '',
+      amount,
+      method: ['cash', 'card', 'upi', 'portal'].includes(p.method) ? p.method : 'cash',
+      kind: p.kind === 'reversal' ? 'reversal' : 'payment',
+      reversesPaymentId: p.reversesPaymentId || undefined,
+      receivedAt: p.receivedAt || p.date || p.timestamp || p.createdAt || new Date().toISOString(),
+      receivedBy: normalizeActor(p.receivedBy, 'unknown', 'Unknown'),
+      reference: p.reference || undefined,
+      note: p.note || undefined,
+      reason: p.reason || undefined,
+      receiptNumber: p.receiptNumber || `RCT-${p.id || idx + 1}`,
+    };
+  });
+}
+
+/**
+ * Normalizes an array of prescriptions from earlier schema versions to schema version 2.
+ * Converts unstructured text prescriptions to structured items, resolves formulary medicines,
+ * and standardizes actor fields.
+ */
+export function migratePrescriptions(prescriptions: any[], formulary: Medicine[] = []): any[] {
+  if (!Array.isArray(prescriptions)) return [];
+  return prescriptions.map((rx) => {
+    const migrated = migrateLegacyPrescription(rx, formulary);
+    if (rx.cancelledBy) {
+      migrated.cancelledBy = normalizeActor(rx.cancelledBy, 'unknown', 'Unknown');
+    }
+    return migrated;
+  });
+}
+
+/**
+ * Normalizes staff members by converting consultationFee from legacy dollars to cents.
+ */
+export function migrateStaff(staffList: any[]): any[] {
+  if (!Array.isArray(staffList)) return [];
+  return staffList.map((s) => ({
+    ...s,
+    consultationFee: migrateConsultationFee(s.consultationFee),
+  }));
+}
+
+/**
+ * Normalizes appointments actor fields (checkedInBy, bookedBy, cancelledBy) to canonical objects.
+ */
+export function migrateAppointments(appointments: any[]): any[] {
+  if (!Array.isArray(appointments)) return [];
+  return appointments.map((a) => {
+    const updated: any = { ...a };
+    if (a.checkedInBy) {
+      updated.checkedInBy = normalizeActor(a.checkedInBy, 'unknown', 'Staff');
+    }
+    if (a.bookedBy) {
+      updated.bookedBy = normalizeActor(a.bookedBy, 'unknown', 'Staff');
+    }
+    if (a.cancelledBy) {
+      updated.cancelledBy = normalizeActor(a.cancelledBy, 'unknown', 'Staff');
+    }
+    return updated;
+  });
+}
+
+/**
+ * Upgrades persisted storage collections across schema versions.
+ * Safely normalizes in-place without losing or wiping existing user data.
+ */
+export async function runStorageMigrations(fromVersion: number, toVersion: number): Promise<void> {
+  if (fromVersion >= toVersion) return;
+
+  if (fromVersion < 2) {
+    // 1. Formulary (needed for prescription migration)
+    const repoFormulary = getRepository<any>('formulary');
+    let formulary = await repoFormulary.list();
+    if (!formulary || formulary.length === 0) {
+      formulary = INITIAL_FORMULARY;
+    }
+
+    // 2. Invoices
+    const repoInvoices = getRepository<any>('invoices');
+    const existingInvoices = await repoInvoices.list();
+    if (existingInvoices && existingInvoices.length > 0) {
+      const migratedInvoices = migrateInvoices(existingInvoices);
+      await repoInvoices.replaceAll(migratedInvoices);
+    }
+
+    // 3. Payments
+    const repoPayments = getRepository<any>('payments');
+    const existingPayments = await repoPayments.list();
+    if (existingPayments && existingPayments.length > 0) {
+      const migratedPayments = migratePayments(existingPayments);
+      await repoPayments.replaceAll(migratedPayments);
+    }
+
+    // 4. Prescriptions
+    const repoPrescriptions = getRepository<any>('prescriptions');
+    const existingPrescriptions = await repoPrescriptions.list();
+    if (existingPrescriptions && existingPrescriptions.length > 0) {
+      const migratedPrescriptions = migratePrescriptions(existingPrescriptions, formulary);
+      await repoPrescriptions.replaceAll(migratedPrescriptions);
+    }
+
+    // 5. Staff
+    const repoStaff = getRepository<any>('staff');
+    const existingStaff = await repoStaff.list();
+    if (existingStaff && existingStaff.length > 0) {
+      const migratedStaff = migrateStaff(existingStaff);
+      await repoStaff.replaceAll(migratedStaff);
+    }
+
+    // 6. Appointments
+    const repoAppointments = getRepository<any>('appointments');
+    const existingAppointments = await repoAppointments.list();
+    if (existingAppointments && existingAppointments.length > 0) {
+      const migratedAppointments = migrateAppointments(existingAppointments);
+      await repoAppointments.replaceAll(migratedAppointments);
+    }
+
+    // Update settings schema version
+    setStorageSettings({ schemaVersion: toVersion });
+
+    // Record audit in ledger
+    const repoLedger = getRepository<any>('ledger');
+    await repoLedger.create({
+      id: `audit-migration-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      action: 'schema_migration',
+      subject: 'Storage Schema Migration',
+      role: 'system',
+      details: `Storage schema upgraded from version ${fromVersion} to version ${toVersion}.`,
+      authorizedBy: 'System Migration',
+    });
+  }
+}
+
 export async function seedInitialData(force = false): Promise<void> {
   if (!force && !isStorageEmpty()) {
+    const settings = getStorageSettings();
+    const currentVersion = settings.schemaVersion || 1;
+    if (currentVersion < SCHEMA_VERSION) {
+      await runStorageMigrations(currentVersion, SCHEMA_VERSION);
+    }
     return;
   }
 
@@ -329,12 +538,32 @@ export async function importBackupData(backup: BackupData, actingUser = 'Adminis
   if (!backup || typeof backup !== 'object') {
     throw new Error('Invalid backup file: Not a valid JSON document.');
   }
-  const version = backup.schemaVersion || backup.SCHEMA_VERSION;
+  const version = backup.schemaVersion || backup.SCHEMA_VERSION || 1;
   if (!version || version > SCHEMA_VERSION) {
     throw new Error(`Incompatible schema version: file version ${version} is unsupported.`);
   }
   if (!backup.collections || typeof backup.collections !== 'object') {
     throw new Error('Invalid backup file: Missing collections container.');
+  }
+
+  // If importing older schema version, normalize collections before restoring
+  if (version < 2 && backup.collections) {
+    const formulary = backup.collections.formulary || INITIAL_FORMULARY;
+    if (Array.isArray(backup.collections.invoices)) {
+      backup.collections.invoices = migrateInvoices(backup.collections.invoices);
+    }
+    if (Array.isArray(backup.collections.payments)) {
+      backup.collections.payments = migratePayments(backup.collections.payments);
+    }
+    if (Array.isArray(backup.collections.prescriptions)) {
+      backup.collections.prescriptions = migratePrescriptions(backup.collections.prescriptions, formulary);
+    }
+    if (Array.isArray(backup.collections.staff)) {
+      backup.collections.staff = migrateStaff(backup.collections.staff);
+    }
+    if (Array.isArray(backup.collections.appointments)) {
+      backup.collections.appointments = migrateAppointments(backup.collections.appointments);
+    }
   }
 
   // Save current data snapshot for undo
@@ -351,12 +580,14 @@ export async function importBackupData(backup: BackupData, actingUser = 'Adminis
   const entries = Object.entries(backup.collections);
   for (const [colName, items] of entries) {
     if (colName === 'settings') {
-      setStorageSettings(items as StorageSettings);
+      setStorageSettings({ ...(items as StorageSettings), schemaVersion: SCHEMA_VERSION });
     } else if (Array.isArray(items)) {
       const repo = getRepository<any>(colName as CollectionName);
       await repo.replaceAll(items);
     }
   }
+
+  setStorageSettings({ schemaVersion: SCHEMA_VERSION });
 
   // Log to ledger
   const repoLedger = getRepository<any>('ledger');

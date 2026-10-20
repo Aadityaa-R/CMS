@@ -64,3 +64,4 @@ try {
   console.error('[ERROR] Failed to scan git commit messages:', err.message);
   process.exit(1);
 }
+

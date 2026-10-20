@@ -95,8 +95,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     patients: rawPatients,
     appointments: rawAppointments,
     prescriptions: rawPrescriptions,
-    vitals: rawVitals,
+    vitals: rawVitals = [],
     patientAssignments = [],
+    modules = [],
     updatePatient,
     bookAppointment: clinicBookAppointment,
     cancelAppointmentAction,
@@ -144,24 +145,24 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
   // Scoped Data
   const scopedPatients = useMemo(() => {
-    return getScopedPatients(currentUser, rawPatients, patientAssignments);
-  }, [currentUser, rawPatients, patientAssignments]);
+    return getScopedPatients(currentUser, rawPatients, patientAssignments, null, modules);
+  }, [currentUser, rawPatients, patientAssignments, modules]);
 
   const patient = scopedPatients.find(
     (p) => p.id === currentUser.patientId || p.mrn === currentUser.badgeNumber
   ) || scopedPatients[0];
 
   const scopedAppointments = useMemo(() => {
-    return getScopedAppointments(currentUser, rawAppointments, patientAssignments);
-  }, [currentUser, rawAppointments, patientAssignments]);
+    return getScopedAppointments(currentUser, rawAppointments, patientAssignments, null, modules);
+  }, [currentUser, rawAppointments, patientAssignments, modules]);
 
   const scopedPrescriptions = useMemo(() => {
-    return getScopedPrescriptions(currentUser, rawPrescriptions, patientAssignments);
-  }, [currentUser, rawPrescriptions, patientAssignments]);
+    return getScopedPrescriptions(currentUser, rawPrescriptions, patientAssignments, null, modules);
+  }, [currentUser, rawPrescriptions, patientAssignments, modules]);
 
   const scopedInvoices = useMemo(() => {
-    return getScopedInvoices(currentUser, billingInvoices, patientAssignments);
-  }, [currentUser, billingInvoices, patientAssignments]);
+    return getScopedInvoices(currentUser, billingInvoices, modules);
+  }, [currentUser, billingInvoices, modules]);
 
   // Attendance data for scheduling
   const { shifts, leaves } = useMemo(() => {
@@ -1283,10 +1284,10 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                       return (
                         <TableRow key={inv.id}>
                           <TableCell label="Invoice #" className="w-2/12 min-w-[110px] font-medium text-slate-900 dark:text-slate-100">
-                            {inv.number}
+                            {inv.number || (inv as any).invoiceNumber || 'Unknown'}
                           </TableCell>
                           <TableCell label="Date" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
-                            {inv.issuedAt ? inv.issuedAt.split('T')[0] : '---'}
+                            {inv.issuedAt ? inv.issuedAt.split('T')[0] : (inv as any).date ? (inv as any).date.split('T')[0] : '---'}
                           </TableCell>
                           <TableCell label="Doctor" className="w-2/12 min-w-[120px] text-slate-600 dark:text-slate-300">
                             {inv.doctorName || 'Consulting Physician'}
@@ -2032,9 +2033,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                         .filter((p) => p.invoiceId === patientViewingInvoice.id)
                         .map((p) => (
                           <tr key={p.id}>
-                            <td className="p-2 font-medium text-slate-900 dark:text-slate-100">{p.receiptNumber}</td>
+                            <td className="p-2 font-medium text-slate-900 dark:text-slate-100">{p.receiptNumber || 'Receipt'}</td>
                             <td className="p-2 text-slate-600 dark:text-slate-400">
-                              {p.receivedAt ? p.receivedAt.split('T')[0] : '---'}
+                              {p.receivedAt ? p.receivedAt.split('T')[0] : (p as any).date ? (p as any).date.split('T')[0] : '---'}
                             </td>
                             <td className="p-2 uppercase text-slate-600 dark:text-slate-400">{p.method}</td>
                             <td className="p-2 text-right font-medium text-slate-900 dark:text-slate-100">

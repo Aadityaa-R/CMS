@@ -19,3 +19,4 @@ export function formatDoctorName(
   if (!stripped) return 'Dr.';
   return `Dr. ${stripped}`;
 }
+

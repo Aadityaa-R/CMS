@@ -50,3 +50,4 @@ export function parseLocalDateKey(input: string | Date | null | undefined): stri
 export function getClinicDayKey(now: Date = new Date()): string {
   return formatLocalDate(now);
 }
+

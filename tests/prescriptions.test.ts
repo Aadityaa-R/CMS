@@ -308,21 +308,21 @@ describe('Prescriptions and Formulary Engine (M8 & M9.5 Hardening)', () => {
     const allPrescriptions = [rxHayesForPat1, rxReedForPat2];
 
     it('Hayes sees only prescriptions for their assigned patient, not Reed patients', () => {
-      const hayesScoped = getScopedPrescriptions(docHayes, allPrescriptions, assignments, INITIAL_MODULES);
+      const hayesScoped = getScopedPrescriptions(docHayes, allPrescriptions, assignments, null, INITIAL_MODULES);
       expect(hayesScoped.map((r) => r.id)).toEqual(['rx-hayes-1']);
       expect(canViewPrescription(docHayes, rxHayesForPat1, assignments, INITIAL_MODULES)).toBe(true);
       expect(canViewPrescription(docHayes, rxReedForPat2, assignments, INITIAL_MODULES)).toBe(false);
     });
 
     it('Reed sees only prescriptions for their assigned patient, not Hayes patients', () => {
-      const reedScoped = getScopedPrescriptions(docReed, allPrescriptions, assignments, INITIAL_MODULES);
+      const reedScoped = getScopedPrescriptions(docReed, allPrescriptions, assignments, null, INITIAL_MODULES);
       expect(reedScoped.map((r) => r.id)).toEqual(['rx-reed-1']);
       expect(canViewPrescription(docReed, rxReedForPat2, assignments, INITIAL_MODULES)).toBe(true);
       expect(canViewPrescription(docReed, rxHayesForPat1, assignments, INITIAL_MODULES)).toBe(false);
     });
 
     it('MD sees all prescriptions clinic-wide', () => {
-      const mdScoped = getScopedPrescriptions(mdUser, allPrescriptions, assignments, INITIAL_MODULES);
+      const mdScoped = getScopedPrescriptions(mdUser, allPrescriptions, assignments, null, INITIAL_MODULES);
       expect(mdScoped.length).toBe(2);
       expect(canViewPrescription(mdUser, rxHayesForPat1, assignments, INITIAL_MODULES)).toBe(true);
       expect(canViewPrescription(mdUser, rxReedForPat2, assignments, INITIAL_MODULES)).toBe(true);
@@ -346,16 +346,16 @@ describe('Prescriptions and Formulary Engine (M8 & M9.5 Hardening)', () => {
     });
 
     it('Receptionist sees zero prescriptions', () => {
-      const recScoped = getScopedPrescriptions(receptionist, allPrescriptions, assignments, INITIAL_MODULES);
+      const recScoped = getScopedPrescriptions(receptionist, allPrescriptions, assignments, null, INITIAL_MODULES);
       expect(recScoped.length).toBe(0);
       expect(canViewPrescription(receptionist, rxHayesForPat1, assignments, INITIAL_MODULES)).toBe(false);
     });
 
     it('Patient sees only their own prescriptions', () => {
-      const p1Scoped = getScopedPrescriptions(patient1, allPrescriptions, assignments, INITIAL_MODULES);
+      const p1Scoped = getScopedPrescriptions(patient1, allPrescriptions, assignments, null, INITIAL_MODULES);
       expect(p1Scoped.map((r) => r.id)).toEqual(['rx-hayes-1']);
 
-      const p2Scoped = getScopedPrescriptions(patient2, allPrescriptions, assignments, INITIAL_MODULES);
+      const p2Scoped = getScopedPrescriptions(patient2, allPrescriptions, assignments, null, INITIAL_MODULES);
       expect(p2Scoped.map((r) => r.id)).toEqual(['rx-reed-1']);
     });
 
@@ -382,3 +382,4 @@ describe('Prescriptions and Formulary Engine (M8 & M9.5 Hardening)', () => {
     });
   });
 });
+

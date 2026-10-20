@@ -21,6 +21,7 @@ import {
   makeReceipt,
   formatCurrency,
   calculateDailyCollections,
+  formatActor,
 } from '@/lib/billing';
 import {
   canRecordPayment,
@@ -81,7 +82,7 @@ interface BillingContextType {
   getDailyCollections: (actorId?: string, targetDateStr?: string) => DailyCollectionsSummary;
 }
 
-const BillingContext = createContext<BillingContextType | undefined>(undefined);
+export const BillingContext = createContext<BillingContextType | undefined>(undefined);
 
 export const BillingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, addAuditLogEntry } = useAuth();
@@ -572,10 +573,7 @@ export const BillingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       mrn: 'MRN-84291',
     };
 
-    const receiverName =
-      typeof payment.receivedBy === 'object'
-        ? payment.receivedBy.name
-        : payment.receivedBy || 'Front Desk Cashier';
+    const receiverName = formatActor(payment.receivedBy, 'Front Desk Cashier');
 
     return makeReceipt(payment, invoice, patientSummary, receiverName);
   };

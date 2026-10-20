@@ -53,3 +53,4 @@ export function getVitalLabel(
   if (!marker) return baseLabel;
   return `${baseLabel} ${marker}`;
 }
+

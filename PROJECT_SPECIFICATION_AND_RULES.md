@@ -511,12 +511,36 @@ Every feature and line of code in this project strictly adheres to the governing
 
 ---
 
+### 2.21 Payments Blank Screen Root Cause Fix, Storage Migration, and Error Boundary Hardening
+
+- **Root Cause Elimination in Payments View**:
+  - Resolved BillingView.tsx crash where payments with null or unpopulated receivedBy caused TypeError: Cannot read properties of null (reading "name"). Added unified actor formatter formatActor and canonical normalizer normalizeActor handling strings, objects, null, and undefined uniformly.
+  - Hardened calculateDailyCollections in src/lib/billing.ts to parse receivedAt || date safely, use getActorId, and validate integer minor units without throwing on missing fields.
+  - Eliminated crashes in invoice search suggestions and tables when older records had invoiceNumber or date instead of number or issuedAt. Missing invoice numbers or patients render plain text "Unknown".
+  - Enforced strict signatures on all selectors in src/lib/selectors.ts (getScopedInvoices, getScopedPatients, getScopedAppointments, getScopedPrescriptions, getScopedPayments), removing optional and unused parameters to guarantee callers never pass undefined.
+- **Storage Schema Migration (SCHEMA_VERSION = 2)**:
+  - Bumped SCHEMA_VERSION from 1 to 2 in src/lib/authConstants.ts.
+  - Implemented automatic, in-place storage schema migrations in src/data/storage.ts (runStorageMigrations, migrateInvoices, migratePayments, migratePrescriptions, migrateStaff, migrateAppointments) and integrated them into initialization (seedInitialData) and backup restoration (importBackupData).
+  - Converts legacy dollar amounts to integer cents, resolves legacy prescription text to formulary regimens via migrateLegacyPrescription, upgrades staff consultation fees to minor units, and normalizes actor shapes without silent data loss.
+- **Hierarchical ErrorBoundary Component**:
+  - Created reusable ErrorBoundary class component (src/components/ui/ErrorBoundary.tsx) wrapped around the main page content area in AppLayout.tsx (preserving header and sidebar navigation) and around individual tab contents.
+  - On render failure, displays plain text "Something went wrong on this page." with outline buttons "Reload page" and "Reset demo data" (confirmation modal), logging error and component stack to the console only with strictly zero stack traces in the UI.
+- **Verification and Automated Tests**:
+  - Authored tests/paymentsTab.test.tsx (testing seed data, orphan payments, polymorphic receivedBy, empty lists, and pre-migration shapes).
+  - Authored tests/migration.test.ts (testing version-1 backup fixture upgrades, collection normalizers, and in-place localStorage migrations).
+  - Authored tests/errorBoundary.test.tsx (testing error catching, fallback rendering, reload, and modal reset actions).
+  - Authored tests/tabsAudit.test.tsx (testing all tabs across MD, Doctor, Receptionist, and Patient with seed and legacy v1 data).
+  - 18 test files, 157 tests passing across UTC, America/Los_Angeles, and Asia/Kolkata; 0 TS errors; 0 lint warnings; 0 emojis.
+
+---
+
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
 
 The table below outlines the evolution of the codebase from initial repository setup to current state:
 
 | Commit Hash | Commit Message / Feature Description | User Intent & Key Actions |
 | :--- | :--- | :--- |
+| `3d33950` | `fix(billing): resolve payments blank screen, add storage migration, and error boundaries` | User requested: "TASK: Bug fix: the app goes blank when the Payments section is opened. Branch: fix-payments-blank. Fix the root cause, not the symptom...". Identified root causes (null receivedBy object check in BillingView.tsx:758, missing receivedAt in calculateDailyCollections, unmigrated invoiceNumber in search suggestions, unhandled React unmount). Fixed root causes with formatActor, normalizeActor, safe invoice/date fallbacks, and strict selector signatures. Bumped SCHEMA_VERSION to 2 with in-place storage migrations for invoices, payments, prescriptions, staff consultation fees, and appointments in src/data/storage.ts. Added ErrorBoundary around AppLayout page shell and tab contents with plain text fallback, outline buttons, and reset confirmation modal. Added comprehensive test suites: tests/paymentsTab.test.tsx, tests/migration.test.ts, tests/errorBoundary.test.tsx, and tests/tabsAudit.test.tsx. Audited all tabs across MD, Doctor, Receptionist, and Patient roles. 18 test files, 157 tests passing across all three time zones; npm run verify passes 100% with 0 TS errors, 0 lint warnings, and 0 emojis. |
 | `f7cb9b0` | `feat(hardening): consistency fixes, canonical staff IDs, money minor units, and vitest verification (M9.5)` | User requested: "TASK: M9.5, Consistency fixes and test hardening. No new features. Branch: m9-5-hardening. Prerequisites: M1 to M9 merged...". Ported entire test suite to Vitest (14 test files, 133 tests). Added universal verify script npm run verify (build, typecheck, multi-timezone tests in UTC, LA, Kolkata, emoji scan, commit scan). Derived permissions strictly from module membership and active status. Replaced raw IDs with canonical staff ID resolver. Enforced doctor prescription scoping to assigned patients and authored scripts. Added formatDoctorName eliminating duplicate Dr. prefixes. Standardized money.ts to integer minor units (cents) with consultation fee migration. Added local time helper formatLocalDate. Upgraded allergy check to output matches and unchecked lists. Replaced weak tests with exact hand-calculated fixture assertions. Zero emojis across codebase; npm run verify passes 100%. |
 | `6ab9904` | `feat(dashboard): implement capability-gated widgets, daily summary, and CSV export (M9)` | User requested: "TASK: M9, Dashboard update and daily summary. Prerequisites: M1 to M8 merged. Branch: m9-dashboard...". Implemented widget registry (src/lib/dashboardWidgets.ts) and pure aggregation selectors (src/lib/dashboardMetrics.ts). Gated all widgets by accesses. Created Daily Summary tab with DatePicker, print styles, and CSV export. 0 TS errors, 0 lint warnings, 0 emojis. |
 | `aad92a9` | `feat(prescribing): implement medicine formulary, allergy checks, and e-prescriptions (M8)` | User requested: "TASK: M8, Prescribing: medicine dropdowns, allergy checks and formulary. Prerequisites: M1 to M7 merged. Branch: m8-prescribing...". Implemented formulary seed with 43 essential medicines, structured PrescriptionItem and Prescription types, pure prescribing engine (formatRegimen, calculateQuantity, validatePrescription, checkAllergies, checkDuplicates, activeMedications), prescribing modal in DoctorView with searchable comboboxes and allergy override justification, e-Prescriptions ledger with cancel reason, and FormularyTab in AccessControlView. 0 TS errors, 0 lint warnings, 0 emojis. |
