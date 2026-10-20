@@ -522,7 +522,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   // User accesses
   const userIsAdmin = isAdmin(currentUser, modules);
   const hasConsult = hasCapability(currentUser, 'consultationWorkstation', modules);
-  const hasRegistration = hasCapability(currentUser, 'patientRegistration', modules);
   const hasCheckIn = hasCapability(currentUser, 'patientCheckIn', modules);
   const hasBilling = hasCapability(currentUser, 'paymentRecording', modules) || userIsAdmin;
   const isPatient = currentUser?.role === 'patient';
@@ -698,98 +697,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     window.print();
   };
 
-  // Quick Action Buttons gated purely by capability accesses
-  const renderQuickActions = () => {
-    if (isPatient) {
-      return (
-        <div className="flex flex-wrap items-center gap-2.5 pt-3">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => onNavigate?.('portal', 'appointments')}
-          >
-            Book Appointment
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onNavigate?.('portal', 'invoices')}
-          >
-            Pay Balance
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onNavigate?.('portal', 'appointments')}
-          >
-            My Appointments
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onNavigate?.('portal', 'prescriptions')}
-          >
-            View Prescriptions
-          </Button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex flex-wrap items-center gap-2.5 pt-3">
-        {(hasRegistration || hasCheckIn) && (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onNavigate?.('role_receptionist', 'registration')}
-            >
-              Register Patient
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onNavigate?.('role_receptionist', 'checkin')}
-            >
-              Walk-in Check-In
-            </Button>
-          </>
-        )}
-
-        {hasConsult && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onNavigate?.('doctor', 'overview')}
-          >
-            Consultation Desk
-          </Button>
-        )}
-
-        {userIsAdmin && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onNavigate?.('access_control', 'add_users')}
-          >
-            Add Staff
-          </Button>
-        )}
-
-        {/* Clock In button if staff account is not clocked in yet */}
-        {!isPatient && metrics1.myAttendance && !metrics1.myAttendance.isClockedIn && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleClockInAction}
-          >
-            Clock In
-          </Button>
-        )}
-      </div>
-    );
-  };
-
   // Paginated records
   const paginatedAppointments = useMemo(() => {
     const list = metrics1.todayAppointments;
@@ -839,13 +746,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         }
       `}</style>
 
-      {/* Header: Greeting & Quick Actions */}
+      {/* Header: Greeting & Date Range */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between no-print">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             {greeting}
           </h1>
-          {renderQuickActions()}
         </div>
 
         {/* Date Range Selector (Overview tab only) */}
