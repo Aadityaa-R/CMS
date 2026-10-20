@@ -39,7 +39,7 @@ Every feature, component, test, and line of code in this project strictly obeys 
 
 ### 2.3 Visual Design Invariants (The "Never Do" Design Rules)
 - **Never use pills, chips, badges, or rounded boxes around short text**: Statuses, roles, departments, and counts must render as clean, unboxed plain text rows with natural typographic hierarchy.
-- **Never use focus glows, pulsing animations, or transitions**: Suppress focus rings, glows, pulsing animations, and animated hover/focus transitions (`ring-0`, `shadow-none`, no animated transitions). Only static keyboard-only 1px outline in the existing accent color is permitted.
+- **Never use focus glows, pulsing animations, or transitions**: Suppress focus rings, glows, pulsing animations, and animated hover/focus transitions (`ring-0`, `shadow-none`, no animated transitions). Only static keyboard-only 1px outline in the existing accent color is permitted. (Note: The single deliberate exception to the no-animation rule is Login and Sign-Up Motion documented in Section 10; the rest of the app stays completely static, and static keyboard focus outline stays exactly as it is).
 - **Never remove card outlines**: Card outlines (`border border-slate-200 dark:border-slate-800`) must remain on all cards and outlined sections.
 - **Never use toggle switches**: Checkboxes or plain buttons only.
 - **Never use monospace fonts for data**: Clinical and financial figures, MRNs, appointment IDs, invoice numbers, timestamps, and amounts must use standard proportional sans-serif typography.
@@ -380,3 +380,65 @@ Executes the comprehensive release gate:
 - [x] Immutable security audit ledger records entries for all state mutations.
 - [x] Dynamic demo scenario relative to active execution time with non-zero Needs Attention widget across all 5 categories.
 - [x] Complete demonstration walkthrough guide published in `docs/DEMO_GUIDE.md`.
+
+
+---
+
+## 10. LOGIN AND SIGN-UP SCREEN MOTION SPECIFICATION (M9.6)
+
+### 10.1 Scope and Exception Invariant
+- **Single Deliberate Exception**: Login motion is permitted exclusively on the Sign-In (`LoginView.tsx`) and Sign-Up (`SignUpView.tsx`) screens. The rest of the application strictly adheres to the "no animation or transition" rule.
+- **Static Keyboard Focus Outline**: The static keyboard focus outline (`outline: 1px solid var(--focus-outline)`) remains strictly unmodified across all screens, with zero focus animation, transition, or glow.
+- **Accessibility & Reduced Motion**: All motion is completely disabled when `prefers-reduced-motion` is active.
+- **Zero Input Obstruction**: Motion must never use `visibility: hidden` or `pointer-events: none` on interactive controls, nor delay focus. Form inputs are focusable and typeable from the very first frame, and existing autofocus continues to operate cleanly.
+- **Zero Flashing**: No flashing elements, strobes, or looping effects on form controls.
+
+### 10.2 Motion Tokens & Curves
+- **Tokens Location**: Defined in `src/styles/loginMotion.css` and `src/styles/loginMotion.ts`.
+- **Durations**:
+  - `fast`: 150ms
+  - `base`: 300ms
+  - `slow`: 600ms
+  - `staggerStep`: 70ms
+  - `ecgCycle`: 10s (6s draw, 2s hold, 1s fade-out, 1s reset)
+  - `maxEntrance`: 700ms total
+  - `maxSuccessExit`: 400ms total
+- **Entrance Easing**: `cubic-bezier(0.22, 1, 0.36, 1)`
+- **Properties**: Animate `transform` and `opacity` only; apply `will-change` strictly while an animation is actively executing.
+
+### 10.3 Staggered Entrance Sequence
+- **Order of Appearance**:
+  1. Logo icon (`w-14 h-14 bg-teal-600`)
+  2. Brand Title (`Beacon Health Clinic`)
+  3. Tagline
+  4. Card Container
+  5. Form rows sequentially (Identifier, Password, Remember/Options, Submit button, Secondary actions)
+- **Animation Mechanics**: Each item fades in while rising 12px (`opacity: 0` to `1`, `translateY: 12px` to `0`), staggered by 70ms.
+- **Lifecycle**: Executes exactly once on initial mount; never replays on re-renders.
+- **View Crossfade**: Switching between Sign-In and Sign-Up crossfades card content in 200ms without layout jump or vertical height pop.
+
+### 10.4 Decorative ECG Heartbeat Background (`EcgBackground.tsx`)
+- **Visuals**: Inline SVG with `aria-hidden="true"` and non-focusable behind the card, presenting a repeating P-QRS-T electrocardiogram waveform spanning page width.
+- **Line Styling**: Uses stroke from existing clinical accent tokens (`#0d9488` in light theme, `#2dd4bf` in dark theme) at low opacity (12-18%), using `vector-effect="non-scaling-stroke"` to maintain constant line weight.
+- **Animation Cycle**: 10-second repeating cycle: wipes left-to-right over 6s using a transform-based gradient mask cover, holds 2s, fades out over 1s, and resets.
+- **Performance & Background Throttling**: Tab visibility listener (`visibilitychange`) pauses the wipe when the browser tab is hidden and resumes when visible; listeners cleanly removed on unmount.
+- **Reduced Motion Fallback**: Renders the complete ECG line statically at low opacity with zero wipe or motion.
+- **Responsive Layout**: Overflow is clipped on mobile viewports (360x800) with zero sideways scroll; normal vertical page scrolling remains unhindered when card exceeds viewport height.
+
+### 10.5 Micro-Interactions & Form States
+- **Show-Password Toggle**: Crossfades between `Eye` and `EyeOff` icons in 150ms.
+- **Credentials Directory Panel**: Expands and collapses using CSS grid row transition (`grid-template-rows: 0fr` to `1fr`, 250ms) with smooth opacity fade.
+- **Sign-In Button**:
+  - Pressed state: `transform: scale(0.98)` for 100ms.
+  - Submitting state: Displays "Signing in" with a rotating ring icon (`transform: rotate`) and disables button. Under reduced motion, displays "Signing in" text without rotation.
+- **Authentication Failure**:
+  - Card shakes horizontally (`transform: translateX`, 6px amplitude, 3 oscillations, 350ms duration).
+  - Error notification appears in polite live region (`aria-live="polite"`).
+  - Under reduced motion: Zero shake; message appears immediately.
+  - Applies identically to invalid credentials, 5-attempt lockouts, and pending clearance alerts.
+- **Successful Authentication Exit**:
+  - Card scales to 0.98 and fades out over 250ms before navigation completes (total elapsed time strictly <= 400ms).
+  - Under reduced motion: Navigates immediately with 0ms delay.
+
+### 10.6 Footer Security Text
+- Card footer displays plain text: `"Demo environment. Do not enter real patient data."` with preceding status icon, accurately reflecting local browser storage.
