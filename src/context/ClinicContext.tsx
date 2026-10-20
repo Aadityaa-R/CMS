@@ -548,6 +548,18 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       );
     }
 
+    if (addAuditLogEntry) {
+      addAuditLogEntry({
+        action: isInitialAssignment ? 'patient_assigned' : 'care_transferred',
+        targetUserId: patientId,
+        targetStaffName: doctorName,
+        description: isInitialAssignment
+          ? `Patient ${patientId} assigned to ${doctorName}`
+          : `Care for patient ${patientId} transferred to ${doctorName}: ${reason.trim()}`,
+        authorizedBy: actingUserName || 'System',
+      });
+    }
+
     return {
       success: true,
       movedAppointmentsCount,
@@ -1053,6 +1065,15 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               repoInvoices
                 .create(newInvoice)
                 .then(() => {
+                  if (addAuditLogEntry) {
+                    addAuditLogEntry({
+                      action: 'invoice_issued',
+                      targetUserId: apt.patientId,
+                      targetStaffName: apt.patientName,
+                      description: `Invoice ${newInvoice.number} issued for consultation visit of ${apt.patientName}`,
+                      authorizedBy: doc?.name || 'Dr. Marcus Vance',
+                    });
+                  }
                   try {
                     window.dispatchEvent(
                       new StorageEvent('storage', {
@@ -1067,6 +1088,35 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
           })
           .catch(() => {});
+      }
+    }
+
+    if (addAuditLogEntry) {
+      const targetApt = appointments.find((a) => a.id === id);
+      if (status === 'in_consultation') {
+        addAuditLogEntry({
+          action: 'consultation_started',
+          targetUserId: targetApt?.patientId,
+          targetStaffName: targetApt?.patientName,
+          description: `Consultation started for patient ${targetApt?.patientName || id}`,
+          authorizedBy: actor?.name || 'Staff Doctor',
+        });
+      } else if (status === 'completed') {
+        addAuditLogEntry({
+          action: 'consultation_concluded',
+          targetUserId: targetApt?.patientId,
+          targetStaffName: targetApt?.patientName,
+          description: `Consultation concluded for patient ${targetApt?.patientName || id}`,
+          authorizedBy: actor?.name || 'Staff Doctor',
+        });
+      } else if (status === 'checked_in') {
+        addAuditLogEntry({
+          action: 'patient_checked_in',
+          targetUserId: targetApt?.patientId,
+          targetStaffName: targetApt?.patientName,
+          description: `Patient ${targetApt?.patientName || id} checked in for appointment`,
+          authorizedBy: actor?.name || 'Front Desk',
+        });
       }
     }
 
@@ -1143,6 +1193,14 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return [savedVital, ...prev];
       }
     });
+    if (addAuditLogEntry && savedVital!) {
+      addAuditLogEntry({
+        action: 'vitals_recorded',
+        targetUserId: patientId,
+        description: `Triage vitals recorded for patient ${patientId} (BP: ${savedVital.systolicBp}/${savedVital.diastolicBp}, HR: ${savedVital.heartRateBpm}, Temp: ${savedVital.temperatureCelsius}C, SpO2: ${savedVital.oxygenSaturationPct}%)`,
+        authorizedBy: data.recordedByName || authUser?.name || 'Staff Doctor',
+      });
+    }
     return savedVital!;
   };
 

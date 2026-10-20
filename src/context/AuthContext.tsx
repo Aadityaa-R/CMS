@@ -622,6 +622,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await repoAccounts.update(account.id, failedUpdate);
 
       if (failedUpdate.lockedUntil) {
+        addAuditLogEntry({
+          targetRole: account.role,
+          targetStaffName: account.fullName,
+          targetUserId: account.id,
+          action: 'account_locked',
+          description: `Account ${account.username} locked due to 5 failed login attempts.`,
+          authorizedBy: 'System Security Watchdog',
+        });
         return {
           success: false,
           error: 'Account locked due to 5 failed attempts. Please try again in 5 minutes.',
@@ -677,6 +685,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // Fallback
     }
+
+    addAuditLogEntry({
+      targetRole: account.role,
+      targetStaffName: account.fullName,
+      targetUserId: account.id,
+      action: 'user_login',
+      description: `User ${account.username} (${account.fullName}) authenticated into station with role ${account.role}.`,
+      authorizedBy: account.fullName,
+    });
 
     setCurrentRole(account.role);
     setActiveUserKey(account.username in DEMO_USERS ? account.username : account.role);

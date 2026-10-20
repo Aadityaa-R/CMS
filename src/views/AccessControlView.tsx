@@ -721,6 +721,16 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       // Ignore
     }
 
+    addAuditLogEntry({
+      timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
+      targetRole: req.role,
+      targetStaffName: req.staffName,
+      targetUserId: req.badgeNumber,
+      action: 'clearance_approved',
+      description: `Onboarding clearance approved for ${req.staffName}. Added to default module: ${defaultModuleName}.`,
+      authorizedBy: currentUser?.name || 'Dr. Marcus Vance (Managing Director)',
+    });
+
     showNotification({
       type: 'success',
       message: `Approved and granted clearance for ${req.staffName} (${req.role === 'doctor' ? 'Doctor' : 'Receptionist'}). Added to default module: ${defaultModuleName}.`,

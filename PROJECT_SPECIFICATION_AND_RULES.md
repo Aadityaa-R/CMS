@@ -639,6 +639,24 @@ Every feature and line of code in this project strictly adheres to the governing
 
 ---
 
+### 2.27 Comprehensive Audit Ledger Coverage and Mutation Tracking (Milestone M10 Section 6)
+
+- **Universal Audit Coverage**:
+  - Every state-changing mutation across the application writes an immutable entry to the Security Audit Ledger (ledger collection in browser storage).
+  - Covered actions include:
+    - Authentication and Access: user_login, account_locked, password_reset, access_granted, access_revoked, account_deleted, account_provisioned, clearance_approved, clearance_rejected, staff_clearance_requested.
+    - Patient and Clinical Flow: patient_self_registered, patient_registered, patient_checked_in, walkin_checked_in, vitals_recorded, consultation_started, consultation_concluded, care_transferred, patient_assigned.
+    - E-Prescribing: prescription_issued, prescription_cancelled, allergy_override.
+    - Billing and Revenue: invoice_issued, charge_added, discount_applied, payment_recorded, portal_payment, payment_reversed, invoice_voided.
+    - Time and Attendance: attendance_clock_in, attendance_clock_in_override, attendance_clock_out, leave_requested, leave_approved, leave_rejected, attendance_record_corrected, shift_updated.
+    - Governance Modules: module_created, module_renamed, module_deleted, module_access_included, module_access_removed, module_member_added, module_member_removed.
+    - System Storage and Backup: storage_mode_changed, data_exported, data_imported, data_restored_undo, demo_data_reset.
+- **Documentation and Verification**:
+  - Authored comprehensive matrix document in docs/LEDGER_COVERAGE.md detailing every action, primary actor, target entity, payload fields, and automated test status.
+  - Authored dedicated test suite tests/ledgerCoverage.test.ts verifying ledger creation, field retention, and querying.
+
+---
+
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
 
 The table below outlines the evolution of the codebase from initial repository setup to current state:

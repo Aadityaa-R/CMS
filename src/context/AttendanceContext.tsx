@@ -230,6 +230,17 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return [updatedRec, ...prev];
       });
 
+      if (!isLeave) {
+        addAuditLogEntry({
+          targetRole: staffRecord?.role || 'staff',
+          targetStaffName: staffName,
+          targetUserId: canonical,
+          action: 'attendance_clock_in',
+          description: `Staff member ${staffName} clocked in for duty`,
+          authorizedBy: staffName,
+        });
+      }
+
       return { success: true };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to clock in.';
@@ -249,6 +260,16 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const updatedRec = clockOut(existingRec, new Date());
       setRecords((prev) => prev.map((r) => (r.id === updatedRec.id ? updatedRec : r)));
+
+      addAuditLogEntry({
+        targetRole: 'staff',
+        targetStaffName: canonical,
+        targetUserId: canonical,
+        action: 'attendance_clock_out',
+        description: `Staff member ${canonical} clocked out`,
+        authorizedBy: currentUser?.name || canonical,
+      });
+
       return { success: true };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to clock out.';
@@ -298,6 +319,16 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     setLeaveRequests((prev) => [newRequest, ...prev]);
+
+    addAuditLogEntry({
+      targetRole: staffRecord?.role || 'staff',
+      targetStaffName: staffName,
+      targetUserId: canonical,
+      action: 'leave_requested',
+      description: `Leave requested by ${staffName} (${data.type}) from ${data.fromDate} to ${data.toDate}: ${data.reason.trim()}`,
+      authorizedBy: staffName,
+    });
+
     return { success: true };
   };
 
