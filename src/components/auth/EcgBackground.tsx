@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { getPrefersReducedMotion } from '@/styles/loginMotion';
+import { getPrefersReducedMotion, LOGIN_MOTION } from '@/styles/loginMotion';
 
 interface EcgBackgroundProps {
   className?: string;
+  isDrawingStarted?: boolean;
 }
 
-export const EcgBackground: React.FC<EcgBackgroundProps> = ({ className = '' }) => {
+export const EcgBackground: React.FC<EcgBackgroundProps> = ({
+  className = '',
+  isDrawingStarted = true,
+}) => {
   const [isPaused, setIsPaused] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
@@ -37,13 +41,17 @@ export const EcgBackground: React.FC<EcgBackgroundProps> = ({ className = '' }) 
     <div
       aria-hidden="true"
       className={`ecg-background-container ${className}`}
+      style={{
+        opacity: isDrawingStarted ? 1 : 0,
+        transition: 'opacity 200ms ease-out',
+      }}
     >
       <svg
         aria-hidden="true"
         focusable="false"
         viewBox="0 0 1440 200"
         preserveAspectRatio="xMidYMid slice"
-        className="w-full h-full text-teal-600 dark:text-teal-400"
+        className="w-full h-full text-teal-400 dark:text-teal-300"
       >
         <defs>
           <linearGradient id="ecg-wipe-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -71,7 +79,7 @@ export const EcgBackground: React.FC<EcgBackgroundProps> = ({ className = '' }) 
               <rect x="0" y="0" width="1440" height="200" fill="url(#ecg-center-gradient)" />
             ) : (
               <g
-                className="ecg-wipe-slider"
+                className={isDrawingStarted ? 'ecg-wipe-slider' : ''}
                 style={{
                   animationPlayState: isPaused ? 'paused' : 'running',
                 }}
@@ -83,17 +91,32 @@ export const EcgBackground: React.FC<EcgBackgroundProps> = ({ className = '' }) 
           </mask>
         </defs>
 
-        {/* The heartbeat line: stroke from accent token at low opacity */}
+        {/* Soft glow line underneath (6px stroke, 0.12 opacity) */}
         <path
+          data-testid="ecg-glow-path"
           d={ecgPath}
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth={LOGIN_MOTION.ecgStrokeGlow}
           strokeLinecap="round"
           strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
-          className="opacity-15 dark:opacity-20"
-          mask={prefersReducedMotion ? undefined : 'url(#ecg-wipe-mask)'}
+          style={{ opacity: LOGIN_MOTION.ecgOpacityGlow }}
+          mask="url(#ecg-wipe-mask)"
+        />
+
+        {/* Main sharp line on top (2.5px stroke, 0.65 opacity) */}
+        <path
+          data-testid="ecg-main-path"
+          d={ecgPath}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={LOGIN_MOTION.ecgStrokeMain}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+          style={{ opacity: LOGIN_MOTION.ecgOpacityMain }}
+          mask="url(#ecg-wipe-mask)"
         />
       </svg>
     </div>

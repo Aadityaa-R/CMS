@@ -385,7 +385,7 @@ Executes the comprehensive release gate:
 
 ---
 
-## 10. LOGIN AND SIGN-UP SCREEN MOTION SPECIFICATION (M9.6)
+## 10. LOGIN AND SIGN-UP SCREEN MOTION SPECIFICATION (M9.6 / M9.8 / M9.9)
 
 ### 10.1 Scope and Exception Invariant
 - **Single Deliberate Exception**: Login motion is permitted exclusively on the Sign-In (`LoginView.tsx`) and Sign-Up (`SignUpView.tsx`) screens. The rest of the application strictly adheres to the "no animation or transition" rule.
@@ -396,7 +396,7 @@ Executes the comprehensive release gate:
 
 ### 10.2 Motion Tokens & Curves
 - **Tokens Location**: Defined in `src/styles/loginMotion.css` and `src/styles/loginMotion.ts`.
-- **Durations**:
+- **Durations & Intervals**:
   - `fast`: 150ms
   - `base`: 300ms
   - `slow`: 600ms
@@ -404,30 +404,62 @@ Executes the comprehensive release gate:
   - `ecgCycle`: 10s (6s draw, 2s hold, 1s fade-out, 1s reset)
   - `maxEntrance`: 700ms total
   - `maxSuccessExit`: 400ms total
+  - `introLogoFade`: 400ms
+  - `introHold`: 500ms
+  - `introSlide`: 650ms
+  - `introNameDelay`: 150ms (duration 350ms)
+  - `introChooserDelay`: 350ms (duration 450ms)
+  - `introTotal`: 1900ms
+  - `ecgStrokeMain`: 2.5px (opacity 0.65)
+  - `ecgStrokeGlow`: 6px (opacity 0.12)
 - **Entrance Easing**: `cubic-bezier(0.22, 1, 0.36, 1)`
 - **Properties**: Animate `transform` and `opacity` only; apply `will-change` strictly while an animation is actively executing.
 
-### 10.3 Staggered Entrance Sequence and Step Crossfade
-- **Order of Appearance**:
-  1. Logo icon (`w-14 h-14 bg-teal-600`)
-  2. Brand Title (`Beacon Health Clinic`)
-  3. Tagline
-  4. Heading ("Who is signing in?")
-  5. Choices: Patient and Clinic Staff (fade and rise with 70ms stagger, total entrance <= 700ms). Both choices are immediately focusable and clickable from the first frame.
-- **Changing Step**:
-  - The brand header (logo, title, tagline) is locked strictly in place across steps.
-  - Step transitions crossfade only the section below the header (200ms duration, opacity and an 8px rise).
-  - Taller step height is reserved (`min-h-[460px]`) while switching to guarantee zero vertical layout pop.
-  - Under `prefers-reduced-motion`, every transition is instant.
+### 10.3 Opening Sequence (Intro) and Staggered Entrance
+- **Full Opening Sequence (The Intro)**:
+  - Plays exclusively on the first load of the login page in a browser session (`sessionStorage` flag `cms_login_intro_seen`).
+  - Timeline:
+    1. Logo icon fades in over 400ms while scaling from 0.9 to 1.0, centered in the viewport and alone.
+    2. Logo holds centered for 500ms.
+    3. Logo slides up to its final header position over 650ms using the entrance curve (`cubic-bezier(0.22, 1, 0.36, 1)`).
+    4. Starting 150ms into the slide (1050ms from start), clinic name and tagline fade and rise in over 350ms.
+    5. Starting 350ms into the slide (1250ms from start), chooser card fades and rises in over 450ms and becomes interactive.
+    6. ECG heartbeat line begins drawing when the slide starts (900ms).
+    7. Total intro sequence duration: ~1.9 seconds.
+- **Zero Layout Shift (useLayoutEffect)**:
+  - The starting vertical offset (`--intro-start-y`) is computed from the logo's measured final document position before first paint (`useLayoutEffect`).
+  - The logo's final bounding rectangle with and without the intro is identical.
+- **Inert State During Intro**:
+  - Everything below the logo is marked with the HTML `inert` attribute while hidden.
+  - Becomes interactive and non-inert as soon as it becomes visible at 1250ms or when skipped.
+- **Skip Behavior**:
+  - Any pointer or key press during the intro immediately completes it to its resting state, without losing the keypress or click's effect on the focused element.
+  - Window `resize` and `orientationchange` events complete the intro immediately.
+- **When It Plays vs Short Entrance**:
+  - Full intro plays only on the first visit in a browser session.
+  - Repeat visits in the same session, and direct links with `?as=` or `/login/<audience>`, play the short staggered entrance (<= 700ms).
+  - Under `prefers-reduced-motion`, both the intro and entrance are completely bypassed: the finished page appears immediately.
+- **Vertical Centering**:
+  - Outermost wrapper uses `min-h-[100dvh]` with minimum padding (`py-8 sm:py-10`).
+  - Active group (header + card) is centered vertically with `my-auto` when viewport is taller than content, and scrolls normally when viewport is shorter.
 
 ### 10.4 Decorative ECG Heartbeat Background (`EcgBackground.tsx`)
 - **Visuals**: Inline SVG with `aria-hidden="true"` and non-focusable behind the card, presenting a repeating P-QRS-T electrocardiogram waveform spanning page width.
-- **Line Styling & Peak Control**: Uses stroke from clinical accent tokens (`#0d9488` in light theme, `#2dd4bf` in dark theme) at low opacity (12-18%), using `vector-effect="non-scaling-stroke"` to maintain constant line weight. Waveform baseline is set to `y=130` and peak spikes to `y=65` (staying strictly below 40% viewport height and clear of header text).
-- **Central Column Gradient Cutout**: Masked with a horizontal linear gradient that fades the line to zero across the central column (the width of the card plus 24px each side = 720px) so the line emerges cleanly from the left and right edges and never crosses card or text.
-- **Animation Cycle**: 10-second repeating cycle: wipes left-to-right over 6s using a transform-based gradient mask cover, holds 2s, fades out over 1s, and resets.
+- **Bright Line & Glow Styling**:
+  - Uses the bright accent token (`text-teal-400 dark:text-teal-300`).
+  - Main top path: 2.5px stroke, 0.65 opacity, `vector-effect="non-scaling-stroke"`.
+  - Underlying soft glow path: 6px stroke, 0.12 opacity, `vector-effect="non-scaling-stroke"`.
+  - Zero blur filters, zero drop-shadows, zero animated glowing effects.
+- **Central Column Gradient Cutout**:
+  - Masked with a horizontal linear gradient that fades the line to zero across the central column (width of card plus 24px each side = 720px) so the line emerges cleanly from the left and right edges and never crosses card or text.
+- **Animation Cycle**: 10-second repeating cycle: wipes left-to-right over 6s using a transform-based gradient mask cover, holds 2s, fades out over 1s, and resets. During intro, begins drawing at 900ms when slide starts.
 - **Performance & Background Throttling**: Tab visibility listener (`visibilitychange`) pauses the wipe when the browser tab is hidden and resumes when visible; listeners cleanly removed on unmount.
 - **Reduced Motion Fallback**: Renders the complete ECG line statically with the central mask and zero wipe or motion.
 - **Responsive Layout**: Overflow is clipped on mobile viewports (360x800) with zero sideways scroll. Under 640px, the line opacity is lowered to 0.12 and positioned in the bottom third.
+
+### 10.5 Chooser Button Layout Alignment
+- **Top Alignment**: Both chooser buttons use `justify-start` so titles ("Patient" / "Clinic Staff") and muted descriptions sit at the exact same vertical height.
+- **Reserved "Last Used" Line**: Both buttons reserve the "Last used" line. If an option does not show "Last used", an invisible placeholder (`&nbsp;` with `text-transparent` and `aria-hidden="true"`) is rendered so both button heights and internal baselines match identically.
 
 ### 10.5 Micro-Interactions & Form States
 - **Show-Password Toggle**: Crossfades between `Eye` and `EyeOff` icons in 150ms.

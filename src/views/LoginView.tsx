@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { SignUpView } from './SignUpView';
 import { resetDemoData } from '@/data/storage';
-import { getPrefersReducedMotion } from '@/styles/loginMotion';
+import { getPrefersReducedMotion, LOGIN_MOTION } from '@/styles/loginMotion';
 import { EcgBackground } from '@/components/auth/EcgBackground';
 import { AuthAudience } from '@/services/authService';
 import {
@@ -20,6 +20,15 @@ import {
 } from 'lucide-react';
 
 const DevCredentialsDirectory = React.lazy(() => import('./DevCredentialsDirectory'));
+
+function hasSeenLoginIntro(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    return sessionStorage.getItem('cms_login_intro_seen') === 'true';
+  } catch {
+    return false;
+  }
+}
 
 function getLastUsedAudience(): AuthAudience | null {
   if (typeof window === 'undefined') return null;
@@ -78,6 +87,24 @@ export const LoginView: React.FC = () => {
   const initialRoute = parseInitialRoute();
   const lastUsedAudience = getLastUsedAudience();
 
+  // Intro motion evaluation (M9.9):
+  // Full intro plays only on the first load of the chooser step in a browser session.
+  // Repeat visits, ?as= links, or reduced motion skip the full intro.
+  const prefersReduced = getPrefersReducedMotion();
+  const isDirectFormRoute = initialRoute.audience !== null;
+  const alreadySeenIntro = hasSeenLoginIntro();
+  const willPlayFullIntro = !prefersReduced && !isDirectFormRoute && !alreadySeenIntro;
+
+  // Intro states
+  const [isIntroActive, setIsIntroActive] = useState(() => willPlayFullIntro);
+  const [isNameVisible, setIsNameVisible] = useState(() => !willPlayFullIntro);
+  const [isCardVisible, setIsCardVisible] = useState(() => !willPlayFullIntro);
+  const [isCardInteractive, setIsCardInteractive] = useState(() => !willPlayFullIntro);
+  const [isDrawingStarted, setIsDrawingStarted] = useState(() => !willPlayFullIntro);
+
+  // Short entrance state for repeat visits and direct form links (<= 700ms)
+  const [isEntranceActive, setIsEntranceActive] = useState(() => !prefersReduced && !willPlayFullIntro);
+
   // Step state: 'choose' (account type chooser) or 'form' (login/signup form)
   const [step, setStep] = useState<'choose' | 'form'>(() =>
     initialRoute.audience !== null ? 'form' : 'choose'
@@ -106,12 +133,12 @@ export const LoginView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCredentialsGuide, setShowCredentialsGuide] = useState(true);
 
-  // Motion states
-  const [isEntranceActive, setIsEntranceActive] = useState(() => !getPrefersReducedMotion());
+  // Shake & exit motion states
   const [isShaking, setIsShaking] = useState(false);
   const [isSuccessExiting, setIsSuccessExiting] = useState(false);
 
-  // Focus tracking refs
+  // Element and Focus tracking refs
+  const logoRef = useRef<HTMLDivElement>(null);
   const patientOptionRef = useRef<HTMLButtonElement>(null);
   const staffOptionRef = useRef<HTMLButtonElement>(null);
   const identifierInputRef = useRef<HTMLInputElement>(null);
@@ -121,7 +148,92 @@ export const LoginView: React.FC = () => {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
-  // Entrance animation timer (max 700ms)
+  // Compute logo starting offset from its measured final position before first paint (useLayoutEffect)
+  useLayoutEffect(() => {
+    if (!willPlayFullIntro || !logoRef.current) return;
+    const rect = logoRef.current.getBoundingClientRect();
+    const targetCenterY = window.innerHeight / 2;
+    const currentCenterY = rect.top + rect.height / 2;
+    const startY = targetCenterY - currentCenterY;
+    logoRef.current.style.setProperty('--intro-start-y', `${startY}px`);
+  }, [willPlayFullIntro]);
+
+  // Complete intro handler: restores final resting state immediately
+  const completeIntro = () => {
+    setIsIntroActive(false);
+    setIsNameVisible(true);
+    setIsCardVisible(true);
+    setIsCardInteractive(true);
+    setIsDrawingStarted(true);
+    try {
+      sessionStorage.setItem('cms_login_intro_seen', 'true');
+    } catch {
+      // fallback
+    }
+    if (logoRef.current) {
+      logoRef.current.style.removeProperty('--intro-start-y');
+    }
+  };
+
+  // Full Intro Orchestration Timers
+  useEffect(() => {
+    if (!isIntroActive) return;
+
+    // Slide starts at 900ms: ECG begins drawing
+    const ecgTimer = setTimeout(() => {
+      setIsDrawingStarted(true);
+    }, LOGIN_MOTION.introLogoFade + LOGIN_MOTION.introHold);
+
+    // Name & tagline fade/rise starts 150ms into slide (1050ms)
+    const nameTimer = setTimeout(() => {
+      setIsNameVisible(true);
+    }, LOGIN_MOTION.introLogoFade + LOGIN_MOTION.introHold + LOGIN_MOTION.introNameDelay);
+
+    // Chooser card fades/rises starts 350ms into slide (1250ms) and becomes interactive
+    const cardTimer = setTimeout(() => {
+      setIsCardVisible(true);
+      setIsCardInteractive(true);
+    }, LOGIN_MOTION.introLogoFade + LOGIN_MOTION.introHold + LOGIN_MOTION.introChooserDelay);
+
+    // Intro complete at 1900ms
+    const totalTimer = setTimeout(() => {
+      completeIntro();
+    }, LOGIN_MOTION.introTotal);
+
+    return () => {
+      clearTimeout(ecgTimer);
+      clearTimeout(nameTimer);
+      clearTimeout(cardTimer);
+      clearTimeout(totalTimer);
+    };
+  }, [isIntroActive]);
+
+  // Skip handler: pointerdown, mousedown, click, keydown, resize, or orientationchange completes intro immediately
+  useEffect(() => {
+    if (!isIntroActive) return;
+
+    const handleSkip = () => {
+      completeIntro();
+    };
+
+    window.addEventListener('pointerdown', handleSkip, { capture: true });
+    window.addEventListener('mousedown', handleSkip, { capture: true });
+    window.addEventListener('click', handleSkip, { capture: true });
+    window.addEventListener('keydown', handleSkip, { capture: true });
+    window.addEventListener('resize', handleSkip);
+    window.addEventListener('orientationchange', handleSkip);
+
+    return () => {
+      window.removeEventListener('pointerdown', handleSkip, { capture: true });
+      window.removeEventListener('mousedown', handleSkip, { capture: true });
+      window.removeEventListener('click', handleSkip, { capture: true });
+      window.removeEventListener('keydown', handleSkip, { capture: true });
+      window.removeEventListener('resize', handleSkip);
+      window.removeEventListener('orientationchange', handleSkip);
+    };
+  }, [isIntroActive]);
+
+  // Short entrance animation timer (max 700ms) for repeat visits / direct links
   useEffect(() => {
     if (!isEntranceActive) return;
     const timer = setTimeout(() => {
@@ -151,19 +263,20 @@ export const LoginView: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // In chooser step, focus the last used audience (or previously chosen option)
+  // In chooser step, focus the last used audience (or previously chosen option) once interactive
   useEffect(() => {
-    if (step === 'choose') {
+    if (step === 'choose' && isCardInteractive) {
       const target = lastFocusedOptionRef.current || lastUsedAudience || 'patient';
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         if (target === 'staff') {
           staffOptionRef.current?.focus();
         } else {
           patientOptionRef.current?.focus();
         }
       }, 30);
+      return () => clearTimeout(timer);
     }
-  }, [step, lastUsedAudience]);
+  }, [step, lastUsedAudience, isCardInteractive]);
 
   const triggerShake = () => {
     if (!getPrefersReducedMotion()) {
@@ -328,77 +441,109 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-10 sm:px-6 lg:px-8 relative overflow-hidden">
-      <EcgBackground />
+    <div className="min-h-[100dvh] bg-slate-900 flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6 lg:px-8 relative overflow-x-hidden overflow-y-auto">
+      <EcgBackground isDrawingStarted={isDrawingStarted} />
 
-      {/* Brand Header: Locked exactly in place across steps */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
-        <div className={`flex justify-center ${isEntranceActive ? 'login-entrance-0 login-animating' : ''}`}>
-          <div className="w-14 h-14 rounded-2xl bg-teal-600 flex items-center justify-center text-white">
-            <Building2 className="w-8 h-8" />
+      {/* Vertically centered group when viewport is taller than content */}
+      <div className="my-auto w-full flex flex-col items-center justify-center">
+        {/* Brand Header: Locked exactly in place across steps */}
+        <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
+          <div
+            ref={logoRef}
+            className={`flex justify-center ${
+              isIntroActive
+                ? 'login-intro-logo'
+                : isEntranceActive
+                ? 'login-entrance-0 login-animating'
+                : ''
+            }`}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-teal-600 flex items-center justify-center text-white">
+              <Building2 className="w-8 h-8" />
+            </div>
+          </div>
+          <div
+            className={
+              isIntroActive
+                ? 'login-intro-text'
+                : isEntranceActive
+                ? 'login-entrance-1 login-animating'
+                : ''
+            }
+            inert={isIntroActive && !isNameVisible ? '' : undefined}
+          >
+            <h1 className="mt-4 text-center text-2xl font-bold tracking-tight text-white">
+              Beacon Health Clinic
+            </h1>
+            <p className="mt-1 text-center text-xs text-slate-400">
+              {viewMode === 'login'
+                ? 'Clinic Management System (CMS) • Multi-Role Healthcare Portal'
+                : 'Clinic Management System (CMS) • Self-Registration Portal'}
+            </p>
           </div>
         </div>
-        <h1
-          className={`mt-4 text-center text-2xl font-bold tracking-tight text-white ${
-            isEntranceActive ? 'login-entrance-1 login-animating' : ''
+
+        {/* Crossfaded Section Below Header (reserves minimum height to prevent layout pop) */}
+        <div
+          data-testid="content-below-logo"
+          className={`mt-8 sm:mx-auto sm:w-full sm:max-w-2xl z-10 px-4 sm:px-0 min-h-[460px] ${
+            isIntroActive ? (isCardVisible ? 'login-intro-card' : 'opacity-0') : ''
           }`}
+          inert={isIntroActive && !isCardInteractive ? '' : undefined}
         >
-          Beacon Health Clinic
-        </h1>
-        <p className={`mt-1 text-center text-xs text-slate-400 ${isEntranceActive ? 'login-entrance-2 login-animating' : ''}`}>
-          {viewMode === 'login'
-            ? 'Clinic Management System (CMS) • Multi-Role Healthcare Portal'
-            : 'Clinic Management System (CMS) • Self-Registration Portal'}
-        </p>
-      </div>
-
-      {/* Crossfaded Section Below Header (reserves minimum height to prevent layout pop) */}
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl z-10 px-4 sm:px-0 min-h-[460px]">
-        {step === 'choose' ? (
-          /* STEP 1: ACCOUNT TYPE CHOOSER */
-          <div key="choose-step" className="login-step-crossfade w-full">
-            <div className="bg-white py-8 px-6 sm:px-10 shadow-card dark:shadow-none print:shadow-none rounded-2xl border border-slate-200">
-              <h2
-                className={`text-lg font-bold text-slate-900 text-center mb-6 ${
-                  isEntranceActive ? 'login-entrance-3 login-animating' : ''
-                }`}
-              >
-                Who is signing in?
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                {/* Patient Option */}
-                <button
-                  ref={patientOptionRef}
-                  type="button"
-                  onClick={() => handleSelectAudience('patient')}
-                  className={`min-h-[88px] w-full p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 text-left transition-colors cursor-pointer focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 shadow-card flex flex-col justify-center ${
-                    isEntranceActive ? 'login-entrance-4 login-animating' : ''
+          {step === 'choose' ? (
+            /* STEP 1: ACCOUNT TYPE CHOOSER */
+            <div key="choose-step" className="login-step-crossfade w-full">
+              <div className="bg-white py-8 px-6 sm:px-10 shadow-card dark:shadow-none print:shadow-none rounded-2xl border border-slate-200">
+                <h2
+                  className={`text-lg font-bold text-slate-900 text-center mb-6 ${
+                    isEntranceActive ? 'login-entrance-3 login-animating' : ''
                   }`}
                 >
-                  <div className="text-base font-bold text-slate-900">Patient</div>
-                  <div className="text-xs text-slate-500 mt-1">Records, bookings and bills</div>
-                  {lastUsedAudience === 'patient' && (
-                    <div className="text-[0.6875rem] text-slate-400 mt-1.5 font-normal">Last used</div>
-                  )}
-                </button>
+                  Who is signing in?
+                </h2>
 
-                {/* Clinic Staff Option */}
-                <button
-                  ref={staffOptionRef}
-                  type="button"
-                  onClick={() => handleSelectAudience('staff')}
-                  className={`min-h-[88px] w-full p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 text-left transition-colors cursor-pointer focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 shadow-card flex flex-col justify-center ${
-                    isEntranceActive ? 'login-entrance-5 login-animating' : ''
-                  }`}
-                >
-                  <div className="text-base font-bold text-slate-900">Clinic Staff</div>
-                  <div className="text-xs text-slate-500 mt-1">Doctors, receptionists and administrators</div>
-                  {lastUsedAudience === 'staff' && (
-                    <div className="text-[0.6875rem] text-slate-400 mt-1.5 font-normal">Last used</div>
-                  )}
-                </button>
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                  {/* Patient Option */}
+                  <button
+                    ref={patientOptionRef}
+                    type="button"
+                    onClick={() => handleSelectAudience('patient')}
+                    className={`min-h-[88px] w-full p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 text-left transition-colors cursor-pointer focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 shadow-card flex flex-col justify-start ${
+                      isEntranceActive ? 'login-entrance-4 login-animating' : ''
+                    }`}
+                  >
+                    <div className="text-base font-bold text-slate-900">Patient</div>
+                    <div className="text-xs text-slate-500 mt-1">Records, bookings and bills</div>
+                    {lastUsedAudience === 'patient' ? (
+                      <div className="text-[0.6875rem] text-slate-400 mt-1.5 font-normal">Last used</div>
+                    ) : (
+                      <div className="text-[0.6875rem] text-transparent mt-1.5 font-normal select-none pointer-events-none" aria-hidden="true">
+                        &nbsp;
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Clinic Staff Option */}
+                  <button
+                    ref={staffOptionRef}
+                    type="button"
+                    onClick={() => handleSelectAudience('staff')}
+                    className={`min-h-[88px] w-full p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 text-left transition-colors cursor-pointer focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 shadow-card flex flex-col justify-start ${
+                      isEntranceActive ? 'login-entrance-5 login-animating' : ''
+                    }`}
+                  >
+                    <div className="text-base font-bold text-slate-900">Clinic Staff</div>
+                    <div className="text-xs text-slate-500 mt-1">Doctors, receptionists and administrators</div>
+                    {lastUsedAudience === 'staff' ? (
+                      <div className="text-[0.6875rem] text-slate-400 mt-1.5 font-normal">Last used</div>
+                    ) : (
+                      <div className="text-[0.6875rem] text-transparent mt-1.5 font-normal select-none pointer-events-none" aria-hidden="true">
+                        &nbsp;
+                      </div>
+                    )}
+                  </button>
+                </div>
 
               {/* Demo Mode Chooser Helper: Plain reset demo data button only */}
               {isDemoMode && (
@@ -653,6 +798,7 @@ export const LoginView: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
       </div>
 
       {/* Reset Demo Data Confirmation Modal */}

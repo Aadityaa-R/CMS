@@ -7,7 +7,14 @@
 
 ## 1. Authentication Audience Chooser and Sign-In Steps
 
-The application separates authentication into two dedicated audience portals accessed through a clean initial account type chooser step:
+The application separates authentication into two dedicated audience portals accessed through an engaging opening sequence and clean account type chooser step:
+
+0. **Login Opening Sequence (The Intro)**:
+   - On the first load of the login screen in a browser session, the system plays an entrance sequence: the logo icon fades and scales centered in the viewport, holds for 500ms, and slides up to the brand header over 650ms.
+   - As the logo slides up, the clinic name and tagline fade and rise into view (350ms duration starting 150ms into the slide), followed by the chooser card (450ms duration starting 350ms into the slide).
+   - The decorative bright ECG heartbeat line begins drawing when the slide starts (at 900ms).
+   - **Single Play Per Session**: The full intro sequence plays only once per browser session (tracked via `sessionStorage`). Subsequent visits (such as after signing out) and direct links with `?as=` or `/login/<audience>` use the concise short entrance (<= 700ms). Under `prefers-reduced-motion`, both the intro and entrance are completely disabled: the finished page appears immediately.
+   - **Skip Mechanism**: Any pointer click or keypress during the intro immediately completes it to its resting state without losing the keypress's effect on the focused control. Window resize and orientation change also complete the intro immediately with zero layout shift.
 
 1. **Account Type Chooser Step (Default Entrance)**:
    - When entering the application without a pre-set audience, the system presents the clinic brand header (logo, clinic name, and tagline) followed by the prompt: **"Who is signing in?"**.
@@ -64,7 +71,7 @@ Select the **Patient** option on the chooser step for registered patient account
 
 ### Walkthrough 1: Front Desk Intake to Completed Visit and Paid Invoice
 
-1. **Sign in under Clinic Staff option**: Select the **Clinic Staff** tab. Sign in as Priya Sharma (`receptionist` / `Reception@123`). Navigate to **Reception** in the sidebar and select the **Waiting Lounge** tab.
+1. **Sign in under Clinic Staff option**: Select the **Clinic Staff** option. Sign in as Priya Sharma (`receptionist` / `Reception@123`). Navigate to **Reception** in the sidebar and select the **Waiting Lounge** tab.
 2. **Patient Arrival Check-In**: Locate patient Clara Thornton in the queue and click **Check In**, or click **Check In Walk-In** to register a new arrival. Verify that a sequential token is generated and the status changes to **Checked In**.
 3. **Admit to Consultation Desk**: Switch persona to Dr. Nathan Hayes (`doctor` / `Doctor@123`). Navigate to **Consultation Desk**. In the arrival queue, click **Admit to Desk** for the admitted patient. Enter clinical vitals (systolic/diastolic blood pressure, heart rate, O2 saturation, temperature) and save vitals.
 4. **Prescribe and Conclude Visit**: Click **Issue Electronic Prescription**, select an indicated medicine from the formulary, review the regimen dosage, and sign the prescription. Click **Conclude Visit** to complete the encounter. An invoice is automatically generated based on the physician consultation fee (₹90.00 / 9000 paisa/cents).

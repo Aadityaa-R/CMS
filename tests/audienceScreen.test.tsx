@@ -46,6 +46,8 @@ function createMockAuth(overrides = {}) {
 describe('Login and Sign-Up Account Type Chooser (M9.8)', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
+    sessionStorage.setItem('cms_login_intro_seen', 'true');
     window.history.replaceState({}, '', '/');
   });
 

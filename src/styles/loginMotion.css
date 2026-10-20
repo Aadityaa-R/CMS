@@ -88,6 +88,44 @@
   }
 }
 
+/* Opening Sequence (Intro) Keyframes (Milestone M9.9) */
+@keyframes login-intro-logo {
+  0% {
+    opacity: 0;
+    transform: translateY(var(--intro-start-y, 0px)) scale(0.9);
+    animation-timing-function: ease-out;
+  }
+  25.81% {
+    opacity: 1;
+    transform: translateY(var(--intro-start-y, 0px)) scale(1);
+    animation-timing-function: linear;
+  }
+  58.06% {
+    opacity: 1;
+    transform: translateY(var(--intro-start-y, 0px)) scale(1);
+    animation-timing-function: var(--motion-ease-entrance);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+}
+
+.login-intro-logo {
+  animation: login-intro-logo 1550ms forwards;
+  will-change: transform, opacity;
+}
+
+.login-intro-text {
+  animation: login-fade-rise 350ms var(--motion-ease-entrance) 1050ms both;
+  will-change: transform, opacity;
+}
+
+.login-intro-card {
+  animation: login-fade-rise 450ms var(--motion-ease-entrance) 1250ms both;
+  will-change: transform, opacity;
+}
+
 /* ECG wipe animation over 10s cycle:
    0s - 6s (0% to 60%): wipes left to right across 1440px
    6s - 8s (60% to 80%): holds at 100% revealed
@@ -291,6 +329,9 @@
   .login-spinner-ring,
   .login-credentials-accordion,
   .login-btn-press,
+  .login-intro-logo,
+  .login-intro-text,
+  .login-intro-card,
   .ecg-wipe-slider {
     animation: none !important;
     transition: none !important;

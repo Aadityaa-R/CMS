@@ -409,4 +409,292 @@ describe('Login and Sign-Up Screen Motion (M9.6 / M9.8)', () => {
     expect(screen.getByText('Demo environment. Do not enter real patient data.')).toBeDefined();
     expect(screen.queryByText(/Encrypted Session/i)).toBeNull();
   });
+
+  describe('Opening Sequence and ECG Brightness (M9.9)', () => {
+    it('plays the full intro on first load, short entrance on second visit, short entrance on ?as=, and none on reduced motion', async () => {
+      // 1. First load: no sessionStorage flag, chooser step -> full intro plays
+      sessionStorage.clear();
+      window.history.replaceState({}, '', '/');
+      window.matchMedia = vi.fn().mockImplementation(() => ({
+        matches: false,
+        media: '',
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      const { Wrapper } = createMockAuth();
+      const { container: firstLoadContainer, unmount: unmountFirst } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      // Logo has login-intro-logo class
+      expect(firstLoadContainer.querySelector('.login-intro-logo')).not.toBeNull();
+      // Short entrance classes are NOT applied during full intro
+      expect(firstLoadContainer.querySelector('.login-entrance-0')).toBeNull();
+
+      unmountFirst();
+
+      // 2. Second visit in same session: sessionStorage flag set -> short entrance plays
+      sessionStorage.setItem('cms_login_intro_seen', 'true');
+      const { container: secondLoadContainer, unmount: unmountSecond } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      // Full intro does not play
+      expect(secondLoadContainer.querySelector('.login-intro-logo')).toBeNull();
+      // Short entrance plays
+      expect(secondLoadContainer.querySelector('.login-entrance-0')).not.toBeNull();
+
+      unmountSecond();
+
+      // 3. Direct route with ?as=staff: short entrance plays, full intro does not
+      sessionStorage.clear();
+      window.history.replaceState({}, '', '/?as=staff');
+      const { container: asParamContainer, unmount: unmountAsParam } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      expect(asParamContainer.querySelector('.login-intro-logo')).toBeNull();
+      expect(asParamContainer.querySelector('.login-entrance-0')).not.toBeNull();
+
+      unmountAsParam();
+
+      // 4. Reduced motion: neither full intro nor short entrance plays (instant render)
+      window.history.replaceState({}, '', '/');
+      window.matchMedia = vi.fn().mockImplementation((query) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      const { container: reducedContainer } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      expect(reducedContainer.querySelector('.login-intro-logo')).toBeNull();
+      expect(reducedContainer.querySelector('.login-entrance-0')).toBeNull();
+    });
+
+    it('keeps content below logo inert during intro, makes it interactive when shown, and completes on key or pointer skip', async () => {
+      sessionStorage.clear();
+      window.history.replaceState({}, '', '/');
+      window.matchMedia = vi.fn().mockImplementation(() => ({
+        matches: false,
+        media: '',
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      const { Wrapper } = createMockAuth();
+      const { container, unmount } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      // Initially during intro, content below logo is inert
+      const contentBelow = container.querySelector('[data-testid="content-below-logo"]');
+      expect(contentBelow).not.toBeNull();
+      expect(contentBelow?.hasAttribute('inert')).toBe(true);
+
+      // Advance timers to 1250ms when chooser card fades and rises in
+      act(() => {
+        vi.advanceTimersByTime(
+          LOGIN_MOTION.introLogoFade + LOGIN_MOTION.introHold + LOGIN_MOTION.introChooserDelay
+        );
+      });
+
+      // Chooser card is now interactive, inert attribute removed
+      expect(contentBelow?.hasAttribute('inert')).toBe(false);
+
+      unmount();
+
+      // Test skip via key press
+      sessionStorage.clear();
+      const { container: keyContainer, unmount: unmountKey } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      const keyContent = keyContainer.querySelector('[data-testid="content-below-logo"]');
+      expect(keyContent?.hasAttribute('inert')).toBe(true);
+
+      // Pressing any key completes intro immediately
+      act(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      });
+
+      expect(keyContent?.hasAttribute('inert')).toBe(false);
+      expect(keyContainer.querySelector('.login-intro-logo')).toBeNull();
+      expect(sessionStorage.getItem('cms_login_intro_seen')).toBe('true');
+
+      unmountKey();
+
+      // Test skip via pointer press
+      sessionStorage.clear();
+      const { container: pointerContainer } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      const pointerContent = pointerContainer.querySelector('[data-testid="content-below-logo"]');
+      expect(pointerContent?.hasAttribute('inert')).toBe(true);
+
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      });
+
+      expect(pointerContent?.hasAttribute('inert')).toBe(false);
+      expect(pointerContainer.querySelector('.login-intro-logo')).toBeNull();
+      expect(sessionStorage.getItem('cms_login_intro_seen')).toBe('true');
+    });
+
+    it('ensures logo final rectangle is identical with and without intro, and resize during intro completes it', async () => {
+      sessionStorage.clear();
+      window.history.replaceState({}, '', '/');
+      window.matchMedia = vi.fn().mockImplementation(() => ({
+        matches: false,
+        media: '',
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+
+      const { Wrapper } = createMockAuth();
+
+      // Render with intro and let it complete
+      const { container: introContainer, unmount: unmountIntro } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      const introLogo = introContainer.querySelector('.login-intro-logo') as HTMLElement;
+      expect(introLogo).not.toBeNull();
+
+      // Advance through intro to finish
+      act(() => {
+        vi.advanceTimersByTime(LOGIN_MOTION.introTotal);
+      });
+
+      const introLogoRect = introLogo.getBoundingClientRect();
+      unmountIntro();
+
+      // Render without intro (second visit)
+      sessionStorage.setItem('cms_login_intro_seen', 'true');
+      const { container: staticContainer, unmount: unmountStatic } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      // Advance through short entrance
+      act(() => {
+        vi.advanceTimersByTime(LOGIN_MOTION.maxEntrance);
+      });
+
+      const staticLogo = staticContainer.querySelector('.sm\\:max-w-md .flex.justify-center') as HTMLElement;
+      expect(staticLogo).not.toBeNull();
+      const staticLogoRect = staticLogo.getBoundingClientRect();
+
+      // Rectangles are identical (no layout shift)
+      expect(introLogoRect.width).toBe(staticLogoRect.width);
+      expect(introLogoRect.height).toBe(staticLogoRect.height);
+
+      unmountStatic();
+
+      // Verify resize during intro completes it immediately
+      sessionStorage.clear();
+      const { container: resizeContainer } = render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      expect(resizeContainer.querySelector('.login-intro-logo')).not.toBeNull();
+
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      expect(resizeContainer.querySelector('.login-intro-logo')).toBeNull();
+      expect(sessionStorage.getItem('cms_login_intro_seen')).toBe('true');
+    });
+
+    it('verifies ECG paths use bright token, configured opacities and widths, and chooser buttons have equal heights', () => {
+      // 1. Verify ECG paths, bright tokens, stroke widths, opacities, and mask
+      const { container: ecgContainer } = render(<EcgBackground />);
+
+      const svg = ecgContainer.querySelector('svg');
+      expect(svg?.className.baseVal || svg?.getAttribute('class')).toContain('text-teal-400');
+
+      const glowPath = ecgContainer.querySelector('[data-testid="ecg-glow-path"]') as HTMLElement;
+      const mainPath = ecgContainer.querySelector('[data-testid="ecg-main-path"]') as HTMLElement;
+
+      expect(glowPath).not.toBeNull();
+      expect(mainPath).not.toBeNull();
+
+      expect(Number(glowPath.getAttribute('stroke-width'))).toBe(LOGIN_MOTION.ecgStrokeGlow);
+      expect(glowPath.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+      expect(glowPath.style.opacity).toBe(String(LOGIN_MOTION.ecgOpacityGlow));
+      expect(glowPath.getAttribute('mask')).toBe('url(#ecg-wipe-mask)');
+
+      expect(Number(mainPath.getAttribute('stroke-width'))).toBe(LOGIN_MOTION.ecgStrokeMain);
+      expect(mainPath.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+      expect(mainPath.style.opacity).toBe(String(LOGIN_MOTION.ecgOpacityMain));
+      expect(mainPath.getAttribute('mask')).toBe('url(#ecg-wipe-mask)');
+
+      // Central mask exists in SVG defs
+      expect(ecgContainer.querySelector('#ecg-center-mask')).not.toBeNull();
+
+      // 2. Verify Chooser button layout fix: equal heights and top-aligned titles
+      const { Wrapper } = createMockAuth();
+      localStorage.setItem('cms_auth_audience', 'patient');
+      render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+
+      const patientBtn = screen.getByRole('button', { name: /Patient Records, bookings and bills/i });
+      const staffBtn = screen.getByRole('button', { name: /Clinic Staff Doctors, receptionists and administrators/i });
+
+      // Both buttons use justify-start so titles and muted lines sit at the exact same height
+      expect(patientBtn.className).toContain('justify-start');
+      expect(staffBtn.className).toContain('justify-start');
+
+      // Patient button shows "Last used"
+      expect(patientBtn.textContent).toContain('Last used');
+      // Staff button reserves the "Last used" line with an invisible placeholder (&nbsp;)
+      const placeholder = staffBtn.querySelector('[aria-hidden="true"]');
+      expect(placeholder).not.toBeNull();
+      expect(placeholder?.className).toContain('text-transparent');
+    });
+  });
 });
