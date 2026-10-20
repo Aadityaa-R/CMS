@@ -1139,7 +1139,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="min-w-0">
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
                   Role Clearance Governance
                 </span>
               </div>
@@ -1276,7 +1276,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           </div>
                         )}
                         {!deleteCheck.allowed && deleteCheck.reason && (
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                          <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-1">
                             {deleteCheck.reason}
                           </div>
                         )}
@@ -1335,11 +1335,11 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                     <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
                                       {item.label}
                                     </div>
-                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 break-words">
+                                    <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5 break-words">
                                       {item.description}
                                     </div>
                                     {helperText && (
-                                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 italic break-words">
+                                      <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-1 italic break-words">
                                         {helperText}
                                       </div>
                                     )}
@@ -1459,7 +1459,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                       <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
                                         {staffName}
                                       </div>
-                                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                      <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                                         {staffTitle}
                                       </div>
                                     </TableCell>
@@ -1490,7 +1490,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                         Remove
                                       </Button>
                                       {!removeCheck.allowed && removeCheck.reason && (
-                                        <div className="text-[10px] text-slate-500 mt-1">
+                                        <div className="text-[0.625rem] text-slate-500 mt-1">
                                           {removeCheck.reason}
                                         </div>
                                       )}
@@ -1581,7 +1581,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                 {mod.name}
                               </div>
                               {mod.description && (
-                                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
                                   {mod.description}
                                 </div>
                               )}
@@ -1782,7 +1782,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                            <span className="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                               Assigned Roles
                             </span>
                           </div>
@@ -1845,7 +1845,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                           {mod.name}
                                         </div>
                                         {mod.description && (
-                                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                          <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                                             {mod.description}
                                           </div>
                                         )}
@@ -1869,7 +1869,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                           Remove
                                         </Button>
                                         {!removeCheck.allowed && removeCheck.reason && (
-                                          <div className="text-[10px] text-slate-500 mt-1">
+                                          <div className="text-[0.625rem] text-slate-500 mt-1">
                                             {removeCheck.reason}
                                           </div>
                                         )}
@@ -1884,7 +1884,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
                         {/* Read-only Effective Accesses Section */}
                         <div className="pt-2">
-                          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
+                          <div className="text-[0.6875rem] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
                             Effective Accesses
                           </div>
                           {isRevoked ? (
@@ -1913,12 +1913,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                           {ea.label}
                                         </div>
                                         {ea.description && (
-                                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                          <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                                             {ea.description}
                                           </div>
                                         )}
                                       </div>
-                                      <div className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
+                                      <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 shrink-0">
                                         via {ea.sourceModuleNames.join(', ')}
                                       </div>
                                     </div>
@@ -1931,7 +1931,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       </div>
 
                       {/* Audit Directive Footer */}
-                      <div className="pt-3 border-t border-slate-200/70 dark:border-slate-700/70 text-[11px] text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <div className="pt-3 border-t border-slate-200/70 dark:border-slate-700/70 text-[0.6875rem] text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                         <span>
                           Last Authorized: <strong>{activeStaff.updatedBy}</strong> ({activeStaff.lastUpdated})
                         </span>
@@ -1948,7 +1948,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                    <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
                       Clearance Governance
                     </span>
                   </div>
@@ -2501,7 +2501,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 <span className="font-semibold text-slate-900 dark:text-slate-100 block">
                   Irreversible Administrative Directive
                 </span>
-                <span className="text-slate-600 dark:text-slate-400 text-[11px]">
+                <span className="text-slate-600 dark:text-slate-400 text-[0.6875rem]">
                   All workstation clearance, digital credentials, and capabilities will be permanently erased.
                 </span>
               </div>
@@ -2972,16 +2972,16 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           {item.label}
                         </span>
                         {isDocOnly && (
-                          <span className="text-[10px] px-1 py-0.2 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded">
+                          <span className="text-[0.625rem] px-1 py-0.2 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded">
                             Doctors only
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                      <p className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                         {item.description}
                       </p>
                       {isDocOnly && isSelected && (
-                        <p className="text-[10px] text-teal-700 dark:text-teal-400 mt-1 italic">
+                        <p className="text-[0.625rem] text-teal-700 dark:text-teal-400 mt-1 italic">
                           Includes required EMR Records Access dependency.
                         </p>
                       )}
@@ -2990,7 +2990,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 );
               })}
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
               Access privileges can be modified at any time via the Configure Role panel.
             </p>
           </div>

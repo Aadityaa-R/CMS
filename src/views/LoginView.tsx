@@ -252,7 +252,7 @@ export const LoginView: React.FC = () => {
           )}
 
           {/* Security notice */}
-          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] text-slate-400">
+          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[0.6875rem] text-slate-400">
             <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
             <span>Encrypted Session • Role-Based Access Control Enforced</span>
           </div>

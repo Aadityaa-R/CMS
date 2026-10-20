@@ -21,7 +21,7 @@ export const Button: React.FC<ButtonProps> = ({
     'inline-flex items-center justify-center font-medium outline-none focus:outline-none focus:ring-0 disabled:opacity-50 disabled:pointer-events-none rounded-lg cursor-pointer select-none';
 
   const sizeClasses = {
-    xs: 'text-[11px] px-2 py-1 gap-1',
+    xs: 'text-[0.6875rem] px-2 py-1 gap-1',
     sm: 'text-xs px-2.5 py-1.5 gap-1.5',
     md: 'text-sm px-3.5 py-2 gap-2',
     lg: 'text-base px-5 py-2.5 gap-2.5',

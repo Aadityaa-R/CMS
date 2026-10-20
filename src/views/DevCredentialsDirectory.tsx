@@ -27,7 +27,7 @@ export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = (
           <KeyRound className="w-3.5 h-3.5 text-teal-600" />
           <span>Authorized Role Credentials Directory ({roleCredentials.length} Accounts)</span>
         </h3>
-        <span className="text-[11px] text-slate-500">
+        <span className="text-[0.6875rem] text-slate-500">
           Click 'Fill' to load credentials
         </span>
       </div>
@@ -51,10 +51,10 @@ export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = (
                     {c.label}
                   </span>
                 </TableCell>
-                <TableCell label="Username" className="w-2/12 min-w-[100px] text-[11px] text-slate-700">
+                <TableCell label="Username" className="w-2/12 min-w-[100px] text-[0.6875rem] text-slate-700">
                   {c.username}
                 </TableCell>
-                <TableCell label="Password" hideBelow="sm" className="w-2/12 min-w-[100px] text-[11px] text-slate-700">
+                <TableCell label="Password" hideBelow="sm" className="w-2/12 min-w-[100px] text-[0.6875rem] text-slate-700">
                   {c.password}
                 </TableCell>
                 <TableCell label="Assigned Staff" hideBelow="sm" className="w-3/12 min-w-[140px] text-slate-600 truncate">

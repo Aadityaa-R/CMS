@@ -330,7 +330,7 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
                   ]}
                 />
               </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
+              <p className="text-[0.6875rem] text-slate-500 leading-relaxed">
                 When set to "Do not save", changes persist only during the active browser session and reset automatically upon page reload.
               </p>
             </CardContent>
@@ -490,7 +490,7 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
           {pendingBackup?.collections && (
             <div className="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1">
               <span className="font-semibold block text-slate-900 dark:text-slate-100">Backup Contents:</span>
-              <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-600 dark:text-slate-400">
+              <div className="grid grid-cols-2 gap-1 text-[0.6875rem] text-slate-600 dark:text-slate-400">
                 <span>Accounts: {pendingBackup.collections.accounts?.length || 0}</span>
                 <span>Patients: {pendingBackup.collections.patients?.length || 0}</span>
                 <span>Appointments: {pendingBackup.collections.appointments?.length || 0}</span>

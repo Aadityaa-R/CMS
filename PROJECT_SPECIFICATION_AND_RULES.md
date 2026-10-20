@@ -598,7 +598,24 @@ Every feature and line of code in this project strictly adheres to the governing
   - Design-system dropdown Select.tsx provides accessible combobox and listbox roles (role="combobox", aria-expanded, aria-haspopup="listbox", role="listbox", role="option", aria-selected).
   - Interactive search bar clear trigger includes explicit aria-label="Clear search".
 - **Automated Verification**:
+- **Automated Verification**:
   - Authored comprehensive test suite in tests/keyboardNav.test.tsx verifying skip link, landmarks, polite live region, modal focus trapping/return, form error linkage, tablist keyboard walking, and single <h1> rules.
+
+---
+
+### 2.25 Size, Scale, and Responsive Reflow Architecture (Milestone M10 Section 4)
+
+- **Rem-Based Scale Compliance**:
+  - The root font size is strictly preserved at 16px (1rem).
+  - All hardcoded pixel font sizes (such as text-[10px] and text-[11px]) across all 23 component and view files were converted to relative rem units (text-[0.625rem] / 2xs and text-[0.6875rem] / xs-plus).
+  - Extended tailwind.config.js fontSize scale with 2xs: '0.625rem' and xs-plus: '0.6875rem' to standardize sub-xs typography tokens.
+  - Text scales proportionally when the user adjusts their browser root font size or activates browser zoom levels (100%, 125%, 150%, 200%).
+- **Reflow and WCAG 1.4.10 Compliance (320 CSS Pixels)**:
+  - Validated responsive layout at 320 CSS pixels width (equivalent to 400% zoom on a 1280px display per WCAG 2.1 Reflow 1.4.10).
+  - Main content column reflows cleanly with strictly zero horizontal window scrolling (0 sideways scroll verified via automated viewport test).
+  - Data tables and SVG visualizations scroll inside their own containers with indicators rather than causing sideways page overflow.
+- **Full Viewport Visual Capture Suite**:
+  - Captured full-screen 1440x900 screenshots across all 20 views and workstations in both light and dark themes into docs/final-screens/ using automated headless Chrome CDP capture.
 
 ---
 

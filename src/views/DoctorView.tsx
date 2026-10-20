@@ -1176,14 +1176,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                     {/* Consultation Chief Complaint */}
                     <div className="text-xs space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                      <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block">
                         Chief Complaint & Reason for Visit
                       </span>
                       <p className="text-slate-900 dark:text-slate-100 font-medium">
                         {activeAppointment.reasonForVisit}
                       </p>
                       {activeAppointment.notes && (
-                        <p className="text-slate-500 dark:text-slate-400 text-[11px]">
+                        <p className="text-slate-500 dark:text-slate-400 text-[0.6875rem]">
                           Intake Note: {activeAppointment.notes}
                         </p>
                       )}
@@ -1191,7 +1191,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                     {/* Clinical Triage Vitals: 5 cols on desktop, 3 on tablet, 2 on phones */}
                     <div className="space-y-2">
-                      <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                      <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block">
                         Clinical Triage Vitals
                       </span>
 
@@ -1353,7 +1353,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 <span className="font-medium text-slate-900 dark:text-slate-100 block">
                                   BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp} mmHg • HR {summaryPatient.previousVitals.heartRateBpm} bpm
                                 </span>
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                                <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mt-0.5">
                                   SpO2 {summaryPatient.previousVitals.oxygenSaturationPct}% • Temp {summaryPatient.previousVitals.temperatureCelsius} °C
                                 </span>
                               </>
@@ -1414,7 +1414,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                      <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
                         MD Clinical Queue Inspector
                       </span>
                     </div>
@@ -1466,7 +1466,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                      <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
                         Doctor Clinical Queue Inspector
                       </span>
                     </div>
@@ -1702,7 +1702,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             <div className="font-bold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                               <TableTruncate>{pat.email}</TableTruncate>
                             </div>
                           </TableCell>
@@ -2332,7 +2332,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   {m.message} ({m.medicine})
                 </div>
               ))}
-              <p className="text-[11px] text-rose-700 dark:text-rose-300 pt-1">
+              <p className="text-[0.6875rem] text-rose-700 dark:text-rose-300 pt-1">
                 The allergy check is an aid and not a substitute for clinical judgment.
                 A clinical override reason is required to issue this prescription.
               </p>
@@ -2633,21 +2633,21 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           <div className="space-y-4 text-xs">
             <div className="grid grid-cols-2 gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Prescription Number</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem]">Prescription Number</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{viewingPrescription.prescriptionNumber}</span>
               </div>
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Issue Date</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem]">Issue Date</span>
                 <span className="text-slate-900 dark:text-slate-100">{viewingPrescription.date}</span>
               </div>
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Patient Name & MRN</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem]">Patient Name & MRN</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
                   {viewingPrescription.patientName} {viewingPatient?.mrn ? `(${viewingPatient.mrn})` : ''}
                 </span>
               </div>
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Issuing Physician</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem]">Issuing Physician</span>
                 <span className="text-slate-900 dark:text-slate-100">{formatDoctorName(viewingPrescription.doctorName)}</span>
               </div>
             </div>
@@ -2670,7 +2670,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             {viewingPrescription.status === 'cancelled' && (
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                 <div className="font-semibold text-slate-900 dark:text-slate-100">Prescription Cancelled</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
                   Cancelled by {viewingPrescription.cancelledBy?.name || 'Clinic Staff'}{viewingPrescription.cancelledAt ? ` on ${viewingPrescription.cancelledAt.slice(0, 10)}` : ''}. Reason: {viewingPrescription.cancelReason || 'Not specified'}
                 </div>
               </div>
@@ -2687,7 +2687,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       {formatRegimen(item)}
                     </div>
                     {item.instructions && (
-                      <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
+                      <div className="text-slate-500 dark:text-slate-400 text-[0.6875rem] mt-0.5">
                         Instructions: {item.instructions}
                       </div>
                     )}
@@ -2763,7 +2763,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               </div>
             )}
             <div>
-              <span className="text-slate-500 dark:text-slate-400 block text-[11px] mb-1">Current Assigned Physician</span>
+              <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem] mb-1">Current Assigned Physician</span>
               <span className="font-semibold text-slate-900 dark:text-slate-100">
                 {doctors.find((d) => d.id === getAssignedDoctorId(transferTargetPatient.id, patientAssignments))?.name || 'Unassigned'}
               </span>

@@ -621,7 +621,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                             <div className="font-medium text-slate-900 dark:text-slate-100">
                               {inv.patientName || 'Registered Patient'}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                               {mrn}
                             </div>
                           </TableCell>
@@ -1020,7 +1020,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                 placeholder="Front desk intake comments..."
               />
 
-              <div className="pt-1 text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="pt-1 text-[0.6875rem] text-slate-500 dark:text-slate-400">
                 Operator: <strong>{currentUser?.name || 'Front Desk Staff'}</strong> ({currentUser?.role || 'Staff'})
               </div>
             </form>
@@ -1056,7 +1056,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
                   {activeViewingInvoice.patientName || 'Registered Patient'}
                 </span>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                   ID: {activeViewingInvoice.patientId}
                 </div>
               </div>
@@ -1065,7 +1065,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
                   {activeViewingInvoice.doctorName || 'Consulting Physician'}
                 </span>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                   Status:{' '}
                   <span className="font-semibold uppercase">
                     {deriveStatus(activeViewingInvoice, allPayments)}
@@ -1076,7 +1076,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
 
             {/* Line Items Table */}
             <div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
+              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[0.6875rem]">
                 Line Items
               </div>
               <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
@@ -1092,7 +1092,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                     {activeViewingInvoice.items.map((it) => (
                       <tr key={it.id}>
                         <td className="p-2.5 text-slate-900 dark:text-slate-100">{it.description}</td>
-                        <td className="p-2.5 uppercase text-[10px] text-slate-500 dark:text-slate-400">{it.kind}</td>
+                        <td className="p-2.5 uppercase text-[0.625rem] text-slate-500 dark:text-slate-400">{it.kind}</td>
                         <td className="p-2.5 text-right font-medium text-slate-900 dark:text-slate-100">
                           {it.kind === 'discount' ? `-${formatCurrency(it.amount)}` : formatCurrency(it.amount)}
                         </td>
@@ -1129,7 +1129,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
             {isAdministrator && (
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  <span className="text-[0.6875rem] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Administrative Controls
                   </span>
                   <div className="flex space-x-2">
@@ -1313,7 +1313,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
 
             {/* Payments list for this invoice */}
             <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
+              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[0.6875rem]">
                 Payment History ({viewingInvoicePayments.length})
               </div>
               {viewingInvoicePayments.length > 0 ? (
@@ -1491,7 +1491,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 {viewingReceipt.clinicName}
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                 Official Payment Receipt
               </div>
               <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
@@ -1545,7 +1545,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               </span>
             </div>
 
-            <div className="text-center pt-2 text-[10px] text-slate-500 dark:text-slate-400">
+            <div className="text-center pt-2 text-[0.625rem] text-slate-500 dark:text-slate-400">
               Demographic and payment settlement record only.
               <br />
               No clinical diagnosis, prescription, or vitals are disclosed on receipts.

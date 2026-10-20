@@ -156,7 +156,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                     x={38}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[10px] fill-slate-500 dark:fill-slate-400"
+                    className="text-[0.625rem] fill-slate-500 dark:fill-slate-400"
                   >
                     {tick}
                   </text>
@@ -210,7 +210,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                       x={slotCenterX}
                       y={215}
                       textAnchor="middle"
-                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 ${
+                      className={`text-[0.625rem] fill-slate-500 dark:fill-slate-400 ${
                         i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
                       }`}
                     >
@@ -353,7 +353,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                     x={48}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[10px] fill-slate-500 dark:fill-slate-400"
+                    className="text-[0.625rem] fill-slate-500 dark:fill-slate-400"
                   >
                     ${tick}
                   </text>
@@ -406,7 +406,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                       x={x}
                       y={215}
                       textAnchor="middle"
-                      className={`text-[10px] fill-slate-500 dark:fill-slate-400 ${
+                      className={`text-[0.625rem] fill-slate-500 dark:fill-slate-400 ${
                         i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
                       }`}
                     >

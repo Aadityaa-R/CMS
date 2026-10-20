@@ -204,7 +204,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="shrink-0">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+            <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
               Financial Ledger Governance
             </span>
             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
@@ -259,7 +259,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+              <thead className="bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[0.6875rem] tracking-wider">
                 <tr>
                   <th className="w-1/12 min-w-[90px] px-4 py-3.5 align-middle">Invoice #</th>
                   <th className="w-2/12 min-w-[140px] px-4 py-3.5 align-middle">Patient Name</th>
@@ -287,7 +287,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
                         <td className="px-4 py-3.5 align-middle font-semibold text-slate-900 dark:text-slate-100">
                           {inv.patientName}
                         </td>
-                        <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                        <td className="px-4 py-3.5 align-middle text-slate-600 dark:text-slate-400 font-mono text-[0.6875rem]">
                           {inv.date}
                         </td>
                         <td className="px-4 py-3.5 align-middle font-mono font-semibold text-slate-900 dark:text-slate-100">
@@ -400,7 +400,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
                         <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                           {inv.patientName}
                         </h4>
-                        <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                        <span className="text-[0.6875rem] font-mono text-slate-500 dark:text-slate-400">
                           (Invoice #{inv.invoiceNumber})
                         </span>
                       </div>
@@ -414,7 +414,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
                           ${balance.toFixed(2)}
                         </span>
                       </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                         Issued: {inv.date} — Method:{' '}
                         {inv.paymentMethod ? inv.paymentMethod.replace('_', ' ') : 'Unspecified'} — Status:{' '}
                         <span className="capitalize font-medium text-slate-700 dark:text-slate-300">
@@ -476,7 +476,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
 
             <div className="p-3.5 bg-slate-50 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 text-xs grid grid-cols-2 gap-2">
               <div>
-                <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-semibold">
+                <span className="text-slate-400 dark:text-slate-500 block text-[0.625rem] uppercase font-semibold">
                   Patient
                 </span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
@@ -484,7 +484,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-semibold">
+                <span className="text-slate-400 dark:text-slate-500 block text-[0.625rem] uppercase font-semibold">
                   Total Billed
                 </span>
                 <span className="font-mono text-slate-800 dark:text-slate-200">
@@ -492,7 +492,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-semibold">
+                <span className="text-slate-400 dark:text-slate-500 block text-[0.625rem] uppercase font-semibold">
                   Previously Paid
                 </span>
                 <span className="font-mono text-teal-600 dark:text-teal-400">
@@ -500,7 +500,7 @@ export const AdminView: React.FC<AdminViewProps> = () => {
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 dark:text-slate-500 block text-[10px] uppercase font-semibold">
+                <span className="text-slate-400 dark:text-slate-500 block text-[0.625rem] uppercase font-semibold">
                   Remaining Balance
                 </span>
                 <span className="font-mono font-bold text-rose-600 dark:text-rose-400">

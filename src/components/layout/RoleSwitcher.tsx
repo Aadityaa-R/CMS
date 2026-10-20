@@ -25,10 +25,10 @@ export const RoleSwitcher: React.FC = () => {
   return (
     <div className="bg-slate-900 text-white text-xs border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-3 z-30 relative">
       <div className="flex items-center gap-2">
-        <span className="font-semibold uppercase tracking-wider text-teal-400 text-[11px]">
+        <span className="font-semibold uppercase tracking-wider text-teal-400 text-[0.6875rem]">
           Development Role Switcher:
         </span>
-        <span className="text-slate-400 hidden sm:inline text-[11px]">
+        <span className="text-slate-400 hidden sm:inline text-[0.6875rem]">
           Select any of the 4 clinic roles to test workstation and clearance:
         </span>
       </div>
@@ -66,7 +66,7 @@ export const RoleSwitcher: React.FC = () => {
         })}
       </div>
 
-      <div className="hidden lg:flex items-center gap-2 border-l border-slate-800 pl-3 text-slate-300 text-[11px]">
+      <div className="hidden lg:flex items-center gap-2 border-l border-slate-800 pl-3 text-slate-300 text-[0.6875rem]">
         <span className="text-slate-400">Logged in:</span>
         <span className="font-semibold text-white">{currentUser.name}</span>
         <span className="text-teal-400 font-medium font-mono">

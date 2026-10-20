@@ -199,7 +199,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           </div>
 
           {/* Days of week */}
-          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">
+          <div className="grid grid-cols-7 gap-1 text-center text-[0.625rem] font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">
             <span>Su</span>
             <span>Mo</span>
             <span>Tu</span>
@@ -244,7 +244,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           </div>
 
           {/* Quick select Today */}
-          <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+          <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[0.6875rem]">
             <button
               type="button"
               onClick={handleSelectToday}

@@ -792,7 +792,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           <div>
             <span className="font-medium text-slate-900 dark:text-slate-100">{apt.patientName}</span>
             {due > 0 && (
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                 Outstanding balance: {formatCurrency(due)}
               </div>
             )}

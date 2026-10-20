@@ -184,7 +184,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Notifications</span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 font-medium">
                       ({unreadCount} Unread)
                     </span>
                   </div>
@@ -192,7 +192,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                     <button
                       type="button"
                       onClick={() => markAllAsRead()}
-                      className="text-[11px] text-teal-600 dark:text-teal-400 hover:text-teal-700 font-medium cursor-pointer"
+                      className="text-[0.6875rem] text-teal-600 dark:text-teal-400 hover:text-teal-700 font-medium cursor-pointer"
                     >
                       Mark all as read
                     </button>
@@ -205,7 +205,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                       <Bell className="w-5 h-5" />
                     </div>
                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">No notifications</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[220px] mx-auto leading-relaxed">
+                    <p className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-1 max-w-[220px] mx-auto leading-relaxed">
                       Consultation updates, schedule alerts, and booking notices will appear here.
                     </p>
                   </div>
@@ -222,11 +222,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                           <span className={`font-semibold ${notif.read ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-slate-100'}`}>
                             {notif.title}
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0">
+                          <span className="text-[0.625rem] text-slate-500 dark:text-slate-400 shrink-0">
                             {notif.createdAt ? notif.createdAt.replace('T', ' ').slice(0, 16) : ''}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                        <p className="text-[0.6875rem] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
                           {notif.message}
                         </p>
                         <div className="flex items-center justify-between gap-2 mt-2 pt-1">
@@ -238,7 +238,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                                 setIsNotificationsOpen(false);
                                 onNavigate?.(notif.linkTab!);
                               }}
-                              className="text-[11px] text-teal-600 dark:text-teal-400 hover:underline font-medium cursor-pointer"
+                              className="text-[0.6875rem] text-teal-600 dark:text-teal-400 hover:underline font-medium cursor-pointer"
                             >
                               View details
                             </button>
@@ -250,7 +250,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                               <button
                                 type="button"
                                 onClick={() => markAsRead(notif.id)}
-                                className="text-[11px] text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
+                                className="text-[0.6875rem] text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
                               >
                                 Mark read
                               </button>
@@ -258,7 +258,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                             <button
                               type="button"
                               onClick={() => dismissNotification(notif.id)}
-                              className="text-[11px] text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 cursor-pointer"
+                              className="text-[0.6875rem] text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 cursor-pointer"
                             >
                               Dismiss
                             </button>
@@ -292,10 +292,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                   <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs truncate">
                     {currentUser.name}
                   </div>
-                  <div className="text-[11px] text-teal-700 dark:text-teal-400 capitalize font-medium">
+                  <div className="text-[0.6875rem] text-teal-700 dark:text-teal-400 capitalize font-medium">
                     {currentRole.replace('_', ' ')}
                   </div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  <div className="text-[0.625rem] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                     {currentUser.email}
                   </div>
                 </div>
@@ -474,7 +474,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                 <div className="text-xs text-teal-700 dark:text-teal-400 font-medium capitalize">
                   {currentRole.replace('_', ' ')}
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                   {currentUser.title || 'Clinical Personnel'}
                 </div>
               </div>
@@ -482,7 +482,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
+                <span className="text-[0.625rem] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
                   <Mail className="w-3 h-3" /> Email Address
                 </span>
                 <span className="font-medium text-slate-800 dark:text-slate-200 break-all">
@@ -490,7 +490,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                 </span>
               </div>
               <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
+                <span className="text-[0.625rem] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
                   <Shield className="w-3 h-3" /> Department
                 </span>
                 <span className="font-medium text-slate-800 dark:text-slate-200">
@@ -498,7 +498,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                 </span>
               </div>
               <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
+                <span className="text-[0.625rem] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
                   <BadgeCheck className="w-3 h-3" /> Badge / Terminal ID
                 </span>
                 <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
@@ -506,7 +506,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                 </span>
               </div>
               <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block">
+                <span className="text-[0.625rem] text-slate-500 dark:text-slate-400 uppercase font-semibold block">
                   Session Status
                 </span>
                 <span className="font-medium text-teal-700 dark:text-teal-400">

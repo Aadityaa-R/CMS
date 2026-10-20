@@ -337,7 +337,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin }) => {
                           { value: 'receptionist', label: 'Receptionist' },
                         ]}
                       />
-                      <p className="text-[11px] text-slate-500 mt-1">
+                      <p className="text-[0.6875rem] text-slate-500 mt-1">
                         Administrator access cannot be requested. Staff accounts require review and activation by a clinic administrator.
                       </p>
                     </div>

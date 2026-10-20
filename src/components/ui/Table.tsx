@@ -120,7 +120,7 @@ export const TableHeader: React.FC<React.HTMLAttributes<HTMLTableSectionElement>
   const stackClass = stackBelow ? stackHeaderClasses[stackBelow] : '';
   return (
     <thead
-      className={`bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[11px] tracking-wider whitespace-nowrap ${stackClass} ${className}`}
+      className={`bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[0.6875rem] tracking-wider whitespace-nowrap ${stackClass} ${className}`}
       {...props}
     >
       {children}

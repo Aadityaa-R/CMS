@@ -316,7 +316,7 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
                           {med.genericName}
                         </div>
                         {med.brandNames && med.brandNames.length > 0 && (
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                          <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                             Brand: {med.brandNames.join(', ')}
                           </div>
                         )}
@@ -385,14 +385,14 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
                   <span className="font-semibold text-slate-900 dark:text-slate-100 capitalize">
                     Allergen: {rule.allergenKey}
                   </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                     Target Classes: {rule.targetClasses?.join(', ') || 'None'}
                   </span>
                 </div>
                 <div className="text-slate-600 dark:text-slate-400">
                   Targeted Medicines: {rule.targetMedicines?.join(', ')}
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 italic">
                   {rule.warningMessage}
                 </div>
               </div>

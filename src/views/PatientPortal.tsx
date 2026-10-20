@@ -859,7 +859,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                                     Cancel
                                   </Button>
                                 </div>
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-1 text-right">
+                                <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mt-1 text-right">
                                   Changes close 2 hours before appointment
                                 </span>
                               </div>
@@ -1423,7 +1423,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                       placeholder="Type current password to confirm email change"
                       required
                     />
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-1">
+                    <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mt-1">
                       Current password is required to verify changes to your email address.
                     </span>
                   </div>
@@ -1488,7 +1488,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   required
                 />
 
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                <p className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                   Password must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character.
                 </p>
 
@@ -1559,7 +1559,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                 }))}
               />
               {assignedDoctorId && (
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-1">
+                <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mt-1">
                   Bookings are scheduled with your assigned primary physician.
                 </span>
               )}
@@ -1613,7 +1613,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                   Reason for Visit
                 </label>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                   {bookingReason.length} / 300
                 </span>
               </div>
@@ -1627,7 +1627,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               />
             </div>
 
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
               This booking is for routine consultations only. For medical emergencies call your local emergency service immediately.
             </p>
           </form>
@@ -1728,7 +1728,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               )}
             </div>
 
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
               Rescheduling cancels the previous slot and creates your new confirmed appointment in one step.
             </p>
           </form>
@@ -1817,7 +1817,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 Beacon Clinic Outpatient Care
               </div>
-              <div className="text-slate-500 dark:text-slate-400 text-[11px]">
+              <div className="text-slate-500 dark:text-slate-400 text-[0.6875rem]">
                 Electronic Medical Prescription
               </div>
               <div className="font-semibold text-slate-800 dark:text-slate-200 mt-1">
@@ -1859,7 +1859,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             </div>
 
             <div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
+              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[0.6875rem]">
                 Prescribed Regimen
               </div>
               <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2.5">
@@ -1869,7 +1869,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                       {formatRegimen(it)}
                     </div>
                     {it.instructions && (
-                      <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
+                      <div className="text-slate-500 dark:text-slate-400 text-[0.6875rem] mt-0.5">
                         Instructions: {it.instructions}
                       </div>
                     )}
@@ -1990,7 +1990,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
         >
           <div className="space-y-4 text-xs">
             <div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
+              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[0.6875rem]">
                 Billed Items
               </div>
               <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
@@ -2016,7 +2016,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             </div>
 
             <div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[11px]">
+              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[0.6875rem]">
                 Receipts & Settlement History
               </div>
               {billingPayments.filter((p) => p.invoiceId === patientViewingInvoice.id).length > 0 ? (
@@ -2103,7 +2103,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 {patientReceipt.clinicName}
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                 Official Outpatient Payment Receipt
               </div>
               <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
@@ -2157,7 +2157,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               </span>
             </div>
 
-            <div className="text-center pt-2 text-[10px] text-slate-500 dark:text-slate-400">
+            <div className="text-center pt-2 text-[0.625rem] text-slate-500 dark:text-slate-400">
               Outpatient billing receipt.
               <br />
               No clinical diagnosis or prescription details are disclosed on receipts.

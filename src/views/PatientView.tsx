@@ -300,7 +300,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="min-w-0">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+            <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
               Outpatient Directory Governance
             </span>
             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
@@ -388,7 +388,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                            <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
                               <span>{pat.phone}</span>
                               <span>•</span>
                               <span>{pat.email}</span>
@@ -409,7 +409,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">
+                              <span className="text-slate-400 dark:text-slate-500 italic text-[0.6875rem]">
                                 None Recorded
                               </span>
                             )}
@@ -421,7 +421,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                           </TableCell>
                           <TableCell label="Emergency Contact" hideBelow="xl" className="w-2/12 min-w-[130px] text-slate-700 dark:text-slate-300">
                             <div className="font-medium text-xs">{pat.emergencyContact?.name}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                               {pat.emergencyContact?.relationship} • {pat.emergencyContact?.phone}
                             </div>
                           </TableCell>
@@ -530,25 +530,25 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                       return (
                                         <div className="grid grid-cols-2 gap-2 text-xs pt-1 font-mono">
                                           <div>
-                                            <span className="text-[10px] text-slate-400 block font-sans">BP</span>
+                                            <span className="text-[0.625rem] text-slate-400 block font-sans">BP</span>
                                             <span className="font-bold text-slate-800 dark:text-slate-200">
                                               {patientVitals.systolicBp}/{patientVitals.diastolicBp} mmHg
                                             </span>
                                           </div>
                                           <div>
-                                            <span className="text-[10px] text-slate-400 block font-sans">Heart Rate</span>
+                                            <span className="text-[0.625rem] text-slate-400 block font-sans">Heart Rate</span>
                                             <span className="font-bold text-slate-800 dark:text-slate-200">
                                               {patientVitals.heartRateBpm} bpm
                                             </span>
                                           </div>
                                           <div>
-                                            <span className="text-[10px] text-slate-400 block font-sans">O2 Sat</span>
+                                            <span className="text-[0.625rem] text-slate-400 block font-sans">O2 Sat</span>
                                             <span className="font-bold text-slate-800 dark:text-slate-200">
                                               {patientVitals.oxygenSaturationPct}%
                                             </span>
                                           </div>
                                           <div>
-                                            <span className="text-[10px] text-slate-400 block font-sans">Temperature</span>
+                                            <span className="text-[0.625rem] text-slate-400 block font-sans">Temperature</span>
                                             <span className="font-bold text-slate-800 dark:text-slate-200">
                                               {patientVitals.temperatureCelsius}°C
                                             </span>
@@ -579,12 +579,12 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                             <div key={rx.id} className="text-xs border-b border-slate-100 dark:border-slate-800 pb-1.5 last:border-0">
                                               <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-slate-100">
                                                 <span>{rx.prescriptionNumber}</span>
-                                                <span className="text-[10px] font-mono text-slate-500">{rx.date}</span>
+                                                <span className="text-[0.625rem] font-mono text-slate-500">{rx.date}</span>
                                               </div>
-                                              <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                                              <div className="text-[0.6875rem] text-slate-600 dark:text-slate-400">
                                                 Dx: {rx.diagnosis}
                                               </div>
-                                              <div className="text-[10px] text-teal-700 dark:text-teal-400 font-medium">
+                                              <div className="text-[0.625rem] text-teal-700 dark:text-teal-400 font-medium">
                                                 {rx.items.map((i) => i.medicineName).join(', ')}
                                               </div>
                                             </div>
@@ -615,14 +615,14 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                             <div key={a.id} className="text-xs border-b border-slate-100 dark:border-slate-800 pb-1.5 last:border-0">
                                               <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-slate-100">
                                                 <span>{a.doctorName}</span>
-                                                <span className="text-[10px] font-mono text-teal-600 dark:text-teal-400 font-bold">
+                                                <span className="text-[0.625rem] font-mono text-teal-600 dark:text-teal-400 font-bold">
                                                   Token #{a.tokenNumber}
                                                 </span>
                                               </div>
-                                              <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                                              <div className="text-[0.6875rem] text-slate-600 dark:text-slate-400">
                                                 {a.reasonForVisit}
                                               </div>
-                                              <div className="text-[10px] text-slate-500 capitalize">
+                                              <div className="text-[0.625rem] text-slate-500 capitalize">
                                                 Status: {a.status.replace('_', ' ')}
                                               </div>
                                             </div>
