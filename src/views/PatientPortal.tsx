@@ -667,10 +667,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
   }
 
   const getTabTitle = (): string => {
-    if (initialActiveTab === 'overview') return 'My Health Portal';
     switch (activeTab) {
       case 'appointments':
-        return 'My Appointments';
+        return 'My Health Portal';
       case 'records':
         return 'My Records';
       case 'prescriptions':

@@ -3,7 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard,
   UserCheck,
-  Calendar,
   CreditCard,
   Pill,
   PanelLeft,
@@ -71,7 +70,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (currentRole === 'patient') {
       return [
         { id: 'overview', label: 'My Health Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
-        { id: 'appointments', label: 'My Appointments', icon: <Calendar className="w-4 h-4" /> },
         { id: 'records', label: 'My Records', icon: <FileText className="w-4 h-4" /> },
         { id: 'prescriptions', label: 'My Prescriptions', icon: <Pill className="w-4 h-4" /> },
         { id: 'billing', label: 'My Invoices', icon: <CreditCard className="w-4 h-4" /> },
@@ -184,6 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {navItems.map((item) => {
             const isActive =
               activeTab === item.id ||
+              (item.id === 'overview' && activeTab === 'appointments') ||
               (item.id === 'billing' && activeTab === 'invoices');
             return (
               <button
