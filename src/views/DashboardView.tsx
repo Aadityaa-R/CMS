@@ -85,6 +85,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
   activeBucket,
   onBucketChange,
 }) => {
+  const [formatMode, setFormatMode] = useState<'graph' | 'table'>('graph');
   const maxVal = Math.max(1, ...buckets.map((b) => Math.max(b.newPatients, b.visits)));
   const yCeiling = maxVal <= 4 ? 4 : maxVal <= 8 ? 8 : maxVal <= 12 ? 12 : Math.ceil(maxVal / 5) * 5;
   const gridTicks = [0, yCeiling * 0.25, yCeiling * 0.5, yCeiling * 0.75, yCeiling];
@@ -96,29 +97,73 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
   return (
     <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between">
       <div>
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
             Patients and Visits
           </h3>
-          <div className="flex items-center gap-4">
-            {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
+          <div className="flex items-center gap-3">
+            {/* Format toggle: Graph / Table */}
+            <div
+              role="tablist"
+              aria-label="Patients and visits format"
+              className="flex items-center border border-slate-200 dark:border-slate-700 rounded p-0.5 bg-slate-50 dark:bg-slate-800/80"
+            >
               <button
-                key={b}
                 type="button"
-                onClick={() => onBucketChange(b)}
-                className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
-                  activeBucket === b
-                    ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
+                role="tab"
+                aria-selected={formatMode === 'graph'}
+                onClick={() => setFormatMode('graph')}
+                className={`px-2 py-0.5 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                  formatMode === 'graph'
+                    ? 'bg-teal-600 text-white'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
-                {b.charAt(0).toUpperCase() + b.slice(1)}
+                Graph
               </button>
-            ))}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={formatMode === 'table'}
+                onClick={() => setFormatMode('table')}
+                className={`px-2 py-0.5 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                  formatMode === 'table'
+                    ? 'bg-teal-600 text-white'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Table
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => onBucketChange(b)}
+                  className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
+                    activeBucket === b
+                      ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
+                  }`}
+                >
+                  {b.charAt(0).toUpperCase() + b.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="pt-4">
+        <div className="pt-4 overflow-hidden relative">
+          <div
+            className="flex w-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none"
+            style={{
+              transform: formatMode === 'table' ? 'translateX(-100%)' : 'translateX(0%)',
+            }}
+          >
+            {/* Slide 1: Graph SVG */}
+            <div className="w-full shrink-0" aria-hidden={formatMode !== 'graph'}>
           <svg
             role="img"
             aria-label="Grouped bar chart showing new patients and visits"
@@ -227,31 +272,64 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
               </text>
             )}
           </svg>
+        </div>
 
-          {/* Visually hidden screen reader table */}
-          <div className="sr-only">
-            <table>
-              <caption>Patients and visits data</caption>
-              <thead>
+        {/* Slide 2: Data Table */}
+        <div className="w-full shrink-0" aria-hidden={formatMode !== 'table'}>
+          <div className="h-56 sm:h-64 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-lg">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0">
                 <tr>
-                  <th scope="col">Period</th>
-                  <th scope="col">New Patients</th>
-                  <th scope="col">Visits</th>
+                  <th scope="col" className="px-3.5 py-2 font-semibold">Period</th>
+                  <th scope="col" className="px-3.5 py-2 font-semibold">New Patients</th>
+                  <th scope="col" className="px-3.5 py-2 font-semibold">Visits</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
                 {buckets.map((b) => (
-                  <tr key={b.dateKey}>
-                    <td>{b.label}</td>
-                    <td>{b.newPatients}</td>
-                    <td>{b.visits}</td>
+                  <tr key={b.dateKey} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="px-3.5 py-2 font-medium">{b.label}</td>
+                    <td className="px-3.5 py-2">{b.newPatients}</td>
+                    <td className="px-3.5 py-2">{b.visits}</td>
                   </tr>
                 ))}
+                {buckets.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-3.5 py-6 text-center text-slate-400">
+                      No data available for this range
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+    </div>
+
+    {/* Visually hidden screen reader table */}
+    <div className="sr-only">
+      <table>
+        <caption>Patients and visits data</caption>
+        <thead>
+          <tr>
+            <th scope="col">Period</th>
+            <th scope="col">New Patients</th>
+            <th scope="col">Visits</th>
+          </tr>
+        </thead>
+        <tbody>
+          {buckets.map((b) => (
+            <tr key={b.dateKey}>
+              <td>{b.label}</td>
+              <td>{b.newPatients}</td>
+              <td>{b.visits}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
       {/* Static Legend */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -282,6 +360,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
   activeBucket,
   onBucketChange,
 }) => {
+  const [formatMode, setFormatMode] = useState<'graph' | 'table'>('graph');
   const maxVal = Math.max(50, ...buckets.map((b) => Math.max(b.billed, b.collected)));
   const yCeiling =
     maxVal <= 100
@@ -306,147 +385,224 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
   return (
     <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between">
       <div>
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
             Fees and Payments
           </h3>
-          <div className="flex items-center gap-4">
-            {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
+          <div className="flex items-center gap-3">
+            {/* Format toggle: Graph / Table */}
+            <div
+              role="tablist"
+              aria-label="Fees and payments format"
+              className="flex items-center border border-slate-200 dark:border-slate-700 rounded p-0.5 bg-slate-50 dark:bg-slate-800/80"
+            >
               <button
-                key={b}
                 type="button"
-                onClick={() => onBucketChange(b)}
-                className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
-                  activeBucket === b
-                    ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
+                role="tab"
+                aria-selected={formatMode === 'graph'}
+                onClick={() => setFormatMode('graph')}
+                className={`px-2 py-0.5 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                  formatMode === 'graph'
+                    ? 'bg-teal-600 text-white'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
-                {b.charAt(0).toUpperCase() + b.slice(1)}
+                Graph
               </button>
-            ))}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={formatMode === 'table'}
+                onClick={() => setFormatMode('table')}
+                className={`px-2 py-0.5 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                  formatMode === 'table'
+                    ? 'bg-teal-600 text-white'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Table
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => onBucketChange(b)}
+                  className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
+                    activeBucket === b
+                      ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
+                  }`}
+                >
+                  {b.charAt(0).toUpperCase() + b.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="pt-4">
-          <svg
-            role="img"
-            aria-label="Line chart showing fees billed and payments collected"
-            viewBox="0 0 600 240"
-            className="w-full h-56 sm:h-64"
+        <div className="pt-4 overflow-hidden relative">
+          <div
+            className="flex w-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none"
+            style={{
+              transform: formatMode === 'table' ? 'translateX(-100%)' : 'translateX(0%)',
+            }}
           >
-            {/* Gridlines and Y-axis ticks */}
-            {gridTicks.map((tick) => {
-              const y = 20 + 175 - (tick / yCeiling) * 175;
-              return (
-                <g key={tick}>
-                  <line
-                    x1={55}
-                    y1={y}
-                    x2={580}
-                    y2={y}
-                    stroke="currentColor"
-                    className="text-slate-200 dark:text-slate-800"
-                    strokeDasharray="3,3"
+            {/* Slide 1: Graph SVG */}
+            <div className="w-full shrink-0" aria-hidden={formatMode !== 'graph'}>
+              <svg
+                role="img"
+                aria-label="Line chart showing fees billed and payments collected"
+                viewBox="0 0 600 240"
+                className="w-full h-56 sm:h-64"
+              >
+                {/* Gridlines and Y-axis ticks */}
+                {gridTicks.map((tick) => {
+                  const y = 20 + 175 - (tick / yCeiling) * 175;
+                  return (
+                    <g key={tick}>
+                      <line
+                        x1={55}
+                        y1={y}
+                        x2={580}
+                        y2={y}
+                        stroke="currentColor"
+                        className="text-slate-200 dark:text-slate-800"
+                        strokeDasharray="3,3"
+                      />
+                      <text
+                        x={48}
+                        y={y + 3}
+                        textAnchor="end"
+                        className="text-[0.625rem] fill-slate-500 dark:fill-slate-400"
+                      >
+                        ₹{tick}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Billed line (solid teal) */}
+                {n > 1 && (
+                  <polyline
+                    points={billedPoints}
+                    fill="none"
+                    stroke="var(--chart-primary)"
+                    strokeWidth="2"
                   />
-                  <text
-                    x={48}
-                    y={y + 3}
-                    textAnchor="end"
-                    className="text-[0.625rem] fill-slate-500 dark:fill-slate-400"
-                  >
-                    ₹{tick}
+                )}
+
+                {/* Collected line (dashed slate) */}
+                {n > 1 && (
+                  <polyline
+                    points={collectedPoints}
+                    fill="none"
+                    stroke="var(--chart-secondary)"
+                    strokeWidth="2"
+                    strokeDasharray="5,4"
+                  />
+                )}
+
+                {/* Data points */}
+                {buckets.map((b, i) => {
+                  const x = calcX(i);
+                  const yBilled = calcY(b.billed);
+                  const yCollected = calcY(b.collected);
+
+                  const showLabel =
+                    n <= 10 ||
+                    (n <= 20 && i % 2 === 0) ||
+                    (n > 20 && (i % 5 === 0 || i === n - 1));
+
+                  return (
+                    <g key={b.dateKey}>
+                      <circle cx={x} cy={yBilled} r="3" fill="var(--chart-primary)">
+                        <title>{`${b.label} - Billed: ${formatCurrency(b.billed * 100)}`}</title>
+                      </circle>
+                      <rect x={x - 3} y={yCollected - 3} width="6" height="6" fill="var(--chart-secondary)">
+                        <title>{`${b.label} - Collected: ${formatCurrency(b.collected * 100)}`}</title>
+                      </rect>
+                      {showLabel && (
+                        <text
+                          x={x}
+                          y={215}
+                          textAnchor="middle"
+                          className={`text-[0.625rem] fill-slate-500 dark:fill-slate-400 ${
+                            i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
+                          }`}
+                        >
+                          {b.label}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
+
+                {n === 0 && (
+                  <text x={300} y={120} textAnchor="middle" className="text-xs fill-slate-400">
+                    No fee records for this range
                   </text>
-                </g>
-              );
-            })}
+                )}
+              </svg>
+            </div>
 
-            {/* Billed line (solid teal) */}
-            {n > 1 && (
-              <polyline
-                points={billedPoints}
-                fill="none"
-                stroke="var(--chart-primary)"
-                strokeWidth="2"
-              />
-            )}
-
-            {/* Collected line (dashed slate) */}
-            {n > 1 && (
-              <polyline
-                points={collectedPoints}
-                fill="none"
-                stroke="var(--chart-secondary)"
-                strokeWidth="2"
-                strokeDasharray="5,4"
-              />
-            )}
-
-            {/* Data points */}
-            {buckets.map((b, i) => {
-              const x = calcX(i);
-              const yBilled = calcY(b.billed);
-              const yCollected = calcY(b.collected);
-
-              const showLabel =
-                n <= 10 ||
-                (n <= 20 && i % 2 === 0) ||
-                (n > 20 && (i % 5 === 0 || i === n - 1));
-
-              return (
-                <g key={b.dateKey}>
-                  <circle cx={x} cy={yBilled} r="3" fill="var(--chart-primary)">
-                    <title>{`${b.label} - Billed: ${formatCurrency(b.billed * 100)}`}</title>
-                  </circle>
-                  <rect x={x - 3} y={yCollected - 3} width="6" height="6" fill="var(--chart-secondary)">
-                    <title>{`${b.label} - Collected: ${formatCurrency(b.collected * 100)}`}</title>
-                  </rect>
-                  {showLabel && (
-                    <text
-                      x={x}
-                      y={215}
-                      textAnchor="middle"
-                      className={`text-[0.625rem] fill-slate-500 dark:fill-slate-400 ${
-                        i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
-                      }`}
-                    >
-                      {b.label}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-
-            {n === 0 && (
-              <text x={300} y={120} textAnchor="middle" className="text-xs fill-slate-400">
-                No fee records for this range
-              </text>
-            )}
-          </svg>
-
-          {/* Visually hidden screen reader table */}
-          <div className="sr-only">
-            <table>
-              <caption>Fees and payments data</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Period</th>
-                  <th scope="col">Billed</th>
-                  <th scope="col">Collected</th>
-                </tr>
-              </thead>
-              <tbody>
-                {buckets.map((b) => (
-                  <tr key={b.dateKey}>
-                    <td>{b.label}</td>
-                    <td>{formatCurrency(b.billed * 100)}</td>
-                    <td>{formatCurrency(b.collected * 100)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Slide 2: Data Table */}
+            <div className="w-full shrink-0" aria-hidden={formatMode !== 'table'}>
+              <div className="h-56 sm:h-64 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-lg">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0">
+                    <tr>
+                      <th scope="col" className="px-3.5 py-2 font-semibold">Period</th>
+                      <th scope="col" className="px-3.5 py-2 font-semibold">Billed</th>
+                      <th scope="col" className="px-3.5 py-2 font-semibold">Collected</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+                    {buckets.map((b) => (
+                      <tr key={b.dateKey} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                        <td className="px-3.5 py-2 font-medium">{b.label}</td>
+                        <td className="px-3.5 py-2">{formatCurrency(b.billed * 100)}</td>
+                        <td className="px-3.5 py-2">{formatCurrency(b.collected * 100)}</td>
+                      </tr>
+                    ))}
+                    {buckets.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-3.5 py-6 text-center text-slate-400">
+                          No fee records for this range
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Visually hidden screen reader table */}
+      <div className="sr-only">
+        <table>
+          <caption>Fees and payments data</caption>
+          <thead>
+            <tr>
+              <th scope="col">Period</th>
+              <th scope="col">Billed</th>
+              <th scope="col">Collected</th>
+            </tr>
+          </thead>
+          <tbody>
+            {buckets.map((b) => (
+              <tr key={b.dateKey}>
+                <td>{b.label}</td>
+                <td>{formatCurrency(b.billed * 100)}</td>
+                <td>{formatCurrency(b.collected * 100)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Static Legend */}
@@ -519,12 +675,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [isClockOutModalOpen, setIsClockOutModalOpen] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState<string | null>(null);
 
+  // View presentation mode for Graphs and Tables slide animation
+  const [dashboardViewMode, setDashboardViewMode] = useState<'all' | 'graphs' | 'tables'>(() => {
+    try {
+      const saved = localStorage.getItem('beacon_dashboard_view_mode');
+      if (saved === 'graphs' || saved === 'tables' || saved === 'all') return saved;
+    } catch {}
+    return 'graphs';
+  });
+
+  const handleViewModeChange = (mode: 'all' | 'graphs' | 'tables') => {
+    setDashboardViewMode(mode);
+    try {
+      localStorage.setItem('beacon_dashboard_view_mode', mode);
+    } catch {}
+  };
+
   // User accesses
   const userIsAdmin = isAdmin(currentUser, modules);
   const hasConsult = hasCapability(currentUser, 'consultationWorkstation', modules);
   const hasCheckIn = hasCapability(currentUser, 'patientCheckIn', modules);
   const hasBilling = hasCapability(currentUser, 'paymentRecording', modules) || userIsAdmin;
   const isPatient = currentUser?.role === 'patient';
+  const hasCharts = !isPatient && (userIsAdmin || hasConsult || hasBilling);
 
   // Compute metrics for Chart 1
   const metrics1 = useMemo(() => {
@@ -718,6 +891,405 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   const greeting = getGreeting(currentUser?.name || 'User');
 
+  const chartsCards = (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {(userIsAdmin || hasConsult) && (
+          <PatientsAndVisitsChart
+            buckets={metrics1.patientsAndVisits}
+            activeBucket={chartBucket1}
+            onBucketChange={setChartBucket1}
+          />
+        )}
+
+        {hasBilling && (
+          <FeesAndPaymentsChart
+            buckets={metrics2.feesAndPayments || []}
+            activeBucket={chartBucket2}
+            onBucketChange={setChartBucket2}
+          />
+        )}
+      </div>
+      {dashboardViewMode === 'graphs' && (
+        <div className="flex justify-end pt-1">
+          <button
+            type="button"
+            onClick={() => handleViewModeChange('tables')}
+            className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 cursor-pointer"
+          >
+            Slide to Operational Tables &rarr;
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const operationalCards = (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* List 1: Today's Appointments */}
+        {canViewWidget('today_appointments', currentUser, modules) && (
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+            <div>
+              <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Today&apos;s Appointments
+                </h3>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  {metrics1.todayAppointments.length}
+                </span>
+              </div>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-2/12 min-w-[80px]">Time</TableHead>
+                      <TableHead className="w-4/12 min-w-[130px]">Patient</TableHead>
+                      <TableHead className="w-3/12 min-w-[120px]">Doctor</TableHead>
+                      <TableHead className="w-3/12 min-w-[90px]">Status</TableHead>
+                      {hasCheckIn && (
+                        <TableHead className="w-2/12 min-w-[90px] text-right">Action</TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedAppointments.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={hasCheckIn ? 5 : 4} className="py-6 text-center text-slate-500">
+                          No appointments scheduled today
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      paginatedAppointments.map((apt) => (
+                        <TableRow key={apt.id}>
+                          <TableCell label="Time" className="w-2/12 min-w-[80px] text-slate-600 dark:text-slate-300">
+                            {apt.time}
+                          </TableCell>
+                          <TableCell label="Patient" className="w-4/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
+                            {apt.patientName}
+                          </TableCell>
+                          <TableCell label="Doctor" className="w-3/12 min-w-[120px] text-slate-600 dark:text-slate-300">
+                            {apt.doctorName}
+                          </TableCell>
+                          <TableCell label="Status" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                            {formatStatusText(apt.status)}
+                          </TableCell>
+                          {hasCheckIn && (
+                            <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[90px] text-right whitespace-nowrap">
+                              {apt.status === 'scheduled' ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => updateAppointmentStatus(apt.id, 'checked_in')}
+                                >
+                                  Check In
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-slate-400">---</span>
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+            {metrics1.todayAppointments.length > 10 && (
+              <Pagination
+                currentPage={appointmentsPage}
+                totalItems={metrics1.todayAppointments.length}
+                pageSize={10}
+                onPageChange={setAppointmentsPage}
+              />
+            )}
+          </Card>
+        )}
+
+        {/* List 2: Needs Attention List */}
+        {canViewWidget('needs_attention', currentUser, modules) && (
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+            <div>
+              <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Needs Attention
+                </h3>
+                <span className="text-xs text-slate-500 font-medium">Action Items</span>
+              </div>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-6/12 min-w-[180px]">Item</TableHead>
+                      <TableHead className="w-3/12 min-w-[90px]">Count</TableHead>
+                      <TableHead className="w-3/12 min-w-[100px] text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {metrics1.needsAttention.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="py-6 text-center text-slate-500">
+                          Nothing needs attention.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      metrics1.needsAttention.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell label="Item" className="w-6/12 min-w-[180px] font-medium text-slate-900 dark:text-slate-100">
+                            {item.label}
+                          </TableCell>
+                          <TableCell label="Count" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300 font-semibold">
+                            {item.count}
+                          </TableCell>
+                          <TableCell label="Action" fullWidthOnStack className="w-3/12 min-w-[100px] text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => onNavigate?.(item.navigateTab, item.navigateSubTab)}
+                              className="text-xs font-semibold text-teal-700 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 cursor-pointer"
+                            >
+                              Review
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* List 3: Staff Presence Widget */}
+        {canViewWidget('staff_presence', currentUser, modules) && metrics1.staffPresence && (
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+            <div>
+              <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Staff Presence
+                </h3>
+                <span className="text-xs text-slate-500 font-medium">Today</span>
+              </div>
+              <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                {metrics1.staffPresence.summaryText}
+              </div>
+              <div className="p-3 sm:p-0">
+                <Table stackBelow="md">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-5/12 min-w-[140px]">Name</TableHead>
+                      <TableHead className="w-3/12 min-w-[100px]">Shift Start</TableHead>
+                      <TableHead className="w-4/12 min-w-[130px]">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {metrics1.staffPresence.lateOrNotList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="py-6 text-center text-slate-500">
+                          All scheduled staff have arrived on time.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      metrics1.staffPresence.lateOrNotList.map((st) => (
+                        <TableRow key={st.staffId}>
+                          <TableCell label="Name" className="w-5/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
+                            {st.name}
+                          </TableCell>
+                          <TableCell label="Shift Start" className="w-3/12 min-w-[100px] text-slate-600 dark:text-slate-300">
+                            {st.shiftStart}
+                          </TableCell>
+                          <TableCell label="Status" className="w-4/12 min-w-[130px] text-slate-600 dark:text-slate-300">
+                            {st.status}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* List 4: My Attendance Widget (Every Staff Account) */}
+        {!isPatient && metrics1.myAttendance && (
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between">
+            <div>
+              <div className="pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  My Attendance
+                </h3>
+                <span className="text-xs text-slate-500 font-medium">Today</span>
+              </div>
+              <div className="py-4 space-y-2">
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {metrics1.myAttendance.statusText}
+                </p>
+                {metrics1.myAttendance.hasShiftToday && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Scheduled Shift: {metrics1.myAttendance.shiftStart} - {metrics1.myAttendance.shiftEnd}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+              {!metrics1.myAttendance.isClockedIn ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClockInAction}
+                >
+                  Clock In
+                </Button>
+              ) : !metrics1.myAttendance.isClockedOut ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsClockOutModalOpen(true)}
+                >
+                  Clock Out
+                </Button>
+              ) : (
+                <span className="text-xs text-slate-500">Day duty completed</span>
+              )}
+            </div>
+          </Card>
+        )}
+      </div>
+      {dashboardViewMode === 'tables' && (
+        <div className="flex justify-start pt-1">
+          <button
+            type="button"
+            onClick={() => handleViewModeChange('graphs')}
+            className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 cursor-pointer"
+          >
+            &larr; Slide to Visual Graphs
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const patientCards = (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+        <div>
+          <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              Upcoming Consultations
+            </h3>
+            <span className="text-xs text-slate-500 font-medium">
+              {metrics1.patientUpcomingAppointments?.length || 0}
+            </span>
+          </div>
+          <div className="p-3 sm:p-0">
+            <Table stackBelow="md">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-3/12 min-w-[90px]">Date</TableHead>
+                  <TableHead className="w-2/12 min-w-[80px]">Time</TableHead>
+                  <TableHead className="w-4/12 min-w-[120px]">Doctor</TableHead>
+                  <TableHead className="w-3/12 min-w-[90px]">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedPatientAppointments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-6 text-center text-slate-500">
+                      No upcoming appointments scheduled.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedPatientAppointments.map((apt) => (
+                    <TableRow key={apt.id}>
+                      <TableCell label="Date" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                        {apt.date}
+                      </TableCell>
+                      <TableCell label="Time" className="w-2/12 min-w-[80px] text-slate-600 dark:text-slate-300">
+                        {apt.time}
+                      </TableCell>
+                      <TableCell label="Doctor" className="w-4/12 min-w-[120px] font-medium text-slate-900 dark:text-slate-100">
+                        {apt.doctorName}
+                      </TableCell>
+                      <TableCell label="Status" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                        {formatStatusText(apt.status)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        {(metrics1.patientUpcomingAppointments?.length || 0) > 10 && (
+          <Pagination
+            currentPage={patientUpcomingPage}
+            totalItems={metrics1.patientUpcomingAppointments?.length || 0}
+            pageSize={10}
+            onPageChange={setPatientUpcomingPage}
+          />
+        )}
+      </Card>
+
+      <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+        <div>
+          <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              Recent Prescriptions
+            </h3>
+            <span className="text-xs text-slate-500 font-medium">
+              {metrics1.patientRecentPrescriptions?.length || 0}
+            </span>
+          </div>
+          <div className="p-3 sm:p-0">
+            <Table stackBelow="md">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-3/12 min-w-[90px]">Date</TableHead>
+                  <TableHead className="w-5/12 min-w-[140px]">Medication</TableHead>
+                  <TableHead className="w-4/12 min-w-[110px]">Doctor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedPatientRx.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="py-6 text-center text-slate-500">
+                      No prescriptions on record.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedPatientRx.map((rx) => (
+                    <TableRow key={rx.id}>
+                      <TableCell label="Date" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                        {rx.date}
+                      </TableCell>
+                      <TableCell label="Medication" className="w-5/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
+                        {rx.medications}
+                      </TableCell>
+                      <TableCell label="Doctor" className="w-4/12 min-w-[110px] text-slate-600 dark:text-slate-300">
+                        {rx.doctorName}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        {(metrics1.patientRecentPrescriptions?.length || 0) > 10 && (
+          <Pagination
+            currentPage={patientRxPage}
+            totalItems={metrics1.patientRecentPrescriptions?.length || 0}
+            pageSize={10}
+            onPageChange={setPatientRxPage}
+          />
+        )}
+      </Card>
+    </div>
+  );
+
   return (
     <div className="space-y-6 pb-8">
       {/* Print Stylesheet */}
@@ -888,379 +1460,126 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </Card>
           )}
 
-          {/* Charts Row: Stack below 1024px. Rendered only when user qualifies */}
-          {!isPatient && (userIsAdmin || hasConsult || hasBilling) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {(userIsAdmin || hasConsult) && (
-                <PatientsAndVisitsChart
-                  buckets={metrics1.patientsAndVisits}
-                  activeBucket={chartBucket1}
-                  onBucketChange={setChartBucket1}
-                />
-              )}
+          {/* Section Presentation Switcher (Graphs / Tables / All) */}
+          {hasCharts && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  View Mode
+                </span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">|</span>
+                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                  {dashboardViewMode === 'graphs'
+                    ? 'Visual Analytics Graphs'
+                    : dashboardViewMode === 'tables'
+                    ? 'Operational Data Tables'
+                    : 'All Analytics & Tables'}
+                </span>
+              </div>
 
-              {hasBilling && (
-                <FeesAndPaymentsChart
-                  buckets={metrics2.feesAndPayments || []}
-                  activeBucket={chartBucket2}
-                  onBucketChange={setChartBucket2}
-                />
-              )}
+              <div className="flex items-center gap-3">
+                {/* Segmented view switcher */}
+                <div
+                  role="tablist"
+                  aria-label="Dashboard presentation view"
+                  className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 bg-slate-50 dark:bg-slate-800/80"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={dashboardViewMode === 'graphs'}
+                    onClick={() => handleViewModeChange('graphs')}
+                    className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                      dashboardViewMode === 'graphs'
+                        ? 'bg-teal-600 text-white'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                    }`}
+                  >
+                    Graphs
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={dashboardViewMode === 'tables'}
+                    onClick={() => handleViewModeChange('tables')}
+                    className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                      dashboardViewMode === 'tables'
+                        ? 'bg-teal-600 text-white'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                    }`}
+                  >
+                    Tables
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={dashboardViewMode === 'all'}
+                    onClick={() => handleViewModeChange('all')}
+                    className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                      dashboardViewMode === 'all'
+                        ? 'bg-teal-600 text-white'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                    }`}
+                  >
+                    All
+                  </button>
+                </div>
+
+                {/* Quick Slide Button */}
+                {dashboardViewMode !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => handleViewModeChange(dashboardViewMode === 'graphs' ? 'tables' : 'graphs')}
+                    className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 border border-teal-200 dark:border-teal-800 rounded-lg px-2.5 py-1 bg-white dark:bg-slate-900 cursor-pointer flex items-center gap-1 transition-colors"
+                    aria-label={dashboardViewMode === 'graphs' ? 'Slide to operational tables' : 'Slide to visual graphs'}
+                  >
+                    {dashboardViewMode === 'graphs' ? 'Slide to Tables ->' : '<- Slide to Graphs'}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Lists & Operational Cards Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* List 1: Today's Appointments */}
-            {canViewWidget('today_appointments', currentUser, modules) && (
-              <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
-                <div>
-                  <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      Today&apos;s Appointments
-                    </h3>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      {metrics1.todayAppointments.length}
-                    </span>
-                  </div>
-                  <div className="p-3 sm:p-0">
-                    <Table stackBelow="md">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-2/12 min-w-[80px]">Time</TableHead>
-                          <TableHead className="w-4/12 min-w-[130px]">Patient</TableHead>
-                          <TableHead className="w-3/12 min-w-[120px]">Doctor</TableHead>
-                          <TableHead className="w-3/12 min-w-[90px]">Status</TableHead>
-                          {hasCheckIn && (
-                            <TableHead className="w-2/12 min-w-[90px] text-right">Action</TableHead>
-                          )}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {paginatedAppointments.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={hasCheckIn ? 5 : 4} className="py-6 text-center text-slate-500">
-                              No appointments scheduled today
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          paginatedAppointments.map((apt) => (
-                            <TableRow key={apt.id}>
-                              <TableCell label="Time" className="w-2/12 min-w-[80px] text-slate-600 dark:text-slate-300">
-                                {apt.time}
-                              </TableCell>
-                              <TableCell label="Patient" className="w-4/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
-                                {apt.patientName}
-                              </TableCell>
-                              <TableCell label="Doctor" className="w-3/12 min-w-[120px] text-slate-600 dark:text-slate-300">
-                                {apt.doctorName}
-                              </TableCell>
-                              <TableCell label="Status" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
-                                {formatStatusText(apt.status)}
-                              </TableCell>
-                              {hasCheckIn && (
-                                <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[90px] text-right whitespace-nowrap">
-                                  {apt.status === 'scheduled' ? (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => updateAppointmentStatus(apt.id, 'checked_in')}
-                                    >
-                                      Check In
-                                    </Button>
-                                  ) : (
-                                    <span className="text-xs text-slate-400">---</span>
-                                  )}
-                                </TableCell>
-                              )}
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
+          {/* Main content display: Staff (with sliding carousel) vs Receptionist vs Patient */}
+          {!isPatient ? (
+            hasCharts ? (
+              dashboardViewMode === 'all' ? (
+                <div className="space-y-6">
+                  {chartsCards}
+                  {operationalCards}
                 </div>
-                {metrics1.todayAppointments.length > 10 && (
-                  <Pagination
-                    currentPage={appointmentsPage}
-                    totalItems={metrics1.todayAppointments.length}
-                    pageSize={10}
-                    onPageChange={setAppointmentsPage}
-                  />
-                )}
-              </Card>
-            )}
-
-            {/* List 2: Needs Attention List */}
-            {canViewWidget('needs_attention', currentUser, modules) && (
-              <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
-                <div>
-                  <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      Needs Attention
-                    </h3>
-                    <span className="text-xs text-slate-500 font-medium">Action Items</span>
-                  </div>
-                  <div className="p-3 sm:p-0">
-                    <Table stackBelow="md">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-6/12 min-w-[180px]">Item</TableHead>
-                          <TableHead className="w-3/12 min-w-[90px]">Count</TableHead>
-                          <TableHead className="w-3/12 min-w-[100px] text-right">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {metrics1.needsAttention.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={3} className="py-6 text-center text-slate-500">
-                              Nothing needs attention.
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          metrics1.needsAttention.map((item) => (
-                            <TableRow key={item.id}>
-                              <TableCell label="Item" className="w-6/12 min-w-[180px] font-medium text-slate-900 dark:text-slate-100">
-                                {item.label}
-                              </TableCell>
-                              <TableCell label="Count" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300 font-semibold">
-                                {item.count}
-                              </TableCell>
-                              <TableCell label="Action" fullWidthOnStack className="w-3/12 min-w-[100px] text-right whitespace-nowrap">
-                                <button
-                                  type="button"
-                                  onClick={() => onNavigate?.(item.navigateTab, item.navigateSubTab)}
-                                  className="text-xs font-semibold text-teal-700 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 cursor-pointer"
-                                >
-                                  Review
-                                </button>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* List 3: Staff Presence Widget */}
-            {canViewWidget('staff_presence', currentUser, modules) && metrics1.staffPresence && (
-              <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
-                <div>
-                  <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      Staff Presence
-                    </h3>
-                    <span className="text-xs text-slate-500 font-medium">Today</span>
-                  </div>
-                  <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    {metrics1.staffPresence.summaryText}
-                  </div>
-                  <div className="p-3 sm:p-0">
-                    <Table stackBelow="md">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-5/12 min-w-[140px]">Name</TableHead>
-                          <TableHead className="w-3/12 min-w-[100px]">Shift Start</TableHead>
-                          <TableHead className="w-4/12 min-w-[130px]">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {metrics1.staffPresence.lateOrNotList.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={3} className="py-6 text-center text-slate-500">
-                              All scheduled staff have arrived on time.
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          metrics1.staffPresence.lateOrNotList.map((st) => (
-                            <TableRow key={st.staffId}>
-                              <TableCell label="Name" className="w-5/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
-                                {st.name}
-                              </TableCell>
-                              <TableCell label="Shift Start" className="w-3/12 min-w-[100px] text-slate-600 dark:text-slate-300">
-                                {st.shiftStart}
-                              </TableCell>
-                              <TableCell label="Status" className="w-4/12 min-w-[130px] text-slate-600 dark:text-slate-300">
-                                {st.status}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* List 4: My Attendance Widget (Every Staff Account) */}
-            {!isPatient && metrics1.myAttendance && (
-              <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between">
-                <div>
-                  <div className="pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      My Attendance
-                    </h3>
-                    <span className="text-xs text-slate-500 font-medium">Today</span>
-                  </div>
-                  <div className="py-4 space-y-2">
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {metrics1.myAttendance.statusText}
-                    </p>
-                    {metrics1.myAttendance.hasShiftToday && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Scheduled Shift: {metrics1.myAttendance.shiftStart} - {metrics1.myAttendance.shiftEnd}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                  {!metrics1.myAttendance.isClockedIn ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleClockInAction}
+              ) : (
+                <div className="overflow-hidden w-full relative">
+                  <div
+                    className="flex w-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none"
+                    style={{
+                      transform: dashboardViewMode === 'tables' ? 'translateX(-100%)' : 'translateX(0%)',
+                    }}
+                  >
+                    {/* Slide 1: Visual Analytics Graphs */}
+                    <div
+                      className="w-full shrink-0"
+                      aria-hidden={dashboardViewMode !== 'graphs'}
                     >
-                      Clock In
-                    </Button>
-                  ) : !metrics1.myAttendance.isClockedOut ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsClockOutModalOpen(true)}
+                      {chartsCards}
+                    </div>
+
+                    {/* Slide 2: Operational Data Tables */}
+                    <div
+                      className="w-full shrink-0"
+                      aria-hidden={dashboardViewMode !== 'tables'}
                     >
-                      Clock Out
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-slate-500">Day duty completed</span>
-                  )}
+                      {operationalCards}
+                    </div>
+                  </div>
                 </div>
-              </Card>
-            )}
-
-            {/* Patient Dashboard Specific Lists */}
-            {isPatient && (
-              <>
-                <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
-                  <div>
-                    <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        Upcoming Consultations
-                      </h3>
-                      <span className="text-xs text-slate-500 font-medium">
-                        {metrics1.patientUpcomingAppointments?.length || 0}
-                      </span>
-                    </div>
-                    <div className="p-3 sm:p-0">
-                      <Table stackBelow="md">
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-3/12 min-w-[90px]">Date</TableHead>
-                            <TableHead className="w-2/12 min-w-[80px]">Time</TableHead>
-                            <TableHead className="w-4/12 min-w-[120px]">Doctor</TableHead>
-                            <TableHead className="w-3/12 min-w-[90px]">Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedPatientAppointments.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={4} className="py-6 text-center text-slate-500">
-                                No upcoming appointments scheduled.
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            paginatedPatientAppointments.map((apt) => (
-                              <TableRow key={apt.id}>
-                                <TableCell label="Date" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
-                                  {apt.date}
-                                </TableCell>
-                                <TableCell label="Time" className="w-2/12 min-w-[80px] text-slate-600 dark:text-slate-300">
-                                  {apt.time}
-                                </TableCell>
-                                <TableCell label="Doctor" className="w-4/12 min-w-[120px] font-medium text-slate-900 dark:text-slate-100">
-                                  {apt.doctorName}
-                                </TableCell>
-                                <TableCell label="Status" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
-                                  {formatStatusText(apt.status)}
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                  {(metrics1.patientUpcomingAppointments?.length || 0) > 10 && (
-                    <Pagination
-                      currentPage={patientUpcomingPage}
-                      totalItems={metrics1.patientUpcomingAppointments?.length || 0}
-                      pageSize={10}
-                      onPageChange={setPatientUpcomingPage}
-                    />
-                  )}
-                </Card>
-
-                <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
-                  <div>
-                    <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        Recent Prescriptions
-                      </h3>
-                      <span className="text-xs text-slate-500 font-medium">
-                        {metrics1.patientRecentPrescriptions?.length || 0}
-                      </span>
-                    </div>
-                    <div className="p-3 sm:p-0">
-                      <Table stackBelow="md">
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-3/12 min-w-[90px]">Date</TableHead>
-                            <TableHead className="w-5/12 min-w-[140px]">Medication</TableHead>
-                            <TableHead className="w-4/12 min-w-[110px]">Doctor</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedPatientRx.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={3} className="py-6 text-center text-slate-500">
-                                No prescriptions on record.
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            paginatedPatientRx.map((rx) => (
-                              <TableRow key={rx.id}>
-                                <TableCell label="Date" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
-                                  {rx.date}
-                                </TableCell>
-                                <TableCell label="Medication" className="w-5/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
-                                  {rx.medications}
-                                </TableCell>
-                                <TableCell label="Doctor" className="w-4/12 min-w-[110px] text-slate-600 dark:text-slate-300">
-                                  {rx.doctorName}
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                  {(metrics1.patientRecentPrescriptions?.length || 0) > 10 && (
-                    <Pagination
-                      currentPage={patientRxPage}
-                      totalItems={metrics1.patientRecentPrescriptions?.length || 0}
-                      pageSize={10}
-                      onPageChange={setPatientRxPage}
-                    />
-                  )}
-                </Card>
-              </>
-            )}
-          </div>
+              )
+            ) : (
+              operationalCards
+            )
+          ) : (
+            patientCards
+          )}
         </div>
       )}
 
