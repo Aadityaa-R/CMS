@@ -159,7 +159,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin }) => {
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
         <div className="flex justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-teal-600 flex items-center justify-center text-white shadow-xl ring-4 ring-teal-500/20">
+          <div className="w-14 h-14 rounded-2xl bg-teal-600 flex items-center justify-center text-white">
             <Building2 className="w-8 h-8" />
           </div>
         </div>
@@ -172,7 +172,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin }) => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl z-10 px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 sm:px-10 shadow-2xl rounded-2xl border border-slate-200">
+        <div className="bg-white py-8 px-6 sm:px-10 shadow-card dark:shadow-none print:shadow-none rounded-2xl border border-slate-200">
           {successInfo ? (
             <div className="space-y-6 text-center py-4">
               <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-600 mx-auto flex items-center justify-center border border-teal-200">
@@ -358,7 +358,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin }) => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Min 10 chars, letter & number"
-                        className="w-full rounded-lg border border-slate-300 hover:border-slate-400 bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-0 focus:border-teal-500"
+                        className="w-full rounded-lg border border-slate-300 hover:border-slate-400 bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500"
                         required
                       />
                       <button
@@ -384,7 +384,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin }) => {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Re-enter password"
-                        className="w-full rounded-lg border border-slate-300 hover:border-slate-400 bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-0 focus:border-teal-500"
+                        className="w-full rounded-lg border border-slate-300 hover:border-slate-400 bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500"
                         required
                       />
                       <button

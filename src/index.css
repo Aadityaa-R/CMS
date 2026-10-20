@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light-Mode Elevation Tokens (Milestone M10 Section 1) */
+:root {
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-modal: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.shadow-modal {
+  box-shadow: var(--shadow-modal);
+}
+
+.dark .shadow-card,
+.dark .shadow-modal,
+html.dark .shadow-card,
+html.dark .shadow-modal {
+  box-shadow: none !important;
+}
+
+@media print {
+  .shadow-card,
+  .shadow-modal {
+    box-shadow: none !important;
+  }
+}
+
+
 @layer base {
   *, ::before, ::after {
     border-color: #e2e8f0;
@@ -15,7 +44,7 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-800 antialiased font-sans transition-colors duration-150;
+    @apply bg-slate-50 text-slate-800 antialiased font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -53,7 +82,7 @@
 
   /* Universal UI Base for all Buttons - eliminate native button bevels and default styling */
   button {
-    @apply cursor-pointer font-medium transition-colors select-none outline-none;
+    @apply cursor-pointer font-medium select-none outline-none;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -64,7 +93,7 @@
 
   /* Universal UI Base for Text Inputs - low specificity so utility classes (pl-11, etc.) override */
   input {
-    @apply rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all;
+    @apply rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400;
   }
 
   .dark input {
@@ -103,7 +132,7 @@
 
   /* Universal UI Base for Textarea */
   textarea {
-    @apply rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all resize-y;
+    @apply rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 resize-y;
   }
 
   textarea:hover {
@@ -122,7 +151,7 @@
 
   /* Universal UI Base for Select Elements - eliminates native OS dropdown arrow across entire app */
   select {
-    @apply rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition-all cursor-pointer appearance-none;
+    @apply rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 cursor-pointer appearance-none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.75rem center;
     background-repeat: no-repeat;
@@ -146,13 +175,13 @@
 
   /* Universal UI Base for Checkboxes */
   input[type="checkbox"] {
-    @apply w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 focus:ring-offset-0 transition-colors cursor-pointer;
+    @apply w-4 h-4 rounded border-slate-300 text-teal-600 focus:outline-none focus:ring-0 cursor-pointer;
     accent-color: #0d9488;
   }
 
   /* Universal UI Base for Radio Buttons */
   input[type="radio"] {
-    @apply w-4 h-4 border-slate-300 text-teal-600 focus:ring-teal-500 focus:ring-offset-0 transition-colors cursor-pointer;
+    @apply w-4 h-4 border-slate-300 text-teal-600 focus:outline-none focus:ring-0 cursor-pointer;
     accent-color: #0d9488;
   }
 
@@ -174,7 +203,7 @@
   }
 
   tbody tr {
-    @apply transition-colors hover:bg-slate-50/75;
+    @apply hover:bg-slate-50/75;
   }
 
   /* Native Webkit Date & Time Picker Indicator - styled to clinical theme */
@@ -184,7 +213,6 @@
     padding: 2px;
     filter: invert(0.35) sepia(0.5) saturate(2) hue-rotate(130deg);
     opacity: 0.75;
-    transition: opacity 0.15s ease;
   }
 
   ::-webkit-calendar-picker-indicator:hover {

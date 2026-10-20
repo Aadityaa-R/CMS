@@ -146,7 +146,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
             className="flex items-center gap-3 text-left cursor-pointer outline-none focus:outline-none focus:ring-0 group"
             title="Go to Dashboard"
           >
-            <div className="w-11 h-11 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-teal-500/20 group-hover:bg-teal-700 transition-colors">
+            <div className="w-11 h-11 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold ring-2 ring-teal-500/20 group-hover:bg-teal-700 transition-colors">
               <Building2 className="w-6 h-6" />
             </div>
             <div className="min-w-0 text-left">
@@ -180,7 +180,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
             {/* Notification Dropdown Popover */}
             {isNotificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-4 z-50 animate-fadeIn">
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-xl shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-800 p-4 z-50 animate-fadeIn">
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Notifications</span>
@@ -277,7 +277,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-10 h-10 rounded-xl bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium shadow-sm transition-all cursor-pointer outline-none focus:outline-none focus:ring-0"
+              className="w-10 h-10 rounded-xl bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium transition-all cursor-pointer outline-none focus:outline-none focus:ring-0"
               aria-label="User profile menu"
               aria-expanded={isDropdownOpen}
             >
@@ -286,7 +286,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
             {/* Dropdown Menu */}
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-fadeIn">
+              <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-fadeIn">
                 {/* Header item with user information */}
                 <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs truncate">

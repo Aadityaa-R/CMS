@@ -52,7 +52,7 @@ export const Table = <T = any,>({
                     col.align === 'right' ? 'text-right' : ''
                   } ${
                     col.isActions
-                      ? 'sticky right-0 bg-slate-50 dark:bg-slate-800 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]'
+                      ? 'sticky right-0 bg-slate-50 dark:bg-slate-800 z-10'
                       : ''
                   }`}
                 >
@@ -78,7 +78,7 @@ export const Table = <T = any,>({
                         col.align === 'right' ? 'text-right' : ''
                       } ${
                         col.isActions
-                          ? 'sticky right-0 bg-white dark:bg-slate-900 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]'
+                          ? 'sticky right-0 bg-white dark:bg-slate-900 z-10'
                           : ''
                       }`}
                     >
@@ -181,15 +181,15 @@ const hideBelowClasses: Record<HideBreakpoint, string> = {
 export const HIDE_BELOW_CLASSES = hideBelowClasses;
 
 const stickyActionsHeadClasses: Record<StackBreakpoint, string> = {
-  sm: 'sm:sticky sm:right-0 sm:bg-slate-50 sm:dark:bg-slate-800 sm:z-10 sm:shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]',
-  md: 'md:sticky md:right-0 md:bg-slate-50 md:dark:bg-slate-800 md:z-10 md:shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]',
-  lg: 'lg:sticky lg:right-0 lg:bg-slate-50 lg:dark:bg-slate-800 lg:z-10 lg:shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]',
+  sm: 'sm:sticky sm:right-0 sm:bg-slate-50 sm:dark:bg-slate-800 sm:z-10',
+  md: 'md:sticky md:right-0 md:bg-slate-50 md:dark:bg-slate-800 md:z-10',
+  lg: 'lg:sticky lg:right-0 lg:bg-slate-50 lg:dark:bg-slate-800 lg:z-10',
 };
 
 const stickyActionsCellClasses: Record<StackBreakpoint, string> = {
-  sm: 'sm:sticky sm:right-0 sm:bg-white sm:dark:bg-slate-900 sm:z-10 sm:shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]',
-  md: 'md:sticky md:right-0 md:bg-white md:dark:bg-slate-900 md:z-10 md:shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]',
-  lg: 'lg:sticky lg:right-0 lg:bg-white lg:dark:bg-slate-900 lg:z-10 lg:shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]',
+  sm: 'sm:sticky sm:right-0 sm:bg-white sm:dark:bg-slate-900 sm:z-10',
+  md: 'md:sticky md:right-0 md:bg-white md:dark:bg-slate-900 md:z-10',
+  lg: 'lg:sticky lg:right-0 lg:bg-white lg:dark:bg-slate-900 lg:z-10',
 };
 
 const stackButtonMinHeight: Record<StackBreakpoint, string> = {
@@ -213,7 +213,7 @@ export const TableHead: React.FC<TableHeadProps> = ({
 }) => {
   const { stackBelow } = useContext(TableContext);
   const hideClass = hideBelow ? hideBelowClasses[hideBelow] : '';
-  const stickyClass = isActions && stackBelow ? stickyActionsHeadClasses[stackBelow] : isActions ? 'sticky right-0 bg-slate-50 dark:bg-slate-800 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]' : '';
+  const stickyClass = isActions && stackBelow ? stickyActionsHeadClasses[stackBelow] : isActions ? 'sticky right-0 bg-slate-50 dark:bg-slate-800 z-10' : '';
   return (
     <th
       scope={scope}
@@ -264,7 +264,7 @@ export const TableCell: React.FC<TableCellProps> = ({
   const { stackBelow } = useContext(TableContext);
   const hideClass = hideBelow ? hideBelowClasses[hideBelow] : '';
   const stackCellClass = stackBelow ? stackCellClasses[stackBelow] : '';
-  const stickyClass = isActions && stackBelow ? stickyActionsCellClasses[stackBelow] : isActions ? 'sticky right-0 bg-white dark:bg-slate-900 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]' : '';
+  const stickyClass = isActions && stackBelow ? stickyActionsCellClasses[stackBelow] : isActions ? 'sticky right-0 bg-white dark:bg-slate-900 z-10' : '';
 
   // 1. Primary cell in stack mode: bold first line, no label
   if (stackBelow && isPrimary) {

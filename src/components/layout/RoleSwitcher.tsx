@@ -23,7 +23,7 @@ export const RoleSwitcher: React.FC = () => {
   };
 
   return (
-    <div className="bg-slate-900 text-white text-xs border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-3 shadow-sm z-30 relative">
+    <div className="bg-slate-900 text-white text-xs border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-3 z-30 relative">
       <div className="flex items-center gap-2">
         <span className="font-semibold uppercase tracking-wider text-teal-400 text-[11px]">
           Development Role Switcher:
@@ -49,7 +49,7 @@ export const RoleSwitcher: React.FC = () => {
               disabled={isSuspended && !isActive}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-teal-600 text-white shadow-sm ring-1 ring-teal-400'
+                  ? 'bg-teal-600 text-white ring-1 ring-teal-400'
                   : isSuspended
                   ? 'bg-slate-800/80 text-slate-400 border border-slate-700/80 cursor-not-allowed opacity-75'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'

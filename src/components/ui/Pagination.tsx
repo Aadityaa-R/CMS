@@ -76,7 +76,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             type="button"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${
               currentPage <= 1
                 ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-600'
                 : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
@@ -96,9 +96,9 @@ export const Pagination: React.FC<PaginationProps> = ({
                   key={p}
                   type="button"
                   onClick={() => onPageChange(p)}
-                  className={`min-w-[28px] h-7 px-2 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer flex items-center justify-center ${
+                  className={`min-w-[28px] h-7 px-2 rounded-md text-xs font-mono font-medium cursor-pointer flex items-center justify-center ${
                     isActive
-                      ? 'bg-teal-600 text-white font-bold shadow-xs'
+                      ? 'bg-teal-600 text-white font-bold'
                       : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
                   }`}
                   aria-label={`Page ${p}`}
@@ -115,7 +115,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             type="button"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium ${
               currentPage >= totalPages
                 ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-600'
                 : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'

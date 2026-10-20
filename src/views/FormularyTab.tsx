@@ -232,7 +232,7 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
     <div className="space-y-6 animate-fadeIn">
       {/* Real-time Feedback Notification */}
       {notification && (
-        <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 shadow-xs">
+        <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
             <span className="font-semibold text-teal-950 dark:text-teal-100">Formulary:</span>

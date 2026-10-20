@@ -59,13 +59,13 @@ export const Modal: React.FC<ModalProps> = ({
     <div className={`fixed inset-0 z-50 flex items-center justify-center ${containerPadding} overflow-y-auto`}>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal Dialog Content */}
       <div
-        className={`relative ${dialogLayout} ${maxWidthClasses[maxWidth]} bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 ${
+        className={`relative ${dialogLayout} ${maxWidthClasses[maxWidth]} bg-white dark:bg-slate-900 shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-800 ${
           overflowVisible ? 'overflow-visible' : 'overflow-hidden'
         } z-10`}
       >

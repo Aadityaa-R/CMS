@@ -1036,7 +1036,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       {/* Real-time Directive Notification Banner */}
       {feedbackNotification && (
         <div
-          className={`p-3.5 bg-slate-50 dark:bg-slate-800/90 rounded-xl border flex items-center justify-between text-xs text-slate-800 dark:text-slate-100 shadow-sm animate-fadeIn ${
+          className={`p-3.5 bg-slate-50 dark:bg-slate-800/90 rounded-xl border flex items-center justify-between text-xs text-slate-800 dark:text-slate-100 animate-fadeIn ${
             feedbackNotification.type === 'error'
               ? 'border-rose-200 dark:border-rose-800'
               : 'border-slate-200 dark:border-slate-700'
@@ -1136,7 +1136,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       {selectedSubTab === 'modules' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Role Governance & Selection Bar */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="min-w-0">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
@@ -1234,7 +1234,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   </div>
 
                   {/* Role Header Card */}
-                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <Card className="border border-slate-200 dark:border-slate-800">
                     <CardHeader
                       action={
                         <div className="flex items-center gap-2">
@@ -1285,7 +1285,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   </Card>
 
                   {/* Accesses Table Card */}
-                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <Card className="border border-slate-200 dark:border-slate-800">
                     <CardHeader
                       action={
                         <Button
@@ -1392,7 +1392,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   </Card>
 
                   {/* Members Table Card */}
-                  <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <Card className="border border-slate-200 dark:border-slate-800">
                     <CardHeader
                       action={
                         <Button
@@ -1517,7 +1517,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             })()
           ) : (
             /* Roles Directory Table View */
-            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+            <Card className="border border-slate-200 dark:border-slate-800">
               <CardHeader
                 action={
                   <div className="flex items-center gap-2">
@@ -1563,7 +1563,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                         <TableHead className="w-5/12 min-w-[260px]">Role</TableHead>
                         <TableHead className="w-2/12 min-w-[130px]">Accesses</TableHead>
                         <TableHead className="w-2/12 min-w-[130px]">Members</TableHead>
-                        <TableHead className="w-3/12 min-w-[160px] text-right whitespace-nowrap sticky right-0 bg-slate-50/90 dark:bg-slate-800/90 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">Actions</TableHead>
+                        <TableHead className="w-3/12 min-w-[160px] text-right whitespace-nowrap sticky right-0 bg-slate-50/90 dark:bg-slate-800/90 z-10">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1592,7 +1592,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                             <TableCell label="Members" className="w-2/12 min-w-[130px] text-xs text-slate-700 dark:text-slate-300">
                               {mod.memberIds.length} {mod.memberIds.length === 1 ? 'member' : 'members'}
                             </TableCell>
-                            <TableCell label="Actions" isActions fullWidthOnStack className="w-3/12 min-w-[160px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
+                            <TableCell label="Actions" isActions fullWidthOnStack className="w-3/12 min-w-[160px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10">
                               <Button
                                 size="xs"
                                 variant="outline"
@@ -1673,7 +1673,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   </div>
 
                   {/* Dedicated Access Console Card */}
-                  <Card className="border border-teal-500/60 dark:border-teal-500/40 shadow-sm">
+                  <Card className="border border-teal-500/60 dark:border-teal-500/40">
                     <CardHeader
                       action={
                         <button
@@ -1945,7 +1945,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           ) : (
             <>
               {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                   <div className="min-w-0">
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
@@ -2004,7 +2004,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       const isPatientSection = sectionMeta.key === 'patient';
 
                       return (
-                        <Card key={sectionMeta.key} className="border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <Card key={sectionMeta.key} className="border border-slate-200 dark:border-slate-800">
                           <CardHeader
                             action={
                               <div className="flex items-center gap-2.5">
@@ -2050,7 +2050,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                     )}
                                     <TableHead className="w-1/12 min-w-[80px]">Status</TableHead>
                                     <TableHead className="w-3/12 min-w-[160px]">Roles</TableHead>
-                                    <TableHead className="w-2/12 min-w-[130px] text-right whitespace-nowrap sticky right-0 bg-slate-50/90 dark:bg-slate-800/90 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">Actions</TableHead>
+                                    <TableHead className="w-2/12 min-w-[130px] text-right whitespace-nowrap sticky right-0 bg-slate-50/90 dark:bg-slate-800/90 z-10">Actions</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -2095,7 +2095,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                         <TableCell label="Roles" className="w-3/12 min-w-[160px] text-slate-700 dark:text-slate-300">
                                           {moduleNames}
                                         </TableCell>
-                                        <TableCell label="Actions" isActions fullWidthOnStack className="w-2/12 min-w-[130px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
+                                        <TableCell label="Actions" isActions fullWidthOnStack className="w-2/12 min-w-[130px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10">
                                           <Button
                                             size="xs"
                                             variant="outline"
@@ -2135,7 +2135,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       {selectedSubTab === 'add_users' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Direct Staff Member Provisioning Card */}
-          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+          <Card className="border border-slate-200 dark:border-slate-800">
             <CardHeader>
               <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
                 Directly Provision Staff Member
@@ -2257,7 +2257,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           </Card>
 
           {/* Onboarding & Role Clearance Approvals */}
-          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+          <Card className="border border-slate-200 dark:border-slate-800">
             <CardHeader
               action={
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -2280,7 +2280,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       <TableHead hideBelow="sm" className="w-1/12 min-w-[80px]">Badge ID</TableHead>
                       <TableHead hideBelow="md" className="w-1/12 min-w-[90px]">Applied</TableHead>
                       <TableHead hideBelow="lg" className="w-2/12 min-w-[140px]">Notes</TableHead>
-                      <TableHead className="w-2/12 min-w-[150px] text-right whitespace-nowrap sticky right-0 bg-slate-50/90 dark:bg-slate-800/90 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">Actions</TableHead>
+                      <TableHead className="w-2/12 min-w-[150px] text-right whitespace-nowrap sticky right-0 bg-slate-50/90 dark:bg-slate-800/90 z-10">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -2311,7 +2311,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               {req.notes}
                             </div>
                           </TableCell>
-                          <TableCell label="Actions" isActions fullWidthOnStack className="w-2/12 min-w-[150px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
+                          <TableCell label="Actions" isActions fullWidthOnStack className="w-2/12 min-w-[150px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10">
                             <div className="flex flex-wrap items-center justify-end gap-2 [&_button]:min-h-[44px]">
                               <Button
                                 size="xs"

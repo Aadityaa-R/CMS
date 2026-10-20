@@ -236,7 +236,7 @@ export const Select: React.FC<SelectProps> = ({
             autoComplete="off"
             className={`w-full ${triggerSizeClasses[size]} ${
               isSearching && searchQuery ? 'pr-14' : triggerPaddingClasses[size]
-            } ${icon ? (size === 'lg' ? 'pl-11' : size === 'sm' ? 'pl-8' : 'pl-9') : (size === 'lg' ? 'pl-4' : 'pl-3.5')} border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors text-left shadow-xs focus:outline-none focus:ring-0 focus:border-teal-500 ${
+            } ${icon ? (size === 'lg' ? 'pl-11' : size === 'sm' ? 'pl-8' : 'pl-9') : (size === 'lg' ? 'pl-4' : 'pl-3.5')} border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-left focus:outline-none focus:ring-0 focus:border-teal-500 ${
               disabled
                 ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800'
                 : 'cursor-text'
@@ -255,7 +255,7 @@ export const Select: React.FC<SelectProps> = ({
                 setSearchQuery('');
                 inputRef.current?.focus();
               }}
-              className="absolute inset-y-0 right-8 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+              className="absolute inset-y-0 right-8 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
               aria-label="Clear search query"
             >
               <X className="w-3.5 h-3.5" />
@@ -278,10 +278,10 @@ export const Select: React.FC<SelectProps> = ({
                 }
               }
             }}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
           >
             <ChevronDown
-              className="w-4 h-4 transition-transform duration-200"
+              className="w-4 h-4"
               style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}
             />
           </button>
@@ -292,7 +292,7 @@ export const Select: React.FC<SelectProps> = ({
           id={id}
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((prev) => !prev)}
-          className={`w-full relative flex items-center justify-between ${triggerSizeClasses[size]} ${triggerPaddingClasses[size]} border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors text-left shadow-xs focus:outline-none focus:ring-0 focus:border-teal-500 ${
+          className={`w-full relative flex items-center justify-between ${triggerSizeClasses[size]} ${triggerPaddingClasses[size]} border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-left focus:outline-none focus:ring-0 focus:border-teal-500 ${
             disabled
               ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800'
               : 'cursor-pointer'
@@ -321,7 +321,7 @@ export const Select: React.FC<SelectProps> = ({
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           <ChevronDown
-            className="w-4 h-4 text-slate-400 dark:text-slate-500 ml-2 shrink-0 transition-transform duration-200"
+            className="w-4 h-4 text-slate-400 dark:text-slate-500 ml-2 shrink-0"
             style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}
           />
         </button>
@@ -338,7 +338,7 @@ export const Select: React.FC<SelectProps> = ({
           ref={listRef}
           className={`absolute left-0 mt-1.5 w-full ${
             size === 'lg' ? 'max-h-80' : 'max-h-64'
-          } overflow-y-auto bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-1.5 z-50 animate-fadeIn`}
+          } overflow-y-auto bg-white dark:bg-slate-900 rounded-xl shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-700 py-1.5 z-50 animate-fadeIn`}
         >
           {filteredOptions.length === 0 ? (
             <div className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500 text-center">
@@ -355,7 +355,7 @@ export const Select: React.FC<SelectProps> = ({
                   data-option-index={idx}
                   onMouseEnter={() => setHighlightedIndex(idx)}
                   onClick={() => handleSelect(opt.value)}
-                  className={`w-full flex items-center justify-between ${optionItemSizeClasses[size]} text-left cursor-pointer transition-colors ${
+                  className={`w-full flex items-center justify-between ${optionItemSizeClasses[size]} text-left cursor-pointer ${
                     isSelected
                       ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 font-semibold'
                       : isHighlighted

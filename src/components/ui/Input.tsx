@@ -38,7 +38,7 @@ export const Input: React.FC<InputProps> = ({
           id={inputId}
           className={`w-full rounded-xl border bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
             icon ? '!pl-11 pr-3.5' : 'px-3'
-          } py-2 text-sm text-slate-900 placeholder-slate-500 shadow-sm focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors disabled:bg-slate-50 disabled:text-slate-500 ${
+          } py-2 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-0 focus:border-teal-500 disabled:bg-slate-50 disabled:text-slate-500 ${
             error
               ? 'border-rose-300 focus:border-rose-500'
               : 'border-slate-300 hover:border-slate-400 dark:border-slate-700'

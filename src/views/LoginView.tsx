@@ -101,7 +101,7 @@ export const LoginView: React.FC = () => {
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
         <div className="flex justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-teal-600 flex items-center justify-center text-white shadow-xl ring-4 ring-teal-500/20">
+          <div className="w-14 h-14 rounded-2xl bg-teal-600 flex items-center justify-center text-white">
             <Building2 className="w-8 h-8" />
           </div>
         </div>
@@ -114,7 +114,7 @@ export const LoginView: React.FC = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl z-10 px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 sm:px-10 shadow-2xl rounded-2xl border border-slate-200">
+        <div className="bg-white py-8 px-6 sm:px-10 shadow-card dark:shadow-none print:shadow-none rounded-2xl border border-slate-200">
           {/* Error notification */}
           {errorMessage && (
             <div className="mb-5 p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-slate-800 text-xs">
@@ -162,7 +162,7 @@ export const LoginView: React.FC = () => {
                     if (errorMessage) setErrorMessage(null);
                   }}
                   placeholder="Enter role password"
-                  className={`w-full rounded-lg border bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-0 focus:border-teal-500 transition-colors ${
+                  className={`w-full rounded-lg border bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500 ${
                     passwordError
                       ? 'border-rose-300 focus:border-rose-500'
                       : 'border-slate-300 hover:border-slate-400'

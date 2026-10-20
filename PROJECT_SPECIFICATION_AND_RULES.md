@@ -534,6 +534,22 @@ Every feature and line of code in this project strictly adheres to the governing
 
 ---
 
+### 2.22 Static Light-Mode Card and Modal Shadows (Milestone M10 Section 1)
+
+- **Shadow Tokens & Architecture**:
+  - Defined two centralized CSS shadow tokens in src/index.css and tailwind.config.js:
+    - Card token (--shadow-card / shadow-card): 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08). Applied strictly to Cards and card containers in the light theme only.
+    - Modal & Drawer token (--shadow-modal / shadow-modal): 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06). Applied strictly to Modals, drawers, and overlay popovers in the light theme only.
+  - Card outlines (border border-slate-200/80 dark:border-slate-800) are preserved alongside the soft shadow.
+- **Strict Shadow Boundaries & Prohibitions**:
+  - Zero shadow in dark theme (dark:shadow-none, .dark .shadow-card { box-shadow: none !important; }).
+  - Zero shadow in print media (@media print { .shadow-card, .shadow-modal { box-shadow: none !important; } }).
+  - Zero shadow on the header, navigation bars, tables, table rows, inputs, buttons, or nested inner boxes.
+  - Zero hover or focus shadow changes.
+  - Zero animated transitions or transition-colors on shadows or components.
+
+---
+
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
 
 The table below outlines the evolution of the codebase from initial repository setup to current state:

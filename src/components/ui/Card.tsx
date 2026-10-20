@@ -8,7 +8,7 @@ export const Card: React.FC<{
   return (
     <div
       onClick={onClick}
-      className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors ${className}`}
+      className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-card dark:shadow-none print:shadow-none overflow-hidden ${className}`}
     >
       {children}
     </div>
