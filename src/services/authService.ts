@@ -193,8 +193,8 @@ export async function login(
   if (targetAudience !== audience) {
     const msg =
       targetAudience === 'staff'
-        ? 'This is a clinic staff account. Use the Clinic Staff tab.'
-        : 'This is a patient account. Use the Patient tab.';
+        ? 'This is a clinic staff account. Use the Clinic Staff option.'
+        : 'This is a patient account. Use the Patient option.';
     return {
       code: 'wrongPortal',
       success: false,

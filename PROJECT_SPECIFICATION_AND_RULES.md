@@ -407,24 +407,27 @@ Executes the comprehensive release gate:
 - **Entrance Easing**: `cubic-bezier(0.22, 1, 0.36, 1)`
 - **Properties**: Animate `transform` and `opacity` only; apply `will-change` strictly while an animation is actively executing.
 
-### 10.3 Staggered Entrance Sequence
+### 10.3 Staggered Entrance Sequence and Step Crossfade
 - **Order of Appearance**:
   1. Logo icon (`w-14 h-14 bg-teal-600`)
   2. Brand Title (`Beacon Health Clinic`)
   3. Tagline
-  4. Card Container
-  5. Form rows sequentially (Identifier, Password, Remember/Options, Submit button, Secondary actions)
-- **Animation Mechanics**: Each item fades in while rising 12px (`opacity: 0` to `1`, `translateY: 12px` to `0`), staggered by 70ms.
-- **Lifecycle**: Executes exactly once on initial mount; never replays on re-renders.
-- **View Crossfade**: Switching between Sign-In and Sign-Up crossfades card content in 200ms without layout jump or vertical height pop.
+  4. Heading ("Who is signing in?")
+  5. Choices: Patient and Clinic Staff (fade and rise with 70ms stagger, total entrance <= 700ms). Both choices are immediately focusable and clickable from the first frame.
+- **Changing Step**:
+  - The brand header (logo, title, tagline) is locked strictly in place across steps.
+  - Step transitions crossfade only the section below the header (200ms duration, opacity and an 8px rise).
+  - Taller step height is reserved (`min-h-[460px]`) while switching to guarantee zero vertical layout pop.
+  - Under `prefers-reduced-motion`, every transition is instant.
 
 ### 10.4 Decorative ECG Heartbeat Background (`EcgBackground.tsx`)
 - **Visuals**: Inline SVG with `aria-hidden="true"` and non-focusable behind the card, presenting a repeating P-QRS-T electrocardiogram waveform spanning page width.
-- **Line Styling**: Uses stroke from existing clinical accent tokens (`#0d9488` in light theme, `#2dd4bf` in dark theme) at low opacity (12-18%), using `vector-effect="non-scaling-stroke"` to maintain constant line weight.
+- **Line Styling & Peak Control**: Uses stroke from clinical accent tokens (`#0d9488` in light theme, `#2dd4bf` in dark theme) at low opacity (12-18%), using `vector-effect="non-scaling-stroke"` to maintain constant line weight. Waveform baseline is set to `y=130` and peak spikes to `y=65` (staying strictly below 40% viewport height and clear of header text).
+- **Central Column Gradient Cutout**: Masked with a horizontal linear gradient that fades the line to zero across the central column (the width of the card plus 24px each side = 720px) so the line emerges cleanly from the left and right edges and never crosses card or text.
 - **Animation Cycle**: 10-second repeating cycle: wipes left-to-right over 6s using a transform-based gradient mask cover, holds 2s, fades out over 1s, and resets.
 - **Performance & Background Throttling**: Tab visibility listener (`visibilitychange`) pauses the wipe when the browser tab is hidden and resumes when visible; listeners cleanly removed on unmount.
-- **Reduced Motion Fallback**: Renders the complete ECG line statically at low opacity with zero wipe or motion.
-- **Responsive Layout**: Overflow is clipped on mobile viewports (360x800) with zero sideways scroll; normal vertical page scrolling remains unhindered when card exceeds viewport height.
+- **Reduced Motion Fallback**: Renders the complete ECG line statically with the central mask and zero wipe or motion.
+- **Responsive Layout**: Overflow is clipped on mobile viewports (360x800) with zero sideways scroll. Under 640px, the line opacity is lowered to 0.12 and positioned in the bottom third.
 
 ### 10.5 Micro-Interactions & Form States
 - **Show-Password Toggle**: Crossfades between `Eye` and `EyeOff` icons in 150ms.
@@ -442,9 +445,9 @@ Executes the comprehensive release gate:
   - Under reduced motion: Navigates immediately with 0ms delay.
 
 ### 10.6 Footer Security Text
-- Card footer displays plain text: `"Demo environment. Do not enter real patient data."` with preceding status icon, accurately reflecting local browser storage.
+- Card footer displays plain text: `"Demo environment. Do not enter real patient data."` (text only, decorative check icon removed), accurately reflecting local browser storage.
 
-## 11. Authentication Audience Selector and Portal Routing (M9.7)
+## 11. Authentication Audience Chooser Step and Portal Routing (M9.8)
 
 ### 11.1 Audience Segregation
 - **Audiences**:
@@ -466,16 +469,28 @@ Executes the comprehensive release gate:
 - **Timing and Security Invariants**:
   - Password is verified first. If incorrect, generic invalid is returned without evaluating audience, preventing user enumeration.
   - wrongPortal does not increment failed attempt counters or trigger account lockout.
+  - wrongPortal copy: `"This is a clinic staff account. Use the Clinic Staff option."` / `"This is a patient account. Use the Patient option."` with text button `"Switch to [audience]"` that switches forms while preserving the identifier.
   - audienceOf(account) is the single canonical source of truth for audience derivation.
 
-### 11.3 UI Tab and Form Behaviors
-- **Card Tabs**:
-  - Plain tablist at the top of the authentication card (role="tablist" with role="tab" buttons).
-  - Active tab bold with a static 2px underline indicator (or 200ms transform slide); inactive tabs plain text without filled pills or backgrounds.
-  - Arrow-key navigation (Left/Right) cycles tabs with keyboard focus outline.
-- **Form State and Audience Transitions**:
-  - Switching tabs preserves typed full name, email, phone, and sign-in identifier; always clears password inputs.
-  - Heading and button copy adapt to the active audience ("Sign In to Patient Portal" vs "Sign In to Medical Station").
-  - Last chosen audience is persisted to localStorage (defaulting to Clinic Staff on initial visit).
-  - Overridable via ?as=patient or ?as=staff query parameters and URL route paths.
-  - Demo credentials directory filters entries strictly by the active audience.
+### 11.3 Account Type Chooser Step and Navigation Flow
+- **Account Type Chooser Step (Default Step)**:
+  - Default step when no `?as=` query parameter is present in the URL.
+  - Displays the clinic logo, clinic name (`Beacon Health Clinic`), tagline, plain heading `"Who is signing in?"`, and two large equal buttons side by side (stacked below 640px, each min 88px high):
+    1. `"Patient"` with muted line `"Records, bookings and bills"`
+    2. `"Clinic Staff"` with muted line `"Doctors, receptionists and administrators"`
+  - Outlined style using the same border and background tokens as the card (`border-slate-200`, `bg-white`). No icons, no tinted or filled shapes, real buttons with static keyboard focus outline.
+  - Last used audience from `localStorage` is auto-focused first and shows the plain muted text `"Last used"` under its line; it does not skip the chooser.
+  - Demo mode: Chooser step displays only the plain `"Reset demo data"` text button at the bottom.
+- **Form Step**:
+  - Selecting an audience pushes a browser history entry and replaces the chooser with that audience's sign-in form.
+  - Card top line reads `"Signing in as Patient"` or `"Signing in as Clinic Staff"` with text button `"Change"` on the right.
+  - Clicking `"Change"` returns to the chooser step, clears the `as` query parameter, and restores focus to the selected option button.
+  - Browser Back button triggers `popstate` and returns cleanly to the chooser step.
+  - URL is read before the first render so the wrong step never flashes.
+  - In demo mode, the form step shows the credentials directory filtered strictly to that audience.
+- **Sign-Up Flow**:
+  - `"Create account"` opens the sign-up form for the same audience.
+  - Top line reads `"Creating a Patient account"` or `"Creating a Clinic Staff account"` with `"Change"` and `"Back to sign in"` links.
+  - Changing audience preserves name, email, phone, and sign-in identifier while clearing password inputs.
+- **Removal of Tabs**:
+  - The tab component, `role="tab"`, `role="tablist"`, and tab CSS are completely removed from all authentication screens.

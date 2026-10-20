@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
-import { Building2, User, Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Building2, User, Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { validatePasswordPolicy } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 import { EcgBackground } from '@/components/auth/EcgBackground';
@@ -11,6 +11,7 @@ import { AuthAudience } from '@/services/authService';
 
 export interface SignUpViewProps {
   onBackToLogin: () => void;
+  onChangeAudience?: () => void;
   contentOnly?: boolean;
   audience?: AuthAudience;
   fullName?: string;
@@ -23,6 +24,7 @@ export interface SignUpViewProps {
 
 export const SignUpView: React.FC<SignUpViewProps> = ({
   onBackToLogin,
+  onChangeAudience,
   contentOnly = false,
   audience = 'patient',
   fullName: externalFullName,
@@ -209,27 +211,28 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
         </div>
       ) : (
         <>
-          <div className="mb-6 pb-4 border-b border-slate-200 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">
-                {audience === 'patient'
-                  ? 'Create an Account: Patient Registration'
-                  : 'Create an Account: Staff Clearance'}
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {audience === 'patient'
-                  ? 'Self-register for immediate patient portal access'
-                  : 'Submit an authorization application to clinic administration'}
-              </p>
+          <div className="pb-5 mb-5 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
+            <div className="text-sm font-semibold text-slate-900">
+              Creating a {audience === 'patient' ? 'Patient' : 'Clinic Staff'} account
             </div>
-            <button
-              type="button"
-              onClick={onBackToLogin}
-              className="text-xs font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1 min-h-[44px] cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to sign in</span>
-            </button>
+            <div className="flex items-center gap-3">
+              {onChangeAudience && (
+                <button
+                  type="button"
+                  onClick={onChangeAudience}
+                  className="text-xs font-medium text-teal-600 hover:text-teal-800 cursor-pointer min-h-[44px] px-1 inline-flex items-center"
+                >
+                  Change
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onBackToLogin}
+                className="text-xs font-medium text-slate-500 hover:text-slate-700 cursor-pointer min-h-[44px] px-1 inline-flex items-center"
+              >
+                Back to sign in
+              </button>
+            </div>
           </div>
 
           {formError && (

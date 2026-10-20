@@ -40,10 +40,12 @@ function createMockAuth(overrides = {}) {
   return { Wrapper, authVal, loginMock, completeNavMock };
 }
 
-describe('Login and Sign-Up Screen Motion (M9.6)', () => {
+describe('Login and Sign-Up Screen Motion (M9.6 / M9.8)', () => {
   let originalMatchMedia: typeof window.matchMedia;
 
   beforeEach(() => {
+    localStorage.clear();
+    window.history.replaceState({}, '', '/');
     originalMatchMedia = window.matchMedia;
     vi.useFakeTimers();
   });
@@ -52,10 +54,11 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
     cleanup();
     vi.useRealTimers();
     window.matchMedia = originalMatchMedia;
+    localStorage.clear();
+    window.history.replaceState({}, '', '/');
   });
 
-  it('respects prefers-reduced-motion: no animation classes applied, ECG line renders static, and success navigates immediately', async () => {
-    // Mock reduced motion enabled
+  it('respects prefers-reduced-motion: no entrance animation classes, instant transitions, and immediate navigation', async () => {
     window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === '(prefers-reduced-motion: reduce)',
       media: query,
@@ -71,6 +74,7 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
 
     const { Wrapper, loginMock, completeNavMock } = createMockAuth();
 
+    // 1. In chooser step: no entrance classes
     let container: HTMLElement;
     await act(async () => {
       const res = render(
@@ -81,18 +85,23 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
       container = res.container;
     });
 
-    // Check that entrance animation classes are NOT applied under reduced motion
     const entrance0 = container!.querySelector('.login-entrance-0');
     const entrance3 = container!.querySelector('.login-entrance-3');
     expect(entrance0).toBeNull();
     expect(entrance3).toBeNull();
 
-    // Check ECG background renders static path without mask
-    const ecgPath = container!.querySelector('path[vector-effect="non-scaling-stroke"]');
-    expect(ecgPath).toBeDefined();
-    expect(ecgPath?.getAttribute('mask')).toBeNull();
+    cleanup();
 
-    // Trigger successful login under reduced motion
+    // 2. In form step with ?as=staff: immediate navigation on submit
+    window.history.replaceState({}, '', '/?as=staff');
+    await act(async () => {
+      render(
+        <Wrapper>
+          <LoginView />
+        </Wrapper>
+      );
+    });
+
     const submitBtn = screen.getByRole('button', { name: /Sign In to Medical Station/i });
     await act(async () => {
       fireEvent.click(submitBtn);
@@ -104,6 +113,8 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
   });
 
   it('handles failed sign-in: applies shake class and polite live region in standard mode; omits shake class under reduced motion', async () => {
+    window.history.replaceState({}, '', '/?as=staff');
+
     // 1. Standard motion mode
     window.matchMedia = vi.fn().mockImplementation(() => ({
       matches: false,
@@ -153,6 +164,7 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
     cleanup();
 
     // 2. Reduced motion mode
+    window.history.replaceState({}, '', '/?as=staff');
     window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === '(prefers-reduced-motion: reduce)',
       media: query,
@@ -182,7 +194,7 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
     expect(screen.getByText(/Invalid credentials provided/i)).toBeDefined();
   });
 
-  it('ensures inputs are immediately focusable and typeable during entrance with autofocus working', async () => {
+  it('ensures chooser buttons and form inputs are immediately focusable and clickable during entrance', async () => {
     window.matchMedia = vi.fn().mockImplementation(() => ({
       matches: false,
       media: '',
@@ -195,44 +207,56 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
     }));
 
     const { Wrapper } = createMockAuth();
-    const { container } = render(
+    render(
       <Wrapper>
         <LoginView />
       </Wrapper>
     );
 
+    const patientBtn = screen.getByRole('button', { name: /Patient Records, bookings and bills/i });
+    const staffBtn = screen.getByRole('button', { name: /Clinic Staff Doctors, receptionists and administrators/i });
+
+    // Verify chooser buttons are focusable and clickable from the first frame
+    expect(patientBtn.getAttribute('style') || '').not.toContain('pointer-events: none');
+    expect(staffBtn.getAttribute('style') || '').not.toContain('pointer-events: none');
+    expect(patientBtn.getAttribute('style') || '').not.toContain('visibility: hidden');
+    expect(staffBtn.getAttribute('style') || '').not.toContain('visibility: hidden');
+
+    // Clicking transitions to form immediately
+    await act(async () => {
+      fireEvent.click(staffBtn);
+    });
+
+    expect(screen.getByText('Signing in as Clinic Staff')).toBeDefined();
     const usernameInput = screen.getByLabelText(/Username or Email/i) as HTMLInputElement;
-    const passwordInput = screen.getByPlaceholderText(/Enter role password/i) as HTMLInputElement;
-
-    // Verify inputs and container never have visibility: hidden or pointer-events: none
-    const card = container.querySelector('.shadow-card');
-    expect(card?.getAttribute('style') || '').not.toContain('visibility: hidden');
-    expect(card?.getAttribute('style') || '').not.toContain('pointer-events: none');
-
-    // Focusable and typeable from the first frame
-    expect(document.activeElement).toBe(usernameInput);
+    expect(usernameInput).toBeDefined();
 
     await act(async () => {
       fireEvent.change(usernameInput, { target: { value: 'doctor' } });
-      fireEvent.change(passwordInput, { target: { value: 'Secret@123' } });
     });
-
     expect(usernameInput.value).toBe('doctor');
-    expect(passwordInput.value).toBe('Secret@123');
   });
 
-  it('verifies EcgBackground is aria-hidden and responds to visibilitychange lifecycle and cleanup', () => {
+  it('verifies EcgBackground has central column mask and responds to visibilitychange lifecycle', () => {
     const addEventSpy = vi.spyOn(document, 'addEventListener');
     const removeEventSpy = vi.spyOn(document, 'removeEventListener');
 
     const { container, unmount } = render(<EcgBackground />);
 
-    // Container is aria-hidden and not focusable
+    // Container has the ecg-background-container class and is aria-hidden
     const wrapper = container.firstElementChild as HTMLElement;
     expect(wrapper.getAttribute('aria-hidden')).toBe('true');
+    expect(wrapper.className).toContain('ecg-background-container');
+
     const svg = wrapper.querySelector('svg');
     expect(svg?.getAttribute('aria-hidden')).toBe('true');
     expect(svg?.getAttribute('focusable')).toBe('false');
+
+    // Central cutout gradient and mask exist in defs
+    const centerGradient = container.querySelector('#ecg-center-gradient');
+    const centerMask = container.querySelector('#ecg-center-mask');
+    expect(centerGradient).not.toBeNull();
+    expect(centerMask).not.toBeNull();
 
     // Verifies visibilitychange listener attached
     expect(addEventSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
@@ -259,6 +283,7 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
   });
 
   it('enforces success exit duration <= 400ms and verifies sign-in to sign-up crossfade retains form state', async () => {
+    window.history.replaceState({}, '', '/?as=staff');
     window.matchMedia = vi.fn().mockImplementation(() => ({
       matches: false,
       media: '',
@@ -287,9 +312,8 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
       fireEvent.click(createAccountBtn);
     });
 
-    // Sign-up content is crossfaded
-    expect(screen.getByText(/Create an Account/i)).toBeDefined();
-    expect(container.querySelector('.login-view-crossfade')).not.toBeNull();
+    // Sign-up content is rendered
+    expect(screen.getByText('Creating a Clinic Staff account')).toBeDefined();
 
     // Switch back to sign-in
     const backBtn = screen.getByRole('button', { name: /Back to sign in/i });
@@ -320,8 +344,62 @@ describe('Login and Sign-Up Screen Motion (M9.6)', () => {
     expect(LOGIN_MOTION.successExit).toBeLessThanOrEqual(LOGIN_MOTION.maxSuccessExit);
   });
 
-  it('renders the updated footer text without real patient data warning', () => {
+  it('verifies the form never renders before the URL is read', () => {
+    // 1. When ?as=patient is present, directly renders patient form
+    window.history.replaceState({}, '', '/?as=patient');
     const { Wrapper } = createMockAuth();
+
+    const { unmount } = render(
+      <Wrapper>
+        <LoginView />
+      </Wrapper>
+    );
+
+    expect(screen.queryByText('Who is signing in?')).toBeNull();
+    expect(screen.getByText('Signing in as Patient')).toBeDefined();
+    unmount();
+
+    // 2. When ?as=staff is present, directly renders staff form
+    window.history.replaceState({}, '', '/?as=staff');
+    const { unmount: unmountStaff } = render(
+      <Wrapper>
+        <LoginView />
+      </Wrapper>
+    );
+
+    expect(screen.queryByText('Who is signing in?')).toBeNull();
+    expect(screen.getByText('Signing in as Clinic Staff')).toBeDefined();
+    unmountStaff();
+
+    // 3. When no ?as= parameter is present, directly renders chooser step
+    window.history.replaceState({}, '', '/');
+    render(
+      <Wrapper>
+        <LoginView />
+      </Wrapper>
+    );
+
+    expect(screen.getByText('Who is signing in?')).toBeDefined();
+    expect(screen.queryByText(/Signing in as/i)).toBeNull();
+  });
+
+  it('renders text-only demo notice in form step and only reset demo data button in chooser step', () => {
+    const { Wrapper } = createMockAuth();
+
+    // Chooser step: shows reset demo data button, no form demo warning
+    render(
+      <Wrapper>
+        <LoginView />
+      </Wrapper>
+    );
+
+    expect(screen.getByRole('button', { name: /Reset demo data/i })).toBeDefined();
+    expect(screen.queryByText('Demo environment. Do not enter real patient data.')).toBeNull();
+
+    cleanup();
+
+    // Form step: shows text-only demo environment notice
+    window.history.replaceState({}, '', '/?as=staff');
     render(
       <Wrapper>
         <LoginView />

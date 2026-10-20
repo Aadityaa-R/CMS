@@ -43,7 +43,7 @@ function createMockAuth(overrides = {}) {
   return { Wrapper, authVal, loginMock, signUpPatientMock, signUpStaffMock, completeNavMock };
 }
 
-describe('Login and Sign-Up Audience Selector (M9.7)', () => {
+describe('Login and Sign-Up Account Type Chooser (M9.8)', () => {
   beforeEach(() => {
     localStorage.clear();
     window.history.replaceState({}, '', '/');
@@ -55,8 +55,8 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
     window.history.replaceState({}, '', '/');
   });
 
-  describe('Tab Behavior and Accessibility', () => {
-    it('renders both audiences with correct ARIA attributes and defaults to Clinic Staff on first visit', async () => {
+  describe('Chooser Step and Removal of Tabs', () => {
+    it('defaults to the chooser step with two equal outlined buttons and no tabs', async () => {
       const { Wrapper } = createMockAuth();
       await act(async () => {
         render(
@@ -66,81 +66,25 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
         );
       });
 
-      // Verify tablist and tab roles
-      const tablist = screen.getByRole('tablist', { name: /Portal audience/i });
-      expect(tablist).toBeDefined();
+      // No tablist or tab elements must exist
+      expect(screen.queryByRole('tablist')).toBeNull();
+      expect(screen.queryByRole('tab')).toBeNull();
 
-      const patientTab = screen.getByRole('tab', { name: /Patient/i });
-      const staffTab = screen.getByRole('tab', { name: /Clinic Staff/i });
+      // Heading and audience choice buttons
+      expect(screen.getByText('Who is signing in?')).toBeDefined();
+      const patientBtn = screen.getByRole('button', { name: /Patient Records, bookings and bills/i });
+      const staffBtn = screen.getByRole('button', { name: /Clinic Staff Doctors, receptionists and administrators/i });
 
-      expect(patientTab).toBeDefined();
-      expect(staffTab).toBeDefined();
-
-      // First visit defaults to Clinic Staff
-      expect(staffTab.getAttribute('aria-selected')).toBe('true');
-      expect(patientTab.getAttribute('aria-selected')).toBe('false');
-      expect(staffTab.getAttribute('aria-controls')).toBe('panel-audience');
-      expect(patientTab.getAttribute('aria-controls')).toBe('panel-audience');
-
-      // Submit button text reflects Clinic Staff audience
-      expect(screen.getByRole('button', { name: /Sign In to Medical Station/i })).toBeDefined();
+      expect(patientBtn).toBeDefined();
+      expect(staffBtn).toBeDefined();
+      expect(patientBtn.className).toContain('min-h-[88px]');
+      expect(staffBtn.className).toContain('min-h-[88px]');
     });
 
-    it('supports arrow-key navigation between Patient and Clinic Staff tabs', async () => {
-      const { Wrapper } = createMockAuth();
-      await act(async () => {
-        render(
-          <Wrapper>
-            <LoginView />
-          </Wrapper>
-        );
-      });
-
-      const tablist = screen.getByRole('tablist', { name: /Portal audience/i });
-      const patientTab = screen.getByRole('tab', { name: /Patient/i });
-      const staffTab = screen.getByRole('tab', { name: /Clinic Staff/i });
-
-      // Starts on staff tab
-      expect(staffTab.getAttribute('aria-selected')).toBe('true');
-
-      // Press ArrowLeft on tablist to switch to Patient tab
-      await act(async () => {
-        fireEvent.keyDown(tablist, { key: 'ArrowLeft' });
-      });
-      expect(patientTab.getAttribute('aria-selected')).toBe('true');
-      expect(staffTab.getAttribute('aria-selected')).toBe('false');
-      expect(screen.getByRole('button', { name: /Sign In to Patient Portal/i })).toBeDefined();
-
-      // Press ArrowRight to cycle back to Clinic Staff tab
-      await act(async () => {
-        fireEvent.keyDown(tablist, { key: 'ArrowRight' });
-      });
-      expect(staffTab.getAttribute('aria-selected')).toBe('true');
-      expect(patientTab.getAttribute('aria-selected')).toBe('false');
-      expect(screen.getByRole('button', { name: /Sign In to Medical Station/i })).toBeDefined();
-    });
-
-    it('respects remembered tab from localStorage on visit', async () => {
-      localStorage.setItem('cms_auth_audience', 'patient');
-      const { Wrapper } = createMockAuth();
-      await act(async () => {
-        render(
-          <Wrapper>
-            <LoginView />
-          </Wrapper>
-        );
-      });
-
-      const patientTab = screen.getByRole('tab', { name: /Patient/i });
-      expect(patientTab.getAttribute('aria-selected')).toBe('true');
-      expect(screen.getByRole('button', { name: /Sign In to Patient Portal/i })).toBeDefined();
-    });
-
-    it('overrides localStorage when ?as=staff or ?as=patient query parameter is present', async () => {
+    it('focuses and labels the last used audience without skipping the chooser', async () => {
       localStorage.setItem('cms_auth_audience', 'staff');
-      window.history.replaceState({}, '', '/?as=patient');
-
       const { Wrapper } = createMockAuth();
+
       await act(async () => {
         render(
           <Wrapper>
@@ -149,15 +93,105 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
         );
       });
 
-      const patientTab = screen.getByRole('tab', { name: /Patient/i });
-      expect(patientTab.getAttribute('aria-selected')).toBe('true');
+      // Chooser remains displayed
+      expect(screen.getByText('Who is signing in?')).toBeDefined();
+
+      // Last used label appears under Clinic Staff
+      expect(screen.getByText('Last used')).toBeDefined();
+
+      // Clinic Staff option receives focus
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
+      const staffBtn = screen.getByRole('button', { name: /Clinic Staff/i });
+      expect(document.activeElement).toBe(staffBtn);
+    });
+
+    it('skips the chooser directly to the form when ?as=patient or ?as=staff is in the URL', async () => {
+      window.history.replaceState({}, '', '/?as=patient');
+      const { Wrapper } = createMockAuth();
+
+      await act(async () => {
+        render(
+          <Wrapper>
+            <LoginView />
+          </Wrapper>
+        );
+      });
+
+      // Directly renders patient sign-in form without showing chooser
+      expect(screen.queryByText('Who is signing in?')).toBeNull();
+      expect(screen.getByText('Signing in as Patient')).toBeDefined();
       expect(screen.getByRole('button', { name: /Sign In to Patient Portal/i })).toBeDefined();
+    });
+
+    it('pushes history entry on option selection and returns to chooser on Back button', async () => {
+      const { Wrapper } = createMockAuth();
+
+      await act(async () => {
+        render(
+          <Wrapper>
+            <LoginView />
+          </Wrapper>
+        );
+      });
+
+      const patientBtn = screen.getByRole('button', { name: /Patient/i });
+      await act(async () => {
+        fireEvent.click(patientBtn);
+      });
+
+      // Transitions to form step
+      expect(screen.getByText('Signing in as Patient')).toBeDefined();
+      expect(window.location.search).toContain('as=patient');
+
+      // Simulate browser Back button (popstate to root)
+      await act(async () => {
+        window.history.replaceState({}, '', '/');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+
+      // Returns to chooser
+      expect(screen.getByText('Who is signing in?')).toBeDefined();
+    });
+
+    it('returns to chooser and restores focus when clicking Change button', async () => {
+      window.history.replaceState({}, '', '/?as=staff');
+      const { Wrapper } = createMockAuth();
+
+      await act(async () => {
+        render(
+          <Wrapper>
+            <LoginView />
+          </Wrapper>
+        );
+      });
+
+      expect(screen.getByText('Signing in as Clinic Staff')).toBeDefined();
+      const changeBtn = screen.getByRole('button', { name: 'Change' });
+
+      await act(async () => {
+        fireEvent.click(changeBtn);
+      });
+
+      // Chooser is visible and parameter is cleared
+      expect(screen.getByText('Who is signing in?')).toBeDefined();
+      expect(window.location.search).not.toContain('as=staff');
+
+      // Focus returns to the chosen option
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
+      const staffBtn = screen.getByRole('button', { name: /Clinic Staff/i });
+      expect(document.activeElement).toBe(staffBtn);
     });
   });
 
-  describe('Form State Preservation and Password Clearing on Tab Switch', () => {
-    it('preserves typed sign-in identifier and clears password when switching tabs', async () => {
+  describe('Form State Preservation and Password Clearing on Audience Change', () => {
+    it('preserves typed sign-in identifier and clears password when changing audience', async () => {
+      window.history.replaceState({}, '', '/?as=staff');
       const { Wrapper } = createMockAuth();
+
       await act(async () => {
         render(
           <Wrapper>
@@ -169,7 +203,6 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
       const usernameInput = screen.getByLabelText(/Username or Email/i) as HTMLInputElement;
       const passwordInput = screen.getByPlaceholderText(/Enter role password/i) as HTMLInputElement;
 
-      // Type a custom identifier and password on Staff tab
       await act(async () => {
         fireEvent.change(usernameInput, { target: { value: 'custom_identifier_123' } });
         fireEvent.change(passwordInput, { target: { value: 'Secret@Pass1' } });
@@ -178,10 +211,16 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
       expect(usernameInput.value).toBe('custom_identifier_123');
       expect(passwordInput.value).toBe('Secret@Pass1');
 
-      // Click Patient tab
-      const patientTab = screen.getByRole('tab', { name: /Patient/i });
+      // Click Change to return to chooser
+      const changeBtn = screen.getByRole('button', { name: 'Change' });
       await act(async () => {
-        fireEvent.click(patientTab);
+        fireEvent.click(changeBtn);
+      });
+
+      // Select Patient option
+      const patientBtn = screen.getByRole('button', { name: /Patient/i });
+      await act(async () => {
+        fireEvent.click(patientBtn);
       });
 
       // Identifier is preserved; password is cleared
@@ -193,7 +232,9 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
     });
 
     it('preserves typed name, email, and phone while clearing passwords in sign-up mode', async () => {
+      window.history.replaceState({}, '', '/?as=staff');
       const { Wrapper } = createMockAuth();
+
       await act(async () => {
         render(
           <Wrapper>
@@ -207,6 +248,8 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
       await act(async () => {
         fireEvent.click(createAccountBtn);
       });
+
+      expect(screen.getByText('Creating a Clinic Staff account')).toBeDefined();
 
       // Type common fields on Staff sign-up
       const nameInput = screen.getByLabelText(/Full Name/i) as HTMLInputElement;
@@ -223,11 +266,19 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
         fireEvent.change(confirmPasswordInput, { target: { value: 'SecurePass@123' } });
       });
 
-      // Switch to Patient tab
-      const patientTab = screen.getByRole('tab', { name: /Patient/i });
+      // Click Change to return to chooser
+      const changeBtn = screen.getByRole('button', { name: 'Change' });
       await act(async () => {
-        fireEvent.click(patientTab);
+        fireEvent.click(changeBtn);
       });
+
+      // Select Patient option
+      const patientBtn = screen.getByRole('button', { name: /Patient/i });
+      await act(async () => {
+        fireEvent.click(patientBtn);
+      });
+
+      expect(screen.getByText('Creating a Patient account')).toBeDefined();
 
       // Verify name, email, phone are retained; passwords are wiped
       const nameAfter = screen.getByLabelText(/Full Name/i) as HTMLInputElement;
@@ -244,7 +295,7 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
     });
   });
 
-  describe('Sign-Up Audience Forms and Removal of "I am a" Select', () => {
+  describe('Sign-Up Audience Forms and Absence of "I am a" Select', () => {
     it('verifies "I am a" select does not exist on sign-up screens', async () => {
       const { Wrapper } = createMockAuth();
       await act(async () => {
@@ -255,7 +306,6 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
         );
       });
 
-      // "I am a" label or select must NOT exist
       expect(screen.queryByText('I am a')).toBeNull();
       expect(screen.queryByLabelText(/I am a/i)).toBeNull();
     });
@@ -270,16 +320,12 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
         );
       });
 
-      // Patient specific controls: Date of Birth and Biological Sex
       expect(screen.getByText(/Date of Birth/i)).toBeDefined();
       expect(screen.getByText(/Biological Sex/i)).toBeDefined();
-
-      // Staff controls must not be rendered
       expect(screen.queryByLabelText(/Job Title/i)).toBeNull();
       expect(screen.queryByLabelText(/Department/i)).toBeNull();
       expect(screen.queryByText(/Role requested/i)).toBeNull();
 
-      // Fill and submit patient form
       await act(async () => {
         fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: 'Eleanor Vance' } });
         fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: 'e.vance@example.com' } });
@@ -314,16 +360,12 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
         );
       });
 
-      // Staff specific controls: Job Title, Department, Role requested
       expect(screen.getByLabelText(/Job Title/i)).toBeDefined();
       expect(screen.getByLabelText(/Department/i)).toBeDefined();
       expect(screen.getByText(/Role requested/i)).toBeDefined();
-
-      // Patient controls must not be rendered
       expect(screen.queryByText(/Date of Birth/i)).toBeNull();
       expect(screen.queryByText(/Biological Sex/i)).toBeNull();
 
-      // Fill and submit staff form
       await act(async () => {
         fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: 'Dr. Sarah Connor' } });
         fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: 's.connor@beaconclinic.com' } });
@@ -354,12 +396,13 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
   });
 
   describe('wrongPortal Action and Switch Button', () => {
-    it('displays wrongPortal notice with switch button and smoothly switches tabs on click', async () => {
+    it('displays wrongPortal notice with switch button and switches to expected audience on click', async () => {
+      window.history.replaceState({}, '', '/?as=staff');
       const wrongPortalMock = vi.fn().mockResolvedValue({
         code: 'wrongPortal',
         success: false,
         expectedAudience: 'patient',
-        error: 'This is a patient account. Use the Patient tab.',
+        error: 'This is a patient account. Use the Patient option.',
       });
 
       const { Wrapper } = createMockAuth({ login: wrongPortalMock });
@@ -371,14 +414,14 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
         );
       });
 
-      // On Staff tab, submit
+      // Submit on Staff form
       const submitBtn = screen.getByRole('button', { name: /Sign In to Medical Station/i });
       await act(async () => {
         fireEvent.click(submitBtn);
       });
 
       // Error message is displayed with switch button
-      expect(screen.getByText('This is a patient account. Use the Patient tab.')).toBeDefined();
+      expect(screen.getByText('This is a patient account. Use the Patient option.')).toBeDefined();
       const switchBtn = screen.getByRole('button', { name: /Switch to Patient/i });
       expect(switchBtn).toBeDefined();
 
@@ -388,14 +431,13 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
       });
 
       // Audience is switched to Patient
-      const patientTab = screen.getByRole('tab', { name: /Patient/i });
-      expect(patientTab.getAttribute('aria-selected')).toBe('true');
+      expect(screen.getByText('Signing in as Patient')).toBeDefined();
       expect(screen.getByRole('button', { name: /Sign In to Patient Portal/i })).toBeDefined();
     });
   });
 
-  describe('Credentials Directory Filtering and Hints', () => {
-    it('filters credentials directory to open tab and renders plain text hints', async () => {
+  describe('Credentials Directory Filtering and Demo Mode Behavior', () => {
+    it('filters credentials directory to open audience', async () => {
       const onFillMock = vi.fn();
 
       // 1. Staff audience
@@ -412,7 +454,6 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
       expect(screen.getByText('Dr. Nathan Hayes')).toBeDefined();
       expect(screen.getByText('Priya Sharma')).toBeDefined();
       expect(screen.queryByText('Eleanor Wright')).toBeNull();
-      expect(screen.getByText(/Full clinic governance/i)).toBeDefined();
 
       // 2. Patient audience
       rerender(
@@ -427,8 +468,6 @@ describe('Login and Sign-Up Audience Selector (M9.7)', () => {
       expect(screen.getByText('Eleanor Wright')).toBeDefined();
       expect(screen.queryByText('Dr. Marcus Vance')).toBeNull();
       expect(screen.queryByText('Dr. Nathan Hayes')).toBeNull();
-      expect(screen.getByText(/Health portal, upcoming visits/i)).toBeDefined();
     });
   });
 });
-

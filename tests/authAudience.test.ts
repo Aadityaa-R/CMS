@@ -63,21 +63,21 @@ describe('Authentication Audience Selector and Portal Routing (M9.7)', () => {
       expect(patientOnStaff.success).toBe(false);
       expect(patientOnStaff.code).toBe('wrongPortal');
       expect(patientOnStaff.expectedAudience).toBe('patient');
-      expect(patientOnStaff.error).toBe('This is a patient account. Use the Patient tab.');
+      expect(patientOnStaff.error).toBe('This is a patient account. Use the Patient option.');
 
       // Staff trying to sign in on patient tab with correct password
       const doctorOnPatient = await login('doctor', 'Doctor@123', 'patient');
       expect(doctorOnPatient.success).toBe(false);
       expect(doctorOnPatient.code).toBe('wrongPortal');
       expect(doctorOnPatient.expectedAudience).toBe('staff');
-      expect(doctorOnPatient.error).toBe('This is a clinic staff account. Use the Clinic Staff tab.');
+      expect(doctorOnPatient.error).toBe('This is a clinic staff account. Use the Clinic Staff option.');
 
       // MD trying to sign in on patient tab with correct password
       const mdOnPatient = await login('md', 'Doctor@123', 'patient');
       expect(mdOnPatient.success).toBe(false);
       expect(mdOnPatient.code).toBe('wrongPortal');
       expect(mdOnPatient.expectedAudience).toBe('staff');
-      expect(mdOnPatient.error).toBe('This is a clinic staff account. Use the Clinic Staff tab.');
+      expect(mdOnPatient.error).toBe('This is a clinic staff account. Use the Clinic Staff option.');
     });
 
     it('returns generic invalid for a wrong password on either audience and never discloses account existence', async () => {

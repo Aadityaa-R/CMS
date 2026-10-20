@@ -1,4 +1,4 @@
-/* Login and Sign-Up Screen Motion Tokens (Milestone M9.6) */
+/* Login and Sign-Up Screen Motion Tokens (Milestone M9.6 / M9.8) */
 :root {
   --motion-fast: 150ms;
   --motion-base: 300ms;
@@ -76,6 +76,18 @@
   }
 }
 
+/* Step crossfade: 200ms opacity and 8px rise between chooser and form steps */
+@keyframes login-step-crossfade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ECG wipe animation over 10s cycle:
    0s - 6s (0% to 60%): wipes left to right across 1440px
    6s - 8s (60% to 80%): holds at 100% revealed
@@ -112,6 +124,53 @@
 .ecg-wipe-slider {
   animation: ecg-wipe-slide 10s linear infinite;
   will-change: transform, opacity;
+}
+
+/* ECG Horizontal Gradient Mask across central card column (card max-w-2xl 672px + 24px each side = 720px) */
+.ecg-background-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38vh;
+  pointer-events: none;
+  overflow: hidden;
+  user-select: none;
+  z-index: 0;
+  mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black calc(50% - 360px),
+    transparent calc(50% - 336px),
+    transparent calc(50% + 336px),
+    black calc(50% + 360px),
+    black 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black calc(50% - 360px),
+    transparent calc(50% - 336px),
+    transparent calc(50% + 336px),
+    black calc(50% + 360px),
+    black 100%
+  );
+}
+
+@media (max-width: 639px) {
+  .ecg-background-container {
+    mask-image: none !important;
+    -webkit-mask-image: none !important;
+    top: auto !important;
+    bottom: 5% !important;
+    height: 28% !important;
+  }
+  .ecg-background-container svg {
+    opacity: 0.12 !important;
+  }
+  .ecg-background-container path {
+    opacity: 0.12 !important;
+  }
 }
 
 .login-entrance-item {
@@ -164,6 +223,11 @@
 .login-view-crossfade {
   animation: login-crossfade 200ms ease-out both;
   will-change: opacity;
+}
+
+.login-step-crossfade {
+  animation: login-step-crossfade 200ms var(--motion-ease-standard) both;
+  will-change: transform, opacity;
 }
 
 .login-icon-crossfade {
@@ -222,6 +286,7 @@
   .login-card-shake,
   .login-card-exit,
   .login-view-crossfade,
+  .login-step-crossfade,
   .login-icon-crossfade,
   .login-spinner-ring,
   .login-credentials-accordion,
@@ -238,4 +303,3 @@
     display: none !important;
   }
 }
-
