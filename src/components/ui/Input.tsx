@@ -7,15 +7,18 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
   icon?: React.ReactNode;
 }
 
-export const Input: React.FC<InputProps> = ({
-  label,
-  error,
-  helperText,
-  icon,
-  className = '',
-  id,
-  ...props
-}) => {
+export const Input = React.forwardRef<HTMLInputElement, InputProps>((
+  {
+    label,
+    error,
+    helperText,
+    icon,
+    className = '',
+    id,
+    ...props
+  },
+  ref
+) => {
   const autoId = React.useId();
   const inputId = id || (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : `input-${autoId}`);
   const errorId = `${inputId}-error`;
@@ -38,6 +41,7 @@ export const Input: React.FC<InputProps> = ({
           </div>
         )}
         <input
+          ref={ref}
           id={inputId}
           className={`w-full rounded-xl border bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
             icon ? '!pl-11 pr-3.5' : 'px-3'
@@ -57,4 +61,6 @@ export const Input: React.FC<InputProps> = ({
       )}
     </div>
   );
-};
+});
+
+Input.displayName = 'Input';

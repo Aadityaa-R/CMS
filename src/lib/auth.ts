@@ -227,3 +227,5 @@ export function createStaffSignupRequest(params: {
     notes: params.notes || 'Online sign-up request; clearance pending administrator authorization.',
   };
 }
+
+export { audienceOf, AuthService, type AuthAudience, type LoginResultCode, type LoginResult } from '../services/authService';

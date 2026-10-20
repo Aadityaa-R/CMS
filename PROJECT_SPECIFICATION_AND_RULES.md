@@ -443,3 +443,39 @@ Executes the comprehensive release gate:
 
 ### 10.6 Footer Security Text
 - Card footer displays plain text: `"Demo environment. Do not enter real patient data."` with preceding status icon, accurately reflecting local browser storage.
+
+## 11. Authentication Audience Selector and Portal Routing (M9.7)
+
+### 11.1 Audience Segregation
+- **Audiences**:
+  - Patient: Accounts with role patient. Accesses the Patient Portal.
+  - Clinic Staff: Accounts with roles md, doctor, receptionist, and administrative aliases or future staff roles. Accesses clinical, operational, and administrative medical stations.
+- **Dedicated Portals**:
+  - Each audience has its own dedicated sign-in and sign-up interface.
+  - An account can only authenticate through its designated audience portal.
+
+### 11.2 Authentication Results and Security Invariants
+- login(identifier, password, audience) returns one of seven canonical result codes:
+  1. success: Valid credentials matching the selected audience; session initialized.
+  2. invalid: Non-existent account or wrong password. Generic notice is returned with zero leakage of account existence.
+  3. locked: Account temporarily locked due to 5 consecutive failed password attempts.
+  4. pending: Self-registered account awaiting admin clearance or patient record linkage.
+  5. rejected: Account application declined by clinic administrator.
+  6. suspended: Account or station credentials revoked by Managing Director.
+  7. wrongPortal: Password is confirmed valid for an account belonging to the alternate audience.
+- **Timing and Security Invariants**:
+  - Password is verified first. If incorrect, generic invalid is returned without evaluating audience, preventing user enumeration.
+  - wrongPortal does not increment failed attempt counters or trigger account lockout.
+  - audienceOf(account) is the single canonical source of truth for audience derivation.
+
+### 11.3 UI Tab and Form Behaviors
+- **Card Tabs**:
+  - Plain tablist at the top of the authentication card (role="tablist" with role="tab" buttons).
+  - Active tab bold with a static 2px underline indicator (or 200ms transform slide); inactive tabs plain text without filled pills or backgrounds.
+  - Arrow-key navigation (Left/Right) cycles tabs with keyboard focus outline.
+- **Form State and Audience Transitions**:
+  - Switching tabs preserves typed full name, email, phone, and sign-in identifier; always clears password inputs.
+  - Heading and button copy adapt to the active audience ("Sign In to Patient Portal" vs "Sign In to Medical Station").
+  - Last chosen audience is persisted to localStorage (defaulting to Clinic Staff on initial visit).
+  - Overridable via ?as=patient or ?as=staff query parameters and URL route paths.
+  - Demo credentials directory filters entries strictly by the active audience.

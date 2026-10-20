@@ -15,10 +15,6 @@ import { getRepository } from '@/data/storage';
 import {
   hashPassword,
   verifyPassword,
-  isAccountLocked,
-  registerFailedLogin,
-  resetFailedLogin,
-  createSession,
   isSessionValid,
   touchSession,
   validatePasswordPolicy,
@@ -29,6 +25,8 @@ import { Account, ClaimRequest } from '@/types/storage';
 import { STORAGE_KEY_PREFIX, SESSION_STORAGE_KEY } from '@/lib/authConstants';
 import { Patient } from '@/types';
 import { formatLocalDate } from '@/lib/time';
+import { login as authServiceLogin, audienceOf, AuthService, type AuthAudience, type LoginResultCode, type LoginResult } from '@/services/authService';
+export { audienceOf, AuthService, type AuthAudience, type LoginResultCode, type LoginResult };
 import { PendingStaffApproval } from '@/data/mockData';
 
 export interface RoleMeta {
@@ -65,12 +63,7 @@ export const ALL_ROLES: RoleMeta[] = [
   },
 ];
 
-export interface LoginResult {
-  success: boolean;
-  error?: string;
-  matchedRole?: UserRole;
-  completeNavigation?: () => void;
-}
+// LoginResult imported and re-exported from @/services/authService
 
 export interface SignUpPatientParams {
   fullName: string;
@@ -124,7 +117,7 @@ interface AuthContextType {
   ) => void;
   isRoleSuspended: (role: UserRole) => boolean;
   isStaffSuspended: (staffNameOrId: string) => boolean;
-  login: (identifier: string, password: string, rememberMe?: boolean, options?: { deferAuth?: boolean }) => Promise<LoginResult>;
+  login: (identifier: string, password: string, audienceOrRememberMe?: AuthAudience | boolean, rememberMeOrOptions?: boolean | { deferAuth?: boolean }, options?: { deferAuth?: boolean }) => Promise<LoginResult>;
   loginAs: (role: UserRole) => void;
   switchRole: (role: UserRole) => void;
   updateCurrentUser: (updates: Partial<User>) => void;
@@ -540,177 +533,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (
     identifier: string,
     password: string,
-    rememberMe = true,
-    options?: { deferAuth?: boolean }
+    audienceOrRememberMe: AuthAudience | boolean = 'staff',
+    rememberMeOrOptions?: boolean | { deferAuth?: boolean },
+    maybeOptions?: { deferAuth?: boolean }
   ): Promise<LoginResult> => {
-    const cleanId = identifier.trim().toLowerCase();
-    const cleanPass = password.trim();
-    const now = Date.now();
+    let audience: AuthAudience = 'staff';
+    let rememberMe = true;
+    let options: { deferAuth?: boolean } | undefined;
 
-    const repoAccounts = getRepository<Account>('accounts');
-    const accounts = await repoAccounts.list();
-
-    let account = accounts.find((a) => {
-      const matchUser = a.username.toLowerCase() === cleanId;
-      const matchEmail = a.email.toLowerCase() === cleanId;
-      const matchRole = a.role.toLowerCase() === cleanId;
-      const matchMdAlias =
-        a.role === 'md' &&
-        (cleanId === 'admin' ||
-          cleanId === 'admin@beaconclinic.com' ||
-          cleanId === 'm.vance' ||
-          cleanId === 'md');
-      return matchUser || matchEmail || matchRole || matchMdAlias;
-    });
-
-    if (!account) {
-      // Fallback matching against ROLE_CREDENTIALS for demo roles
-      const cred = ROLE_CREDENTIALS.find((c) => {
-        const matchUser = c.username.toLowerCase() === cleanId;
-        const matchEmail = c.email.toLowerCase() === cleanId;
-        const matchRole = c.role.toLowerCase() === cleanId;
-        const matchMdAlias =
-          c.role === 'md' &&
-          (cleanId === 'admin' ||
-            cleanId === 'admin@beaconclinic.com' ||
-            cleanId === 'm.vance' ||
-            cleanId === 'md');
-        return matchUser || matchEmail || matchRole || matchMdAlias;
-      });
-
-      if (cred) {
-        const { hash, salt, iterations } = await hashPassword(cred.password);
-        account = {
-          id: `acc-${cred.username}`,
-          username: cred.username.toLowerCase(),
-          email: cred.email.toLowerCase(),
-          fullName: cred.fullName,
-          phone: '+1 (555) 234-5678',
-          role: cred.role,
-          passwordHash: hash,
-          passwordSalt: salt,
-          passwordIterations: iterations,
-          status: 'active',
-          failedLoginAttempts: 0,
-          lockedUntil: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        await repoAccounts.create(account);
+    if (typeof audienceOrRememberMe === 'string') {
+      audience = audienceOrRememberMe;
+      if (typeof rememberMeOrOptions === 'boolean') {
+        rememberMe = rememberMeOrOptions;
+        options = maybeOptions;
+      } else {
+        options = rememberMeOrOptions;
       }
+    } else {
+      rememberMe = audienceOrRememberMe;
+      options = typeof rememberMeOrOptions === 'object' ? rememberMeOrOptions : maybeOptions;
     }
 
-    if (!account) {
-      return {
-        success: false,
-        error: 'No account found matching this username or email address.',
-      };
-    }
-
-    // Check account lockout
-    const lockStatus = isAccountLocked(account, now);
-    if (lockStatus.locked) {
-      return {
-        success: false,
-        error: `Account is temporarily locked due to too many failed attempts. Please try again in ${lockStatus.remainingMinutes} minute(s).`,
-      };
-    }
-
-    // Verify password with PBKDF2
-    const isPasswordValid = await verifyPassword(cleanPass, {
-      hash: account.passwordHash,
-      salt: account.passwordSalt,
-      iterations: account.passwordIterations,
+    const result = await authServiceLogin(identifier, password, audience, rememberMe, {
+      deferAuth: options?.deferAuth,
+      isRoleSuspended,
+      onLoginSuccess: (account) => {
+        setCurrentRole(account.role);
+        setActiveUserKey(account.username in DEMO_USERS ? account.username : account.role);
+        sessionStorage.setItem('cms_auth_user_key', account.username in DEMO_USERS ? account.username : account.role);
+      },
     });
 
-    if (!isPasswordValid) {
-      const failedUpdate = registerFailedLogin(account, now);
-      await repoAccounts.update(account.id, failedUpdate);
-
-      if (failedUpdate.lockedUntil) {
-        addAuditLogEntry({
-          targetRole: account.role,
-          targetStaffName: account.fullName,
-          targetUserId: account.id,
-          action: 'account_locked',
-          description: `Account ${account.username} locked due to 5 failed login attempts.`,
-          authorizedBy: 'System Security Watchdog',
-        });
-        return {
-          success: false,
-          error: 'Account locked due to 5 failed attempts. Please try again in 5 minutes.',
-        };
+    if (result.success) {
+      const completeNavigation = () => {
+        setIsAuthenticated(true);
+      };
+      if (!options?.deferAuth) {
+        completeNavigation();
       }
       return {
-        success: false,
-        error: 'Incorrect password. Please verify your credentials and try again.',
+        ...result,
+        completeNavigation,
       };
     }
 
-    // Reset failed attempts upon successful password match
-    await repoAccounts.update(account.id, resetFailedLogin());
-
-    // Status checks
-    if (account.status === 'revoked') {
-      return {
-        success: false,
-        error: `Access Suspended: Station credentials for ${account.fullName} have been revoked by the Managing Director.`,
-      };
-    }
-    if (account.status === 'pending') {
-      return {
-        success: false,
-        error: 'Your request is waiting for approval.',
-      };
-    }
-    if (account.status === 'rejected') {
-      return {
-        success: false,
-        error: `Your request was not approved: ${account.rejectionReason || 'Application declined by clinic administrator'}.`,
-      };
-    }
-    if (account.claimPending) {
-      return {
-        success: false,
-        error: 'Your account is waiting to be linked to your clinic record.',
-      };
-    }
-
-    // Check if role is suspended
-    if (isRoleSuspended(account.role)) {
-      return {
-        success: false,
-        error: 'Access Suspended: Station credentials have been revoked by the Managing Director (Dr. Marcus Vance).',
-      };
-    }
-
-    // Store session
-    const session = createSession(account.id, rememberMe, now);
-    try {
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-    } catch {
-      // Fallback
-    }
-
-    addAuditLogEntry({
-      targetRole: account.role,
-      targetStaffName: account.fullName,
-      targetUserId: account.id,
-      action: 'user_login',
-      description: `User ${account.username} (${account.fullName}) authenticated into station with role ${account.role}.`,
-      authorizedBy: account.fullName,
-    });
-
-    setCurrentRole(account.role);
-    setActiveUserKey(account.username in DEMO_USERS ? account.username : account.role);
-    sessionStorage.setItem('cms_auth_user_key', account.username in DEMO_USERS ? account.username : account.role);
-    const completeNavigation = () => {
-      setIsAuthenticated(true);
-    };
-    if (!options?.deferAuth) {
-      completeNavigation();
-    }
-    return { success: true, matchedRole: account.role, completeNavigation };
+    return result;
   };
 
   const signUpPatient = async (params: SignUpPatientParams): Promise<SignUpResult> => {

@@ -10,23 +10,54 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { KeyRound } from 'lucide-react';
+import { audienceOf, AuthAudience } from '@/services/authService';
 
 interface DevCredentialsDirectoryProps {
   roleCredentials: RoleCredential[];
   onFill: (username: string, pass: string) => void;
+  currentAudience?: AuthAudience;
+}
+
+function getRoleHint(role: string): string {
+  switch (role) {
+    case 'md':
+      return 'Try: Full clinic governance, staff clearance, and consultation desk.';
+    case 'doctor':
+      return 'Try: Patient consultation desk, triage vitals, and prescribing.';
+    case 'receptionist':
+      return 'Try: Reception lounge, walk-in check-in, tokens, and billing.';
+    case 'patient':
+      return 'Try: Health portal, upcoming visits, prescriptions, and invoice settlement.';
+    default:
+      return 'Try: Standard station access.';
+  }
 }
 
 export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = ({
   roleCredentials = [],
   onFill,
+  currentAudience,
 }) => {
-  const credentialsList = roleCredentials || [];
+  const allCredentials = roleCredentials || [];
+  const credentialsList = currentAudience
+    ? allCredentials.filter((c) => audienceOf(c) === currentAudience)
+    : allCredentials;
+
+  const audienceLabel =
+    currentAudience === 'patient'
+      ? 'Patient Accounts'
+      : currentAudience === 'staff'
+      ? 'Clinic Staff Accounts'
+      : 'Accounts';
+
   return (
     <div className="mt-8 pt-6 border-t border-slate-200">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
           <KeyRound className="w-3.5 h-3.5 text-teal-600" />
-          <span>Authorized Role Credentials Directory ({credentialsList.length} Accounts)</span>
+          <span>
+            Authorized Credentials Directory ({credentialsList.length} {audienceLabel})
+          </span>
         </h3>
         <span className="text-[0.6875rem] text-slate-500">
           Click 'Fill' to load credentials
@@ -40,7 +71,7 @@ export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = (
               <TableHead className="w-3/12 min-w-[120px]">Role</TableHead>
               <TableHead className="w-2/12 min-w-[100px]">Username</TableHead>
               <TableHead hideBelow="sm" className="w-2/12 min-w-[100px]">Password</TableHead>
-              <TableHead hideBelow="sm" className="w-3/12 min-w-[140px]">Assigned Staff</TableHead>
+              <TableHead hideBelow="sm" className="w-3/12 min-w-[160px]">Assigned Staff & Hint</TableHead>
               <TableHead className="w-2/12 min-w-[80px] text-right whitespace-nowrap">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -58,8 +89,11 @@ export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = (
                 <TableCell label="Password" hideBelow="sm" className="w-2/12 min-w-[100px] text-[0.6875rem] text-slate-700">
                   {c.password}
                 </TableCell>
-                <TableCell label="Assigned Staff" hideBelow="sm" className="w-3/12 min-w-[140px] text-slate-600 truncate">
-                  {c.fullName}
+                <TableCell label="Assigned Staff" hideBelow="sm" className="w-3/12 min-w-[160px]">
+                  <div className="text-xs text-slate-800 font-medium truncate">{c.fullName}</div>
+                  <div className="text-[0.625rem] text-slate-500 mt-0.5 leading-snug">
+                    {getRoleHint(c.role)}
+                  </div>
                 </TableCell>
                 <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[80px] text-right whitespace-nowrap">
                   <Button

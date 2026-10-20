@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -7,31 +7,48 @@ import { Building2, User, Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, ArrowLeft
 import { validatePasswordPolicy } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 import { EcgBackground } from '@/components/auth/EcgBackground';
+import { AuthAudience } from '@/services/authService';
 
 export interface SignUpViewProps {
   onBackToLogin: () => void;
   contentOnly?: boolean;
+  audience?: AuthAudience;
+  fullName?: string;
+  onFullNameChange?: (value: string) => void;
+  email?: string;
+  onEmailChange?: (value: string) => void;
+  phone?: string;
+  onPhoneChange?: (value: string) => void;
 }
 
-export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOnly = false }) => {
+export const SignUpView: React.FC<SignUpViewProps> = ({
+  onBackToLogin,
+  contentOnly = false,
+  audience = 'patient',
+  fullName: externalFullName,
+  onFullNameChange,
+  email: externalEmail,
+  onEmailChange,
+  phone: externalPhone,
+  onPhoneChange,
+}) => {
   const { signUpPatient, signUpStaff } = useAuth();
 
-  const [accountType, setAccountType] = useState<'patient' | 'staff'>(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('accountType') === 'staff' || params.get('type') === 'staff' || params.get('role') === 'staff') {
-        return 'staff';
-      }
-    } catch {
-      // fallback
-    }
-    return 'patient';
-  });
+  // Local fallback states if not controlled externally
+  const [localFullName, setLocalFullName] = useState('');
+  const [localEmail, setLocalEmail] = useState('');
+  const [localPhone, setLocalPhone] = useState('');
 
-  // Common fields
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const fullName = externalFullName !== undefined ? externalFullName : localFullName;
+  const setFullName = onFullNameChange || setLocalFullName;
+
+  const email = externalEmail !== undefined ? externalEmail : localEmail;
+  const setEmail = onEmailChange || setLocalEmail;
+
+  const phone = externalPhone !== undefined ? externalPhone : localPhone;
+  const setPhone = onPhoneChange || setLocalPhone;
+
+  // Passwords are always cleared on audience switch
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +56,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOn
 
   // Patient fields
   const [dob, setDob] = useState('1990-01-01');
-  const [gender, setGender] = useState<'male' | 'female' | 'other'>('other');
+  const [gender, setGender] = useState<'male' | 'female' | 'other'>('female');
 
   // Staff fields
   const [jobTitle, setJobTitle] = useState('');
@@ -53,6 +70,16 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOn
     title: string;
     message: string;
   } | null>(null);
+
+  const fullNameInputRef = useRef<HTMLInputElement>(null);
+
+  // Clear passwords and focus first field when audience changes
+  useEffect(() => {
+    setPassword('');
+    setConfirmPassword('');
+    setFormError(null);
+    fullNameInputRef.current?.focus();
+  }, [audience]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +112,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOn
     setIsSubmitting(true);
 
     try {
-      if (accountType === 'patient') {
+      if (audience === 'patient') {
         const res = await signUpPatient({
           fullName: fullName.trim(),
           email: email.trim().toLowerCase(),
@@ -159,247 +186,258 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOn
   const innerCardContent = (
     <div className="w-full">
       {successInfo ? (
-            <div className="space-y-6 text-center py-4">
-              <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-600 mx-auto flex items-center justify-center border border-teal-200">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-slate-900">{successInfo.title}</h3>
-                <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
-                  {successInfo.message}
-                </p>
-              </div>
-              <div className="pt-2">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full min-h-[44px]"
-                  onClick={onBackToLogin}
-                >
-                  Back to sign in
-                </Button>
+        <div className="space-y-6 text-center py-4">
+          <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-600 mx-auto flex items-center justify-center border border-teal-200">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-slate-900">{successInfo.title}</h3>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+              {successInfo.message}
+            </p>
+          </div>
+          <div className="pt-2">
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full min-h-[44px]"
+              onClick={onBackToLogin}
+            >
+              Back to sign in
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mb-6 pb-4 border-b border-slate-200 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">
+                {audience === 'patient'
+                  ? 'Create an Account: Patient Registration'
+                  : 'Create an Account: Staff Clearance'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {audience === 'patient'
+                  ? 'Self-register for immediate patient portal access'
+                  : 'Submit an authorization application to clinic administration'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onBackToLogin}
+              className="text-xs font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1 min-h-[44px] cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to sign in</span>
+            </button>
+          </div>
+
+          {formError && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="mb-5 p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-slate-800 text-xs"
+            >
+              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1" />
+              <div>
+                <span className="font-semibold text-slate-900">Registration Error:</span>{' '}
+                {formError}
               </div>
             </div>
-          ) : (
-            <>
-              <div className="mb-6 pb-4 border-b border-slate-200 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Create an Account</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Self-register as a patient or submit a staff clearance request
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onBackToLogin}
-                  className="text-xs font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1 min-h-[44px] cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back to sign in</span>
-                </button>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <div>
+              <Input
+                label="Full Name"
+                ref={fullNameInputRef}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder={
+                  audience === 'patient'
+                    ? 'e.g. Eleanor Wright'
+                    : 'e.g. Dr. Clara Oswald or David Kim'
+                }
+                icon={<User className="w-4 h-4" />}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Input
+                  label="Email Address (Username)"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@beaconclinic.com"
+                  icon={<Mail className="w-4 h-4" />}
+                  required
+                />
               </div>
+              <div>
+                <Input
+                  label="Phone Number"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                  icon={<Phone className="w-4 h-4" />}
+                  required
+                />
+              </div>
+            </div>
 
-              {formError && (
-                <div role="status" aria-live="polite" className="mb-5 p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-slate-800 text-xs">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1" />
-                  <div>
-                    <span className="font-semibold text-slate-900">Registration Error:</span>{' '}
-                    {formError}
-                  </div>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {audience === 'patient' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                    I am a
+                    Date of Birth
+                  </label>
+                  <DatePicker value={dob} onChange={setDob} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                    Biological Sex
                   </label>
                   <Select
-                    value={accountType}
-                    onChange={(e) => {
-                      setAccountType(e.target.value as 'patient' | 'staff');
-                      setFormError(null);
-                    }}
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value as any)}
                     options={[
-                      { value: 'patient', label: 'Patient' },
-                      { value: 'staff', label: 'Clinic staff' },
+                      { value: 'female', label: 'Female' },
+                      { value: 'male', label: 'Male' },
+                      { value: 'other', label: 'Other' },
                     ]}
                   />
                 </div>
-
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Input
+                      label="Job Title"
+                      value={jobTitle}
+                      onChange={(e) => setJobTitle(e.target.value)}
+                      placeholder="e.g. Staff Consulting Physician"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      label="Department"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      placeholder="e.g. Pediatrics or Reception"
+                      required
+                    />
+                  </div>
+                </div>
                 <div>
-                  <Input
-                    label="Full Name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Eleanor Wright or Dr. Clara Oswald"
-                    icon={<User className="w-4 h-4" />}
+                  <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                    Role requested
+                  </label>
+                  <Select
+                    value={roleRequested}
+                    onChange={(e) => setRoleRequested(e.target.value as any)}
+                    options={[
+                      { value: 'doctor', label: 'Doctor' },
+                      { value: 'receptionist', label: 'Receptionist' },
+                    ]}
+                  />
+                  <p className="text-[0.6875rem] text-slate-500 mt-1">
+                    Administrator access cannot be requested. Staff accounts require review and activation by clinic administration.
+                  </p>
+                </div>
+              </>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                  Password
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 z-10">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min 10 chars, letter & number"
+                    className="w-full rounded-lg border border-slate-300 hover:border-slate-400 bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500"
                     required
                   />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <Input
-                      label="Email Address (Username)"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@beaconclinic.com"
-                      icon={<Mail className="w-4 h-4" />}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      label="Phone Number"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+1 (555) 000-0000"
-                      icon={<Phone className="w-4 h-4" />}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {accountType === 'patient' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                        Date of Birth
-                      </label>
-                      <DatePicker value={dob} onChange={setDob} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                        Biological Sex
-                      </label>
-                      <Select
-                        value={gender}
-                        onChange={(e) => setGender(e.target.value as any)}
-                        options={[
-                          { value: 'female', label: 'Female' },
-                          { value: 'male', label: 'Male' },
-                          { value: 'other', label: 'Other' },
-                        ]}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {accountType === 'staff' && (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <Input
-                          label="Job Title"
-                          value={jobTitle}
-                          onChange={(e) => setJobTitle(e.target.value)}
-                          placeholder="e.g. Staff Consulting Physician"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Input
-                          label="Department"
-                          value={department}
-                          onChange={(e) => setDepartment(e.target.value)}
-                          placeholder="e.g. Pediatrics or Reception"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                        Role requested
-                      </label>
-                      <Select
-                        value={roleRequested}
-                        onChange={(e) => setRoleRequested(e.target.value as any)}
-                        options={[
-                          { value: 'doctor', label: 'Doctor' },
-                          { value: 'receptionist', label: 'Receptionist' },
-                        ]}
-                      />
-                      <p className="text-[0.6875rem] text-slate-500 mt-1">
-                        Administrator access cannot be requested. Staff accounts require review and activation by a clinic administrator.
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                      Password
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 z-10">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Min 10 chars, letter & number"
-                        className="w-full rounded-lg border border-slate-300 hover:border-slate-400 bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 min-h-[44px] min-w-[44px] justify-center"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        <span key={showPassword ? "eye-off" : "eye"} className="login-icon-crossfade inline-flex">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</span>
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                      Confirm Password
-                    </label>
-                    <div className="relative flex items-center">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 z-10">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Re-enter password"
-                        className="w-full rounded-lg border border-slate-300 hover:border-slate-400 bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 min-h-[44px] min-w-[44px] justify-center"
-                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                      >
-                        <span key={showConfirmPassword ? "eye-off" : "eye"} className="login-icon-crossfade inline-flex">{showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="lg"
-                    className="w-full text-sm font-semibold min-h-[44px] h-11"
-                    isLoading={isSubmitting}
-                    icon={<ShieldCheck className="w-4 h-4" />}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 min-h-[44px] min-w-[44px] justify-center cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {accountType === 'patient' ? 'Register Patient Account' : 'Submit Access Application'}
-                  </Button>
+                    <span
+                      key={showPassword ? 'eye-off' : 'eye'}
+                      className="login-icon-crossfade inline-flex"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </span>
+                  </button>
                 </div>
-              </form>
-            </>
-          )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                  Confirm Password
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 z-10">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    className="w-full rounded-lg border border-slate-300 hover:border-slate-400 bg-white pl-11 pr-10 py-2.5 min-h-[44px] text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 min-h-[44px] min-w-[44px] justify-center cursor-pointer"
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <span
+                      key={showConfirmPassword ? 'eye-off' : 'eye'}
+                      className="login-icon-crossfade inline-flex"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
+            <div className="pt-2">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full text-sm font-semibold min-h-[44px] h-11"
+                isLoading={isSubmitting}
+                icon={<ShieldCheck className="w-4 h-4" />}
+              >
+                {audience === 'patient'
+                  ? 'Register Patient Account'
+                  : 'Submit Access Application'}
+              </Button>
+            </div>
+          </form>
+        </>
+      )}
     </div>
   );
 
