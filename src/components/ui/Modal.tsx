@@ -110,14 +110,13 @@ export const Modal: React.FC<ModalProps> = ({
     screen80: 'w-[92vw] sm:w-[80vw] max-w-[80vw]',
   };
 
-  const isCompact = maxWidth === 'sm';
-  const defaultMinHeight = isCompact ? '' : 'min-h-[500px] sm:min-h-[560px]';
+  const defaultMinHeight = '';
   const effectiveMinHeight = minHeight !== undefined ? minHeight : defaultMinHeight;
 
   const containerPadding = fullScreenOnMobile ? 'p-0 sm:p-6' : 'p-4 sm:p-6';
   const dialogLayout = fullScreenOnMobile
     ? `w-full h-full sm:h-auto rounded-none sm:rounded-xl my-0 sm:my-8 max-h-screen sm:max-h-[90vh] ${effectiveMinHeight} flex flex-col`
-    : `rounded-xl my-8 ${effectiveMinHeight} max-h-[88vh] flex flex-col`;
+    : `rounded-xl my-8 ${effectiveMinHeight} max-h-[88vh] flex flex-col`.trim();
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center ${containerPadding} overflow-y-auto`}>
@@ -158,10 +157,10 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         <div
-          className={`px-4 sm:px-6 py-4 sm:py-5 flex-1 ${
+          className={`px-4 sm:px-6 py-4 sm:py-5 ${
             overflowVisible
               ? 'overflow-visible'
-              : 'overflow-y-auto'
+              : 'overflow-y-auto max-h-[75vh]'
           } text-slate-800 dark:text-slate-200 ${bodyClassName}`}
         >
           {children}

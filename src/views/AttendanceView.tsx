@@ -1266,6 +1266,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
           onClose={() => setIsRequestModalOpen(false)}
           title="Submit Leave Request"
           maxWidth="md"
+          overflowVisible={true}
           footer={
             <div className="flex justify-end gap-2 w-full">
               <Button variant="outline" size="sm" onClick={() => setIsRequestModalOpen(false)}>
@@ -1310,10 +1311,11 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                 Reason for Leave (Required)
               </label>
               <Textarea
-                rows={3}
+                rows={5}
                 value={leaveReason}
                 onChange={(e) => setLeaveReason(e.target.value)}
                 placeholder="State the justification or medical condition for this leave request..."
+                className="min-h-[110px]"
               />
             </div>
           </div>
