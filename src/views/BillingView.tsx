@@ -962,7 +962,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               </p>
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg space-y-1">
                 <div>
-                  <strong>Amount:</strong> ${paymentAmountDollars}
+                  <strong>Amount:</strong> ₹{paymentAmountDollars}
                 </div>
                 <div>
                   <strong>Method:</strong> {paymentMethod.toUpperCase()}
@@ -981,7 +981,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
             <form onSubmit={handleProceedToConfirmPayment} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Payment Amount ($)
+                  Payment Amount (₹)
                 </label>
                 <input
                   type="number"
@@ -1206,7 +1206,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Amount ($)
+                          Amount (₹)
                         </label>
                         <input
                           type="number"
@@ -1245,7 +1245,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                     <div className="grid grid-cols-3 gap-2">
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Amount ($)
+                          Amount (₹)
                         </label>
                         <input
                           type="number"

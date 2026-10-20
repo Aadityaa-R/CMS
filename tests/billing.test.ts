@@ -43,10 +43,10 @@ describe('Billing and Payments Engine (M6 & M9.5 Hardening)', () => {
     });
 
     it('formats cents into standard currency strings', () => {
-      expect(formatCurrency(10000)).toBe('$100.00');
-      expect(formatCurrency(0)).toBe('$0.00');
-      expect(formatCurrency(12550)).toBe('$125.50');
-      expect(formatCurrency(49)).toBe('$0.49');
+      expect(formatCurrency(10000)).toBe('₹100.00');
+      expect(formatCurrency(0)).toBe('₹0.00');
+      expect(formatCurrency(12550)).toBe('₹125.50');
+      expect(formatCurrency(49)).toBe('₹0.49');
     });
   });
 
@@ -337,7 +337,7 @@ describe('Billing and Payments Engine (M6 & M9.5 Hardening)', () => {
       expect(receipt.patientName).toBe('Eleanor Wright');
       expect(receipt.patientMrn).toBe('MRN-84291');
       expect(receipt.invoiceNumber).toBe('INV-2026-0005');
-      expect(receipt.formattedAmount).toBe('$75.00');
+      expect(receipt.formattedAmount).toBe('₹75.00');
 
       const keys = Object.keys(receipt);
       expect(keys.includes('diagnosis')).toBe(false);

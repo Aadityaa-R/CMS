@@ -2,33 +2,33 @@
  * Money and Minor Unit Currency Module (Milestone M9.5).
  *
  * Rules:
- * - Integer minor units (cents) only across all domains.
- * - Single formatCurrency function formatting cents into $X.XX.
- * - Zero "legacy dollars" branch.
- * - Doctor consultation fees converted to integer cents with migration.
+ * - Integer minor units (paisa/cents) only across all domains.
+ * - Single formatCurrency function formatting minor units into ₹X.XX.
+ * - Zero "legacy units" branch.
+ * - Doctor consultation fees converted to integer minor units with migration.
  */
 
 /**
- * Formats an amount in integer minor units (cents) into a standard currency string.
+ * Formats an amount in integer minor units (paisa/cents) into a standard Indian Rupee currency string.
  * Examples:
- * - 12000 -> "$120.00"
- * - 9050 -> "$90.50"
- * - 0 -> "$0.00"
- * - -500 -> "-$5.00"
+ * - 12000 -> "₹120.00"
+ * - 9050 -> "₹90.50"
+ * - 0 -> "₹0.00"
+ * - -500 -> "-₹5.00"
  */
 export function formatCurrency(cents: number): string {
   if (cents === null || cents === undefined || isNaN(cents)) {
-    return '$0.00';
+    return '₹0.00';
   }
   const isNegative = cents < 0;
   const absCents = Math.round(Math.abs(cents));
-  const dollars = Math.floor(absCents / 100);
+  const rupees = Math.floor(absCents / 100);
   const remainder = absCents % 100;
 
-  const dollarsFormatted = dollars.toLocaleString('en-US');
+  const rupeesFormatted = rupees.toLocaleString('en-IN');
   const remainderFormatted = String(remainder).padStart(2, '0');
 
-  const formatted = `$${dollarsFormatted}.${remainderFormatted}`;
+  const formatted = `₹${rupeesFormatted}.${remainderFormatted}`;
   return isNegative ? `-${formatted}` : formatted;
 }
 

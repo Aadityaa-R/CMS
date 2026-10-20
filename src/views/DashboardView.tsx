@@ -355,7 +355,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                     textAnchor="end"
                     className="text-[0.625rem] fill-slate-500 dark:fill-slate-400"
                   >
-                    ${tick}
+                    ₹{tick}
                   </text>
                 </g>
               );
@@ -817,27 +817,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* ============================================================== */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          {/* Summary Figures: One outlined card with standard 4-col / 2-col grid */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6">
-            {metrics1.summaryFigures.length === 0 ? (
+          {/* Summary Figures: Individual Card blocks in responsive grid */}
+          {metrics1.summaryFigures.length === 0 ? (
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6">
               <p className="text-xs text-slate-500 py-4 text-center">
                 No summary metrics configured for this account.
               </p>
-            ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                {metrics1.summaryFigures.map((fig) => (
-                  <div key={fig.label} className="flex flex-col">
-                    <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                      {fig.formattedValue ?? fig.value}
-                    </span>
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
-                      {fig.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {metrics1.summaryFigures.map((fig) => (
+                <Card
+                  key={fig.label}
+                  className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between"
+                >
+                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                    {fig.formattedValue ?? fig.value}
+                  </span>
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                    {fig.label}
+                  </span>
+                </Card>
+              ))}
+            </div>
+          )}
 
           {/* Front Desk Today Operational Widget */}
           {canViewWidget('front_desk_today', currentUser, modules) && metrics1.frontDeskToday && (

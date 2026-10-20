@@ -34,20 +34,20 @@ describe('Names and Money Engine (M9.5 Requirement E)', () => {
   });
 
   describe('formatCurrency', () => {
-    it('formats integer minor units (cents) to standard currency string', () => {
-      expect(formatCurrency(12000)).toBe('$120.00');
-      expect(formatCurrency(9050)).toBe('$90.50');
-      expect(formatCurrency(0)).toBe('$0.00');
-      expect(formatCurrency(-500)).toBe('-$5.00');
-      expect(formatCurrency(99)).toBe('$0.99');
-      expect(formatCurrency(5)).toBe('$0.05');
-      expect(formatCurrency(1234567)).toBe('$12,345.67');
+    it('formats integer minor units (cents/paisa) to standard currency string', () => {
+      expect(formatCurrency(12000)).toBe('₹120.00');
+      expect(formatCurrency(9050)).toBe('₹90.50');
+      expect(formatCurrency(0)).toBe('₹0.00');
+      expect(formatCurrency(-500)).toBe('-₹5.00');
+      expect(formatCurrency(99)).toBe('₹0.99');
+      expect(formatCurrency(5)).toBe('₹0.05');
+      expect(formatCurrency(1234567)).toBe('₹12,345.67');
     });
 
     it('handles invalid or non-numeric values safely', () => {
-      expect(formatCurrency(null as unknown as number)).toBe('$0.00');
-      expect(formatCurrency(undefined as unknown as number)).toBe('$0.00');
-      expect(formatCurrency(NaN)).toBe('$0.00');
+      expect(formatCurrency(null as unknown as number)).toBe('₹0.00');
+      expect(formatCurrency(undefined as unknown as number)).toBe('₹0.00');
+      expect(formatCurrency(NaN)).toBe('₹0.00');
     });
   });
 

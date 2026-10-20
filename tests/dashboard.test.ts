@@ -288,15 +288,15 @@ describe('Dashboard Metrics Engine (M9.5 Requirement H)', () => {
 
       // 5. Billed = 15000 cents (inv-1: 10000 + inv-2: 5000; void inv-3 excluded)
       expect(getFig('Billed')?.value).toBe(15000);
-      expect(getFig('Billed')?.formattedValue).toBe('$150.00');
+      expect(getFig('Billed')?.formattedValue).toBe('₹150.00');
 
       // 6. Collected = 8000 cents (pay-1: 10000 - reversal pay-2: 2000)
       expect(getFig('Collected')?.value).toBe(8000);
-      expect(getFig('Collected')?.formattedValue).toBe('$80.00');
+      expect(getFig('Collected')?.formattedValue).toBe('₹80.00');
 
       // 7. Outstanding now = 7000 cents (inv-1 balance 2000 + inv-2 balance 5000)
       expect(getFig('Outstanding now')?.value).toBe(7000);
-      expect(getFig('Outstanding now')?.formattedValue).toBe('$70.00');
+      expect(getFig('Outstanding now')?.formattedValue).toBe('₹70.00');
     });
 
     it('computes exact receptionist check-ins and registrations by hand', () => {
@@ -361,7 +361,7 @@ describe('Dashboard Metrics Engine (M9.5 Requirement H)', () => {
             bookings: 0,
             paymentsCount: 1,
             paymentsTotalCents: 8000,
-            formattedPaymentsTotal: '$80.00',
+            formattedPaymentsTotal: '₹80.00',
           },
         ],
         collections: {
@@ -374,14 +374,14 @@ describe('Dashboard Metrics Engine (M9.5 Requirement H)', () => {
           netTotalCents: 8000,
           dailyBilledCents: 15000,
           cashToHandOverCents: 0,
-          formattedCash: '$0.00',
-          formattedCard: '$80.00',
-          formattedUpi: '$0.00',
-          formattedPortal: '$0.00',
-          formattedReversals: '$20.00',
-          formattedNetTotal: '$80.00',
-          formattedDailyBilled: '$150.00',
-          formattedCashToHandOver: '$0.00',
+          formattedCash: '₹0.00',
+          formattedCard: '₹80.00',
+          formattedUpi: '₹0.00',
+          formattedPortal: '₹0.00',
+          formattedReversals: '₹20.00',
+          formattedNetTotal: '₹80.00',
+          formattedDailyBilled: '₹150.00',
+          formattedCashToHandOver: '₹0.00',
         },
       });
 
@@ -389,8 +389,8 @@ describe('Dashboard Metrics Engine (M9.5 Requirement H)', () => {
       expect(csv).toContain('"Date","2026-10-15"');
       expect(csv).toContain('"New Registrations",2');
       expect(csv).toContain('"Dr. Nathan Hayes",2,1,1,0');
-      expect(csv).toContain('"Priya Sharma",2,1,0,"1 ($80.00)"');
-      expect(csv).toContain('"Net Total","$80.00"');
+      expect(csv).toContain('"Priya Sharma",2,1,0,"1 (₹80.00)"');
+      expect(csv).toContain('"Net Total","₹80.00"');
     });
   });
 });

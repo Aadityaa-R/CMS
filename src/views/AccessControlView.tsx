@@ -2242,7 +2242,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       onChange={(e) => setAddFormSpecialization(e.target.value)}
                     />
                     <Input
-                      label="Consultation Fee ($)"
+                      label="Consultation Fee (₹)"
                       type="number"
                       placeholder="120"
                       value={addFormFee}
@@ -2681,7 +2681,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 onChange={(e) => setAddFormSpecialization(e.target.value)}
               />
               <Input
-                label="Consultation Fee ($)"
+                label="Consultation Fee (₹)"
                 type="number"
                 placeholder="120"
                 value={addFormFee}
