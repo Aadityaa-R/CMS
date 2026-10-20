@@ -85,10 +85,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items.push({ id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> });
     }
 
-    if (hasCapability(currentUser, 'consultingCalendar', modules)) {
-      items.push({ id: 'consulting_calendar', label: 'Consulting Calendar', icon: <Calendar className="w-4 h-4" /> });
-    }
-
     if (
       hasCapability(currentUser, 'patientRegistration', modules) ||
       hasCapability(currentUser, 'patientCheckIn', modules) ||
