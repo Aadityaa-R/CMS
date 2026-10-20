@@ -8,7 +8,7 @@ export interface ModalProps {
   description?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '80%' | 'screen80';
   fullScreenOnMobile?: boolean;
   overflowVisible?: boolean;
   bodyClassName?: string;
@@ -98,18 +98,20 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  const maxWidthClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
+  const maxWidthClasses: Record<string, string> = {
+    sm: 'w-full max-w-sm',
+    md: 'w-[92vw] sm:w-[80vw] max-w-[80vw]',
+    lg: 'w-[92vw] sm:w-[80vw] max-w-[80vw]',
+    xl: 'w-[92vw] sm:w-[80vw] max-w-[80vw]',
+    '2xl': 'w-[92vw] sm:w-[80vw] max-w-[80vw]',
+    '80%': 'w-[92vw] sm:w-[80vw] max-w-[80vw]',
+    screen80: 'w-[92vw] sm:w-[80vw] max-w-[80vw]',
   };
 
   const containerPadding = fullScreenOnMobile ? 'p-0 sm:p-6' : 'p-4 sm:p-6';
   const dialogLayout = fullScreenOnMobile
     ? 'w-full h-full sm:h-auto rounded-none sm:rounded-xl my-0 sm:my-8 max-h-screen sm:max-h-[90vh] flex flex-col'
-    : 'w-full rounded-xl my-8';
+    : 'rounded-xl my-8';
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center ${containerPadding} overflow-y-auto`}>
