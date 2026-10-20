@@ -866,22 +866,59 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return getScopedPrescriptions(currentUser, prescriptions, patientAssignments, activeDoctorId, modules);
   }, [prescriptions, currentUser, patientAssignments, activeDoctorId, modules]);
 
-  // Filter Helper with Equal Authority
+  // Filter Helper with Equal Authority & Patient Deduplication (show each patient's data once)
   const query = searchTerm.toLowerCase().trim();
 
-  const filteredAppointments = doctorAppointments.filter((a) => {
-    const matchesSearch =
-      query === '' ||
-      a.patientName.toLowerCase().includes(query) ||
-      a.appointmentNumber.toLowerCase().includes(query) ||
-      a.reasonForVisit.toLowerCase().includes(query) ||
-      a.tokenNumber.toString().includes(query);
+  const filteredAppointments = useMemo(() => {
+    const list = doctorAppointments.filter((a) => {
+      const matchesSearch =
+        query === '' ||
+        a.patientName.toLowerCase().includes(query) ||
+        a.appointmentNumber.toLowerCase().includes(query) ||
+        a.reasonForVisit.toLowerCase().includes(query) ||
+        a.tokenNumber.toString().includes(query);
 
-    if (!matchesSearch) return false;
-    if (filterMode === 'active') return a.status === 'in_consultation' || a.status === 'checked_in';
-    if (filterMode === 'urgent') return a.status === 'in_consultation';
-    return true;
-  });
+      if (!matchesSearch) return false;
+      if (filterMode === 'active') return a.status === 'in_consultation' || a.status === 'checked_in';
+      if (filterMode === 'urgent') return a.status === 'in_consultation';
+      return true;
+    });
+
+    // Deduplicate appointments by patient: show their active/primary visit once
+    const statusRank: Record<string, number> = {
+      in_consultation: 1,
+      checked_in: 2,
+      scheduled: 3,
+      completed: 4,
+      cancelled: 5,
+    };
+
+    const patientMap = new Map<string, typeof list[0]>();
+    for (const apt of list) {
+      const key = apt.patientId || apt.patientName.toLowerCase();
+      const existing = patientMap.get(key);
+      if (!existing) {
+        patientMap.set(key, apt);
+      } else {
+        const existingRank = statusRank[existing.status] ?? 99;
+        const newRank = statusRank[apt.status] ?? 99;
+        if (newRank < existingRank) {
+          patientMap.set(key, apt);
+        } else if (newRank === existingRank) {
+          if (new Date(apt.dateTime).getTime() > new Date(existing.dateTime).getTime()) {
+            patientMap.set(key, apt);
+          }
+        }
+      }
+    }
+
+    return Array.from(patientMap.values()).sort((a, b) => {
+      const rankA = statusRank[a.status] ?? 99;
+      const rankB = statusRank[b.status] ?? 99;
+      if (rankA !== rankB) return rankA - rankB;
+      return a.tokenNumber - b.tokenNumber;
+    });
+  }, [doctorAppointments, query, filterMode]);
 
   const doctorPatients = useMemo(() => {
     return getScopedPatients(currentUser, patients, patientAssignments, activeDoctorId, modules);
