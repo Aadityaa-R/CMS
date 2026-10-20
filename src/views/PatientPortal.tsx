@@ -709,11 +709,11 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       {/* TAB 1: APPOINTMENTS */}
       {activeTab === 'appointments' && (
         <div className="space-y-6">
-          {/* Patient Summary Card: Plain figures, standard font, zero charts */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Patient Summary Metric Cards: Separate individual cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <div className="flex flex-col">
-                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
                   {upcomingAppointments.length > 0
                     ? `${upcomingAppointments[0].dateTime.slice(0, 10)} ${upcomingAppointments[0].dateTime.slice(11, 16)}`
                     : 'None scheduled'}
@@ -722,6 +722,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   Next Appointment
                 </span>
               </div>
+            </Card>
+
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <div className="flex flex-col">
                 <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   {formatCurrency(totalBalanceDue)}
@@ -730,6 +733,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   Balance Due
                 </span>
               </div>
+            </Card>
+
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <div className="flex flex-col">
                 <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   {activePrescriptionsCount}
@@ -738,6 +744,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   Active Prescriptions
                 </span>
               </div>
+            </Card>
+
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <div className="flex flex-col">
                 <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   {visitsThisYear}
@@ -746,8 +755,8 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   Visits this year
                 </span>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
