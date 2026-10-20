@@ -351,5 +351,56 @@ describe('Keyboard and Screen Reader Pass (M10 Section 3)', () => {
     expect(bilH1s[0].textContent).toContain('Billing');
     unmountBil();
   });
+
+  it('allows easily selecting year and month in DatePicker', () => {
+    let selectedVal = '';
+    const handleChange = (v: string) => {
+      selectedVal = v;
+    };
+
+    render(
+      <DatePicker
+        label="Test Date Picker"
+        value={selectedVal}
+        onChange={handleChange}
+      />
+    );
+
+    // Open calendar popover
+    const trigger = screen.getByRole('button', { name: /select date/i });
+    fireEvent.click(trigger);
+
+    // Month & Year header buttons should be present
+    const yearBtn = screen.getByRole('button', { name: /select year/i });
+    expect(yearBtn).toBeDefined();
+    const monthBtn = screen.getByRole('button', { name: /select month/i });
+    expect(monthBtn).toBeDefined();
+
+    // Click Year button to open Year mode
+    fireEvent.click(yearBtn);
+
+    // Should display year search and years
+    const yearSearch = screen.getByPlaceholderText(/search year/i);
+    expect(yearSearch).toBeDefined();
+
+    // Search or click 1995
+    fireEvent.change(yearSearch, { target: { value: '1995' } });
+    const targetYear = screen.getByRole('button', { name: '1995' });
+    fireEvent.click(targetYear);
+
+    // Clicking a year transitions to month view
+    const augBtn = screen.getByRole('button', { name: 'August' });
+    expect(augBtn).toBeDefined();
+    fireEvent.click(augBtn);
+
+    // Clicking a month transitions to day view
+    // Now pick day 15
+    const day15 = screen.getByRole('button', { name: '15' });
+    expect(day15).toBeDefined();
+    fireEvent.click(day15);
+
+    // Verifies selected date is 1995-08-15
+    expect(selectedVal).toBe('1995-08-15');
+  });
 });
 
