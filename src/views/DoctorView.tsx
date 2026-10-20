@@ -1340,22 +1340,22 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           </span>
                         </div>
 
-                        <div className="flex justify-between items-baseline gap-2">
-                          <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit Vitals:</span>
-                          <div className="text-right">
-                            {summaryPatient.previousVitals ? (
-                              <>
-                                <span className="text-slate-700 dark:text-slate-300 block">
-                                  BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp} mmHg • HR {summaryPatient.previousVitals.heartRateBpm} bpm
-                                </span>
-                                <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mt-0.5">
-                                  SpO2 {summaryPatient.previousVitals.oxygenSaturationPct}% • Temp {summaryPatient.previousVitals.temperatureCelsius} °C
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-slate-700 dark:text-slate-300">None recorded</span>
-                            )}
-                          </div>
+                        <div className="space-y-1.5 pt-0.5">
+                          <span className="text-slate-500 dark:text-slate-400 block">Last Visit Vitals:</span>
+                          {summaryPatient.previousVitals ? (
+                            <div className="p-2 rounded-md bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-1">
+                              <div className="flex items-center justify-between text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                <span>BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp} mmHg</span>
+                                <span>HR {summaryPatient.previousVitals.heartRateBpm} bpm</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
+                                <span>SpO2 {summaryPatient.previousVitals.oxygenSaturationPct}%</span>
+                                <span>Temp {summaryPatient.previousVitals.temperatureCelsius} °C</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-slate-700 dark:text-slate-300 block">None recorded</span>
+                          )}
                         </div>
 
                         <div className="flex justify-between items-baseline gap-2">
