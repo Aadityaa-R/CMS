@@ -684,6 +684,26 @@ Every feature and line of code in this project strictly adheres to the governing
 
 ---
 
+### 2.29 Demonstration Guide, Architectural Overview, and Operational Handover (Milestone M10 Section 8)
+
+- **Comprehensive Demonstration Walkthrough Guide (docs/DEMO_GUIDE.md)**:
+  - Authored clear orientation guide for first-time evaluators and clinic staff.
+  - Persona Directory: Complete tabular roster detailing role, full name, login username, cryptographic password, active workstations, and specific architectural capabilities to inspect per persona.
+  - Interactive 5-Step Scenarios:
+    1. Front desk intake through triage check-in, physician consultation, electronic prescribing, visit conclusion, and point-of-sale payment recording with certified receipt.
+    2. Out-of-formulary medication prescription requiring mandatory clinical rationale, audit ledger logging, and safety override confirmation.
+    3. Custom access module creation, adding Dr. Hayes to membership, verifying instant real-time navigation/capability elevation without re-login, and revoking membership with immediate live privilege drop.
+    4. Snapshot export of schema-validated JSON database, introduction of simulated modifications, import restoration with RESTORE confirmation, and two-way undo snapshot safety.
+    5. Patient portal self-service navigation and simulated online payment settling an outstanding invoice in full.
+  - Prominent Clinical Safety Notice highlighting fictional demonstration status and non-diagnostic deployment boundaries.
+- **Root Repository Overview (README.md)**:
+  - Replaced placeholder README with executive outpatient clinical management summary.
+  - Specified technology stack (React 18, TypeScript 5, Vite 6, Tailwind CSS, Vitest), Node version requirements (Node.js 20+), and port assignment (3000).
+  - Consolidated CLI operational commands for dev, build, typecheck, test, and universal multi-timezone verify.
+  - Formatted direct clickable links to the project rules and specification, demo guide, ledger matrix, and high-resolution responsive visual assets.
+
+---
+
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
 
 The table below outlines the evolution of the codebase from initial repository setup to current state:
