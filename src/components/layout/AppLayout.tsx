@@ -25,9 +25,11 @@ export const AppLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      return params.get('tab') || 'dashboard';
+      const tabParam = params.get('tab');
+      if (tabParam) return tabParam;
+      return currentRole === 'patient' ? 'overview' : 'dashboard';
     } catch {
-      return 'dashboard';
+      return currentRole === 'patient' ? 'overview' : 'dashboard';
     }
   });
   const [activeSubTab, setActiveSubTab] = useState<string | undefined>(() => {
@@ -41,11 +43,11 @@ export const AppLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
 
-  // Whenever the active role changes upon login, reset the active module tab to dashboard
+  // Whenever the active role changes upon login, reset the active module tab to default landing tab
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (!params.get('tab')) {
-      setActiveTab('dashboard');
+      setActiveTab(currentRole === 'patient' ? 'overview' : 'dashboard');
       setActiveSubTab(undefined);
     }
   }, [currentRole]);
@@ -93,12 +95,12 @@ export const AppLayout: React.FC = () => {
   };
 
   const renderActiveView = () => {
-    if (activeTab === 'dashboard') {
-      return <DashboardView onNavigate={handleNavigate} />;
+    if (currentRole === 'patient') {
+      return <PatientView activeTab={activeSubTab || (activeTab === 'dashboard' ? 'overview' : activeTab)} />;
     }
 
-    if (currentRole === 'patient') {
-      return <PatientView activeTab={activeSubTab || activeTab} />;
+    if (activeTab === 'dashboard') {
+      return <DashboardView onNavigate={handleNavigate} />;
     }
 
     if (activeTab === 'doctor' || activeTab === 'role_doctor') {

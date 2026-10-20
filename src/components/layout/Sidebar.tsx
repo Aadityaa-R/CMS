@@ -70,7 +70,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     // Patients have fixed access to their own outpatient portal
     if (currentRole === 'patient') {
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
         { id: 'overview', label: 'My Health Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
         { id: 'appointments', label: 'My Appointments', icon: <Calendar className="w-4 h-4" /> },
         { id: 'records', label: 'My Records', icon: <FileText className="w-4 h-4" /> },

@@ -142,9 +142,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
           )}
           <button
             type="button"
-            onClick={() => onNavigate?.('dashboard')}
+            onClick={() => onNavigate?.(currentRole === 'patient' ? 'overview' : 'dashboard')}
             className="flex items-center gap-3 text-left cursor-pointer outline-none focus:outline-none focus:ring-0 group"
-            title="Go to Dashboard"
+            title={currentRole === 'patient' ? 'Go to My Portal' : 'Go to Dashboard'}
           >
             <div className="w-11 h-11 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold ring-2 ring-teal-500/20 group-hover:bg-teal-700 transition-colors">
               <Building2 className="w-6 h-6" />
