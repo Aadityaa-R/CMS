@@ -8,6 +8,8 @@ import { AccessControlView } from '../src/views/AccessControlView';
 import { AttendanceView } from '../src/views/AttendanceView';
 import { BillingView } from '../src/views/BillingView';
 import { PatientPortal } from '../src/views/PatientPortal';
+import { LoginView } from '../src/views/LoginView';
+import { SignUpView } from '../src/views/SignUpView';
 
 import { AuthContext } from '../src/context/AuthContext';
 import { ClinicContext } from '../src/context/ClinicContext';
@@ -52,6 +54,30 @@ const patientUser: User = {
   email: 'e.wright@example.com',
   role: 'patient',
   patientId: 'pat-1',
+};
+
+const docReed: User = {
+  id: 'usr-doc-3',
+  name: 'Dr. Sophia Reed',
+  email: 's.reed@beaconclinic.com',
+  role: 'doctor',
+  badgeNumber: 'DOC-103',
+};
+
+const receptionist2User: User = {
+  id: 'usr-rec-2',
+  name: 'David Kim',
+  email: 'd.kim@beaconclinic.com',
+  role: 'receptionist',
+  badgeNumber: 'REC-202',
+};
+
+const patientJamesUser: User = {
+  id: 'usr-pat-2',
+  name: 'James Miller',
+  email: 'j.miller@example.com',
+  role: 'patient',
+  patientId: 'pat-2',
 };
 
 function createMockProviders(currentUser: User, customInvoices = INITIAL_SEED_INVOICES, customPayments = INITIAL_SEED_PAYMENTS) {
@@ -245,6 +271,66 @@ describe('All Tabs and Roles Safety Audit (M9.5 / fix-payments-blank)', () => {
       });
       cleanup();
     }
+  });
+
+  it('renders all views safely for Dr. Sophia Reed, David Kim, and James Miller', async () => {
+    // Dr. Sophia Reed
+    const ReedWrapper = createMockProviders(docReed);
+    await act(async () => {
+      render(
+        <ReedWrapper>
+          <DashboardView onNavigate={() => {}} />
+          <DoctorView activeTab="overview" />
+          <DoctorView activeTab="patients" />
+          <DoctorView activeTab="prescriptions" />
+          <AttendanceView activeTab="my_attendance" />
+        </ReedWrapper>
+      );
+    });
+    cleanup();
+
+    // David Kim (Second receptionist)
+    const KimWrapper = createMockProviders(receptionist2User);
+    await act(async () => {
+      render(
+        <KimWrapper>
+          <DashboardView onNavigate={() => {}} />
+          <ReceptionistView activeTab="lounge" />
+          <ReceptionistView activeTab="appointments" />
+          <ReceptionistView activeTab="patients" />
+          <ReceptionistView activeTab="registry" />
+          <BillingView initialTab="payments" />
+          <AttendanceView activeTab="my_attendance" />
+        </KimWrapper>
+      );
+    });
+    cleanup();
+
+    // James Miller (Completed visit patient)
+    const JamesWrapper = createMockProviders(patientJamesUser);
+    await act(async () => {
+      render(
+        <JamesWrapper>
+          <DashboardView onNavigate={() => {}} />
+          <PatientPortal activeTab="appointments" />
+          <PatientPortal activeTab="invoices" />
+        </JamesWrapper>
+      );
+    });
+    cleanup();
+  });
+
+  it('renders LoginView and SignUpView without throwing', async () => {
+    const DefaultWrapper = createMockProviders(patientUser);
+    await act(async () => {
+      render(
+        <DefaultWrapper>
+          <LoginView />
+          <SignUpView onBackToLogin={() => {}} />
+        </DefaultWrapper>
+      );
+    });
+    cleanup();
   });
 
   it('renders every view safely with unmigrated legacy version-1 data', async () => {
