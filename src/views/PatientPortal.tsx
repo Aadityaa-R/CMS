@@ -666,13 +666,23 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     );
   }
 
-  const tabs: Array<{ id: PortalTab; label: string }> = [
-    { id: 'appointments', label: 'Appointments' },
-    { id: 'records', label: 'Records' },
-    { id: 'prescriptions', label: 'Prescriptions' },
-    { id: 'invoices', label: 'Invoices' },
-    { id: 'profile', label: 'Profile' },
-  ];
+  const getTabTitle = (): string => {
+    if (initialActiveTab === 'overview') return 'My Health Portal';
+    switch (activeTab) {
+      case 'appointments':
+        return 'My Appointments';
+      case 'records':
+        return 'My Records';
+      case 'prescriptions':
+        return 'My Prescriptions';
+      case 'invoices':
+        return 'My Invoices';
+      case 'profile':
+        return 'My Profile';
+      default:
+        return 'My Health Portal';
+    }
+  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -689,37 +699,11 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
         </div>
       )}
 
-      {/* Page Title - Plain title, no subtitles */}
+      {/* Page Title - Section title without duplicate sub-heading tabs */}
       <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
-          My Portal
+          {getTabTitle()}
         </h1>
-      </div>
-
-      {/* Underline Tabs - horizontally scrollable on mobile */}
-      <div className="border-b border-slate-200 dark:border-slate-800">
-        <div role="tablist" aria-label="Portal Tabs" className="flex space-x-6 overflow-x-auto no-scrollbar">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                role="tab"
-                aria-selected={isActive}
-                aria-current={isActive ? 'page' : undefined}
-                className={`py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
-                  isActive
-                    ? 'border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 font-semibold'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* TAB 1: APPOINTMENTS */}

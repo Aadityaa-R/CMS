@@ -12,6 +12,8 @@ import {
   Stethoscope,
   ShieldCheck,
   Clock,
+  FileText,
+  User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -71,8 +73,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
         { id: 'overview', label: 'My Health Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
         { id: 'appointments', label: 'My Appointments', icon: <Calendar className="w-4 h-4" /> },
+        { id: 'records', label: 'My Records', icon: <FileText className="w-4 h-4" /> },
         { id: 'prescriptions', label: 'My Prescriptions', icon: <Pill className="w-4 h-4" /> },
         { id: 'billing', label: 'My Invoices', icon: <CreditCard className="w-4 h-4" /> },
+        { id: 'profile', label: 'My Profile', icon: <User className="w-4 h-4" /> },
       ];
     }
 
@@ -179,7 +183,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Navigation list */}
         <nav aria-label="Main Navigation" className="flex-1 py-2 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
-            const isActive = activeTab === item.id;
+            const isActive =
+              activeTab === item.id ||
+              (item.id === 'billing' && activeTab === 'invoices');
             return (
               <button
                 key={item.id}
