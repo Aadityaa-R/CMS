@@ -18,7 +18,7 @@ import { AttendanceContext } from '../src/context/AttendanceContext';
 import { ThemeContext } from '../src/context/ThemeContext';
 import { NotificationContext } from '../src/context/NotificationContext';
 
-import { INITIAL_MODULES, INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_PRESCRIPTIONS } from '../src/data/mockData';
+import { INITIAL_MODULES, INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_PRESCRIPTIONS, ROLE_CREDENTIALS } from '../src/data/mockData';
 import { INITIAL_SEED_INVOICES, INITIAL_SEED_PAYMENTS } from '../src/data/billingSeed';
 import { INITIAL_SHIFTS, INITIAL_ATTENDANCE_RECORDS, INITIAL_LEAVE_REQUESTS } from '../src/data/attendanceSeed';
 import { INITIAL_FORMULARY } from '../src/data/formularySeed';
@@ -85,6 +85,7 @@ function createMockProviders(currentUser: User, customInvoices = INITIAL_SEED_IN
     currentUser,
     currentRole: currentUser.role,
     isAuthenticated: true,
+    roleCredentials: ROLE_CREDENTIALS,
     addAuditLogEntry: () => {},
   };
 

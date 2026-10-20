@@ -17,15 +17,16 @@ interface DevCredentialsDirectoryProps {
 }
 
 export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = ({
-  roleCredentials,
+  roleCredentials = [],
   onFill,
 }) => {
+  const credentialsList = roleCredentials || [];
   return (
     <div className="mt-8 pt-6 border-t border-slate-200">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
           <KeyRound className="w-3.5 h-3.5 text-teal-600" />
-          <span>Authorized Role Credentials Directory ({roleCredentials.length} Accounts)</span>
+          <span>Authorized Role Credentials Directory ({credentialsList.length} Accounts)</span>
         </h3>
         <span className="text-[0.6875rem] text-slate-500">
           Click 'Fill' to load credentials
@@ -44,7 +45,7 @@ export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = (
             </TableRow>
           </TableHeader>
           <TableBody>
-            {roleCredentials.map((c) => (
+            {credentialsList.map((c) => (
               <TableRow key={c.username}>
                 <TableCell label="Role" className="w-3/12 min-w-[120px]">
                   <span className="font-medium text-teal-700 dark:text-teal-400">
