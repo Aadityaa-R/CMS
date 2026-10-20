@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { SignUpView } from './SignUpView';
 import { resetDemoData } from '@/data/storage';
 import { getPrefersReducedMotion } from '@/styles/loginMotion';
+import { EcgBackground } from '@/components/auth/EcgBackground';
 import {
   Building2,
   Lock,
@@ -106,6 +107,7 @@ export const LoginView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-10 sm:px-6 lg:px-8 relative overflow-hidden">
+      <EcgBackground />
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
         <div className={`flex justify-center ${isEntranceActive ? 'login-entrance-0 login-animating' : ''}`}>

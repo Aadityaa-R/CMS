@@ -76,6 +76,44 @@
   }
 }
 
+/* ECG wipe animation over 10s cycle:
+   0s - 6s (0% to 60%): wipes left to right across 1440px
+   6s - 8s (60% to 80%): holds at 100% revealed
+   8s - 9s (80% to 90%): fades out over 1s
+   9s - 10s (90% to 100%): resets to start
+*/
+@keyframes ecg-wipe-slide {
+  0% {
+    transform: translateX(0px);
+    opacity: 1;
+  }
+  60% {
+    transform: translateX(1440px);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(1440px);
+    opacity: 1;
+  }
+  90% {
+    transform: translateX(1440px);
+    opacity: 0;
+  }
+  90.01% {
+    transform: translateX(0px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0px);
+    opacity: 1;
+  }
+}
+
+.ecg-wipe-slider {
+  animation: ecg-wipe-slide 10s linear infinite;
+  will-change: transform, opacity;
+}
+
 .login-entrance-item {
   animation: login-fade-rise 250ms var(--motion-ease-entrance) both;
 }
@@ -187,7 +225,8 @@
   .login-icon-crossfade,
   .login-spinner-ring,
   .login-credentials-accordion,
-  .login-btn-press {
+  .login-btn-press,
+  .ecg-wipe-slider {
     animation: none !important;
     transition: none !important;
     transform: none !important;

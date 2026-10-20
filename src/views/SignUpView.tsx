@@ -6,6 +6,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { Building2, User, Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { validatePasswordPolicy } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
+import { EcgBackground } from '@/components/auth/EcgBackground';
 
 export interface SignUpViewProps {
   onBackToLogin: () => void;
@@ -408,6 +409,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOn
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-10 sm:px-6 lg:px-8 relative overflow-hidden">
+      <EcgBackground />
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
         <div className="flex justify-center">
