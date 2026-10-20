@@ -200,7 +200,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOn
               </div>
 
               {formError && (
-                <div className="mb-5 p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-slate-800 text-xs">
+                <div role="status" aria-live="polite" className="mb-5 p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-slate-800 text-xs">
                   <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1" />
                   <div>
                     <span className="font-semibold text-slate-900">Registration Error:</span>{' '}
@@ -352,7 +352,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOn
                         className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 min-h-[44px] min-w-[44px] justify-center"
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        <span key={showPassword ? "eye-off" : "eye"} className="login-icon-crossfade inline-flex">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</span>
                       </button>
                     </div>
                   </div>
@@ -378,7 +378,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOn
                         className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 min-h-[44px] min-w-[44px] justify-center"
                         aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        <span key={showConfirmPassword ? "eye-off" : "eye"} className="login-icon-crossfade inline-flex">{showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</span>
                       </button>
                     </div>
                   </div>

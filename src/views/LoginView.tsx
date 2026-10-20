@@ -46,8 +46,10 @@ export const LoginView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCredentialsGuide, setShowCredentialsGuide] = useState(true);
 
-  // Entrance sequence state: plays once on mount, removed after 700ms (max entrance duration)
+  // Motion states
   const [isEntranceActive, setIsEntranceActive] = useState(() => !getPrefersReducedMotion());
+  const [isShaking, setIsShaking] = useState(false);
+  const [isSuccessExiting, setIsSuccessExiting] = useState(false);
 
   useEffect(() => {
     if (!isEntranceActive) return;
@@ -56,6 +58,15 @@ export const LoginView: React.FC = () => {
     }, 700);
     return () => clearTimeout(timer);
   }, [isEntranceActive]);
+
+  const triggerShake = () => {
+    if (!getPrefersReducedMotion()) {
+      setIsShaking(true);
+      setTimeout(() => {
+        setIsShaking(false);
+      }, 350);
+    }
+  };
 
   // Reset demo data modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -77,15 +88,28 @@ export const LoginView: React.FC = () => {
       hasError = true;
     }
     if (hasError) {
+      triggerShake();
       return;
     }
 
     setIsSubmitting(true);
-    const result = await login(identifier.trim(), password, rememberMe);
+    const result = await login(identifier.trim(), password, rememberMe, { deferAuth: true });
     setIsSubmitting(false);
 
     if (!result.success) {
       setErrorMessage(result.error || 'Authentication failed. Please check credentials.');
+      triggerShake();
+      return;
+    }
+
+    // Successful authentication exit: 250ms scale(0.98) and fade-out before navigation
+    if (getPrefersReducedMotion()) {
+      result.completeNavigation?.();
+    } else {
+      setIsSuccessExiting(true);
+      setTimeout(() => {
+        result.completeNavigation?.();
+      }, 250);
     }
   };
 
@@ -108,6 +132,7 @@ export const LoginView: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-10 sm:px-6 lg:px-8 relative overflow-hidden">
       <EcgBackground />
+
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
         <div className={`flex justify-center ${isEntranceActive ? 'login-entrance-0 login-animating' : ''}`}>
@@ -126,16 +151,24 @@ export const LoginView: React.FC = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl z-10 px-4 sm:px-0">
-        <div className={`bg-white py-8 px-6 sm:px-10 shadow-card dark:shadow-none print:shadow-none rounded-2xl border border-slate-200 transition-[min-height] duration-200 ${isEntranceActive ? 'login-entrance-3 login-animating' : ''}`}>
+        <div
+          className={`bg-white py-8 px-6 sm:px-10 shadow-card dark:shadow-none print:shadow-none rounded-2xl border border-slate-200 transition-[min-height] duration-200 ${
+            isEntranceActive ? 'login-entrance-3 login-animating' : ''
+          } ${isShaking ? 'login-card-shake' : ''} ${isSuccessExiting ? 'login-card-exit' : ''}`}
+        >
           {/* View transition container: 200ms crossfade between sign-in and sign-up with smooth height */}
           <div key={viewMode} className="login-view-crossfade">
             {viewMode === 'signup' ? (
               <SignUpView contentOnly onBackToLogin={() => setViewMode('login')} />
             ) : (
               <>
-                {/* Error notification */}
+                {/* Error notification with polite live region */}
                 {errorMessage && (
-                  <div className="mb-5 p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-slate-800 text-xs">
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="mb-5 p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-slate-800 text-xs"
+                  >
                     <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1" />
                     <div>
                       <span className="font-semibold text-slate-900">Authentication Notice:</span>{' '}
@@ -193,11 +226,13 @@ export const LoginView: React.FC = () => {
                         className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer min-h-[44px] min-w-[44px] justify-center"
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
+                        <span key={showPassword ? 'eye-off' : 'eye'} className="login-icon-crossfade inline-flex">
+                          {showPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </span>
                       </button>
                     </div>
                     {passwordError && (
@@ -242,11 +277,25 @@ export const LoginView: React.FC = () => {
                       type="submit"
                       variant="primary"
                       size="lg"
-                      className="w-full text-sm font-semibold mt-2 min-h-[44px] h-11"
-                      isLoading={isSubmitting}
-                      icon={<ShieldCheck className="w-4 h-4" />}
+                      className="w-full text-sm font-semibold mt-2 min-h-[44px] h-11 login-btn-press"
+                      disabled={isSubmitting || isSuccessExiting}
                     >
-                      Sign In to Medical Station
+                      {isSubmitting ? (
+                        <span className="inline-flex items-center gap-2">
+                          {!getPrefersReducedMotion() && (
+                            <span
+                              aria-hidden="true"
+                              className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white login-spinner-ring inline-block"
+                            />
+                          )}
+                          <span>Signing in</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>Sign In to Medical Station</span>
+                        </span>
+                      )}
                     </Button>
 
                     {/* Create account link */}
@@ -262,14 +311,24 @@ export const LoginView: React.FC = () => {
                   </div>
                 </form>
 
-                {/* Credentials Guide Table for all roles (Demo mode only) */}
-                {isDemoMode && showCredentialsGuide && DevCredentialsDirectory && (
-                  <React.Suspense fallback={null}>
-                    <DevCredentialsDirectory
-                      roleCredentials={roleCredentials}
-                      onFill={handleFillCredentials}
-                    />
-                  </React.Suspense>
+                {/* Credentials Guide Accordion (smooth height change 0fr to 1fr and fade) */}
+                {isDemoMode && DevCredentialsDirectory && (
+                  <div
+                    className="login-credentials-accordion"
+                    data-expanded={showCredentialsGuide ? 'true' : 'false'}
+                    aria-hidden={!showCredentialsGuide}
+                  >
+                    <div className="login-credentials-accordion-inner">
+                      <div className="pt-4">
+                        <React.Suspense fallback={null}>
+                          <DevCredentialsDirectory
+                            roleCredentials={roleCredentials}
+                            onFill={handleFillCredentials}
+                          />
+                        </React.Suspense>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {/* Security notice */}

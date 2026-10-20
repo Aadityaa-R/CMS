@@ -69,6 +69,7 @@ export interface LoginResult {
   success: boolean;
   error?: string;
   matchedRole?: UserRole;
+  completeNavigation?: () => void;
 }
 
 export interface SignUpPatientParams {
@@ -123,7 +124,7 @@ interface AuthContextType {
   ) => void;
   isRoleSuspended: (role: UserRole) => boolean;
   isStaffSuspended: (staffNameOrId: string) => boolean;
-  login: (identifier: string, password: string, rememberMe?: boolean) => Promise<LoginResult>;
+  login: (identifier: string, password: string, rememberMe?: boolean, options?: { deferAuth?: boolean }) => Promise<LoginResult>;
   loginAs: (role: UserRole) => void;
   switchRole: (role: UserRole) => void;
   updateCurrentUser: (updates: Partial<User>) => void;
@@ -536,7 +537,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveAuditLog([newAudit, ...accessAuditLog]);
   };
 
-  const login = async (identifier: string, password: string, rememberMe = true): Promise<LoginResult> => {
+  const login = async (
+    identifier: string,
+    password: string,
+    rememberMe = true,
+    options?: { deferAuth?: boolean }
+  ): Promise<LoginResult> => {
     const cleanId = identifier.trim().toLowerCase();
     const cleanPass = password.trim();
     const now = Date.now();
@@ -698,8 +704,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentRole(account.role);
     setActiveUserKey(account.username in DEMO_USERS ? account.username : account.role);
     sessionStorage.setItem('cms_auth_user_key', account.username in DEMO_USERS ? account.username : account.role);
-    setIsAuthenticated(true);
-    return { success: true, matchedRole: account.role };
+    const completeNavigation = () => {
+      setIsAuthenticated(true);
+    };
+    if (!options?.deferAuth) {
+      completeNavigation();
+    }
+    return { success: true, matchedRole: account.role, completeNavigation };
   };
 
   const signUpPatient = async (params: SignUpPatientParams): Promise<SignUpResult> => {
