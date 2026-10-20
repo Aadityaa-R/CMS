@@ -1,0 +1,166 @@
+/* Login and Sign-Up Screen Motion Tokens (Milestone M9.6) */
+:root {
+  --motion-fast: 150ms;
+  --motion-base: 300ms;
+  --motion-slow: 600ms;
+  --motion-stagger: 70ms;
+  --motion-ecg-cycle: 10s;
+  --motion-ease-entrance: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-success-exit: 250ms;
+}
+
+/* Staggered entrance animation: rising 12px and fading in */
+@keyframes login-fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Success exit animation: scaling to 0.98 and fading out */
+@keyframes login-card-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+/* Failed authentication shake animation: 6px amplitude, 3 swings, 350ms */
+@keyframes login-card-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  16.6% {
+    transform: translateX(-6px);
+  }
+  33.3% {
+    transform: translateX(6px);
+  }
+  50% {
+    transform: translateX(-6px);
+  }
+  66.6% {
+    transform: translateX(6px);
+  }
+  83.3% {
+    transform: translateX(-3px);
+  }
+}
+
+/* Rotating spinner ring for submitting state */
+@keyframes login-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Crossfade between Sign-In and Sign-Up or icons */
+@keyframes login-crossfade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.login-entrance-item {
+  animation: login-fade-rise 300ms var(--motion-ease-entrance) both;
+}
+
+.login-entrance-item.login-animating {
+  will-change: transform, opacity;
+}
+
+.login-card-shake {
+  animation: login-card-shake 350ms ease-in-out;
+  will-change: transform;
+}
+
+.login-card-exit {
+  animation: login-card-exit 250ms var(--motion-ease-entrance) forwards;
+  will-change: transform, opacity;
+}
+
+.login-view-crossfade {
+  animation: login-crossfade 200ms ease-out both;
+  will-change: opacity;
+}
+
+.login-icon-crossfade {
+  animation: login-crossfade 150ms ease-out both;
+  will-change: opacity;
+}
+
+.login-spinner-ring {
+  animation: login-spin 800ms linear infinite;
+  will-change: transform;
+}
+
+/* Credentials directory accordion transition */
+.login-credentials-accordion {
+  display: grid;
+  transition: grid-template-rows 250ms var(--motion-ease-entrance), opacity 250ms var(--motion-ease-entrance);
+}
+
+.login-credentials-accordion.login-animating {
+  will-change: grid-template-rows, opacity;
+}
+
+.login-credentials-accordion[data-expanded="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.login-credentials-accordion[data-expanded="false"] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.login-credentials-accordion-inner {
+  overflow: hidden;
+}
+
+/* Button pressed state */
+.login-btn-press {
+  transition: transform 100ms ease-out;
+}
+
+.login-btn-press:active {
+  transform: scale(0.98);
+}
+
+/* Reduced motion disables all animations and transitions */
+@media (prefers-reduced-motion: reduce) {
+  .login-entrance-item,
+  .login-card-shake,
+  .login-card-exit,
+  .login-view-crossfade,
+  .login-icon-crossfade,
+  .login-spinner-ring,
+  .login-credentials-accordion,
+  .login-btn-press {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    will-change: auto !important;
+  }
+
+  .login-credentials-accordion[data-expanded="false"] {
+    display: none !important;
+  }
+}
+
