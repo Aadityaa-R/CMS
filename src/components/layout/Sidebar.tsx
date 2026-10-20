@@ -177,14 +177,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation list */}
-        <nav aria-label="Main Navigation" className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto overflow-x-hidden">
-          <div
-            className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap px-2 text-[0.625rem] font-semibold text-slate-400 uppercase tracking-wider ${
-              isCollapsed ? 'lg:max-w-0 lg:opacity-0 lg:pb-0 max-w-[170px] opacity-100 pb-2' : 'max-w-[170px] opacity-100 pb-2'
-            }`}
-          >
-            Navigation Pane
-          </div>
+        <nav aria-label="Main Navigation" className="flex-1 py-2 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
