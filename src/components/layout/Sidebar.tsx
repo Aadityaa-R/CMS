@@ -132,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }`}
       >
         {/* Brand / Role header & Single Console Toggle Control */}
-        <div className="h-20 px-2 flex items-center justify-between shrink-0">
+        <div className="pt-3 pb-1 px-2 flex items-center justify-between shrink-0">
           <div className="flex items-center min-w-0">
             {/* Sidebar Console Toggle Icon with Arrow */}
             {onToggleCollapse ? (
@@ -180,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation list */}
-        <nav aria-label="Main Navigation" className="flex-1 py-2 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
+        <nav aria-label="Main Navigation" className="flex-1 pt-0 pb-2 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
             const isActive =
               activeTab === item.id ||
