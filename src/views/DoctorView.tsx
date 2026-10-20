@@ -1205,7 +1205,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.systolicBp}
-                          helperText={activePatient?.previousVitals?.systolicBp !== undefined ? `Last visit: ${activePatient.previousVitals.systolicBp}` : undefined}
                           className="text-xs py-1.5"
                         />
                         <Input
@@ -1217,7 +1216,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.diastolicBp}
-                          helperText={activePatient?.previousVitals?.diastolicBp !== undefined ? `Last visit: ${activePatient.previousVitals.diastolicBp}` : undefined}
                           className="text-xs py-1.5"
                         />
                         <Input
@@ -1229,7 +1227,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.heartRateBpm}
-                          helperText={activePatient?.previousVitals?.heartRateBpm !== undefined ? `Last visit: ${activePatient.previousVitals.heartRateBpm}` : undefined}
                           className="text-xs py-1.5"
                         />
                         <Input
@@ -1241,7 +1238,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.oxygenSaturationPct}
-                          helperText={activePatient?.previousVitals?.oxygenSaturationPct !== undefined ? `Last visit: ${activePatient.previousVitals.oxygenSaturationPct}` : undefined}
                           className="text-xs py-1.5"
                         />
                         <Input
@@ -1253,7 +1249,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.temperatureCelsius}
-                          helperText={activePatient?.previousVitals?.temperatureCelsius !== undefined ? `Last visit: ${activePatient.previousVitals.temperatureCelsius}` : undefined}
                           className="text-xs py-1.5"
                         />
                       </div>
@@ -1334,7 +1329,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       <div className="space-y-1.5 pb-2.5 border-b border-slate-100 dark:border-slate-800">
                         <div className="flex justify-between items-baseline gap-2">
                           <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
-                          <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                          <span className="text-slate-700 dark:text-slate-300 text-right">
                             {lastCompletedApt?.dateTime
                               ? new Date(lastCompletedApt.dateTime).toLocaleDateString('en-GB', {
                                   day: '2-digit',
@@ -1350,7 +1345,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           <div className="text-right">
                             {summaryPatient.previousVitals ? (
                               <>
-                                <span className="font-medium text-slate-900 dark:text-slate-100 block">
+                                <span className="text-slate-700 dark:text-slate-300 block">
                                   BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp} mmHg • HR {summaryPatient.previousVitals.heartRateBpm} bpm
                                 </span>
                                 <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mt-0.5">
@@ -1358,21 +1353,21 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 </span>
                               </>
                             ) : (
-                              <span className="font-medium text-slate-900 dark:text-slate-100">None recorded</span>
+                              <span className="text-slate-700 dark:text-slate-300">None recorded</span>
                             )}
                           </div>
                         </div>
 
                         <div className="flex justify-between items-baseline gap-2">
                           <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Reason:</span>
-                          <span className="font-medium text-slate-900 dark:text-slate-100 text-right line-clamp-2" title={lastCompletedApt?.reasonForVisit || undefined}>
+                          <span className="text-slate-700 dark:text-slate-300 text-right line-clamp-2" title={lastCompletedApt?.reasonForVisit || undefined}>
                             {lastCompletedApt?.reasonForVisit || 'None recorded'}
                           </span>
                         </div>
 
                         <div className="flex justify-between items-baseline gap-2">
                           <span className="text-slate-500 dark:text-slate-400 shrink-0">Consulting Doctor:</span>
-                          <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                          <span className="text-slate-700 dark:text-slate-300 text-right">
                             {lastCompletedApt?.doctorName || 'None recorded'}
                           </span>
                         </div>
@@ -1380,7 +1375,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       <div className="flex justify-between items-baseline gap-2">
                         <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
-                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                        <span className="text-slate-700 dark:text-slate-300 text-right">
                           {summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
                             ? deduplicateList(summaryPatient.chronicConditions).join(', ')
                             : 'None recorded'}
@@ -1389,7 +1384,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       <div className="flex justify-between items-baseline gap-2">
                         <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
-                        <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
+                        <span className="text-slate-700 dark:text-slate-300 text-right">
                           {(() => {
                             const activeMeds = activeMedications(summaryPatient.id, prescriptions, new Date());
                             if (activeMeds.length > 0) return activeMeds.join(', ');
