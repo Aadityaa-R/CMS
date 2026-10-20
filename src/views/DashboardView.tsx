@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { useBilling } from '@/context/BillingContext';
@@ -676,15 +677,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [attendanceMessage, setAttendanceMessage] = useState<string | null>(null);
 
   // View presentation mode for Graphs and Tables slide animation
-  const [dashboardViewMode, setDashboardViewMode] = useState<'all' | 'graphs' | 'tables'>(() => {
+  const [dashboardViewMode, setDashboardViewMode] = useState<'graphs' | 'tables'>(() => {
     try {
       const saved = localStorage.getItem('beacon_dashboard_view_mode');
-      if (saved === 'graphs' || saved === 'tables' || saved === 'all') return saved;
+      if (saved === 'graphs' || saved === 'tables') return saved;
     } catch {}
     return 'graphs';
   });
 
-  const handleViewModeChange = (mode: 'all' | 'graphs' | 'tables') => {
+  const handleViewModeChange = (mode: 'graphs' | 'tables') => {
     setDashboardViewMode(mode);
     try {
       localStorage.setItem('beacon_dashboard_view_mode', mode);
@@ -698,6 +699,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const hasBilling = hasCapability(currentUser, 'paymentRecording', modules) || userIsAdmin;
   const isPatient = currentUser?.role === 'patient';
   const hasCharts = !isPatient && (userIsAdmin || hasConsult || hasBilling);
+
+  // Keyboard arrow navigation between Graphs and Tables
+  useEffect(() => {
+    if (!hasCharts) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.tagName === 'SELECT' ||
+          (activeEl as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        handleViewModeChange('graphs');
+      } else if (e.key === 'ArrowRight') {
+        handleViewModeChange('tables');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasCharts]);
+
+  const handleCarouselKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      handleViewModeChange('graphs');
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      handleViewModeChange('tables');
+    }
+  };
 
   // Compute metrics for Chart 1
   const metrics1 = useMemo(() => {
@@ -892,42 +930,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const greeting = getGreeting(currentUser?.name || 'User');
 
   const chartsCards = (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {(userIsAdmin || hasConsult) && (
-          <PatientsAndVisitsChart
-            buckets={metrics1.patientsAndVisits}
-            activeBucket={chartBucket1}
-            onBucketChange={setChartBucket1}
-          />
-        )}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {(userIsAdmin || hasConsult) && (
+        <PatientsAndVisitsChart
+          buckets={metrics1.patientsAndVisits}
+          activeBucket={chartBucket1}
+          onBucketChange={setChartBucket1}
+        />
+      )}
 
-        {hasBilling && (
-          <FeesAndPaymentsChart
-            buckets={metrics2.feesAndPayments || []}
-            activeBucket={chartBucket2}
-            onBucketChange={setChartBucket2}
-          />
-        )}
-      </div>
-      {dashboardViewMode === 'graphs' && (
-        <div className="flex justify-end pt-1">
-          <button
-            type="button"
-            onClick={() => handleViewModeChange('tables')}
-            className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 cursor-pointer"
-          >
-            Slide to Operational Tables &rarr;
-          </button>
-        </div>
+      {hasBilling && (
+        <FeesAndPaymentsChart
+          buckets={metrics2.feesAndPayments || []}
+          activeBucket={chartBucket2}
+          onBucketChange={setChartBucket2}
+        />
       )}
     </div>
   );
 
   const operationalCards = (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* List 1: Today's Appointments */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* List 1: Today's Appointments */}
         {canViewWidget('today_appointments', currentUser, modules) && (
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
             <div>
@@ -1157,18 +1181,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
           </Card>
         )}
-      </div>
-      {dashboardViewMode === 'tables' && (
-        <div className="flex justify-start pt-1">
-          <button
-            type="button"
-            onClick={() => handleViewModeChange('graphs')}
-            className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 cursor-pointer"
-          >
-            &larr; Slide to Visual Graphs
-          </button>
-        </div>
-      )}
     </div>
   );
 
@@ -1460,80 +1472,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </Card>
           )}
 
-          {/* Section Presentation Switcher (Graphs / Tables / All) */}
-          {hasCharts && (
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-              {/* Segmented view switcher */}
-              <div
-                role="tablist"
-                aria-label="Dashboard presentation view"
-                className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 bg-slate-50 dark:bg-slate-800/80"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={dashboardViewMode === 'graphs'}
-                  onClick={() => handleViewModeChange('graphs')}
-                  className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                    dashboardViewMode === 'graphs'
-                      ? 'bg-teal-600 text-white'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                  }`}
-                >
-                  Graphs
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={dashboardViewMode === 'tables'}
-                  onClick={() => handleViewModeChange('tables')}
-                  className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                    dashboardViewMode === 'tables'
-                      ? 'bg-teal-600 text-white'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                  }`}
-                >
-                  Tables
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={dashboardViewMode === 'all'}
-                  onClick={() => handleViewModeChange('all')}
-                  className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                    dashboardViewMode === 'all'
-                      ? 'bg-teal-600 text-white'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                  }`}
-                >
-                  All
-                </button>
-              </div>
-
-              {/* Quick Slide Button */}
-              {dashboardViewMode !== 'all' && (
-                <button
-                  type="button"
-                  onClick={() => handleViewModeChange(dashboardViewMode === 'graphs' ? 'tables' : 'graphs')}
-                  className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 border border-teal-200 dark:border-teal-800 rounded-lg px-2.5 py-1 bg-white dark:bg-slate-900 cursor-pointer flex items-center gap-1 transition-colors"
-                  aria-label={dashboardViewMode === 'graphs' ? 'Slide to operational tables' : 'Slide to visual graphs'}
-                >
-                  {dashboardViewMode === 'graphs' ? 'Slide to Tables ->' : '<- Slide to Graphs'}
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Main content display: Staff (with sliding carousel) vs Receptionist vs Patient */}
+          {/* Main content display: Staff (with sliding carousel and side arrows) vs Receptionist vs Patient */}
           {!isPatient ? (
             hasCharts ? (
-              dashboardViewMode === 'all' ? (
-                <div className="space-y-6">
-                  {chartsCards}
-                  {operationalCards}
-                </div>
-              ) : (
-                <div className="overflow-hidden w-full relative">
+              <div className="relative flex items-center gap-2 sm:gap-3 w-full">
+                {/* Left Navigation Arrow */}
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange('graphs')}
+                  disabled={dashboardViewMode === 'graphs'}
+                  aria-label="Navigate to Graphs (Left Arrow)"
+                  title="Visual Graphs (Press Left Arrow)"
+                  className={`shrink-0 p-2 sm:p-2.5 rounded-full border transition-all ${
+                    dashboardViewMode === 'graphs'
+                      ? 'opacity-30 cursor-not-allowed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 bg-slate-50 dark:bg-slate-900'
+                      : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400 shadow-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600'
+                  }`}
+                >
+                  <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+                </button>
+
+                {/* Carousel Viewport */}
+                <div
+                  tabIndex={0}
+                  role="region"
+                  aria-label="Dashboard content carousel. Use Left and Right arrow keys to switch between visual graphs and operational tables."
+                  onKeyDown={handleCarouselKeyDown}
+                  className="flex-1 min-w-0 overflow-hidden relative focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 rounded-xl"
+                >
                   <div
                     className="flex w-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none"
                     style={{
@@ -1557,7 +1523,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </div>
                   </div>
                 </div>
-              )
+
+                {/* Right Navigation Arrow */}
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange('tables')}
+                  disabled={dashboardViewMode === 'tables'}
+                  aria-label="Navigate to Tables (Right Arrow)"
+                  title="Operational Tables (Press Right Arrow)"
+                  className={`shrink-0 p-2 sm:p-2.5 rounded-full border transition-all ${
+                    dashboardViewMode === 'tables'
+                      ? 'opacity-30 cursor-not-allowed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 bg-slate-50 dark:bg-slate-900'
+                      : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400 shadow-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600'
+                  }`}
+                >
+                  <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                </button>
+              </div>
             ) : (
               operationalCards
             )
