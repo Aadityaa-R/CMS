@@ -1462,81 +1462,65 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
           {/* Section Presentation Switcher (Graphs / Tables / All) */}
           {hasCharts && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  View Mode
-                </span>
-                <span className="text-xs text-slate-400 dark:text-slate-500">|</span>
-                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                  {dashboardViewMode === 'graphs'
-                    ? 'Visual Analytics Graphs'
-                    : dashboardViewMode === 'tables'
-                    ? 'Operational Data Tables'
-                    : 'All Analytics & Tables'}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {/* Segmented view switcher */}
-                <div
-                  role="tablist"
-                  aria-label="Dashboard presentation view"
-                  className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 bg-slate-50 dark:bg-slate-800/80"
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              {/* Segmented view switcher */}
+              <div
+                role="tablist"
+                aria-label="Dashboard presentation view"
+                className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 bg-slate-50 dark:bg-slate-800/80"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={dashboardViewMode === 'graphs'}
+                  onClick={() => handleViewModeChange('graphs')}
+                  className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                    dashboardViewMode === 'graphs'
+                      ? 'bg-teal-600 text-white'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                  }`}
                 >
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={dashboardViewMode === 'graphs'}
-                    onClick={() => handleViewModeChange('graphs')}
-                    className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                      dashboardViewMode === 'graphs'
-                        ? 'bg-teal-600 text-white'
-                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                    }`}
-                  >
-                    Graphs
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={dashboardViewMode === 'tables'}
-                    onClick={() => handleViewModeChange('tables')}
-                    className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                      dashboardViewMode === 'tables'
-                        ? 'bg-teal-600 text-white'
-                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                    }`}
-                  >
-                    Tables
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={dashboardViewMode === 'all'}
-                    onClick={() => handleViewModeChange('all')}
-                    className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                      dashboardViewMode === 'all'
-                        ? 'bg-teal-600 text-white'
-                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                    }`}
-                  >
-                    All
-                  </button>
-                </div>
-
-                {/* Quick Slide Button */}
-                {dashboardViewMode !== 'all' && (
-                  <button
-                    type="button"
-                    onClick={() => handleViewModeChange(dashboardViewMode === 'graphs' ? 'tables' : 'graphs')}
-                    className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 border border-teal-200 dark:border-teal-800 rounded-lg px-2.5 py-1 bg-white dark:bg-slate-900 cursor-pointer flex items-center gap-1 transition-colors"
-                    aria-label={dashboardViewMode === 'graphs' ? 'Slide to operational tables' : 'Slide to visual graphs'}
-                  >
-                    {dashboardViewMode === 'graphs' ? 'Slide to Tables ->' : '<- Slide to Graphs'}
-                  </button>
-                )}
+                  Graphs
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={dashboardViewMode === 'tables'}
+                  onClick={() => handleViewModeChange('tables')}
+                  className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                    dashboardViewMode === 'tables'
+                      ? 'bg-teal-600 text-white'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                  }`}
+                >
+                  Tables
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={dashboardViewMode === 'all'}
+                  onClick={() => handleViewModeChange('all')}
+                  className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                    dashboardViewMode === 'all'
+                      ? 'bg-teal-600 text-white'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                  }`}
+                >
+                  All
+                </button>
               </div>
+
+              {/* Quick Slide Button */}
+              {dashboardViewMode !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange(dashboardViewMode === 'graphs' ? 'tables' : 'graphs')}
+                  className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 border border-teal-200 dark:border-teal-800 rounded-lg px-2.5 py-1 bg-white dark:bg-slate-900 cursor-pointer flex items-center gap-1 transition-colors"
+                  aria-label={dashboardViewMode === 'graphs' ? 'Slide to operational tables' : 'Slide to visual graphs'}
+                >
+                  {dashboardViewMode === 'graphs' ? 'Slide to Tables ->' : '<- Slide to Graphs'}
+                </button>
+              )}
             </div>
           )}
 
