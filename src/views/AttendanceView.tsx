@@ -457,9 +457,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Staff Time, Attendance, and Leave
-          </h2>
+          </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Shift scheduling, real-time check-ins, attendance sheet auditing, and leave administration.
           </p>
@@ -468,7 +468,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
 
       {/* Action Notification */}
       {actionMessage && (
-        <div
+        <div role="status" aria-live="polite"
           className={`p-3 text-xs border rounded ${
             actionMessage.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-300 dark:border-emerald-800'
@@ -480,7 +480,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
+      <div role="tablist" aria-label="Attendance Tabs" className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
         {[
           { id: 'my_attendance', label: 'My Attendance' },
           ...(canManage
@@ -495,6 +495,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
+            role="tab"
+            aria-selected={activeSubTab === tab.id}
+            aria-current={activeSubTab === tab.id ? 'page' : undefined}
             className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap ${
               activeSubTab === tab.id
                 ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'

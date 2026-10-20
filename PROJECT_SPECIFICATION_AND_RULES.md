@@ -576,6 +576,32 @@ Every feature and line of code in this project strictly adheres to the governing
 
 ---
 
+### 2.24 Keyboard Navigation, Focus Management, and Screen Reader Hardening (Milestone M10 Section 3)
+
+- **Landmarks & Skip Navigation**:
+  - Implemented keyboard-accessible "Skip to main content" link at the top of AppLayout (<a href="#main-content">), visible upon focus with high contrast.
+  - Enforced semantic document landmarks: <header> for workstation app header, <aside aria-label="Sidebar Navigation"> and <nav aria-label="Main Navigation"> for navigation, and <main id="main-content" tabIndex={-1}> for the primary view area.
+  - Registered a global polite live region (#global-status-region, role="status", aria-live="polite", aria-atomic="true") for screen reader announcements alongside in-view status banners.
+- **Heading Order & Hierarchy**:
+  - Standardized exactly one <h1> per page/view across all workstation pages (Consultation Desk, Front Desk & Reception, Billing, Administrative & Security Governance, Staff Attendance, Dashboard, Patient Portal, and Auth screens).
+  - Subsequent section titles strictly follow hierarchical order (<h2> for card headers, <h3> for modal dialog titles and card sub-sections).
+- **Navigation & Tablist Roles**:
+  - Sidebar navigation items dynamically set aria-current="page" when active.
+  - All workstation sub-navigation tab bars utilize role="tablist" with descriptive aria-label attributes.
+  - Individual tab triggers specify role="tab", aria-selected={isActive}, and aria-current={isActive ? "page" : undefined}.
+- **Focus Trapping, Escape Closing, and Opener Focus Return**:
+  - Modal dialogs (Modal.tsx) trap focus across focusable elements (button, input, select, textarea, [tabindex]), close on Escape, and return keyboard focus to the opening trigger button on dismissal.
+  - Mobile phone drawer (Sidebar.tsx) traps keyboard focus when open, closes on Escape, and returns focus to the navigation toggle button.
+- **Form Accessibility & Error Linkage**:
+  - Form controls (Input.tsx, Textarea.tsx, Select.tsx, DatePicker.tsx) explicitly link error messages via aria-describedby ({id}-error) and set aria-invalid={true} upon error.
+  - Error messages specify role="alert".
+  - Design-system dropdown Select.tsx provides accessible combobox and listbox roles (role="combobox", aria-expanded, aria-haspopup="listbox", role="listbox", role="option", aria-selected).
+  - Interactive search bar clear trigger includes explicit aria-label="Clear search".
+- **Automated Verification**:
+  - Authored comprehensive test suite in tests/keyboardNav.test.tsx verifying skip link, landmarks, polite live region, modal focus trapping/return, form error linkage, tablist keyboard walking, and single <h1> rules.
+
+---
+
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
 
 The table below outlines the evolution of the codebase from initial repository setup to current state:

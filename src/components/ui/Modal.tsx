@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 export interface ModalProps {
@@ -26,18 +26,74 @@ export const Modal: React.FC<ModalProps> = ({
   overflowVisible = false,
   bodyClassName = '',
 }) => {
+    const modalRef = useRef<HTMLDivElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
     if (isOpen) {
+      openerRef.current = document.activeElement as HTMLElement;
       document.body.style.overflow = 'hidden';
+
+      const timer = setTimeout(() => {
+        if (modalRef.current) {
+          const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length > 0) {
+            focusable[0].focus();
+          } else {
+            modalRef.current.focus();
+          }
+        }
+      }, 30);
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          onClose();
+          return;
+        }
+
+        if (e.key === 'Tab' && modalRef.current) {
+          const focusable = Array.from(
+            modalRef.current.querySelectorAll<HTMLElement>(
+              'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )
+          );
+
+          if (focusable.length === 0) {
+            e.preventDefault();
+            return;
+          }
+
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+
+          if (e.shiftKey) {
+            if (document.activeElement === first || !modalRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last || !modalRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      };
+
       window.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        clearTimeout(timer);
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+        if (openerRef.current && typeof openerRef.current.focus === 'function') {
+          openerRef.current.focus();
+        }
+      };
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-      window.removeEventListener('keydown', handleKeyDown);
-    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -65,6 +121,11 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Dialog Content */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        tabIndex={-1}
         className={`relative ${dialogLayout} ${maxWidthClasses[maxWidth]} bg-white dark:bg-slate-900 shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-800 ${
           overflowVisible ? 'overflow-visible' : 'overflow-hidden'
         } z-10`}
@@ -73,13 +134,15 @@ export const Modal: React.FC<ModalProps> = ({
           overflowVisible ? 'rounded-t-xl' : ''
         }`}>
           <div>
-            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+            <h3 id="modal-title" className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
             {description && (
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
             )}
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close dialog"
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-0"
           >
             <X className="w-5 h-5" />

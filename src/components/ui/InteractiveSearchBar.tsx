@@ -164,7 +164,7 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
             type="button"
             onClick={handleClear}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded cursor-pointer z-20"
-            title="Clear search"
+            title="Clear search" aria-label="Clear search"
           >
             <X className="w-3.5 h-3.5" />
           </button>

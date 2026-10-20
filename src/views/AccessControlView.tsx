@@ -1072,14 +1072,14 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       {/* Workstation Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Administrative & Security Governance
-          </h2>
+          </h1>
         </div>
       </div>
 
       {/* Sub-Workstation Navigation Tabs (scrollable on mobile) */}
-      <div className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto overflow-y-hidden no-scrollbar scrollbar-none flex-nowrap shrink-0">
+      <div role="tablist" aria-label="Administrative Tabs" className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto overflow-y-hidden no-scrollbar scrollbar-none flex-nowrap shrink-0">
         {[
           {
             id: 'modules' as const,

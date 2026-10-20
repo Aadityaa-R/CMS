@@ -163,9 +163,9 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin }) => {
             <Building2 className="w-8 h-8" />
           </div>
         </div>
-        <h2 className="mt-4 text-center text-2xl font-bold tracking-tight text-white">
+        <h1 className="mt-4 text-center text-2xl font-bold tracking-tight text-white">
           Beacon Health Clinic
-        </h2>
+        </h1>
         <p className="mt-1 text-center text-xs text-slate-400">
           Clinic Management System (CMS) • Self-Registration Portal
         </p>

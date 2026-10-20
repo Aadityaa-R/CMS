@@ -43,6 +43,10 @@ export const Select: React.FC<SelectProps> = ({
   searchPlaceholder = 'Type to search...',
   size = 'md',
 }) => {
+  const autoId = React.useId();
+  const selectId = id || (label && typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : 'select-' + autoId);
+  const errorId = selectId + '-error';
+  const helperId = selectId + '-helper';
   const [isOpen, setIsOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -234,6 +238,11 @@ export const Select: React.FC<SelectProps> = ({
               }
             }}
             autoComplete="off"
+            role="combobox"
+            aria-expanded={isOpen}
+            aria-haspopup="listbox"
+            aria-invalid={!!error}
+            aria-describedby={error ? errorId : helperText ? helperId : undefined}
             className={`w-full ${triggerSizeClasses[size]} ${
               isSearching && searchQuery ? 'pr-14' : triggerPaddingClasses[size]
             } ${icon ? (size === 'lg' ? 'pl-11' : size === 'sm' ? 'pl-8' : 'pl-9') : (size === 'lg' ? 'pl-4' : 'pl-3.5')} border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-left focus:outline-none focus:ring-0 focus:border-teal-500 ${
@@ -292,6 +301,11 @@ export const Select: React.FC<SelectProps> = ({
           id={id}
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((prev) => !prev)}
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : helperText ? helperId : undefined}
           className={`w-full relative flex items-center justify-between ${triggerSizeClasses[size]} ${triggerPaddingClasses[size]} border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-left focus:outline-none focus:ring-0 focus:border-teal-500 ${
             disabled
               ? 'opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800'
@@ -327,15 +341,16 @@ export const Select: React.FC<SelectProps> = ({
         </button>
       )}
 
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+      {error && <p id={errorId} role="alert" className="mt-1 text-xs text-rose-600">{error}</p>}
       {helperText && !error && (
-        <p className="mt-1 text-xs text-slate-500">{helperText}</p>
+        <p id={helperId} className="mt-1 text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
       )}
 
       {/* Custom Options Popover */}
       {isOpen && (
         <div
           ref={listRef}
+          role="listbox"
           className={`absolute left-0 mt-1.5 w-full ${
             size === 'lg' ? 'max-h-80' : 'max-h-64'
           } overflow-y-auto bg-white dark:bg-slate-900 rounded-xl shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-700 py-1.5 z-50 animate-fadeIn`}

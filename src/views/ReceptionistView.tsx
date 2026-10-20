@@ -1015,9 +1015,9 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       {/* Header and Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Front Desk and Patient Reception Workstation
-          </h2>
+          </h1>
         </div>
         {!isMD && (
           <div className="flex items-center gap-2.5">
@@ -1050,13 +1050,13 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
       {/* Notification Banner */}
       {notification && (
-        <div className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100">
+        <div role="status" aria-live="polite" className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100">
           {notification}
         </div>
       )}
 
       {/* Workstation Navigation Tabs */}
-      <div className="flex items-center gap-4 overflow-x-auto border-b border-slate-200 dark:border-slate-800 no-scrollbar scrollbar-none">
+      <div role="tablist" aria-label="Reception Tabs" className="flex items-center gap-4 overflow-x-auto border-b border-slate-200 dark:border-slate-800 no-scrollbar scrollbar-none">
         {[
           { id: 'lounge', label: 'Waiting Lounge' },
           { id: 'appointments', label: 'Appointments' },
@@ -1066,6 +1066,9 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           <button
             key={tab.id}
             onClick={() => setSelectedTab(tab.id)}
+            role="tab"
+            aria-selected={selectedTab === tab.id}
+            aria-current={selectedTab === tab.id ? 'page' : undefined}
             className={`py-2 text-xs transition-none cursor-pointer whitespace-nowrap border-b-2 -mb-px ${
               selectedTab === tab.id
                 ? 'border-teal-600 dark:border-teal-500 font-bold text-slate-900 dark:text-slate-100'

@@ -16,7 +16,10 @@ export const Input: React.FC<InputProps> = ({
   id,
   ...props
 }) => {
-  const inputId = id || (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  const autoId = React.useId();
+  const inputId = id || (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : `input-${autoId}`);
+  const errorId = `${inputId}-error`;
+  const helperId = `${inputId}-helper`;
 
   return (
     <div className="w-full">
@@ -43,12 +46,14 @@ export const Input: React.FC<InputProps> = ({
               ? 'border-rose-300 focus:border-rose-500'
               : 'border-slate-300 hover:border-slate-400 dark:border-slate-700'
           } ${className}`}
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : helperText ? helperId : undefined}
           {...props}
         />
       </div>
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+      {error && <p id={errorId} role="alert" className="mt-1 text-xs text-rose-600">{error}</p>}
       {helperText && !error && (
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
+        <p id={helperId} className="mt-1 text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
       )}
     </div>
   );

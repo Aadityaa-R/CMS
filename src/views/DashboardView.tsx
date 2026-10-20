@@ -836,9 +836,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* Header: Greeting & Quick Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between no-print">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             {greeting}
-          </h2>
+          </h1>
           {renderQuickActions()}
         </div>
 
@@ -859,7 +859,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
       {/* Attendance Notification Banner */}
       {attendanceMessage && (
-        <div className="p-3 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl text-xs text-teal-800 dark:text-teal-300 no-print">
+        <div role="status" aria-live="polite" className="p-3 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl text-xs text-teal-800 dark:text-teal-300 no-print">
           {attendanceMessage}
         </div>
       )}
@@ -867,10 +867,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* Navigation Tabs: Overview & Daily Summary */}
       {qualifiesForDailySummary && (
         <div className="border-b border-slate-200 dark:border-slate-800 no-print">
-          <div className="flex space-x-6">
+          <div role="tablist" aria-label="Dashboard Tabs" className="flex space-x-6">
             <button
               type="button"
               onClick={() => setActiveTab('overview')}
+              role="tab"
+              aria-selected={activeTab === 'overview'}
+              aria-current={activeTab === 'overview' ? 'page' : undefined}
               className={`py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-none cursor-pointer ${
                 activeTab === 'overview'
                   ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300 font-semibold'
@@ -882,6 +885,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={() => setActiveTab('daily_summary')}
+              role="tab"
+              aria-selected={activeTab === 'daily_summary'}
+              aria-current={activeTab === 'daily_summary' ? 'page' : undefined}
               className={`py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-none cursor-pointer ${
                 activeTab === 'daily_summary'
                   ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300 font-semibold'

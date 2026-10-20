@@ -458,13 +458,16 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
         </div>
 
         {/* Underline Tabs */}
-        <div className="flex space-x-6 border-b border-transparent">
+        <div role="tablist" aria-label="Billing Tabs" className="flex space-x-6 border-b border-transparent">
           <button
             type="button"
             onClick={() => {
               setActiveTab('invoices');
               setInvoicesPage(1);
             }}
+            role="tab"
+            aria-selected={activeTab === 'invoices'}
+            aria-current={activeTab === 'invoices' ? 'page' : undefined}
             className={`pb-2 text-xs font-semibold tracking-wider uppercase transition-colors ${
               activeTab === 'invoices'
                 ? 'border-b-2 border-emerald-600 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400'
@@ -479,6 +482,9 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               setActiveTab('payments');
               setPaymentsPage(1);
             }}
+            role="tab"
+            aria-selected={activeTab === 'payments'}
+            aria-current={activeTab === 'payments' ? 'page' : undefined}
             className={`pb-2 text-xs font-semibold tracking-wider uppercase transition-colors ${
               activeTab === 'payments'
                 ? 'border-b-2 border-emerald-600 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400'

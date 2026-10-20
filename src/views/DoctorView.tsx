@@ -1042,14 +1042,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* Workstation Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Physician Consultation Desk & Clinical Care
-          </h2>
+          </h1>
         </div>
       </div>
 
       {/* Sub-Workstation Navigation Tabs */}
-      <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800">
+      <div role="tablist" aria-label="Consultation Tabs" className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800">
         {[
           { id: 'overview', label: 'Consultation Desk' },
           { id: 'patients', label: 'Patients' },
@@ -1058,6 +1058,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           <button
             key={tab.id}
             onClick={() => setSelectedTab(tab.id)}
+            role="tab"
+            aria-selected={selectedTab === tab.id}
+            aria-current={selectedTab === tab.id ? 'page' : undefined}
             className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap ${
               selectedTab === tab.id
                 ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
@@ -1071,7 +1074,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
       {/* Real-time Feedback Notification Banner */}
       {notification && (
-        <div className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 transition-all animate-fadeIn">
+        <div role="status" aria-live="polite" className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 transition-all animate-fadeIn">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
             <span className="font-semibold text-teal-950 dark:text-teal-100">Consultation Desk:</span>

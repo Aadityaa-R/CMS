@@ -15,7 +15,10 @@ export const Textarea: React.FC<TextareaProps> = ({
   rows = 3,
   ...props
 }) => {
-  const textareaId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  const autoId = React.useId();
+  const textareaId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : `textarea-${autoId}`);
+  const errorId = `${textareaId}-error`;
+  const helperId = `${textareaId}-helper`;
 
   return (
     <div className="w-full">
@@ -35,11 +38,13 @@ export const Textarea: React.FC<TextareaProps> = ({
             ? 'border-rose-300 focus:border-rose-500'
             : 'border-slate-300 hover:border-slate-400 dark:hover:border-slate-600'
         } ${className}`}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : helperText ? helperId : undefined}
         {...props}
       />
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+      {error && <p id={errorId} role="alert" className="mt-1 text-xs text-rose-600">{error}</p>}
       {helperText && !error && (
-        <p className="mt-1 text-xs text-slate-500">{helperText}</p>
+        <p id={helperId} className="mt-1 text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
       )}
     </div>
   );

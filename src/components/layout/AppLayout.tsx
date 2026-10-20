@@ -152,7 +152,24 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className={`h-screen flex flex-col font-sans antialiased overflow-hidden transition-colors ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+    <div className={`h-screen flex flex-col font-sans antialiased overflow-hidden ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+            {/* Skip to main content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:dark:bg-slate-900 focus:text-slate-900 focus:dark:text-slate-100 focus:border focus:border-slate-300 focus:dark:border-slate-700 focus:rounded-lg focus:shadow-modal focus:outline-none text-xs font-semibold"
+      >
+        Skip to main content
+      </a>
+
+      {/* Global polite live region for screen reader announcements */}
+      <div
+        id="global-status-region"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      />
+
       <div className="flex-1 flex overflow-hidden h-full">
         {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
         <Sidebar
@@ -176,7 +193,7 @@ export const AppLayout: React.FC = () => {
           />
 
           {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
-          <main className="flex-1 overflow-y-auto w-full p-4 sm:p-6">
+          <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto w-full p-4 sm:p-6 outline-none">
             <ErrorBoundary>
               {renderActiveView()}
             </ErrorBoundary>

@@ -677,7 +677,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
   return (
     <div className="space-y-6 pb-12">
       {notice && (
-        <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between gap-3">
+        <div role="status" aria-live="polite" className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between gap-3">
           <span>{notice}</span>
           <button
             type="button"
@@ -698,7 +698,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
       {/* Underline Tabs - horizontally scrollable on mobile */}
       <div className="border-b border-slate-200 dark:border-slate-800">
-        <div className="flex space-x-6 overflow-x-auto no-scrollbar">
+        <div role="tablist" aria-label="Portal Tabs" className="flex space-x-6 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -706,6 +706,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
+                role="tab"
+                aria-selected={isActive}
+                aria-current={isActive ? 'page' : undefined}
                 className={`py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                   isActive
                     ? 'border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400 font-semibold'

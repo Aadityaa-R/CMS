@@ -24,6 +24,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   className = '',
   required = false,
 }) => {
+  const autoId = React.useId();
+  const pickerId = label && typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : 'datepicker-' + autoId;
+  const errorId = pickerId + '-error';
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -153,6 +156,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
         className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-xl border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 cursor-pointer text-left focus:outline-none focus:ring-0 focus:border-teal-500 ${
           error
             ? 'border-rose-300 dark:border-rose-800'
@@ -165,7 +172,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         <CalendarIcon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 ml-2 shrink-0" />
       </button>
 
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+      {error && <p id={errorId} role="alert" className="mt-1 text-xs text-rose-600">{error}</p>}
 
       {/* Custom Calendar Popover */}
       {isOpen && (

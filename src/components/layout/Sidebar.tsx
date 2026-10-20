@@ -40,6 +40,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed = true,
   onToggleCollapse,
 }) => {
+  const asideRef = React.useRef<HTMLElement | null>(null);
+  const openerRef = React.useRef<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      openerRef.current = document.activeElement as HTMLElement;
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          onClose();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        if (openerRef.current && typeof openerRef.current.focus === 'function') {
+          openerRef.current.focus();
+        }
+      };
+    }
+  }, [isOpen, onClose]);
   const { currentRole, currentUser } = useAuth();
   const { modules } = useClinic();
 
@@ -103,6 +124,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar container */}
       <aside
+        ref={asideRef}
+        aria-label="Sidebar Navigation"
         className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[width] overflow-hidden shrink-0 select-none h-full ${
           isCollapsed ? 'w-64 lg:w-14' : 'w-64 lg:w-64'
         } ${
@@ -158,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation list */}
-        <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto overflow-x-hidden">
+        <nav aria-label="Main Navigation" className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto overflow-x-hidden">
           <div
             className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap px-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider ${
               isCollapsed ? 'lg:max-w-0 lg:opacity-0 lg:pb-0 max-w-[170px] opacity-100 pb-2' : 'max-w-[170px] opacity-100 pb-2'
@@ -177,6 +200,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 title={item.label}
                 aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
                 className={`w-full h-10 flex items-center px-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-0 ${
                   isActive
                     ? 'bg-teal-600 text-white'
