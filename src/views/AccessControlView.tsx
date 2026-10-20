@@ -330,16 +330,20 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   });
 
   useEffect(() => {
+    let isMounted = true;
     try {
       const repo = getRepository<PendingStaffApproval>('approvals');
       repo.list().then((list) => {
-        if (list && list.length > 0) {
+        if (isMounted && list && list.length > 0) {
           setPendingApprovals(list);
         }
       }).catch(() => {});
     } catch {
       // Ignore
     }
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -1250,7 +1254,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                           >
                             Edit Role
                           </Button>
-                          <div className="inline-block" title={!deleteCheck.allowed ? deleteCheck.reason : undefined}>
+                          <div className="inline-block">
                             <Button
                               variant="outline"
                               size="sm"
@@ -1353,7 +1357,6 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                         size="xs"
                                         variant="outline"
                                         disabled={isActionDisabled}
-                                        title={helperText}
                                         onClick={() =>
                                           setRemoveAccessTarget({
                                             module: currentModule,
@@ -1369,7 +1372,6 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                         size="xs"
                                         variant="primary"
                                         disabled={isActionDisabled}
-                                        title={helperText}
                                         onClick={() =>
                                           setIncludeAccessTarget({
                                             module: currentModule,
@@ -1746,35 +1748,39 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               Grant Access
                             </Button>
                           ) : (
+                            <div className="inline-flex flex-col items-start gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isAdmin(activeStaff) && !canRevokeAdmin(currentUser, activeStaff, staffAccessList).allowed}
+                                onClick={() => handleRevoke(activeStaff.id, activeStaff.staffName)}
+                              >
+                                Revoke Access
+                              </Button>
+                              {isAdmin(activeStaff) && !canRevokeAdmin(currentUser, activeStaff, staffAccessList).allowed && (
+                                <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
+                                  {canRevokeAdmin(currentUser, activeStaff, staffAccessList).reason}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="inline-flex flex-col items-start gap-1">
                             <Button
                               size="sm"
                               variant="outline"
-                              disabled={isAdmin(activeStaff) && !canRevokeAdmin(currentUser, activeStaff, staffAccessList).allowed}
-                              title={
-                                isAdmin(activeStaff) && !canRevokeAdmin(currentUser, activeStaff, staffAccessList).allowed
-                                  ? canRevokeAdmin(currentUser, activeStaff, staffAccessList).reason
-                                  : undefined
-                              }
-                              onClick={() => handleRevoke(activeStaff.id, activeStaff.staffName)}
+                              className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                              disabled={!canDeleteStaff(currentUser, activeStaff, staffAccessList).allowed}
+                              onClick={() => handlePromptDelete(activeStaff)}
                             >
-                              Revoke Access
+                              Delete Account
                             </Button>
-                          )}
-
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
-                            disabled={!canDeleteStaff(currentUser, activeStaff, staffAccessList).allowed}
-                            title={
-                              !canDeleteStaff(currentUser, activeStaff, staffAccessList).allowed
-                                ? canDeleteStaff(currentUser, activeStaff, staffAccessList).reason
-                                : undefined
-                            }
-                            onClick={() => handlePromptDelete(activeStaff)}
-                          >
-                            Delete Account
-                          </Button>
+                            {!canDeleteStaff(currentUser, activeStaff, staffAccessList).allowed && (
+                              <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
+                                {canDeleteStaff(currentUser, activeStaff, staffAccessList).reason}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 

@@ -47,17 +47,17 @@ export const RoleSwitcher: React.FC = () => {
                 }
               }}
               disabled={isSuspended && !isActive}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer ${
                 isActive
                   ? 'bg-teal-600 text-white ring-1 ring-teal-400'
                   : isSuspended
                   ? 'bg-slate-800/80 text-slate-400 border border-slate-700/80 cursor-not-allowed opacity-75'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
               }`}
-              title={isSuspended ? `Access Suspended by Managing Director: ${r.description}` : r.description}
+              
             >
               <span>{getRoleIcon(r.role)}</span>
-              <span>{r.label}</span>
+              <span>{r.label}{isSuspended ? ' (Suspended)' : ''}</span>
               {isSuspended && (
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 ml-0.5" title="Access Revoked" />
               )}

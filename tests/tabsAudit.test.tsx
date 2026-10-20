@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'vitest';
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, act, cleanup } from '@testing-library/react';
 import { DashboardView } from '../src/views/DashboardView';
 import { DoctorView } from '../src/views/DoctorView';
 import { ReceptionistView } from '../src/views/ReceptionistView';
@@ -149,98 +149,105 @@ function createMockProviders(currentUser: User, customInvoices = INITIAL_SEED_IN
 }
 
 describe('All Tabs and Roles Safety Audit (M9.5 / fix-payments-blank)', () => {
-  it('renders DashboardView for all 4 roles without throwing', () => {
-    [mdUser, docHayes, receptionistUser, patientUser].forEach((user) => {
+  it('renders DashboardView for all 4 roles without throwing', async () => {
+    for (const user of [mdUser, docHayes, receptionistUser, patientUser]) {
       const Wrapper = createMockProviders(user);
-      expect(() => {
+      await act(async () => {
         render(
           <Wrapper>
             <DashboardView onNavigate={() => {}} />
           </Wrapper>
         );
-      }).not.toThrow();
-    });
+      });
+      cleanup();
+    }
   });
 
-  it('renders all DoctorView tabs without throwing', () => {
+  it('renders all DoctorView tabs without throwing', async () => {
     const Wrapper = createMockProviders(docHayes);
-    ['overview', 'patients', 'prescriptions'].forEach((tab) => {
-      expect(() => {
+    for (const tab of ['overview', 'patients', 'prescriptions']) {
+      await act(async () => {
         render(
           <Wrapper>
             <DoctorView activeTab={tab} />
           </Wrapper>
         );
-      }).not.toThrow();
-    });
+      });
+      cleanup();
+    }
   });
 
-  it('renders all ReceptionistView tabs without throwing', () => {
+  it('renders all ReceptionistView tabs without throwing', async () => {
     const Wrapper = createMockProviders(receptionistUser);
-    ['lounge', 'appointments', 'patients', 'registry'].forEach((tab) => {
-      expect(() => {
+    for (const tab of ['lounge', 'appointments', 'patients', 'registry']) {
+      await act(async () => {
         render(
           <Wrapper>
             <ReceptionistView activeTab={tab} />
           </Wrapper>
         );
-      }).not.toThrow();
-    });
+      });
+      cleanup();
+    }
   });
 
-  it('renders all BillingView tabs without throwing', () => {
+  it('renders all BillingView tabs without throwing', async () => {
     const Wrapper = createMockProviders(mdUser);
-    ['invoices', 'payments'].forEach((tab) => {
-      expect(() => {
+    for (const tab of ['invoices', 'payments']) {
+      await act(async () => {
         render(
           <Wrapper>
             <BillingView initialTab={tab as any} />
           </Wrapper>
         );
-      }).not.toThrow();
-    });
+      });
+      cleanup();
+    }
   });
 
-  it('renders all AccessControlView tabs without throwing', () => {
+  it('renders all AccessControlView tabs without throwing', async () => {
     const Wrapper = createMockProviders(mdUser);
-    ['modules', 'edit_users', 'add_users', 'ledger', 'formulary', 'data'].forEach((tab) => {
-      expect(() => {
+    for (const tab of ['modules', 'edit_users', 'add_users', 'ledger', 'formulary', 'data']) {
+      await act(async () => {
         render(
           <Wrapper>
             <AccessControlView activeTab={tab} />
           </Wrapper>
         );
-      }).not.toThrow();
-    });
+      });
+      cleanup();
+    }
   });
 
-  it('renders all AttendanceView tabs without throwing', () => {
+  it('renders all AttendanceView tabs without throwing', async () => {
     const Wrapper = createMockProviders(mdUser);
-    ['today', 'sheet', 'leaves', 'shifts', 'my_attendance'].forEach((tab) => {
-      expect(() => {
+    for (const tab of ['today', 'sheet', 'leaves', 'shifts', 'my_attendance']) {
+      await act(async () => {
         render(
           <Wrapper>
             <AttendanceView activeTab={tab} />
           </Wrapper>
         );
-      }).not.toThrow();
-    });
+      });
+      cleanup();
+    }
   });
 
-  it('renders all PatientPortal tabs without throwing', () => {
+  it('renders all PatientPortal tabs without throwing', async () => {
     const Wrapper = createMockProviders(patientUser);
-    ['appointments', 'records', 'prescriptions', 'invoices', 'profile'].forEach((tab) => {
-      expect(() => {
+    for (const tab of ['appointments', 'records', 'prescriptions', 'invoices', 'profile']) {
+      await act(async () => {
         render(
           <Wrapper>
             <PatientPortal activeTab={tab} />
           </Wrapper>
         );
-      }).not.toThrow();
-    });
+      });
+      cleanup();
+    }
   });
 
-  it('renders every view safely with unmigrated legacy version-1 data', () => {
+  it('renders every view safely with unmigrated legacy version-1 data', async () => {
     const legacyInvoices: any[] = [
       {
         id: 'inv-v1',
@@ -269,7 +276,7 @@ describe('All Tabs and Roles Safety Audit (M9.5 / fix-payments-blank)', () => {
 
     const Wrapper = createMockProviders(mdUser, legacyInvoices, legacyPayments);
 
-    expect(() => {
+    await act(async () => {
       render(
         <Wrapper>
           <DashboardView onNavigate={() => {}} />
@@ -278,6 +285,7 @@ describe('All Tabs and Roles Safety Audit (M9.5 / fix-payments-blank)', () => {
           <PatientPortal activeTab="invoices" />
         </Wrapper>
       );
-    }).not.toThrow();
+    });
+    cleanup();
   });
 });

@@ -143,6 +143,36 @@ describe('Shared Responsive Table Component (M9.5 Requirement H)', () => {
     expect(actionsCell.querySelector('button')?.textContent).toBe('Call Next');
   });
 
+  it('renders loading, empty, and error states properly', () => {
+    // 1. Loading state
+    const { container: loadingContainer } = render(
+      <Table columns={testColumns} data={[]} isLoading={true} />
+    );
+    expect(loadingContainer.textContent).toContain('Loading records...');
+
+    // 2. Error state
+    const { container: errorContainer } = render(
+      <Table columns={testColumns} data={[]} error="Failed to fetch records" />
+    );
+    expect(errorContainer.textContent).toContain('Failed to fetch records');
+
+    // 3. Empty state with action
+    let clicked = false;
+    const { container: emptyContainer } = render(
+      <Table
+        columns={testColumns}
+        data={[]}
+        emptyMessage="No patients yet."
+        emptyAction={{ label: 'Register a patient', onClick: () => { clicked = true; } }}
+      />
+    );
+    expect(emptyContainer.textContent).toContain('No patients yet.');
+    const btn = emptyContainer.querySelector('button');
+    expect(btn?.textContent).toBe('Register a patient');
+    btn?.click();
+    expect(clicked).toBe(true);
+  });
+
   it('verifies HIDE_BELOW_CLASSES map integrity', () => {
     expect(HIDE_BELOW_CLASSES.sm).toBe('hidden sm:table-cell');
     expect(HIDE_BELOW_CLASSES.md).toBe('hidden md:table-cell');

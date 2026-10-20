@@ -1138,25 +1138,30 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                                   </TableCell>
                                   <TableCell isActions label="Actions" className="text-right">
                                     {req.status === 'pending' && (
-                                      <div className="flex items-center justify-end gap-2 flex-wrap">
-                                        <Button
-                                          size="xs"
-                                          variant="primary"
-                                          disabled={cannotDecideSelf}
-                                          onClick={() => handleApproveLeave(req)}
-                                          title={cannotDecideSelf ? 'Cannot approve own leave request' : undefined}
-                                        >
-                                          Approve
-                                        </Button>
-                                        <Button
-                                          size="xs"
-                                          variant="outline"
-                                          disabled={cannotDecideSelf}
-                                          onClick={() => handleOpenRejectModal(req)}
-                                          title={cannotDecideSelf ? 'Cannot reject own leave request' : undefined}
-                                        >
-                                          Reject
-                                        </Button>
+                                      <div className="flex flex-col items-end gap-1">
+                                        <div className="flex items-center justify-end gap-2 flex-wrap">
+                                          <Button
+                                            size="xs"
+                                            variant="primary"
+                                            disabled={cannotDecideSelf}
+                                            onClick={() => handleApproveLeave(req)}
+                                          >
+                                            Approve
+                                          </Button>
+                                          <Button
+                                            size="xs"
+                                            variant="outline"
+                                            disabled={cannotDecideSelf}
+                                            onClick={() => handleOpenRejectModal(req)}
+                                          >
+                                            Reject
+                                          </Button>
+                                        </div>
+                                        {cannotDecideSelf && (
+                                          <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
+                                            Cannot decide own leave request
+                                          </span>
+                                        )}
                                       </div>
                                     )}
                                   </TableCell>

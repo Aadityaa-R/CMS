@@ -257,9 +257,10 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
   useEffect(() => {
     try {
+      let isMounted = true;
       const repo = getRepository<ClaimRequest>('claimRequests');
       repo.list().then((claims) => {
-        setClaimRequests(claims);
+        if (isMounted) setClaimRequests(claims);
       }).catch(() => {});
     } catch {
       // Ignore
@@ -982,28 +983,33 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           );
         }
         return (
-          <div className="flex items-center gap-2">
-            <Button
-              size="xs"
-              variant="outline"
-              disabled={!canManageRegistration}
-              title={!canManageRegistration ? 'Requires patient registration access' : undefined}
-              onClick={() => handleApproveClaim(claim)}
-            >
-              Approve
-            </Button>
-            <Button
-              size="xs"
-              variant="outline"
-              disabled={!canManageRegistration}
-              title={!canManageRegistration ? 'Requires patient registration access' : undefined}
-              onClick={() => {
-                setRejectClaimTarget(claim);
-                setRejectClaimReason('');
-              }}
-            >
-              Reject
-            </Button>
+          <div className="flex flex-col items-start gap-1">
+            <div className="flex items-center gap-2">
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={!canManageRegistration}
+                onClick={() => handleApproveClaim(claim)}
+              >
+                Approve
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={!canManageRegistration}
+                onClick={() => {
+                  setRejectClaimTarget(claim);
+                  setRejectClaimReason('');
+                }}
+              >
+                Reject
+              </Button>
+            </div>
+            {!canManageRegistration && (
+              <span className="text-[0.625rem] text-slate-500 dark:text-slate-400">
+                Requires registration access
+              </span>
+            )}
           </div>
         );
       },

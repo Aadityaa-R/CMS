@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import React, { useState } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { AppLayout } from '../src/components/layout/AppLayout';
 import { Modal } from '../src/components/ui/Modal';
 import { Input } from '../src/components/ui/Input';
@@ -118,13 +118,15 @@ function createMockProviders(currentUser: User) {
 }
 
 describe('Keyboard and Screen Reader Pass (M10 Section 3)', () => {
-  it('renders skip to main content link targeting #main-content', () => {
+  it('renders skip to main content link targeting #main-content', async () => {
     const Wrapper = createMockProviders(mdUser);
-    render(
-      <Wrapper>
-        <AppLayout />
-      </Wrapper>
-    );
+    await act(async () => {
+      render(
+        <Wrapper>
+          <AppLayout />
+        </Wrapper>
+      );
+    });
 
     const skipLink = screen.getByRole('link', { name: /skip to main content/i });
     expect(skipLink).toBeDefined();
@@ -135,13 +137,15 @@ describe('Keyboard and Screen Reader Pass (M10 Section 3)', () => {
     expect(mainElement?.tagName.toLowerCase()).toBe('main');
   });
 
-  it('renders landmarks (header, nav, main) and polite live region', () => {
+  it('renders landmarks (header, nav, main) and polite live region', async () => {
     const Wrapper = createMockProviders(mdUser);
-    render(
-      <Wrapper>
-        <AppLayout />
-      </Wrapper>
-    );
+    await act(async () => {
+      render(
+        <Wrapper>
+          <AppLayout />
+        </Wrapper>
+      );
+    });
 
     expect(document.querySelector('header')).not.toBeNull();
     expect(document.querySelector('nav[aria-label="Main Navigation"]')).not.toBeNull();

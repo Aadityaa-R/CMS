@@ -1586,21 +1586,27 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                         ) : (
                                           !isReadOnlyView &&
                                           apt.status !== 'completed' && (
-                                            <Button
-                                              size="xs"
-                                              variant="outline"
-                                              className="whitespace-nowrap"
-                                              disabled={apt.status === 'scheduled'}
-                                              title={apt.status === 'scheduled' ? 'Patient has not been checked in' : undefined}
-                                              onClick={() => {
-                                                if (apt.status !== 'scheduled') {
-                                                  handleStartConsultation(apt);
-                                                }
-                                              }}
-                                              aria-label={`Start consultation for ${apt.patientName}`}
-                                            >
-                                              Start Consultation
-                                            </Button>
+                                            <div className="flex flex-col items-start gap-1">
+                                              <Button
+                                                size="xs"
+                                                variant="outline"
+                                                className="whitespace-nowrap"
+                                                disabled={apt.status === 'scheduled'}
+                                                onClick={() => {
+                                                  if (apt.status !== 'scheduled') {
+                                                    handleStartConsultation(apt);
+                                                  }
+                                                }}
+                                                aria-label={`Start consultation for ${apt.patientName}`}
+                                              >
+                                                Start Consultation
+                                              </Button>
+                                              {apt.status === 'scheduled' && (
+                                                <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
+                                                  Not checked in yet
+                                                </span>
+                                              )}
+                                            </div>
                                           )
                                         )}
                                       </>
@@ -1744,22 +1750,28 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               )}
                               {!isReadOnlyView ? (
                                 <>
-                                  <Button
-                                    size="xs"
-                                    variant="outline"
-                                    className="whitespace-nowrap"
-                                    disabled={!canAdmit}
-                                    title={admitTitle}
-                                    onClick={() => {
-                                      if (activeApt && canAdmit) {
-                                        setSelectedAppointmentId(activeApt.id);
-                                        setSelectedTab('overview');
-                                      }
-                                    }}
-                                    aria-label={`Admit ${pat.firstName} ${pat.lastName} to desk`}
-                                  >
-                                    Admit to Desk
-                                  </Button>
+                                  <div className="flex flex-col items-end gap-0.5">
+                                    <Button
+                                      size="xs"
+                                      variant="outline"
+                                      className="whitespace-nowrap"
+                                      disabled={!canAdmit}
+                                      onClick={() => {
+                                        if (activeApt && canAdmit) {
+                                          setSelectedAppointmentId(activeApt.id);
+                                          setSelectedTab('overview');
+                                        }
+                                      }}
+                                      aria-label={`Admit ${pat.firstName} ${pat.lastName} to desk`}
+                                    >
+                                      Admit to Desk
+                                    </Button>
+                                    {!canAdmit && admitTitle && (
+                                      <span className="text-[0.625rem] text-slate-500 dark:text-slate-400">
+                                        {admitTitle}
+                                      </span>
+                                    )}
+                                  </div>
                                   <Button
                                     size="xs"
                                     variant="outline"

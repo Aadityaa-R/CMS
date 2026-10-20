@@ -1,4 +1,5 @@
 import React, { createContext, useContext } from 'react';
+import { Button } from './Button';
 
 export type StackBreakpoint = 'sm' | 'md' | 'lg';
 export type HideBreakpoint = 'sm' | 'md' | 'lg' | 'xl';
@@ -27,6 +28,10 @@ export interface TableProps<T = any> extends React.TableHTMLAttributes<HTMLTable
   columns?: ColumnDef<T>[];
   data?: T[];
   keyExtractor?: (item: T, index: number) => string | number;
+  isLoading?: boolean;
+  error?: React.ReactNode;
+  emptyMessage?: React.ReactNode;
+  emptyAction?: { label: string; onClick: () => void };
 }
 
 export const Table = <T = any,>({
@@ -35,6 +40,10 @@ export const Table = <T = any,>({
   columns,
   data,
   keyExtractor,
+  isLoading,
+  error,
+  emptyMessage,
+  emptyAction,
   children,
   ...props
 }: TableProps<T>): React.ReactElement => {
@@ -62,32 +71,68 @@ export const Table = <T = any,>({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((item, rowIdx) => (
-              <TableRow key={keyExtractor ? keyExtractor(item, rowIdx) : rowIdx}>
-                {columns.map((col) => {
-                  const content = col.render ? col.render(item, rowIdx) : (item as any)[col.key];
-                  const colLabel = col.label || (typeof col.header === 'string' ? col.header : undefined);
-                  return (
-                    <TableCell
-                      key={col.key}
-                      hideBelow={col.hideBelow}
-                      label={colLabel}
-                      isPrimary={col.isPrimary}
-                      isActions={col.isActions}
-                      className={`${col.className || ''} ${
-                        col.align === 'right' ? 'text-right' : ''
-                      } ${
-                        col.isActions
-                          ? 'sticky right-0 bg-white dark:bg-slate-900 z-10'
-                          : ''
-                      }`}
-                    >
-                      {content}
-                    </TableCell>
-                  );
-                })}
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-8 text-slate-500 dark:text-slate-400"
+                >
+                  Loading records...
+                </TableCell>
               </TableRow>
-            ))}
+            ) : error ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-8 text-rose-600 dark:text-rose-400"
+                >
+                  {error}
+                </TableCell>
+              </TableRow>
+            ) : data.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-8 text-slate-500 dark:text-slate-400"
+                >
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <span>{emptyMessage || 'No records found.'}</span>
+                    {emptyAction && (
+                      <Button variant="outline" size="sm" onClick={emptyAction.onClick}>
+                        {emptyAction.label}
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              data.map((item, rowIdx) => (
+                <TableRow key={keyExtractor ? keyExtractor(item, rowIdx) : rowIdx}>
+                  {columns.map((col) => {
+                    const content = col.render ? col.render(item, rowIdx) : (item as any)[col.key];
+                    const colLabel = col.label || (typeof col.header === 'string' ? col.header : undefined);
+                    return (
+                      <TableCell
+                        key={col.key}
+                        hideBelow={col.hideBelow}
+                        label={colLabel}
+                        isPrimary={col.isPrimary}
+                        isActions={col.isActions}
+                        className={`${col.className || ''} ${
+                          col.align === 'right' ? 'text-right' : ''
+                        } ${
+                          col.isActions
+                            ? 'sticky right-0 bg-white dark:bg-slate-900 z-10'
+                            : ''
+                        }`}
+                      >
+                        {content}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </table>
       </TableContext.Provider>
@@ -357,3 +402,52 @@ export const TableTruncate: React.FC<TableTruncateProps> = ({
     </span>
   );
 };
+
+export const TableEmptyRow: React.FC<{
+  colSpan?: number;
+  message?: React.ReactNode;
+  action?: { label: string; onClick: () => void };
+}> = ({ colSpan, message = 'No records found.', action }) => (
+  <TableRow>
+    <TableCell colSpan={colSpan} className="text-center py-8 text-slate-500 dark:text-slate-400">
+      <div className="flex flex-col items-center justify-center gap-2">
+        <span>{message}</span>
+        {action && (
+          <Button variant="outline" size="sm" onClick={action.onClick}>
+            {action.label}
+          </Button>
+        )}
+      </div>
+    </TableCell>
+  </TableRow>
+);
+
+export const TableLoadingRow: React.FC<{
+  colSpan?: number;
+  message?: string;
+}> = ({ colSpan, message = 'Loading records...' }) => (
+  <TableRow>
+    <TableCell colSpan={colSpan} className="text-center py-8 text-slate-500 dark:text-slate-400">
+      {message}
+    </TableCell>
+  </TableRow>
+);
+
+export const TableErrorRow: React.FC<{
+  colSpan?: number;
+  error?: React.ReactNode;
+  onRetry?: () => void;
+}> = ({ colSpan, error = 'Failed to load records.', onRetry }) => (
+  <TableRow>
+    <TableCell colSpan={colSpan} className="text-center py-8 text-rose-600 dark:text-rose-400">
+      <div className="flex flex-col items-center justify-center gap-2">
+        <span>{error}</span>
+        {onRetry && (
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            Retry
+          </Button>
+        )}
+      </div>
+    </TableCell>
+  </TableRow>
+);

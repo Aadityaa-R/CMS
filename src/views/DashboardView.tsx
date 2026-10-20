@@ -503,10 +503,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   // Claim requests from repository for Needs Attention
   const [claimRequests, setClaimRequests] = useState<ClaimRequest[]>([]);
   React.useEffect(() => {
+    let isMounted = true;
     getRepository<ClaimRequest>('claimRequests')
       .list()
-      .then(setClaimRequests)
+      .then((items) => {
+        if (isMounted) setClaimRequests(items);
+      })
       .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Clock Out confirm modal state

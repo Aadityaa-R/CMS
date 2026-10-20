@@ -619,6 +619,26 @@ Every feature and line of code in this project strictly adheres to the governing
 
 ---
 
+### 2.26 Component States, Disabled Control Helper Text, and Vitest Warning Failures (Milestone M10 Section 5)
+
+- **Loading, Empty, and Error States**:
+  - Enhanced shared Table.tsx to natively support isLoading, error, emptyMessage, and emptyAction.
+  - Empty states render a short plain-text explanation and, where an action is useful, a plain outline button to take the first step (e.g. Register a patient).
+  - Exported reusable helper rows: TableLoadingRow, TableEmptyRow, and TableErrorRow for custom table layouts.
+- **Visible Helper Text for Disabled Controls**:
+  - Eliminated title attributes and tooltips on disabled interactive controls in favor of visible, permanent helper text:
+    - AccessControlView.tsx: Added visible reason text when revoking administrator privileges or deleting staff accounts is disallowed.
+    - AttendanceView.tsx: Added visible explanation ("Cannot decide own leave request") when an administrator attempts to decide their own leave.
+    - DoctorView.tsx: Added visible explanation ("Not checked in yet") on disabled Start Consultation buttons, and visible reasons on Admit to Desk.
+    - ReceptionistView.tsx: Added visible explanation ("Requires registration access") on disabled account claim approval/rejection actions.
+    - RoleSwitcher.tsx: Replaced hover title with visible inline "(Suspended)" indicator and stripped animated transitions.
+- **Strict Vitest Warning and Console Failure Hook**:
+  - Configured global test setup hook in tests/setup.ts registered via setupFiles in vitest.config.ts.
+  - The hook strictly fails any unit or component test that emits a console.error, console.warn, or unhandled promise rejection.
+  - Refactored asynchronous lifecycle effects with isMounted cancellation guards and wrapped test renders in await act(async () => ...) with deterministic cleanup().
+
+---
+
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
 
 The table below outlines the evolution of the codebase from initial repository setup to current state:
