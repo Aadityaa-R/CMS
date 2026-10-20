@@ -9,6 +9,7 @@ export interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '80%' | 'screen80';
+  minHeight?: string;
   fullScreenOnMobile?: boolean;
   overflowVisible?: boolean;
   bodyClassName?: string;
@@ -22,6 +23,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   maxWidth = 'md',
+  minHeight,
   fullScreenOnMobile = false,
   overflowVisible = false,
   bodyClassName = '',
@@ -108,10 +110,14 @@ export const Modal: React.FC<ModalProps> = ({
     screen80: 'w-[92vw] sm:w-[80vw] max-w-[80vw]',
   };
 
+  const isCompact = maxWidth === 'sm';
+  const defaultMinHeight = isCompact ? '' : 'min-h-[500px] sm:min-h-[560px]';
+  const effectiveMinHeight = minHeight !== undefined ? minHeight : defaultMinHeight;
+
   const containerPadding = fullScreenOnMobile ? 'p-0 sm:p-6' : 'p-4 sm:p-6';
   const dialogLayout = fullScreenOnMobile
-    ? 'w-full h-full sm:h-auto rounded-none sm:rounded-xl my-0 sm:my-8 max-h-screen sm:max-h-[90vh] flex flex-col'
-    : 'rounded-xl my-8';
+    ? `w-full h-full sm:h-auto rounded-none sm:rounded-xl my-0 sm:my-8 max-h-screen sm:max-h-[90vh] ${effectiveMinHeight} flex flex-col`
+    : `rounded-xl my-8 ${effectiveMinHeight} max-h-[88vh] flex flex-col`;
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center ${containerPadding} overflow-y-auto`}>
@@ -128,7 +134,7 @@ export const Modal: React.FC<ModalProps> = ({
         aria-modal="true"
         aria-labelledby="modal-title"
         tabIndex={-1}
-        className={`relative ${dialogLayout} ${maxWidthClasses[maxWidth]} bg-white dark:bg-slate-900 shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-800 ${
+        className={`relative ${dialogLayout} ${maxWidthClasses[maxWidth] || maxWidthClasses.md} bg-white dark:bg-slate-900 shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-800 ${
           overflowVisible ? 'overflow-visible' : 'overflow-hidden'
         } z-10`}
       >
@@ -152,12 +158,10 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         <div
-          className={`px-4 sm:px-6 py-4 sm:py-5 ${
+          className={`px-4 sm:px-6 py-4 sm:py-5 flex-1 ${
             overflowVisible
               ? 'overflow-visible'
-              : fullScreenOnMobile
-              ? 'flex-1 overflow-y-auto'
-              : 'max-h-[75vh] overflow-y-auto'
+              : 'overflow-y-auto'
           } text-slate-800 dark:text-slate-200 ${bodyClassName}`}
         >
           {children}
