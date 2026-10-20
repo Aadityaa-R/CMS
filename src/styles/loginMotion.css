@@ -77,10 +77,39 @@
 }
 
 .login-entrance-item {
-  animation: login-fade-rise 300ms var(--motion-ease-entrance) both;
+  animation: login-fade-rise 250ms var(--motion-ease-entrance) both;
 }
 
-.login-entrance-item.login-animating {
+.login-entrance-0 {
+  animation: login-fade-rise 250ms var(--motion-ease-entrance) 0ms both;
+}
+.login-entrance-1 {
+  animation: login-fade-rise 250ms var(--motion-ease-entrance) 70ms both;
+}
+.login-entrance-2 {
+  animation: login-fade-rise 250ms var(--motion-ease-entrance) 140ms both;
+}
+.login-entrance-3 {
+  animation: login-fade-rise 250ms var(--motion-ease-entrance) 210ms both;
+}
+.login-entrance-4 {
+  animation: login-fade-rise 250ms var(--motion-ease-entrance) 280ms both;
+}
+.login-entrance-5 {
+  animation: login-fade-rise 250ms var(--motion-ease-entrance) 350ms both;
+}
+.login-entrance-6 {
+  animation: login-fade-rise 250ms var(--motion-ease-entrance) 420ms both;
+}
+
+.login-entrance-item.login-animating,
+.login-entrance-0.login-animating,
+.login-entrance-1.login-animating,
+.login-entrance-2.login-animating,
+.login-entrance-3.login-animating,
+.login-entrance-4.login-animating,
+.login-entrance-5.login-animating,
+.login-entrance-6.login-animating {
   will-change: transform, opacity;
 }
 
@@ -145,6 +174,13 @@
 /* Reduced motion disables all animations and transitions */
 @media (prefers-reduced-motion: reduce) {
   .login-entrance-item,
+  .login-entrance-0,
+  .login-entrance-1,
+  .login-entrance-2,
+  .login-entrance-3,
+  .login-entrance-4,
+  .login-entrance-5,
+  .login-entrance-6,
   .login-card-shake,
   .login-card-exit,
   .login-view-crossfade,

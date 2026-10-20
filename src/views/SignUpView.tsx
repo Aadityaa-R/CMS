@@ -7,11 +7,12 @@ import { Building2, User, Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, ArrowLeft
 import { validatePasswordPolicy } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 
-interface SignUpViewProps {
+export interface SignUpViewProps {
   onBackToLogin: () => void;
+  contentOnly?: boolean;
 }
 
-export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin }) => {
+export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin, contentOnly = false }) => {
   const { signUpPatient, signUpStaff } = useAuth();
 
   const [accountType, setAccountType] = useState<'patient' | 'staff'>(() => {
@@ -154,26 +155,9 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin }) => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-10 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Brand Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
-        <div className="flex justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-teal-600 flex items-center justify-center text-white">
-            <Building2 className="w-8 h-8" />
-          </div>
-        </div>
-        <h1 className="mt-4 text-center text-2xl font-bold tracking-tight text-white">
-          Beacon Health Clinic
-        </h1>
-        <p className="mt-1 text-center text-xs text-slate-400">
-          Clinic Management System (CMS) • Self-Registration Portal
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl z-10 px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 sm:px-10 shadow-card dark:shadow-none print:shadow-none rounded-2xl border border-slate-200">
-          {successInfo ? (
+  const innerCardContent = (
+    <div className="w-full">
+      {successInfo ? (
             <div className="space-y-6 text-center py-4">
               <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-600 mx-auto flex items-center justify-center border border-teal-200">
                 <CheckCircle2 className="w-6 h-6" />
@@ -414,6 +398,34 @@ export const SignUpView: React.FC<SignUpViewProps> = ({ onBackToLogin }) => {
               </form>
             </>
           )}
+
+    </div>
+  );
+
+  if (contentOnly) {
+    return innerCardContent;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-10 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Brand Header */}
+      <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 text-center">
+        <div className="flex justify-center">
+          <div className="w-14 h-14 rounded-2xl bg-teal-600 flex items-center justify-center text-white">
+            <Building2 className="w-8 h-8" />
+          </div>
+        </div>
+        <h1 className="mt-4 text-center text-2xl font-bold tracking-tight text-white">
+          Beacon Health Clinic
+        </h1>
+        <p className="mt-1 text-center text-xs text-slate-400">
+          Clinic Management System (CMS) • Self-Registration Portal
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl z-10 px-4 sm:px-0">
+        <div className="bg-white py-8 px-6 sm:px-10 shadow-card dark:shadow-none print:shadow-none rounded-2xl border border-slate-200">
+          {innerCardContent}
         </div>
       </div>
     </div>
