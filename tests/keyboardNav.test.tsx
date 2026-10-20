@@ -199,6 +199,51 @@ describe('Keyboard and Screen Reader Pass (M10 Section 3)', () => {
     expect(document.activeElement).toBe(opener);
   });
 
+  it('verifies Modal preserves focus while typing in an input with inline onClose', () => {
+    const TestComponent: React.FC = () => {
+      const [isOpen, setIsOpen] = useState(true);
+      const [text, setText] = useState('');
+      return (
+        <div>
+          <button id="opener-btn">Opener</button>
+          <Modal
+            isOpen={isOpen}
+            onClose={() => setIsOpen(false)}
+            title="Typing Test Dialog"
+          >
+            <input
+              id="typing-input"
+              data-testid="typing-input"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+          </Modal>
+        </div>
+      );
+    };
+
+    render(<TestComponent />);
+
+    const input = screen.getByTestId('typing-input') as HTMLInputElement;
+    input.focus();
+    expect(document.activeElement).toBe(input);
+
+    // Type character 1
+    fireEvent.change(input, { target: { value: 'A' } });
+    expect(input.value).toBe('A');
+    expect(document.activeElement).toBe(input);
+
+    // Type character 2
+    fireEvent.change(input, { target: { value: 'AB' } });
+    expect(input.value).toBe('AB');
+    expect(document.activeElement).toBe(input);
+
+    // Type character 3
+    fireEvent.change(input, { target: { value: 'ABC' } });
+    expect(input.value).toBe('ABC');
+    expect(document.activeElement).toBe(input);
+  });
+
   it('verifies form controls link errors through aria-describedby and set aria-invalid', () => {
     render(
       <div>

@@ -28,8 +28,10 @@ export const Modal: React.FC<ModalProps> = ({
   overflowVisible = false,
   bodyClassName = '',
 }) => {
-    const modalRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (isOpen) {
@@ -38,6 +40,10 @@ export const Modal: React.FC<ModalProps> = ({
 
       const timer = setTimeout(() => {
         if (modalRef.current) {
+          // If focus is already inside modal (e.g. user focused or typed), do not steal it
+          if (modalRef.current.contains(document.activeElement)) {
+            return;
+          }
           const focusable = modalRef.current.querySelectorAll<HTMLElement>(
             'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
           );
@@ -52,7 +58,7 @@ export const Modal: React.FC<ModalProps> = ({
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           e.stopPropagation();
-          onClose();
+          onCloseRef.current();
           return;
         }
 
@@ -96,7 +102,7 @@ export const Modal: React.FC<ModalProps> = ({
         }
       };
     }
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -123,7 +129,7 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={() => onCloseRef.current()}
       />
 
       {/* Modal Dialog Content */}
@@ -148,7 +154,7 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
             aria-label="Close dialog"
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-0"
           >
@@ -177,4 +183,3 @@ export const Modal: React.FC<ModalProps> = ({
     </div>
   );
 };
-

@@ -43,6 +43,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const asideRef = React.useRef<HTMLElement | null>(null);
   const openerRef = React.useRef<HTMLElement | null>(null);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
 
   React.useEffect(() => {
     if (isOpen) {
@@ -50,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           e.stopPropagation();
-          onClose();
+          onCloseRef.current();
         }
       };
       window.addEventListener('keydown', handleKeyDown);
@@ -61,7 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
       };
     }
-  }, [isOpen, onClose]);
+  }, [isOpen]);
   const { currentRole, currentUser } = useAuth();
   const { modules } = useClinic();
 
