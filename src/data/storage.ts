@@ -19,19 +19,9 @@ import { normalizeActor } from '../lib/billing';
 import { migrateConsultationFee } from '../lib/money';
 import { migrateLegacyPrescription } from '../lib/prescribing';
 import { Medicine } from '../types/prescribing';
-import {
-  ROLE_CREDENTIALS,
-  INITIAL_STAFF_ACCESS,
-  INITIAL_PATIENTS,
-  INITIAL_APPOINTMENTS,
-  INITIAL_PRESCRIPTIONS,
-  INITIAL_MODULES,
-  INITIAL_PENDING_APPROVALS,
-  INITIAL_PATIENT_ASSIGNMENTS,
-  INITIAL_ACCESS_AUDIT_LOG,
-} from './mockData';
-import { INITIAL_SHIFTS, INITIAL_ATTENDANCE_RECORDS, INITIAL_LEAVE_REQUESTS } from './attendanceSeed';
-import { INITIAL_SEED_INVOICES, INITIAL_SEED_PAYMENTS } from './billingSeed';
+import { generateDemoScenario } from './demoScenario';
+export { generateDemoScenario };
+import { ROLE_CREDENTIALS } from './mockData';
 import { INITIAL_FORMULARY } from './formularySeed';
 import { InAppNotification } from '../types';
 
@@ -414,7 +404,7 @@ export async function seedInitialData(force = false): Promise<void> {
     return;
   }
 
-  const seedAccounts = await generateSeedAccounts();
+  const scenario = generateDemoScenario();
   const repoAccounts = getRepository<Account>('accounts');
   const repoStaff = getRepository<any>('staff');
   const repoPatients = getRepository<any>('patients');
@@ -434,24 +424,24 @@ export async function seedInitialData(force = false): Promise<void> {
   const repoNotifications = getRepository<InAppNotification>('notifications');
   const repoFormulary = getRepository<any>('formulary');
 
-  await repoAccounts.replaceAll(seedAccounts);
-  await repoStaff.replaceAll(INITIAL_STAFF_ACCESS);
-  await repoPatients.replaceAll(INITIAL_PATIENTS);
-  await repoAppointments.replaceAll(INITIAL_APPOINTMENTS);
-  await repoPrescriptions.replaceAll(INITIAL_PRESCRIPTIONS);
-  await repoInvoices.replaceAll(INITIAL_SEED_INVOICES);
-  await repoAssignments.replaceAll(INITIAL_PATIENT_ASSIGNMENTS);
-  await repoRoles.replaceAll(INITIAL_MODULES);
-  await repoApprovals.replaceAll(INITIAL_PENDING_APPROVALS);
-  await repoClaimRequests.replaceAll([]);
-  await repoAttendance.replaceAll(INITIAL_ATTENDANCE_RECORDS);
-  await repoLeave.replaceAll(INITIAL_LEAVE_REQUESTS);
-  await repoShifts.replaceAll(INITIAL_SHIFTS);
-  await repoLedger.replaceAll(INITIAL_ACCESS_AUDIT_LOG);
+  await repoAccounts.replaceAll(scenario.accounts);
+  await repoStaff.replaceAll(scenario.staff);
+  await repoPatients.replaceAll(scenario.patients);
+  await repoAppointments.replaceAll(scenario.appointments);
+  await repoPrescriptions.replaceAll(scenario.prescriptions);
+  await repoInvoices.replaceAll(scenario.invoices);
+  await repoAssignments.replaceAll(scenario.patientAssignments);
+  await repoRoles.replaceAll(scenario.modules);
+  await repoApprovals.replaceAll(scenario.pendingApprovals);
+  await repoClaimRequests.replaceAll(scenario.claimRequests);
+  await repoAttendance.replaceAll(scenario.attendanceRecords);
+  await repoLeave.replaceAll(scenario.leaveRequests);
+  await repoShifts.replaceAll(scenario.shifts);
+  await repoLedger.replaceAll(scenario.ledger);
   await repoVisits.replaceAll([]);
-  await repoPayments.replaceAll(INITIAL_SEED_PAYMENTS);
-  await repoNotifications.replaceAll(INITIAL_NOTIFICATIONS);
-  await repoFormulary.replaceAll(INITIAL_FORMULARY);
+  await repoPayments.replaceAll(scenario.payments);
+  await repoNotifications.replaceAll(scenario.notifications);
+  await repoFormulary.replaceAll(scenario.formulary);
 
   setStorageSettings({
     mode: 'browser',

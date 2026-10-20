@@ -657,6 +657,33 @@ Every feature and line of code in this project strictly adheres to the governing
 
 ---
 
+### 2.28 Demonstration Scenario Data Engine and Invariant Verification (Milestone M10 Section 7)
+
+- **Dynamic Clinical Timeline and Offsets**:
+  - Implemented dynamic seed scenario generator in src/data/demoScenario.ts relative to active execution time (now: Date = new Date()), wired directly into browser storage initialization (seedInitialData(force) in src/data/storage.ts).
+  - Guarantees realistic calendar alignment across any execution date and timezone, eliminating stale hardcoded date fixtures.
+- **Staff Accounts and Identity Constraints**:
+  - Exactly 5 canonical staff accounts: Dr. Marcus Vance (Managing Director, acc-doc-1), Dr. Nathan Hayes (Staff Physician, acc-doc-2), Dr. Sophia Reed (Outpatient Physician, acc-doc-3), Priya Sharma (Lead Front Desk Coordinator, acc-rec-1), and David Kim (Front Desk Intake Specialist, acc-rec-2).
+  - Strict name uniqueness: no two staff members share a name, and strictly zero patient accounts share any first or last name with staff members.
+- **Patient Registry and Clinical Realism**:
+  - Exactly 7 distinct outpatient records (pat-1 through pat-7), featuring Eleanor Wright (pat-1, Penicillin and peanut allergy, ongoing antihypertensives Amlodipine Besylate 5mg and Hydrochlorothiazide 12.5mg), James Miller (pat-2, Type 2 diabetes), Clara Thornton (pat-3, asthma), Arthur Dent (pat-4, preventive wellness), Fiona Gallagher (pat-5, acute triage), Robert Chen (pat-6, hyperlipidemia, 35-day-old unpaid invoice), and Maya Lin (pat-7, pending portal account link request).
+- **Queue and Workstation Distribution**:
+  - Today features realistic operational activity: exactly 1 waiting in lounge (Clara Thornton, token 2), 1 in consultation (Eleanor Wright, token 1), 1 completed with an electronic prescription and paid invoice (James Miller, Dr. Vance), 1 scheduled later today (Arthur Dent, 15:30), and 1 unexcused no-show from yesterday requiring rescheduling (Fiona Gallagher).
+- **Operational Clearances, Leave Requests, and Financial Aging**:
+  - Exactly 1 pending staff clearance request (Dr. Clara Oswald, Pediatrics, 11000 cents consultation fee).
+  - Exactly 1 pending leave request (Priya Sharma, Casual leave for personal travel).
+  - Exactly 1 unpaid invoice > 30 days old (Robert Chen, issued 35 days ago, 15000 cents balance due).
+- **Needs Attention Widget Coverage**:
+  - All 5 oversight categories in the Needs Attention dashboard widget (clearances, leaves, claims, reschedule, unpaid_30) report non-zero counts for clinic administrators.
+- **Automated Business Invariant Test Suite**:
+  - Added dedicated test suite tests/demoScenario.test.ts (17 tests) asserting:
+    1. No unassigned patient has a completed visit.
+    2. No doctor prescribes without an active primary patient assignment.
+    3. Money is represented strictly in integer minor units (cents) everywhere with zero floating-point decimals.
+    4. Zero emojis exist in any string property across the entire generated dataset.
+
+---
+
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
 
 The table below outlines the evolution of the codebase from initial repository setup to current state:

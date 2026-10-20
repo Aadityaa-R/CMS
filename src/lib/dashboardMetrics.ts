@@ -837,7 +837,7 @@ export function calculateDashboardMetrics(
     }
   }
 
-  if (hasRegistration || hasCheckIn) {
+  if (hasRegistration || hasCheckIn || userIsAdmin) {
     const pendingClaimsCount = claimRequests.filter((c) => c.status === 'pending').length;
     if (pendingClaimsCount > 0) {
       needsAttention.push({
