@@ -1343,14 +1343,30 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <div className="space-y-1.5 pt-0.5">
                           <span className="text-slate-500 dark:text-slate-400 block">Last Visit Vitals:</span>
                           {summaryPatient.previousVitals ? (
-                            <div className="p-2 rounded-md bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-1">
-                              <div className="flex items-center justify-between text-xs font-semibold text-slate-900 dark:text-slate-100">
-                                <span>BP {summaryPatient.previousVitals.systolicBp}/{summaryPatient.previousVitals.diastolicBp} mmHg</span>
-                                <span>HR {summaryPatient.previousVitals.heartRateBpm} bpm</span>
+                            <div className="p-2.5 rounded-md bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 text-xs">
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-slate-500 dark:text-slate-400 shrink-0">Blood Pressure:</span>
+                                <span className="font-semibold text-slate-900 dark:text-slate-100 text-right">
+                                  {summaryPatient.previousVitals.systolicBp ?? '--'}/{summaryPatient.previousVitals.diastolicBp ?? '--'} mmHg
+                                </span>
                               </div>
-                              <div className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
-                                <span>SpO2 {summaryPatient.previousVitals.oxygenSaturationPct}%</span>
-                                <span>Temp {summaryPatient.previousVitals.temperatureCelsius} °C</span>
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-slate-500 dark:text-slate-400 shrink-0">Heart Rate:</span>
+                                <span className="font-semibold text-slate-900 dark:text-slate-100 text-right">
+                                  {summaryPatient.previousVitals.heartRateBpm ?? '--'} bpm
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-slate-500 dark:text-slate-400 shrink-0">SpO2:</span>
+                                <span className="font-semibold text-slate-900 dark:text-slate-100 text-right">
+                                  {summaryPatient.previousVitals.oxygenSaturationPct ?? '--'}%
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-slate-500 dark:text-slate-400 shrink-0">Temperature:</span>
+                                <span className="font-semibold text-slate-900 dark:text-slate-100 text-right">
+                                  {summaryPatient.previousVitals.temperatureCelsius ?? '--'} °C
+                                </span>
                               </div>
                             </div>
                           ) : (
