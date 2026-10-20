@@ -19,7 +19,6 @@ export interface User {
   claimPending?: boolean;
   status?: string;
   moduleIds?: string[];
-  capabilities?: string[];
 }
 
 export interface PatientAssignment {

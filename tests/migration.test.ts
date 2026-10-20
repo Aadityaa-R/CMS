@@ -132,6 +132,21 @@ describe('Storage Schema Version 1 to 2 Migration Tests (M9.5 / fix-payments-bla
     expect(rx.cancelledBy).toEqual({ id: 'unknown', name: 'Administrator' });
   });
 
+  it('migrateStaff strips leftover capabilities while converting consultationFee to cents', () => {
+    const staffWithCapabilities = [
+      {
+        id: 'doc-legacy',
+        name: 'Dr. Nathan Hayes',
+        role: 'doctor',
+        consultationFee: 90,
+        capabilities: ['consultationWorkstation', 'emrRecordsAccess'],
+      },
+    ];
+    const migrated = migrateStaff(staffWithCapabilities);
+    expect(migrated[0].consultationFee).toBe(9000);
+    expect((migrated[0] as any).capabilities).toBeUndefined();
+  });
+
   it('migrateStaff converts consultationFee from legacy dollars to cents', () => {
     const migrated = migrateStaff(v1StaffFixture);
     expect(migrated[0].consultationFee).toBe(12000);

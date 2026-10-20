@@ -22,6 +22,8 @@ import {
   isSessionValid,
   touchSession,
   validatePasswordPolicy,
+  findMatchingPatient,
+  createStaffSignupRequest,
 } from '@/lib/auth';
 import { Account, ClaimRequest } from '@/types/storage';
 import { STORAGE_KEY_PREFIX, SESSION_STORAGE_KEY } from '@/lib/authConstants';
@@ -704,13 +706,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const now = new Date().toISOString();
 
     const existingPatients = await repoPatients.list();
-    const matchedPatient = existingPatients.find((p) => {
-      const matchPhone = p.phone === cleanPhone;
-      const patFullName = `${p.firstName} ${p.lastName}`.trim().toLowerCase();
-      const reqFullName = params.fullName.trim().toLowerCase();
-      const matchNameAndDob = patFullName === reqFullName && p.dob === params.dob;
-      return matchPhone || matchNameAndDob;
-    });
+    const matchedPatient = findMatchingPatient(existingPatients, cleanPhone, params.fullName, params.dob);
 
     const accountId = `acc-pat-${Date.now()}`;
 
@@ -878,19 +874,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     await repoAccounts.create(newAccount);
 
-    const prefix = params.roleRequested === 'doctor' ? 'DOC' : 'REC';
-    const badgeNumber = `${prefix}-${Math.floor(100 + Math.random() * 900)}`;
-
-    const approvalReq: PendingStaffApproval = {
-      id: `pend-${Date.now()}`,
-      role: params.roleRequested,
-      staffName: params.fullName,
-      staffTitle: params.jobTitle,
+    const approvalReq = createStaffSignupRequest({
+      roleRequested: params.roleRequested,
+      fullName: params.fullName,
+      jobTitle: params.jobTitle,
       department: params.department,
-      badgeNumber,
-      requestedAt: now.slice(0, 16).replace('T', ' '),
-      notes: 'Online sign-up request; clearance pending administrator authorization.',
-    };
+    });
     await repoApprovals.create(approvalReq);
 
     await repoLedger.create({

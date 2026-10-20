@@ -9,6 +9,8 @@ import {
   decideLeave,
   cancelLeave,
   monthlySummary,
+  setShift,
+  correctRecord,
 } from '../src/lib/attendance';
 import { Shift, AttendanceRecord, LeaveRequest } from '../src/types/attendance';
 
@@ -257,4 +259,49 @@ describe('Staff Time, Attendance, and Leave Engine (M9.5 Requirement H)', () => 
       expect(staff.totalHoursWorked).toBe(7.5);
     });
   });
+
+  describe('Shift Setting and Record Correction Validation', () => {
+    it('validates and applies shift updates with setShift', () => {
+      const updated = setShift(testShift, { start: '08:30', graceMinutes: 20 }, { id: 'acc-doc-1' }, testNow);
+      expect(updated.start).toBe('08:30');
+      expect(updated.graceMinutes).toBe(20);
+      expect(updated.staffId).toBe('acc-doc-1');
+    });
+
+    it('requires a non-empty reason when correcting attendance records', () => {
+      const rec: AttendanceRecord = {
+        id: 'att-corr-1',
+        staffId: 'acc-doc-1',
+        date: '2026-10-14',
+        clockIn: '2026-10-14T09:30:00.000Z',
+        clockOut: null,
+      };
+      expect(() => {
+        correctRecord(rec, { clockIn: '2026-10-14T09:00:00.000Z' }, { id: 'acc-doc-1', name: 'Dr. Marcus Vance' }, '', testNow);
+      }).toThrow(/correction reason is required/i);
+    });
+
+    it('successfully stamps correctedBy, correctionReason, and correctedAt on attendance record', () => {
+      const rec: AttendanceRecord = {
+        id: 'att-corr-2',
+        staffId: 'acc-doc-1',
+        date: '2026-10-14',
+        clockIn: '2026-10-14T09:30:00.000Z',
+        clockOut: null,
+      };
+      const corrected = correctRecord(
+        rec,
+        { clockIn: '2026-10-14T09:00:00.000Z', note: 'Badge reader offline' },
+        { id: 'acc-doc-1', name: 'Dr. Marcus Vance' },
+        'Badge reader timeout at morning check-in',
+        testNow
+      );
+      expect(corrected.clockIn).toBe('2026-10-14T09:00:00.000Z');
+      expect(corrected.correctedBy).toBe('Dr. Marcus Vance');
+      expect(corrected.correctionReason).toBe('Badge reader timeout at morning check-in');
+      expect(corrected.correctedAt).toBe(testNow.toISOString());
+      expect(corrected.note).toBe('Badge reader offline');
+    });
+  });
+
 });

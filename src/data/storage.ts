@@ -302,10 +302,14 @@ export function migratePrescriptions(prescriptions: any[], formulary: Medicine[]
  */
 export function migrateStaff(staffList: any[]): any[] {
   if (!Array.isArray(staffList)) return [];
-  return staffList.map((s) => ({
-    ...s,
-    consultationFee: migrateConsultationFee(s.consultationFee),
-  }));
+  return staffList.map((s) => {
+    const updated = { ...s };
+    delete updated.capabilities;
+    return {
+      ...updated,
+      consultationFee: migrateConsultationFee(s.consultationFee),
+    };
+  });
 }
 
 /**

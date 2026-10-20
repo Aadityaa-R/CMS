@@ -109,6 +109,40 @@ describe('Shared Responsive Table Component (M9.5 Requirement H)', () => {
     expect(actionsCell.querySelector('button')).not.toBeNull();
   });
 
+  it('renders Reception lounge waiting queue definition with responsive classes and stacked labels', () => {
+    const loungeColumns: ColumnDef<any>[] = [
+      { key: 'token', header: 'Token', label: 'Token' },
+      { key: 'patient', header: 'Patient', label: 'Patient Name', isPrimary: true },
+      { key: 'doctor', header: 'Doctor', label: 'Attending Doctor', hideBelow: 'md' },
+      { key: 'arrivalTime', header: 'Arrival Time', label: 'Arrival', hideBelow: 'sm' },
+      { key: 'waitTime', header: 'Wait Time', label: 'Wait Time', hideBelow: 'lg' },
+      { key: 'status', header: 'Status', label: 'Queue Status' },
+      { key: 'actions', header: 'Actions', isActions: true, render: () => <button>Call Next</button> },
+    ];
+    const loungeData = [
+      { id: 'apt-1', token: '#1', patient: 'Eleanor Vance', doctor: 'Dr. Nathan Hayes', arrivalTime: '09:00', waitTime: '15 min', status: 'Waiting' },
+      { id: 'apt-2', token: '#2', patient: 'Arthur Pendelton', doctor: 'Dr. Sophia Reed', arrivalTime: '09:15', waitTime: '0 min', status: 'In Consultation' },
+    ];
+    const { container } = render(
+      <Table columns={loungeColumns} data={loungeData} keyExtractor={(it) => it.id} />
+    );
+    expect(container.querySelectorAll('th').length).toBe(7);
+    expect(container.querySelectorAll('tbody tr').length).toBe(2);
+    expect(container.querySelectorAll('td').length).toBe(14);
+
+    // Primary column prominence
+    const primaryCell = container.querySelectorAll('tr')[1].querySelectorAll('td')[1];
+    expect(primaryCell.querySelector('div')?.className).toContain('font-bold');
+
+    // Doctor hideBelow md
+    const doctorTh = container.querySelectorAll('th')[2];
+    expect(doctorTh.className).toContain('hidden md:table-cell');
+
+    // Actions button container
+    const actionsCell = container.querySelectorAll('tr')[1].querySelectorAll('td')[6];
+    expect(actionsCell.querySelector('button')?.textContent).toBe('Call Next');
+  });
+
   it('verifies HIDE_BELOW_CLASSES map integrity', () => {
     expect(HIDE_BELOW_CLASSES.sm).toBe('hidden sm:table-cell');
     expect(HIDE_BELOW_CLASSES.md).toBe('hidden md:table-cell');

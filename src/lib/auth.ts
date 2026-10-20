@@ -1,3 +1,5 @@
+import { Patient } from '../types';
+import { PendingStaffApproval } from '../data/mockData';
 import {
   SESSION_STANDARD_DURATION_MS,
   SESSION_REMEMBER_DURATION_MS,
@@ -179,5 +181,49 @@ export function touchSession(session: SessionData, now = Date.now()): SessionDat
   return {
     ...session,
     lastActiveAt: now,
+  };
+}
+
+/**
+ * Detects duplicate patient records by phone number or by matching full name and date of birth.
+ */
+export function findMatchingPatient(
+  patients: Patient[],
+  phone: string,
+  fullName: string,
+  dob: string
+): Patient | undefined {
+  const cleanPhone = phone ? phone.trim() : '';
+  const cleanName = fullName ? fullName.trim().toLowerCase() : '';
+  return patients.find((p) => {
+    const matchPhone = cleanPhone !== '' && p.phone === cleanPhone;
+    const patFullName = `${p.firstName || ''} ${p.lastName || ''}`.trim().toLowerCase();
+    const matchNameAndDob = patFullName === cleanName && p.dob === dob;
+    return matchPhone || matchNameAndDob;
+  });
+}
+
+/**
+ * Builds a pending staff approval application with role badge.
+ */
+export function createStaffSignupRequest(params: {
+  roleRequested: 'doctor' | 'receptionist';
+  fullName: string;
+  jobTitle: string;
+  department: string;
+  notes?: string;
+  requestedAt?: string;
+}): PendingStaffApproval {
+  const prefix = params.roleRequested === 'doctor' ? 'DOC' : 'REC';
+  const badgeNumber = `${prefix}-${Math.floor(100 + Math.random() * 900)}`;
+  return {
+    id: `pend-${Date.now()}`,
+    role: params.roleRequested,
+    staffName: params.fullName,
+    staffTitle: params.jobTitle,
+    department: params.department,
+    badgeNumber,
+    requestedAt: params.requestedAt || new Date().toISOString().slice(0, 16).replace('T', ' '),
+    notes: params.notes || 'Online sign-up request; clearance pending administrator authorization.',
   };
 }
