@@ -10,8 +10,8 @@ Verification executed on branch `m10-final` against the dynamic demonstration sc
 
 - **Total Roles Audited**: 8 (Managing Director, Dr. Nathan Hayes, Dr. Sophia Reed, Lead Receptionist Priya Sharma, Front Desk Specialist David Kim, Registered Outpatient Eleanor Wright, Completed Patient James Miller, Self-Registration New Patient).
 - **Total Workstation Pages Audited**: 8 (DashboardView, DoctorView, ReceptionistView, BillingView, AttendanceView, AccessControlView, PatientPortal, LoginView/SignUpView).
-- **Total Verification Checkpoints**: 72 checkpoints.
-- **Audit Outcome**: 72 PASS / 0 FAIL.
+- **Total Verification Checkpoints**: 83 checkpoints.
+- **Audit Outcome**: 83 PASS / 0 FAIL.
 - **Emoji Audit**: 0 emojis present across UI, logs, code, commit messages, and documentation.
 - **WCAG AA Compliance**: 4.5:1 text contrast, 3:1 non-text borders/marks, skip link, landmarks, focus traps, zero horizontal scroll at 320 CSS pixels.
 - **Chunk Size Compliance**: All production JavaScript bundles <= 500 KB (maximum chunk size: 305.60 KB).
@@ -63,7 +63,18 @@ Verification executed on branch `m10-final` against the dynamic demonstration sc
 | **Lead Receptionist (Priya Sharma)** | Reception Workstation | Intake Registry | Review account claim link requests for Maya Lin | **PASS** | Approve links account to existing MRN; Reject holds account; both actions log to security ledger. |
 | **Lead Receptionist (Priya Sharma)** | Billing | Payments | Record patient payment and print official receipt | **PASS** | Accepts Card/Cash/UPI; calculates balance; generates receipt RCT-YYYY-XXXX without monospace. |
 | **Lead Receptionist (Priya Sharma)** | Attendance | My Attendance | Record daily clock-in / clock-out | **PASS** | Logs attendance timestamps with grace period calculation. |
-| **Front Desk Specialist (David Kim)** | Login | Authentication | Authenticate with username receptionist2 | **PASS** | Login succeeds; redirects to front desk dashboard; badge REC-302 recognized. |
+| **Audience Portal Navigation** | Login / Sign-Up | Audience Tabs | Toggle between Clinic Staff and Patient tabs using Arrow and Tab keys | **PASS** | Active tab indicated by bold text and static 2px underline; tab panel crossfades smoothly in 200ms without height jumps; typed credentials persist across tab switches while password fields clear. |
+| **Audience Routing & Persistence** | Login / Sign-Up | URL & Storage | Test ?as=patient and ?as=staff query params and localStorage memory | **PASS** | Query parameter overrides remembered state; unassigned first-time visit defaults to Clinic Staff; stored preference restored on return. |
+| **Front Desk Specialist (David Kim)** | Login | Clinic Staff Portal | Authenticate with username receptionist2 on Clinic Staff tab | **PASS** | Login succeeds; card fades out and scales to 0.98 in 250ms; redirects to front desk dashboard; badge REC-302 recognized. |
+| **Medical Staff (Dr. Nathan Hayes)** | Login | Clinic Staff Portal | Authenticate with username doctor on Clinic Staff tab | **PASS** | Login succeeds; redirects to physician consultation desk within 400ms without layout shift. |
+| **Managing Director (Dr. Marcus Vance)** | Login | Clinic Staff Portal | Authenticate with username md on Clinic Staff tab | **PASS** | Login succeeds; redirects to administrative overview dashboard; all clinic-wide metrics available. |
+| **Registered Patient (Eleanor Wright)** | Login | Patient Portal | Authenticate with username patient on Patient tab | **PASS** | Login succeeds; card smoothly exits; redirects to patient personal health hub and appointments ledger. |
+| **Cross-Portal Wrong-Tab Attempt** | Login | Cross-Portal Routing | Enter valid doctor credentials on Patient tab | **PASS** | Password verified first; returns wrongPortal code without incrementing lockout counter; displays polite notice "This is a clinic staff account. Use the Clinic Staff tab." with "Switch to Clinic Staff" action button. |
+| **Generic Invalid on Wrong Password** | Login | Security Verification | Enter valid doctor username with incorrect password on Patient tab | **PASS** | Returns generic "Invalid username or password." error; zero enumeration leakage across audience portals. |
+| **Failed Attempt Lockout & Shake** | Login | Error Feedback | Enter invalid credentials three consecutive times | **PASS** | Card shakes horizontally (6px, 3 swings, 350ms); polite live region announces error; lockout threshold triggers account freeze; reduced motion disables shake. |
+| **Demo Credentials Directory** | Login | Demo Helpers | Toggle "Show Role Credentials" panel on Clinic Staff and Patient tabs | **PASS** | Smooth height transition (grid-template-rows 0fr to 1fr, 250ms); directory filters accounts strictly by active tab; Fill buttons populate username without passwords; "Reset demo data" available on both tabs. |
+| **ECG Waveform Background** | Login / Sign-Up | Decorative Canvas | Inspect decorative inline SVG P-QRS-T waveform behind card | **PASS** | Waveform wipes left-to-right over 6s, holds 2s, fades 1s (10s cycle); vector-effect non-scaling-stroke preserves constant weight; respects low-opacity accent token in light and dark themes; pauses on visibilitychange; displays static line under prefers-reduced-motion. |
+| **Footer Security Notice** | Login / Sign-Up | Security Disclosure | Inspect bottom disclosure text on login and sign-up cards | **PASS** | Displays plain text "Demo environment. Do not enter real patient data." replacing former encryption claims. |
 | **Front Desk Specialist (David Kim)** | Reception Workstation | Waiting Lounge | Filter priority queue and search patient tokens | **PASS** | Search bar filters instantly with inline ghost text completion; table paginates at 10 items. |
 | **Front Desk Specialist (David Kim)** | Billing | Payments | Open Record Payment modal on outstanding invoice | **PASS** | Operator attributed to David Kim; balance calculated in integer minor units. |
 | **Registered Patient (Eleanor Wright)** | Dashboard | Overview | Inspect personal health hub KPI summary (3 figures) | **PASS** | Displays Upcoming Appointments (1), Active Prescriptions (2), Outstanding Balance ($0.00). |
@@ -75,8 +86,8 @@ Verification executed on branch `m10-final` against the dynamic demonstration sc
 | **Completed Patient (James Miller)** | Dashboard | Overview | View completed encounter KPI summary | **PASS** | Today's completed consultation reflected in patient record; Rx and invoice generated. |
 | **Completed Patient (James Miller)** | Patient Portal | Prescriptions | Verify newly issued electronic prescription | **PASS** | Displays newly issued prescription with issuing doctor, date, and dosage details. |
 | **Completed Patient (James Miller)** | Patient Portal | Invoices | Open invoice detail and test online settlement | **PASS** | Simulated online settlement flow processes payment and renders official printable receipt. |
-| **New Outpatient (Self-Registration)** | Sign Up | Patient Portal | Submit self-registration form with matching details | **PASS** | Duplicate detection finds existing clinic record; holds account link claim request for receptionist. |
-| **New Staff Applicant** | Sign Up | Staff Access | Submit staff application for Doctor or Receptionist | **PASS** | Prohibits self-granting Admin; places application into pending clearances queue for MD review. |
+| **New Outpatient (Self-Registration)** | Sign Up | Patient Portal | Register new outpatient account on Patient tab | **PASS** | Clean outpatient form renders name, email, phone, DOB (DatePicker), sex (Select), and password; obsolete "I am a" dropdown removed; duplicate detection finds existing clinic record and holds link claim request. |
+| **New Staff Applicant** | Sign Up | Clinic Staff Portal | Submit staff clearance application on Clinic Staff tab | **PASS** | Staff form renders name, email, phone, job title, department, Role requested (Select: Doctor, Receptionist), and password; self-granting Admin prohibited; obsolete "I am a" dropdown removed; places application into pending clearances queue. |
 | **Universal Component Pass** | AppLayout | Skip Link | Press Tab on fresh page load | **PASS** | Skip to main content link becomes visible on focus and directs focus to #main-content. |
 | **Universal Component Pass** | AppLayout | Landmarks | Inspect DOM structure with screen-reader tools | **PASS** | Uses semantic <header>, <nav>, and <main> landmarks; single <h1> heading per view. |
 | **Universal Component Pass** | AppLayout | Live Region | Trigger save or error status message | **PASS** | Status announcements dispatched through polite aria-live region. |
@@ -108,5 +119,12 @@ Verification executed on branch `m10-final` against the dynamic demonstration sc
    - Configured Rollup `manualChunks` in `vite.config.ts` separating vendor libraries (`vendor-react`, `vendor-icons`) and modular views (`view-doctor`, `view-receptionist`, `view-billing`, `view-attendance`, `view-access`, `view-patient`, `view-dashboard`).
    - Production chunks are now strictly <= 500 KB (largest chunk is `view-dashboard` at 305.60 KB; gzip 70.88 KB).
 3. **Cross-Timezone Robustness**:
-   - Multi-timezone testing verified identical test outcomes across UTC, America/Los_Angeles, and Asia/Kolkata (198 tests passing 100%).
+   - Multi-timezone testing verified identical test outcomes across UTC, America/Los_Angeles, and Asia/Kolkata (221 tests passing 100%).
+4. **Login Motion Specification Invariant**:
+   - Implemented Section 10 exception strictly scoped to authentication screens. All entrance transitions capped at 700ms max, ECG background SVG with soft wipe, card shake on error, and 250ms success fade.
+   - All animations disabled under prefers-reduced-motion and paused on tab visibility change.
+5. **Audience Separation and Anti-Enumeration Security**:
+   - Implemented Section 11 audience selector tabs (Patient and Clinic Staff).
+   - Password verification executes prior to audience validation, returning wrongPortal solely when credentials match an account in the opposing portal, and generic invalid on incorrect passwords to eliminate account enumeration risks.
+   - Credentials directory filters accounts strictly by active tab.
 
