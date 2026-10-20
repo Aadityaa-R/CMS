@@ -133,8 +133,8 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                 patternUnits="userSpaceOnUse"
                 patternTransform="rotate(45)"
               >
-                <rect width="6" height="6" fill="#64748b" fillOpacity="0.35" />
-                <line x1="0" y1="0" x2="0" y2="6" stroke="#475569" strokeWidth="1.5" />
+                <rect width="6" height="6" fill="var(--chart-hatch-rect)" fillOpacity="0.35" />
+                <line x1="0" y1="0" x2="0" y2="6" stroke="var(--chart-hatch-line)" strokeWidth="1.5" />
               </pattern>
             </defs>
 
@@ -156,7 +156,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                     x={38}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[10px] fill-slate-400 dark:fill-slate-500"
+                    className="text-[10px] fill-slate-500 dark:fill-slate-400"
                   >
                     {tick}
                   </text>
@@ -199,7 +199,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                     width={barWidth}
                     height={h2}
                     fill="url(#bar-hatch)"
-                    stroke="#475569"
+                    stroke="var(--chart-hatch-line)"
                     strokeWidth="0.5"
                   >
                     <title>{`${b.label}: ${b.visits} visits`}</title>
@@ -261,11 +261,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
         </div>
         <div className="flex items-center gap-1.5">
           <span
-            className="w-3 h-3 border border-slate-500 dark:border-slate-400 inline-block"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(45deg, #64748b, #64748b 2px, transparent 2px, transparent 4px)',
-            }}
+            className="w-3 h-3 border border-slate-500 dark:border-slate-400 inline-block chart-hatch-legend"
           />
           <span>Visits</span>
         </div>
@@ -357,7 +353,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                     x={48}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[10px] fill-slate-400 dark:fill-slate-500"
+                    className="text-[10px] fill-slate-500 dark:fill-slate-400"
                   >
                     ${tick}
                   </text>
@@ -370,7 +366,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
               <polyline
                 points={billedPoints}
                 fill="none"
-                stroke="#0d9488"
+                stroke="var(--chart-primary)"
                 strokeWidth="2"
               />
             )}
@@ -380,7 +376,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
               <polyline
                 points={collectedPoints}
                 fill="none"
-                stroke="#64748b"
+                stroke="var(--chart-secondary)"
                 strokeWidth="2"
                 strokeDasharray="5,4"
               />
@@ -399,10 +395,10 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
 
               return (
                 <g key={b.dateKey}>
-                  <circle cx={x} cy={yBilled} r="3" fill="#0d9488">
+                  <circle cx={x} cy={yBilled} r="3" fill="var(--chart-primary)">
                     <title>{`${b.label} - Billed: ${formatCurrency(b.billed * 100)}`}</title>
                   </circle>
-                  <rect x={x - 3} y={yCollected - 3} width="6" height="6" fill="#64748b">
+                  <rect x={x - 3} y={yCollected - 3} width="6" height="6" fill="var(--chart-secondary)">
                     <title>{`${b.label} - Collected: ${formatCurrency(b.collected * 100)}`}</title>
                   </rect>
                   {showLabel && (

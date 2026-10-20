@@ -201,11 +201,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
                 {userNotifications.length === 0 ? (
                   <div className="py-6 text-center">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-2.5 text-slate-400 dark:text-slate-500">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-2.5 text-slate-500 dark:text-slate-400">
                       <Bell className="w-5 h-5" />
                     </div>
                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">No notifications</p>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-[220px] mx-auto leading-relaxed">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-[220px] mx-auto leading-relaxed">
                       Consultation updates, schedule alerts, and booking notices will appear here.
                     </p>
                   </div>
@@ -222,7 +222,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                           <span className={`font-semibold ${notif.read ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-slate-100'}`}>
                             {notif.title}
                           </span>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0">
                             {notif.createdAt ? notif.createdAt.replace('T', ' ').slice(0, 16) : ''}
                           </span>
                         </div>
@@ -258,7 +258,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                             <button
                               type="button"
                               onClick={() => dismissNotification(notif.id)}
-                              className="text-[11px] text-slate-400 hover:text-rose-600 cursor-pointer"
+                              className="text-[11px] text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 cursor-pointer"
                             >
                               Dismiss
                             </button>
@@ -295,7 +295,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                   <div className="text-[11px] text-teal-700 dark:text-teal-400 capitalize font-medium">
                     {currentRole.replace('_', ' ')}
                   </div>
-                  <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                     {currentUser.email}
                   </div>
                 </div>
@@ -306,7 +306,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                   onClick={handleOpenProfile}
                   className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer outline-none focus:outline-none focus:ring-0"
                 >
-                  <User className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                  <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   <span>Profile</span>
                 </button>
 
@@ -316,7 +316,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                   onClick={handleOpenSettings}
                   className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer outline-none focus:outline-none focus:ring-0"
                 >
-                  <Settings className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                  <Settings className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   <span>Settings</span>
                 </button>
 
@@ -330,7 +330,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                     {theme === 'dark' ? (
                       <Sun className="w-4 h-4 text-teal-400" />
                     ) : (
-                      <Moon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                      <Moon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     )}
                     <span>Theme: {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
                   </div>
@@ -482,7 +482,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block flex items-center gap-1">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
                   <Mail className="w-3 h-3" /> Email Address
                 </span>
                 <span className="font-medium text-slate-800 dark:text-slate-200 break-all">
@@ -490,7 +490,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                 </span>
               </div>
               <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block flex items-center gap-1">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
                   <Shield className="w-3 h-3" /> Department
                 </span>
                 <span className="font-medium text-slate-800 dark:text-slate-200">
@@ -498,7 +498,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                 </span>
               </div>
               <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block flex items-center gap-1">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
                   <BadgeCheck className="w-3 h-3" /> Badge / Terminal ID
                 </span>
                 <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
@@ -506,7 +506,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                 </span>
               </div>
               <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold block">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold block">
                   Session Status
                 </span>
                 <span className="font-medium text-teal-700 dark:text-teal-400">

@@ -634,7 +634,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                                 currentStatus === 'paid'
                                   ? 'text-emerald-700 dark:text-emerald-400 font-medium'
                                   : currentStatus === 'void'
-                                  ? 'text-slate-400 dark:text-slate-500 line-through'
+                                  ? 'text-slate-500 dark:text-slate-400 line-through'
                                   : currentStatus === 'partially_paid'
                                   ? 'text-slate-700 dark:text-slate-300 font-medium'
                                   : 'text-slate-700 dark:text-slate-300 font-medium'
@@ -815,7 +815,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                                 p.kind === 'reversal'
                                   ? 'text-rose-600 dark:text-rose-400 font-medium'
                                   : isReversed
-                                  ? 'text-slate-400 dark:text-slate-500 line-through'
+                                  ? 'text-slate-500 dark:text-slate-400 line-through'
                                   : 'text-slate-700 dark:text-slate-300'
                               }
                             >
@@ -1539,7 +1539,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               </span>
             </div>
 
-            <div className="text-center pt-2 text-[10px] text-slate-400 dark:text-slate-500">
+            <div className="text-center pt-2 text-[10px] text-slate-500 dark:text-slate-400">
               Demographic and payment settlement record only.
               <br />
               No clinical diagnosis, prescription, or vitals are disclosed on receipts.

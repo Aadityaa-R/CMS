@@ -159,10 +159,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
         }`}
       >
-        <span className={value ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'}>
+        <span className={value ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}>
           {value ? formatDisplay(value) : placeholder}
         </span>
-        <CalendarIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 ml-2 shrink-0" />
+        <CalendarIcon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 ml-2 shrink-0" />
       </button>
 
       {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
@@ -192,7 +192,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           </div>
 
           {/* Days of week */}
-          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-slate-400 uppercase mb-1">
+          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">
             <span>Su</span>
             <span>Mo</span>
             <span>Tu</span>
@@ -342,7 +342,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
         }`}
       >
         <span>{formatTimeDisplay(value)}</span>
-        <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 ml-2 shrink-0" />
+        <Clock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 ml-2 shrink-0" />
       </button>
 
       {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}

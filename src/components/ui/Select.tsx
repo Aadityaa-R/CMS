@@ -161,7 +161,7 @@ export const Select: React.FC<SelectProps> = ({
             <span
               className={`absolute inset-y-0 left-0 ${
                 size === 'lg' ? 'pl-3.5' : 'pl-3'
-              } flex items-center pointer-events-none text-slate-400 dark:text-slate-500 z-10`}
+              } flex items-center pointer-events-none text-slate-500 dark:text-slate-400 z-10`}
             >
               {icon}
             </span>
@@ -278,7 +278,7 @@ export const Select: React.FC<SelectProps> = ({
                 }
               }
             }}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
           >
             <ChevronDown
               className="w-4 h-4"
@@ -306,7 +306,7 @@ export const Select: React.FC<SelectProps> = ({
             <span
               className={`absolute inset-y-0 left-0 ${
                 size === 'lg' ? 'pl-3.5' : 'pl-3'
-              } flex items-center pointer-events-none text-slate-400 dark:text-slate-500`}
+              } flex items-center pointer-events-none text-slate-500 dark:text-slate-400`}
             >
               {icon}
             </span>
@@ -315,13 +315,13 @@ export const Select: React.FC<SelectProps> = ({
             className={`truncate ${
               selectedOption && selectedOption.value !== ''
                 ? 'text-slate-900 dark:text-slate-100 font-medium'
-                : 'text-slate-400 dark:text-slate-500'
+                : 'text-slate-500 dark:text-slate-400'
             }`}
           >
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           <ChevronDown
-            className="w-4 h-4 text-slate-400 dark:text-slate-500 ml-2 shrink-0"
+            className="w-4 h-4 text-slate-500 dark:text-slate-400 ml-2 shrink-0"
             style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}
           />
         </button>
@@ -341,7 +341,7 @@ export const Select: React.FC<SelectProps> = ({
           } overflow-y-auto bg-white dark:bg-slate-900 rounded-xl shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-700 py-1.5 z-50 animate-fadeIn`}
         >
           {filteredOptions.length === 0 ? (
-            <div className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500 text-center">
+            <div className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 text-center">
               {searchQuery ? `No options matching "${searchQuery}"` : 'No options available'}
             </div>
           ) : (
@@ -366,7 +366,7 @@ export const Select: React.FC<SelectProps> = ({
                   <div className="flex items-center gap-2 truncate min-w-0">
                     <span className="truncate">{opt.label}</span>
                     {opt.sublabel && (
-                      <span className="text-xs text-slate-400 dark:text-slate-500 font-normal shrink-0">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-normal shrink-0">
                         {opt.sublabel}
                       </span>
                     )}

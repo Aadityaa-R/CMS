@@ -2154,7 +2154,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               </span>
             </div>
 
-            <div className="text-center pt-2 text-[10px] text-slate-400 dark:text-slate-500">
+            <div className="text-center pt-2 text-[10px] text-slate-500 dark:text-slate-400">
               Outpatient billing receipt.
               <br />
               No clinical diagnosis or prescription details are disclosed on receipts.

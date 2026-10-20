@@ -6,6 +6,13 @@
 :root {
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
   --shadow-modal: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  --chart-primary: #0d9488;
+  --chart-secondary: #475569;
+  --chart-hatch-rect: #64748b;
+  --chart-hatch-line: #334155;
+  --chart-grid: #94a3b8;
+  --chart-pattern: #64748b;
+  --focus-outline: #0d9488;
 }
 
 .shadow-card {
@@ -28,6 +35,21 @@ html.dark .shadow-modal {
   .shadow-modal {
     box-shadow: none !important;
   }
+}
+
+.dark,
+html.dark {
+  --chart-primary: #2dd4bf;
+  --chart-secondary: #cbd5e1;
+  --chart-hatch-rect: #94a3b8;
+  --chart-hatch-line: #f1f5f9;
+  --chart-grid: #475569;
+  --chart-pattern: #cbd5e1;
+  --focus-outline: #14b8a6;
+}
+
+.chart-hatch-legend {
+  background-image: repeating-linear-gradient(45deg, var(--chart-pattern), var(--chart-pattern) 2px, transparent 2px, transparent 4px);
 }
 
 
@@ -53,9 +75,10 @@ html.dark .shadow-modal {
     @apply bg-slate-950 text-slate-100;
   }
 
-  /* Universal Custom UI Focus Rings - replaces native browser focus outline */
+  /* Static keyboard-only focus outline with >= 3:1 contrast (Milestone M10 Section 2) */
   :focus-visible {
-    @apply outline-none ring-2 ring-teal-500/50 ring-offset-0;
+    outline: 1px solid var(--focus-outline);
+    outline-offset: 1px;
   }
 
   /* Universal Selection Color */
@@ -93,11 +116,11 @@ html.dark .shadow-modal {
 
   /* Universal UI Base for Text Inputs - low specificity so utility classes (pl-11, etc.) override */
   input {
-    @apply rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400;
+    @apply rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500;
   }
 
   .dark input {
-    @apply bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500;
+    @apply bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400;
   }
 
   input:hover {
@@ -132,7 +155,11 @@ html.dark .shadow-modal {
 
   /* Universal UI Base for Textarea */
   textarea {
-    @apply rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 resize-y;
+    @apply rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-500 resize-y;
+  }
+
+  .dark textarea {
+    @apply bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400;
   }
 
   textarea:hover {

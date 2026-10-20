@@ -1029,7 +1029,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                                   ? 'text-rose-600 dark:text-rose-400'
                                   : code === 'LV'
                                   ? 'text-amber-600 dark:text-amber-400'
-                                  : 'text-slate-400 dark:text-slate-500'
+                                  : 'text-slate-500 dark:text-slate-400'
                               }`}
                             >
                               {code}

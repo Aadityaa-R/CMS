@@ -15,7 +15,8 @@
     "test:all-zones": "npm run test:tz:utc && npm run test:tz:la && npm run test:tz:kolkata",
     "scan:emojis": "tsx scripts/scan-emojis.ts",
     "scan:commits": "tsx scripts/scan-commits.ts",
-    "verify": "npm run build && npm run typecheck && npm run test:all-zones && npm run scan:emojis && npm run scan:commits"
+    "verify": "npm run build && npm run typecheck && npm run test:all-zones && npm run scan:emojis && npm run scan:commits && npm run scan:colors",
+    "scan:colors": "tsx scripts/scan-colors.ts"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",

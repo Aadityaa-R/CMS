@@ -550,6 +550,32 @@ Every feature and line of code in this project strictly adheres to the governing
 
 ---
 
+### 2.23 Universal Theme Contrast, Static Focus Outline, and Chart Tokens (Milestone M10 Section 2)
+
+- **Contrast Ratios & Typography Standards**:
+  - All text content strictly achieves at least 4.5:1 contrast against light and dark backgrounds (WCAG AA).
+  - Light mode muted text utilizes text-slate-500 or text-slate-600 (4.60:1 to 7.00:1 contrast on white and slate-50).
+  - Dark mode muted text utilizes dark:text-slate-400 or dark:text-slate-300 (5.34:1 to 8.87:1 contrast on slate-900).
+  - Inverted text pairings (text-slate-400 dark:text-slate-500) are strictly prohibited and eliminated across all workstation navigation, form pickers, tables, and dialogs.
+  - Form placeholders are standardized to placeholder:text-slate-500 in light mode and dark:placeholder:text-slate-400 in dark mode.
+- **Static Keyboard Focus Outline**:
+  - Focus rings, glowing halos, and animated focus transitions are suppressed (ring-0, shadow-none).
+  - Keyboard navigation employs a static, non-animated 1px solid outline via :focus-visible with 1px outline offset (--focus-outline token: #0d9488 in light mode [4.53:1 contrast], #14b8a6 in dark mode [6.94:1 contrast], exceeding the 3:1 non-text requirement).
+- **Chart Mark Tokens & Visual Accessibility**:
+  - Raw hex and rgb colors in SVG charts and data visualizations are eliminated in favor of semantic CSS tokens defined in src/index.css:
+    - --chart-primary: #0d9488 (light) / #2dd4bf (dark).
+    - --chart-secondary: #475569 (light) / #cbd5e1 (dark).
+    - --chart-hatch-rect: #64748b (light) / #94a3b8 (dark).
+    - --chart-hatch-line: #334155 (light) / #f1f5f9 (dark).
+    - --chart-grid: #94a3b8 (light) / #475569 (dark).
+    - --chart-pattern: #64748b (light) / #cbd5e1 (dark).
+  - All chart lines, markers, bars, and hatch patterns reach >= 3:1 contrast against chart canvas in both themes.
+  - Data distinction maintains multi-channel accessibility: solid line with circles for billed fees, dashed line (strokeDasharray="5,4") with squares for collections, solid teal bars for new patients, and 45-degree hatch pattern for outpatient visits.
+- **Automated Color Enforcement**:
+  - Added automated color scanner scripts/scan-colors.ts and wired into npm run verify. The build fails if any raw hex (#...) or rgb(...) / rgba(...) color appears in code outside designated design token files.
+
+---
+
 ## 3. CHRONOLOGICAL CHANGELOG OF USER REQUESTS & COMMITS
 
 The table below outlines the evolution of the codebase from initial repository setup to current state:
