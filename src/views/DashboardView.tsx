@@ -193,7 +193,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                   <line
                     x1={45}
                     y1={y}
-                    x2={580}
+                    x2={565}
                     y2={y}
                     stroke="currentColor"
                     className="text-slate-200 dark:text-slate-800"
@@ -468,7 +468,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                       <line
                         x1={55}
                         y1={y}
-                        x2={580}
+                        x2={570}
                         y2={y}
                         stroke="currentColor"
                         className="text-slate-200 dark:text-slate-800"
@@ -1509,7 +1509,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   >
                     {/* Slide 1: Visual Analytics Graphs */}
                     <div
-                      className="w-full shrink-0"
+                      className={`w-full shrink-0 ${dashboardViewMode === 'tables' ? 'h-0 overflow-hidden' : ''}`}
                       aria-hidden={dashboardViewMode !== 'graphs'}
                     >
                       {chartsCards}
@@ -1517,7 +1517,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                     {/* Slide 2: Operational Data Tables */}
                     <div
-                      className="w-full shrink-0"
+                      className={`w-full shrink-0 ${dashboardViewMode === 'graphs' ? 'h-0 overflow-hidden' : ''}`}
                       aria-hidden={dashboardViewMode !== 'tables'}
                     >
                       {operationalCards}
