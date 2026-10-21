@@ -11,7 +11,8 @@ import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/Interact
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTruncate } from '@/components/ui/Table';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
-import { formatLocalDate, parseLocalDateKey } from '@/lib/time';
+import { DetailList, DetailItem } from '@/components/ui/DetailList';
+import { formatLocalDate, parseLocalDateKey, formatDate, formatTime } from '@/lib/time';
 import {
   CheckCircle2,
   Filter,
@@ -1364,169 +1365,138 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             {/* Right Column / Order 2 on Mobile: Patient Summary Card */}
             <div className="order-2 lg:col-span-1 flex flex-col">
               <Card className="h-full flex flex-col">
-                <CardHeader className="px-6 py-5">
-                  <CardTitle className="text-xl font-bold tracking-tight">Patient Summary</CardTitle>
+                <CardHeader>
+                  <CardTitle>Patient Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6 text-sm p-6 flex-1 flex flex-col justify-between">
+                <CardContent className="p-0 flex-1 flex flex-col">
                   {summaryPatient ? (
-                    <>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
                       {/* Section 1: Previous Visit Record */}
-                      <div className="space-y-2.5 pb-4 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
+                      <div className="p-4 sm:p-5">
+                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-2">
                           Previous Visit Record
                         </span>
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-baseline gap-2 py-0.5">
-                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                              {lastCompletedApt?.dateTime
-                                ? new Date(lastCompletedApt.dateTime).toLocaleDateString('en-GB', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                  })
-                                : summaryPatient.lastVisitDate || 'None recorded'}
-                            </span>
-                          </div>
-
+                        <DetailList dense>
+                          <DetailItem
+                            label="Last Visit"
+                            value={
+                              lastCompletedApt?.dateTime
+                                ? formatDate(lastCompletedApt.dateTime)
+                                : summaryPatient.lastVisitDate
+                                ? formatDate(summaryPatient.lastVisitDate)
+                                : 'None recorded'
+                            }
+                          />
                           {summaryPatient.previousVitals ? (
                             <>
-                              <div className="flex justify-between items-baseline gap-2 py-0.5">
-                                <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Blood Pressure:</span>
-                                <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                                  {summaryPatient.previousVitals.systolicBp ?? '--'}/{summaryPatient.previousVitals.diastolicBp ?? '--'} mmHg
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-baseline gap-2 py-0.5">
-                                <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Heart Rate:</span>
-                                <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                                  {summaryPatient.previousVitals.heartRateBpm ?? '--'} bpm
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-baseline gap-2 py-0.5">
-                                <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">SpO2:</span>
-                                <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                                  {summaryPatient.previousVitals.oxygenSaturationPct ?? '--'}%
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-baseline gap-2 py-0.5">
-                                <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Temperature:</span>
-                                <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                                  {summaryPatient.previousVitals.temperatureCelsius ?? '--'} °C
-                                </span>
-                              </div>
+                              <DetailItem
+                                label="Blood Pressure"
+                                value={`${summaryPatient.previousVitals.systolicBp ?? '--'}/${summaryPatient.previousVitals.diastolicBp ?? '--'} mmHg`}
+                              />
+                              <DetailItem
+                                label="Heart Rate"
+                                value={`${summaryPatient.previousVitals.heartRateBpm ?? '--'} bpm`}
+                              />
+                              <DetailItem
+                                label="SpO2"
+                                value={`${summaryPatient.previousVitals.oxygenSaturationPct ?? '--'}%`}
+                              />
+                              <DetailItem
+                                label="Temperature"
+                                value={`${summaryPatient.previousVitals.temperatureCelsius ?? '--'} °C`}
+                              />
                             </>
                           ) : (
-                            <div className="flex justify-between items-baseline gap-2 py-0.5">
-                              <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Last Visit Vitals:</span>
-                              <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">None recorded</span>
-                            </div>
+                            <DetailItem label="Vitals" value="None recorded" />
                           )}
-
-                          <div className="flex justify-between items-baseline gap-2 py-0.5">
-                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Last Reason:</span>
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right line-clamp-2" title={lastCompletedApt?.reasonForVisit || undefined}>
-                              {lastCompletedApt?.reasonForVisit || 'None recorded'}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-baseline gap-2 py-0.5">
-                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Consulting Doctor:</span>
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                              {lastCompletedApt?.doctorName || 'None recorded'}
-                            </span>
-                          </div>
-                        </div>
+                          <DetailItem
+                            label="Last Reason"
+                            value={lastCompletedApt?.reasonForVisit || 'None recorded'}
+                          />
+                          <DetailItem
+                            label="Consulting Doctor"
+                            value={lastCompletedApt?.doctorName || 'None recorded'}
+                          />
+                        </DetailList>
                       </div>
 
                       {/* Section 2: Clinical Profile */}
-                      <div className="space-y-2.5 pb-4 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
+                      <div className="p-4 sm:p-5">
+                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-2">
                           Clinical Profile
                         </span>
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-baseline gap-2 py-0.5">
-                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                              {summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
+                        <DetailList dense>
+                          <DetailItem
+                            label="Chronic Conditions"
+                            value={
+                              summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
                                 ? deduplicateList(summaryPatient.chronicConditions).join(', ')
-                                : 'None recorded'}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-baseline gap-2 py-0.5">
-                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                              {(() => {
-                                const activeMeds = activeMedications(summaryPatient.id, prescriptions, new Date());
-                                if (activeMeds.length > 0) return activeMeds.join(', ');
-                                return 'None recorded';
-                              })()}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-baseline gap-2 py-0.5">
-                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Known Allergies:</span>
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                              {summaryPatient.allergies && summaryPatient.allergies.length > 0
+                                : 'None recorded'
+                            }
+                          />
+                          <DetailItem
+                            label="Current Medications"
+                            value={(() => {
+                              const activeMeds = activeMedications(summaryPatient.id, prescriptions, new Date());
+                              if (activeMeds.length > 0) return activeMeds.join(', ');
+                              return 'None recorded';
+                            })()}
+                          />
+                          <DetailItem
+                            label="Known Allergies"
+                            value={
+                              summaryPatient.allergies && summaryPatient.allergies.length > 0
                                 ? summaryPatient.allergies.join(', ')
-                                : 'None recorded'}
-                            </span>
-                          </div>
-                        </div>
+                                : 'None recorded'
+                            }
+                          />
+                        </DetailList>
                       </div>
 
                       {/* Section 3: Demographics & Primary Care */}
-                      <div className="space-y-2.5">
-                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
+                      <div className="p-4 sm:p-5">
+                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-2">
                           Demographics & Primary Care
                         </span>
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-baseline gap-2 py-0.5">
-                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Primary Doctor:</span>
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                              {(() => {
-                                const docId = getAssignedDoctorId(summaryPatient.id, patientAssignments);
-                                const doc = doctors.find((d) => d.id === docId);
-                                return doc ? doc.name : 'Unassigned';
-                              })()}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-baseline gap-2 py-0.5">
-                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Contact Phone:</span>
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                              {summaryPatient.phone || 'None recorded'}
-                            </span>
-                          </div>
-
+                        <DetailList dense>
+                          <DetailItem
+                            label="Primary Doctor"
+                            value={(() => {
+                              const docId = getAssignedDoctorId(summaryPatient.id, patientAssignments);
+                              const doc = doctors.find((d) => d.id === docId);
+                              return doc ? doc.name : 'Unassigned';
+                            })()}
+                          />
+                          <DetailItem
+                            label="Phone"
+                            value={summaryPatient.phone || 'None recorded'}
+                          />
                           {summaryPatient.emergencyContact && summaryPatient.emergencyContact.name && (
-                            <div className="flex justify-between items-baseline gap-2 py-0.5">
-                              <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Emergency Contact:</span>
-                              <span
-                                className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right truncate max-w-[200px]"
-                                title={`${summaryPatient.emergencyContact.name} (${summaryPatient.emergencyContact.relationship || 'Contact'}) • ${summaryPatient.emergencyContact.phone}`}
-                              >
-                                {summaryPatient.emergencyContact.name} ({summaryPatient.emergencyContact.relationship || 'Contact'})
-                              </span>
-                            </div>
+                            <DetailItem
+                              label="Emergency Contact"
+                              value={
+                                <div>
+                                  <div>
+                                    {summaryPatient.emergencyContact.name} ({summaryPatient.emergencyContact.relationship || 'Contact'})
+                                  </div>
+                                  <div className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                                    {summaryPatient.emergencyContact.phone}
+                                  </div>
+                                </div>
+                              }
+                            />
                           )}
-
-                          <div className="flex justify-between items-baseline gap-2 py-0.5">
-                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Registered Date:</span>
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
-                              {summaryPatient.registeredDate
-                                ? new Date(summaryPatient.registeredDate).toLocaleDateString('en-GB', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                  })
-                                : 'Recorded'}
-                            </span>
-                          </div>
-                        </div>
+                          <DetailItem
+                            label="Registered Date"
+                            value={
+                              summaryPatient.registeredDate
+                                ? formatDate(summaryPatient.registeredDate)
+                                : 'Recorded'
+                            }
+                          />
+                        </DetailList>
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <div className="flex-1 flex items-center justify-center p-6 text-center text-slate-500 dark:text-slate-400 text-sm">
                       No active consultation
@@ -1646,13 +1616,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <Table stackBelow="lg">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-44 whitespace-nowrap">Patient</TableHead>
-                          <TableHead className="w-12 text-center">#</TableHead>
-                          <TableHead className="w-24 whitespace-nowrap">Time</TableHead>
-                          <TableHead hideBelow="md" className="w-32 whitespace-nowrap">Appt ID</TableHead>
-                          <TableHead className="w-auto min-w-[200px]">Complaint</TableHead>
-                          <TableHead className="w-36 whitespace-nowrap">Status</TableHead>
-                          <TableHead isActions className="w-48 text-right whitespace-nowrap">Actions</TableHead>
+                          <TableHead width="fit">Patient</TableHead>
+                          <TableHead width="fit" className="text-center">#</TableHead>
+                          <TableHead width="fit">Time</TableHead>
+                          <TableHead width="fit" hideBelow="md">Appt ID</TableHead>
+                          <TableHead width="flex">Complaint</TableHead>
+                          <TableHead width="fit">Status</TableHead>
+                          <TableHead width="fit" isActions className="text-right whitespace-nowrap">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1666,32 +1636,30 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 key={apt.id}
                                 className={isCurrent ? 'bg-teal-50/50 dark:bg-teal-950/30' : ''}
                               >
-                                <TableCell isPrimary label="Patient" className="w-44 whitespace-nowrap font-bold text-slate-900 dark:text-slate-100">
+                                <TableCell width="fit" isPrimary label="Patient" className="font-bold text-slate-900 dark:text-slate-100">
                                   {apt.patientName}
                                 </TableCell>
-                                <TableCell label="Token #" className="w-12 text-center text-slate-700 dark:text-slate-300">
+                                <TableCell width="fit" label="Token #" className="text-center text-slate-700 dark:text-slate-300">
                                   {apt.tokenNumber}
                                 </TableCell>
-                                <TableCell label="Time" className="w-24 whitespace-nowrap text-slate-700 dark:text-slate-300">
-                                  {new Date(apt.dateTime).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
+                                <TableCell width="fit" label="Time" className="text-slate-700 dark:text-slate-300">
+                                  {formatTime(apt.dateTime)}
                                 </TableCell>
-                                <TableCell label="Appt ID" hideBelow="md" className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                <TableCell width="fit" label="Appt ID" hideBelow="md" className="text-slate-700 dark:text-slate-300">
                                   <TableTruncate>{apt.appointmentNumber}</TableTruncate>
                                 </TableCell>
                                 <TableCell
+                                  width="flex"
                                   label="Complaint"
-                                  className="w-auto min-w-[200px] text-slate-600 dark:text-slate-300"
+                                  className="text-slate-600 dark:text-slate-300"
                                   title={apt.reasonForVisit}
                                 >
                                   <span className="line-clamp-2">{apt.reasonForVisit}</span>
                                 </TableCell>
-                                <TableCell label="Status" id={`appt-status-${apt.id}`} className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                <TableCell width="fit" label="Status" id={`appt-status-${apt.id}`} className="text-slate-700 dark:text-slate-300">
                                   {formatAppointmentStatus(apt.status)}
                                 </TableCell>
-                                <TableCell isActions label="Actions" fullWidthOnStack className="w-48 text-right whitespace-nowrap">
+                                <TableCell width="fit" isActions label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
                                   {isInConsultation && isCurrent ? (
                                     <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                                       Current patient
@@ -1777,16 +1745,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-48">Patient Name</TableHead>
-                    <TableHead className="w-28 whitespace-nowrap">MRN</TableHead>
-                    <TableHead hideBelow="xl" className="w-32 whitespace-nowrap">Demographics</TableHead>
-                    <TableHead className="w-32 whitespace-nowrap">Today</TableHead>
-                    <TableHead hideBelow="sm" className="w-36 whitespace-nowrap">Phone</TableHead>
-                    <TableHead hideBelow="xl" className="w-24 whitespace-nowrap">Blood Group</TableHead>
-                    <TableHead hideBelow="sm" className="w-1/6 min-w-[140px]">Allergies</TableHead>
-                    <TableHead hideBelow="lg" className="w-1/6 min-w-[140px]">Chronic Conditions</TableHead>
-                    {isAdmin(currentUser) && <TableHead hideBelow="md" className="w-36 whitespace-nowrap">Assigned Doctor</TableHead>}
-                    <TableHead isActions className="w-48 text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead width="fit">Patient Name</TableHead>
+                    <TableHead width="fit">MRN</TableHead>
+                    <TableHead width="fit" hideBelow="xl">Demographics</TableHead>
+                    <TableHead width="fit">Today</TableHead>
+                    <TableHead width="fit" hideBelow="sm">Phone</TableHead>
+                    <TableHead width="fit" hideBelow="xl">Blood Group</TableHead>
+                    <TableHead width="fit" hideBelow="sm">Allergies</TableHead>
+                    <TableHead width="flex" hideBelow="lg">Chronic Conditions</TableHead>
+                    {isAdmin(currentUser) && <TableHead width="fit" hideBelow="md">Assigned Doctor</TableHead>}
+                    <TableHead width="fit" isActions className="text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1882,7 +1850,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       return (
                         <TableRow key={pat.id}>
-                          <TableCell isPrimary label="Patient Name" className="w-48">
+                          <TableCell width="fit" isPrimary label="Patient Name">
                             <div className="font-bold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
@@ -1890,33 +1858,33 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               <TableTruncate>{pat.email}</TableTruncate>
                             </div>
                           </TableCell>
-                          <TableCell label="MRN" className="w-28 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                          <TableCell width="fit" label="MRN" className="text-slate-700 dark:text-slate-300">
                             <TableTruncate>{pat.mrn}</TableTruncate>
                           </TableCell>
-                          <TableCell label="Demographics" hideBelow="xl" className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300 capitalize">
+                          <TableCell width="fit" label="Demographics" hideBelow="xl" className="text-slate-700 dark:text-slate-300 capitalize">
                             {pat.age} yrs • {pat.gender}
                           </TableCell>
-                          <TableCell label="Today" id={`today-pat-${pat.id}`} className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">
+                          <TableCell width="fit" label="Today" id={`today-pat-${pat.id}`} className="text-slate-700 dark:text-slate-300 font-medium">
                             {todayText}
                           </TableCell>
-                          <TableCell label="Phone" hideBelow="sm" className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                          <TableCell width="fit" label="Phone" hideBelow="sm" className="text-slate-700 dark:text-slate-300">
                             {pat.phone}
                           </TableCell>
-                          <TableCell label="Blood Group" hideBelow="xl" className="w-24 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                          <TableCell width="fit" label="Blood Group" hideBelow="xl" className="text-slate-700 dark:text-slate-300">
                             {pat.bloodGroup}
                           </TableCell>
-                          <TableCell label="Allergies" hideBelow="sm" className="w-1/6 min-w-[140px] text-slate-600 dark:text-slate-400 break-words">
+                          <TableCell width="fit" label="Allergies" hideBelow="sm" className="text-slate-600 dark:text-slate-400 break-words">
                             {pat.allergies && pat.allergies.length > 0 ? deduplicateList(pat.allergies).join(', ') : 'None recorded'}
                           </TableCell>
-                          <TableCell label="Chronic Conditions" hideBelow="lg" className="w-1/6 min-w-[140px] text-slate-600 dark:text-slate-400 break-words">
+                          <TableCell width="flex" label="Chronic Conditions" hideBelow="lg" className="text-slate-600 dark:text-slate-400 break-words">
                             {pat.chronicConditions && pat.chronicConditions.length > 0 ? deduplicateList(pat.chronicConditions).join(', ') : 'None recorded'}
                           </TableCell>
                           {isAdmin(currentUser) && (
-                            <TableCell label="Assigned Doctor" hideBelow="md" className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                            <TableCell width="fit" label="Assigned Doctor" hideBelow="md" className="text-slate-700 dark:text-slate-300">
                               {assignedDoc ? assignedDoc.name : <span className="italic text-slate-400">Unassigned</span>}
                             </TableCell>
                           )}
-                          <TableCell isActions label="Actions" fullWidthOnStack className="w-48 text-right whitespace-nowrap">
+                          <TableCell width="fit" isActions label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
                             <RowActions
                               actions={patientActions}
                               subject={`${pat.firstName} ${pat.lastName}`}
@@ -1975,32 +1943,32 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-1/12 min-w-[90px]">Rx #</TableHead>
-                    <TableHead className="w-2/12 min-w-[140px]">Patient</TableHead>
-                    <TableHead hideBelow="sm" className="w-1/12 min-w-[90px]">Date</TableHead>
-                    <TableHead className="w-2/12 min-w-[150px]">Diagnosis</TableHead>
-                    <TableHead className="w-4/12 min-w-[240px]">Regimen</TableHead>
-                    <TableHead className="w-1/12 min-w-[80px]">Status</TableHead>
-                    <TableHead isActions className="w-1/12 min-w-[100px] text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead width="fit">Rx #</TableHead>
+                    <TableHead width="fit">Patient</TableHead>
+                    <TableHead width="fit" hideBelow="sm">Date</TableHead>
+                    <TableHead width="fit">Diagnosis</TableHead>
+                    <TableHead width="flex">Regimen</TableHead>
+                    <TableHead width="fit">Status</TableHead>
+                    <TableHead width="fit" isActions className="text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPrescriptions.length > 0 ? (
                     paginatedPrescriptions.map((rx) => (
                       <TableRow key={rx.id}>
-                        <TableCell isPrimary label="Rx #" className="w-1/12 min-w-[90px] font-medium text-slate-700 dark:text-slate-300">
+                        <TableCell width="fit" isPrimary label="Rx #" className="font-medium text-slate-700 dark:text-slate-300">
                           <TableTruncate>{rx.prescriptionNumber}</TableTruncate>
                         </TableCell>
-                        <TableCell label="Patient" className="w-2/12 min-w-[140px] font-semibold text-slate-900 dark:text-slate-100">
+                        <TableCell width="fit" label="Patient" className="font-semibold text-slate-900 dark:text-slate-100">
                           {rx.patientName}
                         </TableCell>
-                        <TableCell label="Date" hideBelow="sm" className="w-1/12 min-w-[90px] text-slate-600 dark:text-slate-400">
-                          {rx.date}
+                        <TableCell width="fit" label="Date" hideBelow="sm" className="text-slate-600 dark:text-slate-400">
+                          {formatDate(rx.date)}
                         </TableCell>
-                        <TableCell label="Diagnosis" className="w-2/12 min-w-[150px] text-slate-800 dark:text-slate-200 break-words">
+                        <TableCell width="fit" label="Diagnosis" className="text-slate-800 dark:text-slate-200 break-words">
                           {rx.diagnosis}
                         </TableCell>
-                        <TableCell label="Regimen" className="w-4/12 min-w-[240px]">
+                        <TableCell width="flex" label="Regimen">
                           <div className="space-y-1 text-xs">
                             {rx.items && rx.items.length > 0 ? (
                               rx.items.map((item, idx) => (
@@ -2013,12 +1981,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             )}
                           </div>
                         </TableCell>
-                        <TableCell label="Status" className="w-1/12 min-w-[80px] text-xs">
+                        <TableCell width="fit" label="Status" className="text-xs">
                           <span className={rx.status === 'cancelled' ? 'text-slate-500 dark:text-slate-400 font-medium' : 'text-slate-800 dark:text-slate-200 font-medium'}>
                             {rx.status === 'cancelled' ? 'Cancelled' : 'Active'}
                           </span>
                         </TableCell>
-                        <TableCell isActions label="Actions" fullWidthOnStack className="w-1/12 min-w-[100px] text-right whitespace-nowrap">
+                        <TableCell width="fit" isActions label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
                           <RowActions
                             actions={[
                               {

@@ -697,3 +697,68 @@ Executes the comprehensive release gate:
 
 
 
+
+
+---
+
+## 15. LAYOUT UNIFORMITY, DETAIL LISTS & TABLE SIZING SPECIFICATION (M10.4)
+
+### 15.1 Page Container & Viewport Width Management
+- **Max Width Token**:
+  - Defined in `src/index.css` as `--page-max: 94rem;` (equivalent to ~1200px at 80% display scale, and 1504px at 100% scale).
+  - Centered horizontally (`mx-auto`) with responsive horizontal padding (`px-4 sm:px-6`).
+  - Viewports narrower than the token expand to fill available width smoothly.
+  - Header bar and side navigation bar span independently and are unaffected.
+- **Component**:
+  - `PageContainer` implemented in `src/components/layout/PageContainer.tsx` (re-exported from `src/components/ui/PageContainer.tsx`).
+  - Integrated into `AppLayout.tsx` wrapping all active workstations and views.
+
+### 15.2 DetailList, DetailItem & DetailGrid Component Architecture
+- **Location**: `src/components/ui/DetailList.tsx`.
+- **DetailList & DetailItem**:
+  - Definition list (`<dl>`) with semantic `<dt>` (label) and `<dd>` (value) elements.
+  - Two-column definition grid layout:
+    - Mobile (<640px): `grid-cols-[8rem_1fr]`.
+    - Desktop (>=640px): `sm:grid-cols-[10rem_1fr]`.
+    - Gap: `gap-3` (`0.75rem`), with uniform row dividers (`divide-y divide-slate-100 dark:divide-slate-800`).
+  - Strict Left-Alignment: Labels and values are strictly left-aligned (`text-left`). Detail values must never be right-aligned across cards or modal lists.
+  - Sizing & Dense Variant: Regular rows use `py-3 px-3 sm:px-4`; dense variant (`dense={true}`) uses `py-2 px-3 sm:px-4`. Context provider propagates `dense` automatically to child items.
+  - Empty Value Fallback: If a value is `null`, `undefined`, or empty string `""`, `DetailItem` automatically renders a plain em-dash (`"—"`).
+  - Optional Subtitle: Second muted line rendered under the primary value for secondary context.
+- **DetailGrid**:
+  - Responsive equal-width card grid:
+    - Viewports >=1024px: two columns (`lg:grid-cols-2 gap-6 items-start`).
+    - Viewports <1024px: single column (`grid-cols-1 gap-6`).
+  - Detail cards never span the full page width on wide monitors.
+- **View Conversions**:
+  - Patient Records Tab: Personal Information placed beside Medical Profile in a `DetailGrid`, with Latest Vitals below. Emergency contact merged into two clean lines (`Name (Relationship)` and `Phone • Email`).
+  - Doctor Consultation Desk: Patient Summary converted to a `DetailList` definition card.
+  - Profile View: Staff Details (read-only rows with `DetailList`) placed side-by-side with Contact Details inside `DetailGrid`.
+  - Billing View: Invoice Summary and Payment Receipt details converted to `DetailList`.
+  - Data Management: Browser Storage Status and Collection Record Counts converted to `DetailList`.
+
+### 15.3 Table Column Sizing and Empty Cells
+- **Column Sizing Rules**:
+  - Predictable-width columns (`Date`, `Time`, `Token`, `MRN`, `Phone`, `Status`, `Actions`) enforce `width="fit"`:
+    - Header & Cell classes: `w-auto whitespace-nowrap`.
+    - Auto-sized to content plus cell padding, eliminating unnecessary blank gaps.
+  - Exactly one long-text column per table (`Reason`, `Complaint`, `Regimen`, `Notes`, or `Patient` / `Doctor` when no narrative column exists) enforces `width="flex"`:
+    - Header & Cell classes: `w-full min-w-0 break-words`.
+    - Expands to absorb remaining horizontal space while supporting natural line wrapping.
+  - Actions column maintains `width="fit"`, `text-right`, and `whitespace-nowrap`.
+- **Empty Cell Fallback**:
+  - Every empty cell (`null`, `undefined`, `""`, or whitespace-only) across compound and configuration-driven tables displays a plain em-dash (`"—"`).
+  - Actions cells and loading/error states are exempt.
+
+### 15.4 Canonical Labels and Shared Date/Time Formatters
+- **Canonical Label Standard**:
+  - Label discrepancies across cards, tables, and views are unified:
+    - `"Gender"` (replaces `"Sex"`, values capitalized: `"Female"`, `"Male"`, `"Other"`).
+    - `"Blood Group"` (replaces `"Blood Type"`).
+    - `"Date of Birth"` (in detail lists; `"DOB"` reserved for compact table headers).
+    - `"Phone"` (replaces `"Contact Phone"` and `"Phone Number"`).
+    - `"Name"` (or `"Patient Name"` / `"Staff Name"`).
+- **Shared Canonical Formatters** (`src/lib/time.ts`):
+  - `formatDate(input)`: Canonical display format `"15 Oct 2026"` (unpadded day, 3-letter month, 4-digit year). Returns `"—"` for empty inputs.
+  - `formatTime(input)`: Canonical 24-hour display format `"09:30"` (two-digit hour, two-digit minute). Normalizes AM/PM strings and ISO strings. Returns `"—"` for empty inputs.
+  - `formatLocalDate(date)`: Canonical ISO key formatter `"YYYY-MM-DD"` reserved for data keys, database storage, and calendar indexing.

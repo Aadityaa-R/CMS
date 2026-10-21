@@ -30,7 +30,7 @@ import {
 import { useBilling } from '@/context/BillingContext';
 import { formatCurrency, balanceDue } from '@/lib/billing';
 import { formatDoctorName } from '@/lib/doctorNames';
-import { formatLocalDate } from '@/lib/time';
+import { formatLocalDate, formatDate, formatTime } from '@/lib/time';
 
 interface ReceptionistViewProps {
   activeTab?: string;
@@ -719,37 +719,44 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'token',
       header: 'Token',
+      width: 'fit',
       render: (apt) => <span className="font-semibold text-slate-900 dark:text-slate-100">{apt.tokenNumber > 0 ? `#${apt.tokenNumber}` : '-'}</span>,
     },
     {
       key: 'patient',
       header: 'Patient',
       isPrimary: true,
+      width: 'fit',
       render: (apt) => <span className="font-medium text-slate-900 dark:text-slate-100">{apt.patientName}</span>,
     },
     {
       key: 'doctor',
       header: 'Doctor',
+      width: 'flex',
       render: (apt) => <span>{apt.doctorName}</span>,
     },
     {
       key: 'arrivalTime',
       header: 'Arrival Time',
-      render: (apt) => <span>{apt.checkedInAt ? apt.checkedInAt.slice(11, 16) : apt.dateTime.slice(11, 16)}</span>,
+      width: 'fit',
+      render: (apt) => <span>{formatTime(apt.checkedInAt || apt.dateTime)}</span>,
     },
     {
       key: 'waitTime',
       header: 'Wait Time',
+      width: 'fit',
       render: (apt) => <span>{calculateWaitTimeMinutes(apt.checkedInAt)} min</span>,
     },
     {
       key: 'status',
       header: 'Status',
+      width: 'fit',
       render: (apt) => <span className="text-slate-700 dark:text-slate-300 font-medium">{apt.status}</span>,
     },
     {
       key: 'actions',
       header: 'Actions',
+      width: 'fit',
       isActions: true,
       render: (apt) => {
         const isConcluded = apt.status === 'in_consultation' || apt.status === 'completed';
@@ -782,12 +789,14 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'time',
       header: 'Time',
-      render: (apt) => <span>{apt.dateTime ? apt.dateTime.slice(11, 16) : '-'}</span>,
+      width: 'fit',
+      render: (apt) => <span>{apt.dateTime ? formatTime(apt.dateTime) : '-'}</span>,
     },
     {
       key: 'patient',
       header: 'Patient',
       isPrimary: true,
+      width: 'fit',
       render: (apt) => {
         const patInvoices = billingInvoices.filter((inv) => inv.patientId === apt.patientId);
         const due = patInvoices.reduce((acc, inv) => acc + balanceDue(inv, billingPayments), 0);
@@ -806,21 +815,25 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'doctor',
       header: 'Doctor',
+      width: 'flex',
       render: (apt) => <span>{apt.doctorName}</span>,
     },
     {
       key: 'source',
       header: 'Source',
+      width: 'fit',
       render: (apt) => <span>{apt.source || 'reception'}</span>,
     },
     {
       key: 'status',
       header: 'Status',
+      width: 'fit',
       render: (apt) => <span className="text-slate-700 dark:text-slate-300 font-medium">{apt.status}</span>,
     },
     {
       key: 'actions',
       header: 'Actions',
+      width: 'fit',
       isActions: true,
       render: (apt) => {
         const isToday = agendaDate === todayStr;
@@ -854,26 +867,31 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       key: 'name',
       header: 'Name',
       isPrimary: true,
+      width: 'fit',
       render: (p) => <span className="font-medium text-slate-900 dark:text-slate-100">{p.firstName} {p.lastName}</span>,
     },
     {
       key: 'mrn',
       header: 'MRN',
+      width: 'fit',
       render: (p) => <span>{p.mrn}</span>,
     },
     {
       key: 'dobAge',
       header: 'DOB / Age',
-      render: (p) => <span>{p.dob} ({p.age})</span>,
+      width: 'fit',
+      render: (p) => <span>{formatDate(p.dob)} ({p.age})</span>,
     },
     {
       key: 'phone',
       header: 'Phone',
+      width: 'fit',
       render: (p) => <span>{p.phone}</span>,
     },
     {
       key: 'assignedDoctor',
       header: 'Assigned Doctor',
+      width: 'flex',
       render: (p) => {
         const docId = getAssignedDoctorId(p.id, patientAssignments);
         const doc = doctors.find((d) => d.id === docId);
@@ -883,6 +901,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'actions',
       header: 'Actions',
+      width: 'fit',
       isActions: true,
       render: (p) => (
         <RowActions
@@ -908,27 +927,32 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'time',
       header: 'Time',
-      render: (entry) => <span>{entry.time}</span>,
+      width: 'fit',
+      render: (entry) => <span>{formatTime(entry.time)}</span>,
     },
     {
       key: 'type',
       header: 'Type',
       isPrimary: true,
+      width: 'fit',
       render: (entry) => <span className="font-medium text-slate-900 dark:text-slate-100">{entry.type}</span>,
     },
     {
       key: 'patient',
       header: 'Patient',
+      width: 'fit',
       render: (entry) => <span>{entry.patientName}</span>,
     },
     {
       key: 'performedBy',
       header: 'Performed by',
+      width: 'fit',
       render: (entry) => <span>{entry.performedBy}</span>,
     },
     {
       key: 'details',
       header: 'Details',
+      width: 'flex',
       render: (entry) => <span>{entry.details}</span>,
     },
   ];
@@ -938,16 +962,18 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       key: 'name',
       header: 'Account Name',
       isPrimary: true,
+      width: 'fit',
       render: (claim) => (
         <div>
           <span className="font-semibold text-slate-900 dark:text-slate-100">{claim.accountName}</span>
-          <div className="text-xs text-slate-500 dark:text-slate-400">DOB: {claim.dob}</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">DOB: {formatDate(claim.dob)}</div>
         </div>
       ),
     },
     {
       key: 'email',
       header: 'Email / Phone',
+      width: 'fit',
       render: (claim) => (
         <div>
           <div className="text-xs text-slate-700 dark:text-slate-300">{claim.accountEmail}</div>
@@ -958,6 +984,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'mrn',
       header: 'Matched MRN',
+      width: 'fit',
       render: (claim) => (
         <span className="text-xs text-slate-800 dark:text-slate-200">{claim.existingMrn}</span>
       ),
@@ -966,15 +993,17 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       key: 'requestedAt',
       header: 'Requested At',
       hideBelow: 'md',
+      width: 'fit',
       render: (claim) => (
         <span className="text-xs text-slate-600 dark:text-slate-400">
-          {claim.requestedAt ? claim.requestedAt.slice(0, 16).replace('T', ' ') : 'N/A'}
+          {claim.requestedAt ? `${formatDate(claim.requestedAt.slice(0, 10))} ${formatTime(claim.requestedAt.slice(11, 16))}` : 'N/A'}
         </span>
       ),
     },
     {
       key: 'status',
       header: 'Status',
+      width: 'flex',
       render: (claim) => (
         <span className="text-xs capitalize text-slate-700 dark:text-slate-300 font-medium">
           {claim.status}

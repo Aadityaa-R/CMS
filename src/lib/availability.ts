@@ -4,7 +4,7 @@ import {
   generateInitialAttendanceRecords,
   generateInitialLeaveRequests,
 } from '@/data/attendanceSeed';
-import { isStaffAvailable, formatDate } from '@/lib/attendance';
+import { isStaffAvailable, formatDateKey as formatDate } from '@/lib/attendance';
 
 export function getDoctorCanonicalStaffId(doctorId: string): string {
   if (doctorId === 'doc-1' || doctorId === 'usr-doc-1') return 'acc-doc-1';

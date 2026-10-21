@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { DetailList, DetailItem, DetailGrid } from '@/components/ui/DetailList';
 import { Eye, EyeOff } from 'lucide-react';
 import { getRepository } from '@/data/storage';
 import { Account } from '@/types/storage';
@@ -361,14 +362,34 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
       </div>
 
       {/* Grid: 2 columns on desktop (>= 1024px), 1 column below */}
-      <div
-        className={
-          isUnlinkedPatient
-            ? 'max-w-xl mx-auto'
-            : 'grid grid-cols-1 lg:grid-cols-2 gap-6 items-start'
-        }
-      >
-        {/* Card 1: Contact Details (hidden for unlinked patient) */}
+      <DetailGrid className={isUnlinkedPatient ? 'max-w-xl mx-auto' : ''}>
+        {/* Staff Read-Only Card (side by side with Contact Details) */}
+        {!isUnlinkedPatient && currentRole !== 'patient' && (
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+            <CardHeader className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-lg font-bold">Staff Details</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 flex-1 flex flex-col justify-between">
+              <DetailList>
+                <DetailItem label="Name" value={currentUser.name} />
+                <DetailItem
+                  label="Staff ID"
+                  value={<span className="font-mono">{currentUser.badgeNumber || 'STAFF-100'}</span>}
+                />
+                <DetailItem label="Job title" value={currentUser.title || 'Staff Member'} />
+                <DetailItem label="Department" value={currentUser.department || 'Clinical Services'} />
+                <DetailItem label="Roles" value={staffRolesText} />
+              </DetailList>
+              <div className="p-5 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  To change these details, ask an administrator.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Card: Contact Details (hidden for unlinked patient) */}
         {!isUnlinkedPatient && (
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
             <CardHeader className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
@@ -387,41 +408,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
                 {contactSuccess && (
                   <div className="p-3 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 text-xs rounded-lg">
                     {contactSuccess}
-                  </div>
-                )}
-
-                {/* Staff read-only section */}
-                {currentRole !== 'patient' && (
-                  <div className="space-y-3 pb-4 border-b border-slate-100 dark:border-slate-800 text-xs sm:text-sm">
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-slate-500 dark:text-slate-400">Name</span>
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">{currentUser.name}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-slate-500 dark:text-slate-400">Staff ID</span>
-                      <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
-                        {currentUser.badgeNumber || 'STAFF-100'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-slate-500 dark:text-slate-400">Job title</span>
-                      <span className="font-medium text-slate-800 dark:text-slate-200">
-                        {currentUser.title || 'Staff Member'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-slate-500 dark:text-slate-400">Department</span>
-                      <span className="font-medium text-slate-800 dark:text-slate-200">
-                        {currentUser.department || 'Clinical Services'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-slate-500 dark:text-slate-400">Roles</span>
-                      <span className="font-medium text-slate-800 dark:text-slate-200">{staffRolesText}</span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 pt-1">
-                      To change these details, ask an administrator.
-                    </p>
                   </div>
                 )}
 
@@ -480,7 +466,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
                 {/* Common editable fields: Phone and Email */}
                 <Input
                   id="profile-phone"
-                  label="Phone Number"
+                  label="Phone"
+                  aria-label="Phone Number"
                   type="tel"
                   value={contactPhone}
                   onChange={(e) => {
@@ -555,7 +542,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
           </Card>
         )}
 
-        {/* Card 2: Security & Password */}
+        {/* Card: Security & Password */}
         <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
           <CardHeader className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
             <CardTitle className="text-lg font-bold">Security & Password</CardTitle>
@@ -676,7 +663,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
             </form>
           </CardContent>
         </Card>
-      </div>
+      </DetailGrid>
 
       {/* Discard changes dialog */}
       <Modal

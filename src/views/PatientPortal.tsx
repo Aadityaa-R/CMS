@@ -46,6 +46,8 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
+import { DetailList, DetailItem, DetailGrid } from '@/components/ui/DetailList';
+import { formatDate, formatTime } from '@/lib/time';
 import { Printer } from 'lucide-react';
 
 interface PatientPortalProps {
@@ -731,12 +733,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-2/12 min-w-[90px]">Date</TableHead>
-                    <TableHead className="w-2/12 min-w-[80px]">Time</TableHead>
-                    <TableHead className="w-3/12 min-w-[130px]">Doctor</TableHead>
-                    <TableHead className="w-3/12 min-w-[140px]">Reason</TableHead>
-                    <TableHead className="w-2/12 min-w-[110px]">Status</TableHead>
-                    <TableHead className="w-2/12 min-w-[140px] text-right">Actions</TableHead>
+                    <TableHead width="fit">Date</TableHead>
+                    <TableHead width="fit">Time</TableHead>
+                    <TableHead width="fit">Doctor</TableHead>
+                    <TableHead width="flex">Reason</TableHead>
+                    <TableHead width="fit">Status</TableHead>
+                    <TableHead width="fit" isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -756,30 +758,30 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                             {
                               label: 'Reschedule',
                               onClick: () => handleOpenReschedule(apt),
-                              ariaLabel: `Reschedule appointment on ${apt.dateTime.slice(0, 10)} at ${apt.dateTime.slice(11, 16)}`,
+                              ariaLabel: `Reschedule appointment on ${formatDate(apt.dateTime.slice(0, 10))} at ${formatTime(apt.dateTime.slice(11, 16))}`,
                             },
                             {
                               label: 'Cancel',
                               onClick: () => handleOpenCancel(apt),
-                              ariaLabel: `Cancel appointment on ${apt.dateTime.slice(0, 10)} at ${apt.dateTime.slice(11, 16)}`,
+                              ariaLabel: `Cancel appointment on ${formatDate(apt.dateTime.slice(0, 10))} at ${formatTime(apt.dateTime.slice(11, 16))}`,
                             },
                           ]
                         : [];
                       return (
                         <TableRow key={apt.id}>
-                          <TableCell label="Date" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
-                            {apt.dateTime.slice(0, 10)}
+                          <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                            {formatDate(apt.dateTime.slice(0, 10))}
                           </TableCell>
-                          <TableCell label="Time" className="w-2/12 min-w-[80px] text-slate-600 dark:text-slate-300">
-                            {apt.dateTime.slice(11, 16)}
+                          <TableCell width="fit" label="Time" className="text-slate-600 dark:text-slate-300">
+                            {formatTime(apt.dateTime.slice(11, 16))}
                           </TableCell>
-                          <TableCell label="Doctor" className="w-3/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell width="fit" label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
                             {formatDoctorName(apt.doctorName)}
                           </TableCell>
-                          <TableCell label="Reason" className="w-3/12 min-w-[140px] text-slate-600 dark:text-slate-300">
+                          <TableCell width="flex" label="Reason" className="text-slate-600 dark:text-slate-300">
                             {apt.reasonForVisit}
                           </TableCell>
-                          <TableCell label="Status" id={`portal-apt-status-${apt.id}`} className="w-2/12 min-w-[110px] text-slate-600 dark:text-slate-300">
+                          <TableCell width="fit" label="Status" id={`portal-apt-status-${apt.id}`} className="text-slate-600 dark:text-slate-300">
                             <div>
                               {apt.needsReschedule && (
                                 <span className="text-xs text-amber-700 dark:text-amber-400 block mb-1">
@@ -794,7 +796,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                               )}
                             </div>
                           </TableCell>
-                          <TableCell isActions label="Actions" className="w-2/12 min-w-[140px] text-right whitespace-nowrap">
+                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
                             <RowActions
                               actions={appointmentActions}
                               subject={`appointment with ${apt.doctorName}`}
@@ -827,10 +829,10 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-3/12 min-w-[110px]">Date</TableHead>
-                    <TableHead className="w-3/12 min-w-[100px]">Time</TableHead>
-                    <TableHead className="w-4/12 min-w-[150px]">Doctor</TableHead>
-                    <TableHead className="w-2/12 min-w-[100px]">Status</TableHead>
+                    <TableHead width="fit">Date</TableHead>
+                    <TableHead width="fit">Time</TableHead>
+                    <TableHead width="flex">Doctor</TableHead>
+                    <TableHead width="fit">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -843,16 +845,16 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   ) : (
                     paginatedPast.map((apt) => (
                       <TableRow key={apt.id}>
-                        <TableCell label="Date" className="w-3/12 min-w-[110px] text-slate-600 dark:text-slate-300">
-                          {apt.dateTime.slice(0, 10)}
+                        <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                          {formatDate(apt.dateTime.slice(0, 10))}
                         </TableCell>
-                        <TableCell label="Time" className="w-3/12 min-w-[100px] text-slate-600 dark:text-slate-300">
-                          {apt.dateTime.slice(11, 16)}
+                        <TableCell width="fit" label="Time" className="text-slate-600 dark:text-slate-300">
+                          {formatTime(apt.dateTime.slice(11, 16))}
                         </TableCell>
-                        <TableCell label="Doctor" className="w-4/12 min-w-[150px] font-medium text-slate-900 dark:text-slate-100">
+                        <TableCell width="flex" label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
                           {formatDoctorName(apt.doctorName)}
                         </TableCell>
-                        <TableCell label="Status" className="w-2/12 min-w-[100px] text-slate-600 dark:text-slate-300">
+                        <TableCell width="fit" label="Status" className="text-slate-600 dark:text-slate-300">
                           {formatAppointmentStatus(apt)}
                         </TableCell>
                       </TableRow>
@@ -876,161 +878,112 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       {/* TAB 2: RECORDS */}
       {activeTab === 'records' && (
         <div className="space-y-6">
-          {/* Card: Personal Record */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-xs">
-              <div className="space-y-2 divide-y divide-slate-100 dark:divide-slate-800">
-                <div className="flex justify-between items-baseline gap-2 pt-1 first:pt-0">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Full Name:</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100 text-right">
-                    {patient.firstName} {patient.lastName}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">MRN:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {patient.mrn}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Date of Birth:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {patient.dob} (Age {patient.age})
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Gender:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right capitalize">
-                    {patient.gender}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Blood Group:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {patient.bloodGroup || 'Not recorded'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Phone:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {patient.phone}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Email:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {patient.email}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Address:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {patient.address}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Emergency Contact:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {patient.emergencyContact?.name} ({patient.emergencyContact?.relationship}) - {patient.emergencyContact?.phone}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <DetailGrid>
+            {/* Card: Personal Record */}
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <CardHeader>
+                <CardTitle>Personal Information</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <DetailList>
+                  <DetailItem label="Name" value={`${patient.firstName} ${patient.lastName}`} />
+                  <DetailItem label="MRN" value={patient.mrn} />
+                  <DetailItem label="Date of Birth" value={`${formatDate(patient.dob)} (Age ${patient.age})`} />
+                  <DetailItem label="Gender" value={<span className="capitalize">{patient.gender}</span>} />
+                  <DetailItem label="Blood Group" value={patient.bloodGroup || 'Not recorded'} />
+                  <DetailItem label="Phone" value={patient.phone} />
+                  <DetailItem label="Email" value={patient.email} />
+                  <DetailItem label="Address" value={patient.address} />
+                  <DetailItem
+                    label="Emergency Contact"
+                    value={
+                      patient.emergencyContact?.name ? (
+                        <div>
+                          <div>{patient.emergencyContact.name} ({patient.emergencyContact.relationship || 'Contact'})</div>
+                          <div className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">{patient.emergencyContact.phone}</div>
+                        </div>
+                      ) : (
+                        'Not recorded'
+                      )
+                    }
+                  />
+                </DetailList>
+              </CardContent>
+            </Card>
 
-          {/* Card: Medical Profile */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle>Medical Profile</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs">
-              <div className="space-y-2 divide-y divide-slate-100 dark:divide-slate-800">
-                <div className="flex justify-between items-baseline gap-2 pt-1 first:pt-0">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Allergies:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {patient.allergies && patient.allergies.length > 0 ? patient.allergies.join(', ') : 'None reported'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {patient.chronicConditions && patient.chronicConditions.length > 0
-                      ? patient.chronicConditions.join(', ')
-                      : 'None reported'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 pt-2">
-                  <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {(() => {
+            {/* Card: Medical Profile */}
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <CardHeader>
+                <CardTitle>Medical Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <DetailList>
+                  <DetailItem
+                    label="Allergies"
+                    value={patient.allergies && patient.allergies.length > 0 ? patient.allergies.join(', ') : 'None reported'}
+                  />
+                  <DetailItem
+                    label="Chronic Conditions"
+                    value={patient.chronicConditions && patient.chronicConditions.length > 0 ? patient.chronicConditions.join(', ') : 'None reported'}
+                  />
+                  <DetailItem
+                    label="Current Medications"
+                    value={(() => {
                       const activeMeds = activeMedications(patient.id, scopedPrescriptions, new Date());
                       if (activeMeds.length > 0) return activeMeds.join(', ');
                       return 'None recorded';
                     })()}
-                  </span>
+                  />
+                </DetailList>
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Contact your doctor to update clinical records.
+                  </p>
                 </div>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 pt-1">
-                Contact your doctor to update clinical records.
-              </p>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Card: Latest Vitals */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle>Latest Vitals</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-xs">
-              {patientVitalsRecord ? (
-                <div className="space-y-2 divide-y divide-slate-100 dark:divide-slate-800">
-                  <div className="flex justify-between items-baseline gap-2 pt-1 first:pt-0">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0">Recording Date:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                      {patientVitalsRecord.recordedAt.replace('T', ' ').slice(0, 16)}
-                    </span>
+            {/* Card: Latest Vitals */}
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <CardHeader>
+                <CardTitle>Latest Vitals</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {patientVitalsRecord ? (
+                  <DetailList>
+                    <DetailItem
+                      label="Recording Date"
+                      value={`${formatDate(patientVitalsRecord.recordedAt.slice(0, 10))} ${formatTime(patientVitalsRecord.recordedAt.slice(11, 16))}`}
+                    />
+                    <DetailItem
+                      label="Blood Pressure"
+                      value={`${patientVitalsRecord.systolicBp}/${patientVitalsRecord.diastolicBp} mmHg`}
+                    />
+                    <DetailItem
+                      label="Heart Rate"
+                      value={`${patientVitalsRecord.heartRateBpm} bpm`}
+                    />
+                    <DetailItem
+                      label="Temperature"
+                      value={`${patientVitalsRecord.temperatureCelsius}°C`}
+                    />
+                    <DetailItem
+                      label="SpO2"
+                      value={`${patientVitalsRecord.oxygenSaturationPct}%`}
+                    />
+                    <DetailItem
+                      label="BMI"
+                      value={patientVitalsRecord.bmi}
+                    />
+                  </DetailList>
+                ) : (
+                  <div className="py-6 px-4 text-center text-slate-500 text-xs">
+                    No vitals recorded yet
                   </div>
-                  <div className="flex justify-between items-baseline gap-2 pt-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0">Blood Pressure:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                      {patientVitalsRecord.systolicBp}/{patientVitalsRecord.diastolicBp} mmHg
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-baseline gap-2 pt-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0">Heart Rate:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                      {patientVitalsRecord.heartRateBpm} bpm
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-baseline gap-2 pt-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0">Temperature:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                      {patientVitalsRecord.temperatureCelsius}°C
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-baseline gap-2 pt-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0">SpO2:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                      {patientVitalsRecord.oxygenSaturationPct}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-baseline gap-2 pt-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0">BMI:</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100 text-right">
-                      {patientVitalsRecord.bmi}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="py-4 text-center text-slate-500">
-                  No vitals recorded yet
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          </DetailGrid>
 
           {/* Card: Visit History - NO notes or comments */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -1041,10 +994,10 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-3/12 min-w-[110px]">Date</TableHead>
-                    <TableHead className="w-3/12 min-w-[130px]">Doctor</TableHead>
-                    <TableHead className="w-3/12 min-w-[130px]">Department</TableHead>
-                    <TableHead className="w-3/12 min-w-[140px]">Reason</TableHead>
+                    <TableHead width="fit">Date</TableHead>
+                    <TableHead width="fit">Doctor</TableHead>
+                    <TableHead width="fit">Department</TableHead>
+                    <TableHead width="flex">Reason</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1057,16 +1010,16 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   ) : (
                     paginatedVisitHistory.map((v) => (
                       <TableRow key={v.id}>
-                        <TableCell label="Date" className="w-3/12 min-w-[110px] text-slate-600 dark:text-slate-300">
-                          {v.dateTime.slice(0, 10)}
+                        <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                          {formatDate(v.dateTime.slice(0, 10))}
                         </TableCell>
-                        <TableCell label="Doctor" className="w-3/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
+                        <TableCell width="fit" label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
                           {formatDoctorName(v.doctorName)}
                         </TableCell>
-                        <TableCell label="Department" className="w-3/12 min-w-[130px] text-slate-600 dark:text-slate-300">
+                        <TableCell width="fit" label="Department" className="text-slate-600 dark:text-slate-300">
                           {v.department}
                         </TableCell>
-                        <TableCell label="Reason" className="w-3/12 min-w-[140px] text-slate-600 dark:text-slate-300">
+                        <TableCell width="flex" label="Reason" className="text-slate-600 dark:text-slate-300">
                           {v.reasonForVisit}
                         </TableCell>
                       </TableRow>
@@ -1098,12 +1051,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-2/12 min-w-[90px]">Date</TableHead>
-                    <TableHead className="w-2/12 min-w-[120px]">Doctor</TableHead>
-                    <TableHead className="w-2/12 min-w-[130px]">Diagnosis</TableHead>
-                    <TableHead className="w-3/12 min-w-[180px]">Regimen</TableHead>
-                    <TableHead className="w-2/12 min-w-[120px]">Status</TableHead>
-                    <TableHead className="w-1/12 min-w-[80px] text-right">Actions</TableHead>
+                    <TableHead width="fit">Date</TableHead>
+                    <TableHead width="fit">Doctor</TableHead>
+                    <TableHead width="fit">Diagnosis</TableHead>
+                    <TableHead width="flex">Regimen</TableHead>
+                    <TableHead width="fit">Status</TableHead>
+                    <TableHead width="fit" isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1120,22 +1073,22 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
                       return (
                         <TableRow key={rx.id}>
-                          <TableCell label="Date" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
-                            {rx.date}
+                          <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                            {formatDate(rx.date)}
                           </TableCell>
-                          <TableCell label="Doctor" className="w-2/12 min-w-[120px] font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell width="fit" label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
                             {formatDoctorName(rx.doctorName)}
                           </TableCell>
-                          <TableCell label="Diagnosis" className="w-2/12 min-w-[130px] text-slate-600 dark:text-slate-300">
+                          <TableCell width="fit" label="Diagnosis" className="text-slate-600 dark:text-slate-300">
                             {rx.diagnosis}
                           </TableCell>
-                          <TableCell label="Regimen" className="w-3/12 min-w-[180px] text-slate-600 dark:text-slate-300">
+                          <TableCell width="flex" label="Regimen" className="text-slate-600 dark:text-slate-300">
                             {summary}
                           </TableCell>
-                          <TableCell label="Status" className="w-2/12 min-w-[120px] text-slate-600 dark:text-slate-300">
+                          <TableCell width="fit" label="Status" className="text-slate-600 dark:text-slate-300">
                             {statusText}
                           </TableCell>
-                          <TableCell isActions label="Actions" className="w-1/12 min-w-[80px] text-right whitespace-nowrap">
+                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
                             <RowActions
                               actions={[
                                 {
@@ -1190,14 +1143,14 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-2/12 min-w-[110px]">Invoice #</TableHead>
-                    <TableHead className="w-2/12 min-w-[90px]">Date</TableHead>
-                    <TableHead className="w-2/12 min-w-[120px]">Doctor</TableHead>
-                    <TableHead className="w-2/12 min-w-[80px]">Total</TableHead>
-                    <TableHead className="w-1/12 min-w-[80px]">Paid</TableHead>
-                    <TableHead className="w-1/12 min-w-[80px]">Balance</TableHead>
-                    <TableHead className="w-1/12 min-w-[90px]">Status</TableHead>
-                    <TableHead className="w-1/12 min-w-[130px] text-right">Actions</TableHead>
+                    <TableHead width="fit">Invoice #</TableHead>
+                    <TableHead width="fit">Date</TableHead>
+                    <TableHead width="flex">Doctor</TableHead>
+                    <TableHead width="fit">Total</TableHead>
+                    <TableHead width="fit">Paid</TableHead>
+                    <TableHead width="fit">Balance</TableHead>
+                    <TableHead width="fit">Status</TableHead>
+                    <TableHead width="fit" isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1225,28 +1178,28 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
                       return (
                         <TableRow key={inv.id}>
-                          <TableCell label="Invoice #" className="w-2/12 min-w-[110px] font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell width="fit" label="Invoice #" className="font-medium text-slate-900 dark:text-slate-100">
                             {inv.number || (inv as any).invoiceNumber || 'Unknown'}
                           </TableCell>
-                          <TableCell label="Date" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
-                            {inv.issuedAt ? inv.issuedAt.split('T')[0] : (inv as any).date ? (inv as any).date.split('T')[0] : '---'}
+                          <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                            {formatDate(inv.issuedAt || (inv as any).date)}
                           </TableCell>
-                          <TableCell label="Doctor" className="w-2/12 min-w-[120px] text-slate-600 dark:text-slate-300">
+                          <TableCell width="flex" label="Doctor" className="text-slate-600 dark:text-slate-300">
                             {inv.doctorName || 'Consulting Physician'}
                           </TableCell>
-                          <TableCell label="Total" className="w-2/12 min-w-[80px] text-slate-900 dark:text-slate-100">
+                          <TableCell width="fit" label="Total" className="text-slate-900 dark:text-slate-100">
                             {formatCurrency(total)}
                           </TableCell>
-                          <TableCell label="Paid" className="w-1/12 min-w-[80px] text-teal-600 dark:text-teal-400">
+                          <TableCell width="fit" label="Paid" className="text-teal-600 dark:text-teal-400">
                             {formatCurrency(paid)}
                           </TableCell>
-                          <TableCell label="Balance" className="w-1/12 min-w-[80px] font-semibold text-slate-900 dark:text-slate-100">
+                          <TableCell width="fit" label="Balance" className="font-semibold text-slate-900 dark:text-slate-100">
                             {formatCurrency(balance)}
                           </TableCell>
-                          <TableCell label="Status" className="w-1/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                          <TableCell width="fit" label="Status" className="text-slate-600 dark:text-slate-300">
                             {statusLabel}
                           </TableCell>
-                          <TableCell isActions label="Actions" className="w-1/12 min-w-[130px] text-right whitespace-nowrap">
+                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
                             <RowActions
                               actions={[
                                 {

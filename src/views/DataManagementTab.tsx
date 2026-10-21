@@ -17,7 +17,8 @@ import { User } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { BackupData } from '@/types/storage';
 import { Download, Upload, RotateCcw, AlertCircle, HardDrive, Database, Undo2 } from 'lucide-react';
-import { formatLocalDate } from '@/lib/time';
+import { formatLocalDate, formatDate, formatTime } from '@/lib/time';
+import { DetailList, DetailItem } from '@/components/ui/DetailList';
 
 interface DataManagementTabProps {
   currentUser: User;
@@ -244,36 +245,16 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
                 <span>Browser Storage Status</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
-                <div>
-                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1.5">Storage Location</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    {stats?.mode === 'browser' ? 'Local browser storage (localStorage)' : 'In-memory session (Resets on reload)'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1.5">Last Saved</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    {stats?.lastSaved ? new Date(stats.lastSaved).toLocaleString() : 'Not recorded'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1.5">Approximate Data Size</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    {stats?.totalSizeFormatted || '0 KB'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1.5">Schema Version</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    Version 1 (Active)
-                  </span>
-                </div>
-              </div>
+            <CardContent className="p-0">
+              <DetailList>
+                <DetailItem label="Storage Location" value={stats?.mode === 'browser' ? 'Local browser storage (localStorage)' : 'In-memory session (Resets on reload)'} />
+                <DetailItem label="Last Saved" value={stats?.lastSaved ? `${formatDate(stats.lastSaved.slice(0, 10))} ${formatTime(stats.lastSaved.slice(11, 16))}` : 'Not recorded'} />
+                <DetailItem label="Data Size" value={stats?.totalSizeFormatted || '0 KB'} />
+                <DetailItem label="Schema Version" value="Version 1 (Active)" />
+              </DetailList>
 
               {stats?.isNearQuota && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                <div className="m-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold">Warning:</span> Storage usage is above 80% of the browser quota limit. Consider exporting a backup and resetting demo data.
@@ -292,19 +273,16 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+              <DetailList dense>
                 {stats?.counts &&
                   Object.entries(stats.counts).map(([col, count]) => (
-                    <div key={col} className="px-5 py-2.5 flex items-center justify-between">
-                      <span className="font-medium capitalize text-slate-700 dark:text-slate-300">
-                        {col}
-                      </span>
-                      <span className="text-slate-900 dark:text-slate-100 font-semibold">
-                        {String(count)}
-                      </span>
-                    </div>
+                    <DetailItem
+                      key={col}
+                      label={<span className="capitalize">{col}</span>}
+                      value={String(count)}
+                    />
                   ))}
-              </div>
+              </DetailList>
             </CardContent>
           </Card>
         </div>

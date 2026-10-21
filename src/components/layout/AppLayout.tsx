@@ -20,6 +20,8 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isAdmin, hasCapability, canViewBilling } from '@/lib/permissions';
 import { useClinic } from '@/context/ClinicContext';
 
+import { PageContainer } from './PageContainer';
+
 export const AppLayout: React.FC = () => {
   const { currentRole, currentUser, isAuthenticated, isRoleSuspended, logout } = useAuth();
   const { modules } = useClinic();
@@ -263,7 +265,9 @@ export const AppLayout: React.FC = () => {
           {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
           <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto w-full p-4 sm:p-6 outline-none">
             <ErrorBoundary>
-              {renderActiveView()}
+              <PageContainer>
+                {renderActiveView()}
+              </PageContainer>
             </ErrorBoundary>
           </main>
         </div>

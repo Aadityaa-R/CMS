@@ -312,7 +312,7 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
                 ) : (
                   paginatedMedicines.map((med) => (
                     <TableRow key={med.id}>
-                      <TableCell label="Medicine" className="w-4/12 min-w-[180px]">
+                      <TableCell width="fit" label="Medicine">
                         <div className="font-medium text-slate-900 dark:text-slate-100">
                           {med.genericName}
                         </div>
@@ -322,19 +322,19 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell label="Class" className="w-2/12 min-w-[130px] text-slate-700 dark:text-slate-300">
+                      <TableCell width="fit" label="Class" className="text-slate-700 dark:text-slate-300">
                         {DRUG_CLASS_LABELS[med.drugClass] || med.drugClass}
                       </TableCell>
-                      <TableCell label="Form" className="w-1/12 min-w-[90px] text-slate-700 dark:text-slate-300">
+                      <TableCell width="fit" label="Form" className="text-slate-700 dark:text-slate-300">
                         {med.form}
                       </TableCell>
-                      <TableCell label="Strengths" className="w-3/12 min-w-[150px] text-slate-600 dark:text-slate-300">
+                      <TableCell width="flex" label="Strengths" className="text-slate-600 dark:text-slate-300">
                         {med.strengths.join(', ')}
                       </TableCell>
-                      <TableCell label="Status" className="w-1/12 min-w-[80px] text-slate-700 dark:text-slate-300">
+                      <TableCell width="fit" label="Status" className="text-slate-700 dark:text-slate-300">
                         {med.active ? 'Active' : 'Inactive'}
                       </TableCell>
-                      <TableCell isActions label="Actions" className="w-1/12 min-w-[140px] text-right whitespace-nowrap">
+                      <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
                         <RowActions
                           actions={[
                             {

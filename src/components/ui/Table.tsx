@@ -9,6 +9,7 @@ export interface ColumnDef<T = any> {
   header: React.ReactNode;
   label?: string;
   hideBelow?: HideBreakpoint;
+  width?: 'fit' | 'flex';
   className?: string;
   headerClassName?: string;
   align?: 'left' | 'right' | 'center';
@@ -50,19 +51,17 @@ export const Table = <T = any,>({
   if (columns && data) {
     return (
       <TableContext.Provider value={{ stackBelow }}>
-        <table className={`w-full text-left text-xs ${className}`} {...props}>
+        <table className={`w-full table-auto text-left text-xs ${className}`} {...props}>
           <TableHeader>
             <TableRow>
               {columns.map((col) => (
                 <TableHead
                   key={col.key}
                   hideBelow={col.hideBelow}
+                  width={col.width}
+                  isActions={col.isActions}
                   className={`${col.headerClassName || ''} ${
                     col.align === 'right' ? 'text-right' : ''
-                  } ${
-                    col.isActions
-                      ? 'sticky right-0 bg-slate-50 dark:bg-slate-800 z-10'
-                      : ''
                   }`}
                 >
                   {col.header}
@@ -115,15 +114,12 @@ export const Table = <T = any,>({
                       <TableCell
                         key={col.key}
                         hideBelow={col.hideBelow}
+                        width={col.width}
                         label={colLabel}
                         isPrimary={col.isPrimary}
                         isActions={col.isActions}
                         className={`${col.className || ''} ${
                           col.align === 'right' ? 'text-right' : ''
-                        } ${
-                          col.isActions
-                            ? 'sticky right-0 bg-white dark:bg-slate-900 z-10'
-                            : ''
                         }`}
                       >
                         {content}
@@ -141,7 +137,7 @@ export const Table = <T = any,>({
 
   return (
     <TableContext.Provider value={{ stackBelow }}>
-      <table className={`w-full text-left text-xs ${className}`} {...props}>
+      <table className={`w-full table-auto text-left text-xs ${className}`} {...props}>
         {children}
       </table>
     </TableContext.Provider>
@@ -245,12 +241,14 @@ const stackButtonMinHeight: Record<StackBreakpoint, string> = {
 
 export interface TableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
   hideBelow?: HideBreakpoint;
+  width?: 'fit' | 'flex';
   isActions?: boolean;
 }
 
 export const TableHead: React.FC<TableHeadProps> = ({
   className = '',
   hideBelow,
+  width = 'fit',
   isActions = false,
   children,
   scope = 'col',
@@ -259,10 +257,11 @@ export const TableHead: React.FC<TableHeadProps> = ({
   const { stackBelow } = useContext(TableContext);
   const hideClass = hideBelow ? hideBelowClasses[hideBelow] : '';
   const stickyClass = isActions && stackBelow ? stickyActionsHeadClasses[stackBelow] : isActions ? 'sticky right-0 bg-slate-50 dark:bg-slate-800 z-10' : '';
+  const widthClass = isActions || width === 'fit' ? 'w-auto whitespace-nowrap' : 'w-full min-w-0 break-words';
   return (
     <th
       scope={scope}
-      className={`px-4 py-3 align-middle ${hideClass} ${stickyClass} ${className}`}
+      className={`px-4 py-3 align-middle ${widthClass} ${hideClass} ${stickyClass} ${className}`}
       {...props}
     >
       {children}
@@ -273,6 +272,7 @@ export const TableHead: React.FC<TableHeadProps> = ({
 export interface TableCellProps extends React.TdHTMLAttributes<HTMLTableCellElement> {
   label?: React.ReactNode;
   hideBelow?: HideBreakpoint;
+  width?: 'fit' | 'flex';
   fullWidthOnStack?: boolean;
   isPrimary?: boolean;
   isActions?: boolean;
@@ -300,6 +300,7 @@ export const TableCell: React.FC<TableCellProps> = ({
   className = '',
   label,
   hideBelow,
+  width = 'fit',
   fullWidthOnStack = false,
   isPrimary = false,
   isActions = false,
@@ -310,17 +311,26 @@ export const TableCell: React.FC<TableCellProps> = ({
   const hideClass = hideBelow ? hideBelowClasses[hideBelow] : '';
   const stackCellClass = stackBelow ? stackCellClasses[stackBelow] : '';
   const stickyClass = isActions && stackBelow ? stickyActionsCellClasses[stackBelow] : isActions ? 'sticky right-0 bg-white dark:bg-slate-900 z-10' : '';
+  const widthClass = isActions ? 'w-auto whitespace-nowrap text-right' : width === 'flex' ? 'w-full min-w-0 break-words' : 'w-auto whitespace-nowrap';
+
+  const isEmpty =
+    !isActions &&
+    (children === undefined ||
+      children === null ||
+      children === '' ||
+      (typeof children === 'string' && children.trim() === ''));
+  const cellContent = isEmpty ? '—' : children;
 
   // 1. Primary cell in stack mode: bold first line, no label
   if (stackBelow && isPrimary) {
     const desktopDisplay = stackBelow === 'sm' ? 'sm:block' : stackBelow === 'lg' ? 'lg:block' : 'md:block';
     return (
       <td
-        className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${hideClass} ${stackCellClass} ${className}`}
+        className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${widthClass} ${hideClass} ${stackCellClass} ${className}`}
         {...props}
       >
         <div className={`font-bold text-sm text-slate-900 dark:text-slate-100 ${desktopDisplay}`}>
-          {children}
+          {cellContent}
         </div>
       </td>
     );
@@ -333,7 +343,7 @@ export const TableCell: React.FC<TableCellProps> = ({
     const desktopDisplay = stackBelow === 'sm' ? 'sm:block' : stackBelow === 'lg' ? 'lg:block' : 'md:block';
     return (
       <td
-        className={`px-0 sm:px-4 py-2 sm:py-3 align-middle ${hideClass} ${fullStackClass} ${stickyClass} ${className}`}
+        className={`px-0 sm:px-4 py-2 sm:py-3 align-middle ${widthClass} ${hideClass} ${fullStackClass} ${stickyClass} ${className}`}
         {...props}
       >
         <div
@@ -352,7 +362,7 @@ export const TableCell: React.FC<TableCellProps> = ({
 
     return (
       <td
-        className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${hideClass} ${stackCellClass} ${className}`}
+        className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${widthClass} ${hideClass} ${stackCellClass} ${className}`}
         {...props}
       >
         <div className={`flex items-start sm:items-center gap-2 sm:gap-3 text-left ${desktopDisplay}`}>
@@ -362,7 +372,7 @@ export const TableCell: React.FC<TableCellProps> = ({
             {label}
           </span>
           <div className="text-xs text-slate-800 dark:text-slate-200 text-left flex-1 break-words">
-            {children}
+            {cellContent}
           </div>
         </div>
       </td>
@@ -371,10 +381,10 @@ export const TableCell: React.FC<TableCellProps> = ({
 
   return (
     <td
-      className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${hideClass} ${stackCellClass} ${className}`}
+      className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${widthClass} ${hideClass} ${stackCellClass} ${className}`}
       {...props}
     >
-      {children}
+      {cellContent}
     </td>
   );
 };

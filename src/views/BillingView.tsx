@@ -22,7 +22,8 @@ import {
   isAdmin,
 } from '@/lib/permissions';
 import { getScopedInvoices, getScopedPayments } from '@/lib/selectors';
-import { formatLocalDate } from '@/lib/time';
+import { formatLocalDate, formatDate, formatTime } from '@/lib/time';
+import { DetailList, DetailItem } from '@/components/ui/DetailList';
 import { Invoice, Payment, PaymentMethod, Receipt } from '@/types/billing';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -611,15 +612,15 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
 
                       return (
                         <TableRow key={inv.id}>
-                          <TableCell isPrimary label="Invoice #" className="w-36">
+                          <TableCell width="fit" isPrimary label="Invoice #">
                             <span className="font-medium text-slate-900 dark:text-slate-100">
                               {inv.number || (inv as any).invoiceNumber || 'Unknown'}
                             </span>
                           </TableCell>
                           <TableCell hideBelow="sm" label="Date" className="w-28 text-slate-600 dark:text-slate-400">
-                            {inv.issuedAt ? inv.issuedAt.split('T')[0] : (inv as any).date ? (inv as any).date.split('T')[0] : 'Unknown'}
+                            {inv.issuedAt ? formatDate(inv.issuedAt.split('T')[0]) : (inv as any).date ? formatDate((inv as any).date.split('T')[0]) : '—'}
                           </TableCell>
-                          <TableCell label="Patient" className="w-48">
+                          <TableCell width="flex" label="Patient">
                             <div className="font-medium text-slate-900 dark:text-slate-100">
                               {inv.patientName || 'Registered Patient'}
                             </div>
@@ -627,16 +628,16 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                               {mrn}
                             </div>
                           </TableCell>
-                          <TableCell hideBelow="md" label="Total" className="w-28 text-right text-slate-700 dark:text-slate-300">
+                          <TableCell width="fit" hideBelow="md" label="Total" className="text-right text-slate-700 dark:text-slate-300">
                             {formatCurrency(total)}
                           </TableCell>
-                          <TableCell hideBelow="md" label="Paid" className="w-28 text-right text-slate-700 dark:text-slate-300">
+                          <TableCell width="fit" hideBelow="md" label="Paid" className="text-right text-slate-700 dark:text-slate-300">
                             {formatCurrency(paid)}
                           </TableCell>
-                          <TableCell label="Balance" className="w-28 text-right font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell width="fit" label="Balance" className="text-right font-medium text-slate-900 dark:text-slate-100">
                             {formatCurrency(due)}
                           </TableCell>
-                          <TableCell label="Status" className="w-28">
+                          <TableCell width="fit" label="Status">
                             <span
                               className={
                                 currentStatus === 'paid'
@@ -651,7 +652,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                               {statusLabel}
                             </span>
                           </TableCell>
-                          <TableCell isActions label="Actions" className="w-44 text-right">
+                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
                             <RowActions
                               actions={[
                                 {
@@ -790,36 +791,36 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                         !isReversed;
 
                       const displayDate = p.receivedAt
-                        ? p.receivedAt.replace('T', ' ').slice(0, 16)
+                        ? `${formatDate(p.receivedAt.slice(0, 10))} ${formatTime(p.receivedAt.slice(11, 16))}`
                         : (p as any).date
-                        ? (p as any).date.replace('T', ' ').slice(0, 16)
-                        : 'Unknown';
+                        ? `${formatDate((p as any).date.slice(0, 10))} ${formatTime((p as any).date.slice(11, 16))}`
+                        : '—';
 
                       return (
                         <TableRow key={p.id}>
-                          <TableCell isPrimary label="Receipt #" className="w-36">
+                          <TableCell width="fit" isPrimary label="Receipt #">
                             <span className="font-medium text-slate-900 dark:text-slate-100">
                               {p.receiptNumber || p.id || 'Unknown'}
                             </span>
                           </TableCell>
-                          <TableCell hideBelow="sm" label="Date & Time" className="w-32 text-slate-600 dark:text-slate-400">
+                          <TableCell width="fit" hideBelow="sm" label="Date & Time" className="text-slate-600 dark:text-slate-400">
                             {displayDate}
                           </TableCell>
-                          <TableCell label="Invoice #" className="w-32 text-slate-700 dark:text-slate-300">
+                          <TableCell width="fit" label="Invoice #" className="text-slate-700 dark:text-slate-300">
                             {invoiceNumberDisplay}
                           </TableCell>
-                          <TableCell label="Patient" className="w-44 font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell width="flex" label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
                             {patientNameDisplay}
                           </TableCell>
-                          <TableCell hideBelow="md" label="Method" className="w-24 uppercase text-slate-600 dark:text-slate-400">
+                          <TableCell width="fit" hideBelow="md" label="Method" className="uppercase text-slate-600 dark:text-slate-400">
                             {p.method || 'Unknown'}
                           </TableCell>
-                          <TableCell label="Amount" className="w-28 text-right font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell width="fit" label="Amount" className="text-right font-medium text-slate-900 dark:text-slate-100">
                             <span className={p.kind === 'reversal' ? 'text-rose-600 dark:text-rose-400' : ''}>
                               {p.kind === 'reversal' ? `-${formatCurrency(p.amount)}` : formatCurrency(p.amount)}
                             </span>
                           </TableCell>
-                          <TableCell hideBelow="md" label="Type" className="w-24">
+                          <TableCell width="fit" hideBelow="md" label="Type">
                             <span
                               className={
                                 p.kind === 'reversal'
@@ -832,10 +833,10 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                               {p.kind === 'reversal' ? 'Reversal' : isReversed ? 'Reversed' : 'Payment'}
                             </span>
                           </TableCell>
-                          <TableCell hideBelow="lg" label="Received By" className="w-36 text-slate-600 dark:text-slate-400">
+                          <TableCell width="fit" hideBelow="lg" label="Received By" className="text-slate-600 dark:text-slate-400">
                             <TableTruncate>{receiver}</TableTruncate>
                           </TableCell>
-                          <TableCell isActions label="Actions" className="w-40 text-right">
+                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
                             <RowActions
                               actions={[
                                 {
@@ -939,25 +940,12 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
           )}
 
           {/* Invoice Summary */}
-          <div className="p-3 mb-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1.5">
-            <div className="flex justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Patient:</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">
-                {paymentTargetInvoice.patientName || 'Registered Patient'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Total Invoice Amount:</span>
-              <span className="text-slate-900 dark:text-slate-100">
-                {formatCurrency(invoiceTotal(paymentTargetInvoice))}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Balance Due:</span>
-              <span className="font-bold text-slate-900 dark:text-slate-100">
-                {formatCurrency(balanceDue(paymentTargetInvoice, allPayments))}
-              </span>
-            </div>
+          <div className="mb-4 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+            <DetailList dense>
+              <DetailItem label="Patient" value={paymentTargetInvoice.patientName || 'Registered Patient'} />
+              <DetailItem label="Total Amount" value={formatCurrency(invoiceTotal(paymentTargetInvoice))} />
+              <DetailItem label="Balance Due" value={<span className="font-bold">{formatCurrency(balanceDue(paymentTargetInvoice, allPayments))}</span>} />
+            </DetailList>
           </div>
 
           {paymentConfirming ? (
@@ -1055,28 +1043,19 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
         >
           <div className="space-y-4 text-xs">
             {/* Header info */}
-            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-              <div>
-                <span className="text-slate-500 dark:text-slate-400">Patient:</span>{' '}
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {activeViewingInvoice.patientName || 'Registered Patient'}
-                </span>
-                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
-                  ID: {activeViewingInvoice.patientId}
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="text-slate-500 dark:text-slate-400">Attending:</span>{' '}
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {activeViewingInvoice.doctorName || 'Consulting Physician'}
-                </span>
-                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
-                  Status:{' '}
-                  <span className="font-semibold uppercase">
-                    {deriveStatus(activeViewingInvoice, allPayments)}
-                  </span>
-                </div>
-              </div>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+              <DetailList dense>
+                <DetailItem
+                  label="Patient"
+                  value={activeViewingInvoice.patientName || 'Registered Patient'}
+                  subtitle={`ID: ${activeViewingInvoice.patientId}`}
+                />
+                <DetailItem
+                  label="Attending"
+                  value={activeViewingInvoice.doctorName || 'Consulting Physician'}
+                  subtitle={`Status: ${deriveStatus(activeViewingInvoice, allPayments).toUpperCase()}`}
+                />
+              </DetailList>
             </div>
 
             {/* Line Items Table */}
@@ -1504,50 +1483,25 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               </div>
             </div>
 
-            <div className="space-y-1.5 text-slate-600 dark:text-slate-400">
-              <div className="flex justify-between">
-                <span>Date & Time:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {viewingReceipt.receivedAt.replace('T', ' ').slice(0, 16)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Patient Name:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {viewingReceipt.patientName}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>MRN:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {viewingReceipt.patientMrn}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Invoice #:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {viewingReceipt.invoiceNumber}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Payment Method:</span>
-                <span className="font-medium uppercase text-slate-900 dark:text-slate-100">
-                  {viewingReceipt.method}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Cashier / Operator:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {viewingReceipt.receivedBy}
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-sm">
-              <span className="font-bold text-slate-900 dark:text-slate-100">Total Settled:</span>
-              <span className="font-bold text-slate-900 dark:text-slate-100">
-                {viewingReceipt.formattedAmount}
-              </span>
+            <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+              <DetailList dense>
+                <DetailItem
+                  label="Date & Time"
+                  value={`${formatDate(viewingReceipt.receivedAt.slice(0, 10))} ${formatTime(viewingReceipt.receivedAt.slice(11, 16))}`}
+                />
+                <DetailItem label="Patient Name" value={viewingReceipt.patientName} />
+                <DetailItem label="MRN" value={viewingReceipt.patientMrn} />
+                <DetailItem label="Invoice #" value={viewingReceipt.invoiceNumber} />
+                <DetailItem
+                  label="Payment Method"
+                  value={<span className="uppercase">{viewingReceipt.method}</span>}
+                />
+                <DetailItem label="Cashier" value={viewingReceipt.receivedBy} />
+                <DetailItem
+                  label="Total Settled"
+                  value={<span className="font-bold">{viewingReceipt.formattedAmount}</span>}
+                />
+              </DetailList>
             </div>
 
             <div className="text-center pt-2 text-[0.625rem] text-slate-500 dark:text-slate-400">

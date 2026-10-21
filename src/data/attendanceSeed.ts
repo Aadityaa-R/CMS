@@ -1,5 +1,5 @@
 import { Shift, AttendanceRecord, LeaveRequest } from '@/types/attendance';
-import { formatDate, dayOfWeek } from '@/lib/attendance';
+import { formatDateKey as formatDate, dayOfWeek } from '@/lib/attendance';
 
 export const INITIAL_SHIFTS: Shift[] = [
   {

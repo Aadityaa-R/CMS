@@ -16,15 +16,12 @@ import {
   StaffMonthlySummary,
   DayOfWeek,
 } from '@/types/attendance';
+import { formatLocalDate } from '@/lib/time';
 
 export const MAX_LEAVE_BACKDATE_DAYS = 7;
 
-export function formatDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+export const formatDate = formatLocalDate;
+export const formatDateKey = formatLocalDate;
 
 export function parseDate(dateStr: string): Date {
   const parts = dateStr.split('-').map(Number);
@@ -61,7 +58,7 @@ export function clockIn(
   leaves: LeaveRequest[] = [],
   overrideLeave: boolean = false
 ): AttendanceRecord {
-  const todayStr = formatDate(now);
+  const todayStr = formatLocalDate(now);
   if (record && record.clockIn) {
     throw new Error('Staff member is already clocked in for today.');
   }
@@ -170,7 +167,7 @@ export function isOutsideShift(record: AttendanceRecord, shift: Shift | undefine
  */
 export function missingClockOut(record: AttendanceRecord, now: Date): boolean {
   if (!record.clockIn || record.clockOut) return false;
-  const todayStr = formatDate(now);
+  const todayStr = formatLocalDate(now);
   return record.date < todayStr;
 }
 
@@ -221,7 +218,7 @@ export function sheetCode(
   const rec = records.find((r) => r.staffId === staffId && r.date === date);
   if (rec && rec.clockIn) return 'P';
 
-  const todayStr = formatDate(now);
+  const todayStr = formatLocalDate(now);
   const day = dayOfWeek(date);
   const isShiftDay = shift ? shift.days.includes(day) : false;
 
@@ -272,7 +269,7 @@ export function validateLeave(
 
   // Backdating check: cannot backdate more than 7 days
   const minAllowed = new Date(now.getFullYear(), now.getMonth(), now.getDate() - MAX_LEAVE_BACKDATE_DAYS);
-  const minAllowedStr = formatDate(minAllowed);
+  const minAllowedStr = formatLocalDate(minAllowed);
   if (request.fromDate < minAllowedStr) {
     return `Leave cannot be backdated more than ${MAX_LEAVE_BACKDATE_DAYS} days.`;
   }

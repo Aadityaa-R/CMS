@@ -41,6 +41,7 @@ import { Shift, AttendanceRecord, LeaveRequest, LeaveType, DayOfWeek } from '@/t
 import { Appointment } from '@/types';
 import { appointmentsAffectedByLeave } from '@/lib/scheduling';
 import { useNotifications } from '@/context/NotificationContext';
+import { formatTime } from '@/lib/time';
 
 interface AttendanceViewProps {
   activeTab?: string;
@@ -416,14 +417,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
 
   // Helpers for formatting
   const formatTimeStr = (isoStr: string | null) => {
-    if (!isoStr) return '--';
-    try {
-      const d = new Date(isoStr);
-      if (isNaN(d.getTime())) return isoStr;
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    } catch {
-      return isoStr;
-    }
+    if (!isoStr) return '—';
+    return formatTime(isoStr) || '—';
   };
 
   const formatRecordStatus = (rec: AttendanceRecord, shift?: Shift) => {

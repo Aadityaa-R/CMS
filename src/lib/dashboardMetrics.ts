@@ -46,6 +46,7 @@ import {
 } from '@/lib/attendance';
 import { formatCurrency } from '@/lib/money';
 import { formatDoctorName } from '@/lib/doctorNames';
+import { formatDate as canonicalFormatDate, formatTime as canonicalFormatTime } from '@/lib/time';
 
 export type DateRangePreset = 'today' | 'last_7_days' | 'this_month' | 'last_30_days';
 export type ChartBucketType = 'day' | 'week' | 'month';
@@ -272,20 +273,11 @@ export function isSameDay(dateStr: string | undefined | null, targetDate: Date):
 }
 
 export function formatTime(dateTimeStr: string): string {
-  if (!dateTimeStr) return '';
-  if (dateTimeStr.includes('T')) {
-    const timePart = dateTimeStr.split('T')[1];
-    return timePart.substring(0, 5);
-  }
-  return dateTimeStr;
+  return canonicalFormatTime(dateTimeStr);
 }
 
 export function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
-  const d = new Date(dateStr.length === 10 ? `${dateStr}T12:00:00` : dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  return canonicalFormatDate(dateStr);
 }
 
 export function formatDayMonth(d: Date): string {
