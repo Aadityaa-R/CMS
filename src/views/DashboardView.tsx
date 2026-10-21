@@ -1476,7 +1476,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           {/* Main content display: Staff (with sliding carousel and side arrows) vs Receptionist vs Patient */}
           {!isPatient ? (
             hasCharts ? (
-              <div className="relative flex items-center gap-2 sm:gap-3 w-full">
+              <div className="relative w-full">
                 {/* Left Navigation Arrow */}
                 <button
                   type="button"
@@ -1484,22 +1484,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   disabled={dashboardViewMode === 'graphs'}
                   aria-label="Navigate to Graphs (Left Arrow)"
                   title="Visual Graphs (Press Left Arrow)"
-                  className={`shrink-0 p-2 sm:p-2.5 rounded-full border transition-all ${
+                  className={`absolute -left-2.5 sm:-left-3.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full border shadow-sm transition-all ${
                     dashboardViewMode === 'graphs'
-                      ? 'opacity-30 cursor-not-allowed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 bg-slate-50 dark:bg-slate-900'
-                      : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400 shadow-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600'
+                      ? 'opacity-30 cursor-not-allowed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 bg-slate-50/90 dark:bg-slate-900/90'
+                      : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600'
                   }`}
                 >
-                  <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                 </button>
 
-                {/* Carousel Viewport */}
+                {/* Carousel Viewport: full width, aligned with KPI cards */}
                 <div
                   tabIndex={0}
                   role="region"
                   aria-label="Dashboard content carousel. Use Left and Right arrow keys to switch between visual graphs and operational tables."
                   onKeyDown={handleCarouselKeyDown}
-                  className="flex-1 min-w-0 overflow-hidden relative focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 rounded-xl"
+                  className="w-full min-w-0 overflow-hidden relative focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 rounded-xl"
                 >
                   <div
                     className="flex w-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none"
@@ -1532,13 +1532,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   disabled={dashboardViewMode === 'tables'}
                   aria-label="Navigate to Tables (Right Arrow)"
                   title="Operational Tables (Press Right Arrow)"
-                  className={`shrink-0 p-2 sm:p-2.5 rounded-full border transition-all ${
+                  className={`absolute -right-2.5 sm:-right-3.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full border shadow-sm transition-all ${
                     dashboardViewMode === 'tables'
-                      ? 'opacity-30 cursor-not-allowed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 bg-slate-50 dark:bg-slate-900'
-                      : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400 shadow-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600'
+                      ? 'opacity-30 cursor-not-allowed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 bg-slate-50/90 dark:bg-slate-900/90'
+                      : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600'
                   }`}
                 >
-                  <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
                 </button>
               </div>
             ) : (

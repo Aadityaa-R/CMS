@@ -251,6 +251,10 @@ System modules:
   - Receptionist: 4 front-desk figures (Waiting Queue, Checked In Today, Booked Today, Completed Today).
   - Patient: 3 personal figures (Upcoming Appointments, Active Prescriptions, Outstanding Balance).
 - **Accessible SVG Charts**: Trend lines and grouped bars with accessible patterns (hatched fills, dashed series lines) and screen-reader accessibility tables.
+- **Dashboard Carousel & Arrow Alignment**:
+  - The carousel viewport spans full width (`w-full min-w-0`), flush-aligned with the 4-column summary KPI cards above.
+  - Compact circular navigation arrows (`w-7 h-7 sm:w-8 sm:h-8`, icon `w-3.5 h-3.5 sm:w-4 sm:h-4`) are positioned in the side gutter space (`absolute -left-2.5 sm:-left-3.5` and `-right-2.5 sm:-right-3.5`).
+  - Eliminates the previous flex inset, ensuring tables and visual graphs occupy the exact same horizontal width as the KPI cards.
 - **Needs Attention Widget**: Alerts administrators to actionable items across 5 categories:
   1. `clearances`: Pending staff onboarding clearance authorizations.
   2. `leaves`: Pending staff leave requests.

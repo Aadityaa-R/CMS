@@ -5,6 +5,11 @@ All notable changes to the Beacon Health Clinic Management System will be docume
 ## [Unreleased] - 2026-10-21
 
 ### Added
+- Dashboard Carousel Alignment and Compact Navigation Arrows:
+  - Aligned tables and visual graphs with the KPI summary cards above by updating the carousel container to span full width (`w-full min-w-0`), matching the 4-column summary metrics grid.
+  - Reduced the size of the left and right navigation arrows to compact circular buttons (`w-7 h-7 sm:w-8 sm:h-8`, icon `w-3.5 h-3.5 sm:w-4 sm:h-4`) positioned in the side gutter space (`absolute -left-2.5 sm:-left-3.5` and `-right-2.5 sm:-right-3.5`).
+  - Eliminated the horizontal inset previously caused by flex buttons and gaps, restoring full width to tables and charts across all viewports.
+  - Verified 0 horizontal overflow at 360px mobile, 1024px tablet, and 1440px desktop.
 - Smooth Flowing Sidebar Movement:
   - Enabled smooth fluid transitions for desktop sidebar expansion/collapse (3.5rem to 15rem) and mobile drawer slide with hardware acceleration (`transition-all duration-300 ease-in-out will-change-[width,transform]`).
   - Added smooth width and opacity transitions for sidebar labels, role headers, and branding details (`transition-all duration-300 ease-in-out`).
