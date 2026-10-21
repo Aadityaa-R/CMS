@@ -18,6 +18,9 @@ import {
   isSessionValid,
   touchSession,
   validatePasswordPolicy,
+  isAccountLocked,
+  registerFailedLogin,
+  resetFailedLogin,
   findMatchingPatient,
   createStaffSignupRequest,
 } from '@/lib/auth';
@@ -840,13 +843,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    const isCurrentValid = await verifyCurrentPassword(currentPass);
-    if (!isCurrentValid) {
-      return { success: false, error: 'Current password is incorrect.' };
-    }
-
-    const { hash, salt, iterations } = await hashPassword(newPass);
-    const now = new Date().toISOString();
     const repoAccounts = getRepository<Account>('accounts');
     const repoLedger = getRepository<AccessAuditLogEntry>('ledger');
     const accounts = await repoAccounts.list();
@@ -861,8 +857,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     if (existingAccount) {
+      const lockStatus = isAccountLocked(existingAccount);
+      if (lockStatus.locked) {
+        return {
+          success: false,
+          error: `Account is locked. Please try again in ${lockStatus.remainingMinutes || 5} minute(s).`,
+        };
+      }
+    }
+
+    const isCurrentValid = await verifyCurrentPassword(currentPass);
+    if (!isCurrentValid) {
+      if (existingAccount) {
+        const failedUpdate = registerFailedLogin(existingAccount);
+        await repoAccounts.update(existingAccount.id, failedUpdate);
+        if (failedUpdate.lockedUntil) {
+          try {
+            await repoLedger.create({
+              id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+              timestamp: new Date().toISOString(),
+              targetRole: existingAccount.role,
+              targetStaffName: existingAccount.fullName,
+              targetUserId: existingAccount.id,
+              action: 'account_locked',
+              description: `Account ${existingAccount.username} locked due to 5 failed login attempts.`,
+              authorizedBy: 'System Security Watchdog',
+            });
+          } catch {
+            // Safe fallback
+          }
+          return {
+            success: false,
+            error: 'Account locked due to 5 failed attempts. Please try again in 5 minutes.',
+          };
+        }
+      }
+      return { success: false, error: 'Current password is incorrect.' };
+    }
+
+    const { hash, salt, iterations } = await hashPassword(newPass);
+    const now = new Date().toISOString();
+
+    if (existingAccount) {
       const updatedAccount: Account = {
         ...existingAccount,
+        ...resetFailedLogin(),
         passwordHash: hash,
         passwordSalt: salt,
         passwordIterations: iterations,

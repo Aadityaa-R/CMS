@@ -97,6 +97,9 @@ Verification executed on branch `m10-final` against the dynamic demonstration sc
 | **Universal Component Pass** | Modals | Focus Trap | Open modal and cycle Tab / Shift+Tab | **PASS** | Focus remains trapped within modal; Esc key closes modal; focus restored to opener button. |
 | **Universal Component Pass** | Tables | Empty State | Filter table by non-matching query string | **PASS** | Table displays clean, plain-text empty state with helper text; zero raw errors. |
 | **Universal Component Pass** | Tables | Loading State | Trigger asynchronous data fetch | **PASS** | Table displays unobtrusive loading indicator; preserves table headers and alignment. |
+| **Universal Component Pass** | Navbar | User Menu WAI-ARIA & Keyboard Nav | Inspect user menu semantics and keyboard controls | **PASS** | Semantic role="menu" and role="menuitem"; arrow up/down cyclic navigation; Home/End jumps; Escape dismisses to avatar button; Tab dismisses; unified single Theme row. |
+| **Universal Component Pass** | Navigation | Profile Routing & Portal Streamlining | Open My Profile from user menu across all roles; inspect patient portal tabs | **PASS** | My Profile routes to /profile across MD, Doctor, Receptionist, and Patient; focuses #profile-heading; patient portal tabs streamlined to Appointments, Records, Prescriptions, Invoices; legacy tab redirected. |
+| **Universal Component Pass** | ProfileView | Role-Specific Fields & Security | Inspect profile layout and form behavior across staff and patient | **PASS** | Staff view renders read-only administrative rows, note to contact admin, phone and email; patient view renders contact and emergency details; unlinked patient hides contact card; dirty tracking enables save button; leaving with unsaved changes prompts Discard modal; email change enforces current password; 44px password show/hide toggles; ledger logs changes without password data. |
 | **Universal Component Pass** | ErrorBoundary | Page Shell | Simulate unhandled component exception | **PASS** | Catches exception; logs stack trace to console only; renders plain-text recovery screen with Reload and Reset buttons. |
 | **Universal Component Pass** | Design Tokens | Card Shadows | Inspect light-mode card styling | **PASS** | Soft two-layer static shadow applied in light theme; zero shadow in dark theme; card outlines kept. |
 | **Universal Component Pass** | Typography | Rem Units | Audit typography scaling across 23 views | **PASS** | All text sizes use proportional rem units (2xs, xs-plus, sm, base, lg, xl); zero hardcoded px font sizes. |
@@ -138,4 +141,14 @@ Verification executed on branch `m10-final` against the dynamic demonstration sc
    - Content below logo uses the native HTML inert attribute while hidden; interactive once shown.
    - ECG line styled with bright accent token (text-teal-400 dark:text-teal-300), 2.5px stroke at 0.65 opacity with underlying 6px soft glow at 0.12 opacity, preserving central column cutout mask.
    - Chooser buttons align titles at the top (justify-start) and reserve the "Last used" line in both buttons to guarantee equal heights.
+7. **My Profile and Accessible User Menu Navigation (M10.1)**:
+   - User menu converted to WAI-ARIA role="menu" with role="menuitem" buttons, cyclic arrow up/down keyboard navigation, Home/End jumping, Escape dismissal returning focus to avatar button, and Tab dismissal.
+   - Theme item streamlined to single label ("Theme: Light" / "Theme: Dark").
+   - Unified single entry point for profile across all roles at /profile. Patient portal Profile tab removed (streamlined to Appointments, Records, Prescriptions, Invoices) with legacy deep links redirected to /profile.
+   - Profile rendered as 2 equal cards on desktop (>=1024px) and 1 column below.
+   - Role-specific content: Staff accounts display read-only metadata (name, canonical staff ID, job title, department, roles), an administrator contact note, editable phone and email, and password controls (zero emergency contact fields); Patient accounts display editable phone, residential address, emergency contact details, and password controls (unlinked accounts show password controls only).
+   - Clinical data strictly prohibited and excluded from profile view.
+   - Dirty tracking enables Save Contact Details button; navigation away with unsaved edits is intercepted by "Discard changes?" modal with Keep editing and Discard options.
+   - Email modification enforces current password re-authentication before saving. 5 failed current password attempts enforces standard lockout.
+   - Password controls provide 44px show/hide toggle buttons with aria-pressed. Password policy and session duration text derived directly from constants. Ledger entries recorded without storing or exposing passwords.
 

@@ -8,6 +8,20 @@ export const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 export const PASSWORD_MIN_LENGTH = 10;
 export const PBKDF2_ITERATIONS = 100000;
 
+export interface PasswordPolicyConfig {
+  minLength: number;
+  requireLetter: boolean;
+  requireNumber: boolean;
+  description: string;
+}
+
+export const PASSWORD_POLICY: PasswordPolicyConfig = {
+  minLength: PASSWORD_MIN_LENGTH,
+  requireLetter: true,
+  requireNumber: true,
+  description: `At least ${PASSWORD_MIN_LENGTH} characters, with a letter and a number.`,
+};
+
 export const STORAGE_KEY_PREFIX = 'cms_v1_';
 export const SCHEMA_VERSION = 2;
 export const STORAGE_SETTINGS_KEY = 'cms_v1_settings';

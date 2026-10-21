@@ -64,6 +64,7 @@ Every feature, component, test, and line of code in this project strictly obeys 
 
 | Commit Hash | Commit Message / Feature Description | User Intent & Key Actions |
 | :--- | :--- | :--- |
+| (M10.1) | `feat(ui): implement shared profile page and accessible user menu navigation (M10.1)` | Implemented single shared My Profile page at /profile for all roles; accessible WAI-ARIA role="menu" with full keyboard navigation (arrows, Home/End, Escape, Tab); streamlined Patient Portal tabs removing Profile tab; role-specific profile layout (2 cards desktop, 1 column mobile) with staff read-only metadata and patient contact fields; dirty tracking with unsaved changes guard modal; current password verification on email change; 44px password show/hide toggles; constant-derived policy text; zero password data in ledger entries. |
 | (M9.6) | `feat(motion): implement login and sign-up screen motion, ECG background, and test suite (M9.6)` | Implemented deliberate exception for sign-in and sign-up screens: motion tokens (loginMotion.css/ts), staggered entrance sequence (<=700ms), 200ms view crossfade, decorative EcgBackground heartbeat wipe with tab visibility pausing, show-password toggle crossfade (150ms), credentials accordion (250ms), button pressed state scale(0.98), failed sign-in card shake (350ms) with polite live region, success exit transition (250ms), prefers-reduced-motion fallback, and updated footer text warning. Added tests/loginMotion.test.tsx (6 tests). |
 | `b068382` | `docs(qa): complete final walkthrough inspection matrix (M10 Section 11)` | Performed exhaustive walkthrough across all 8 personas, 8 workstations, modals, forms, filters, and viewports. Published full 72-checkpoint audit matrix in docs/FINAL_CHECK.md. Extended tests/tabsAudit.test.tsx with additional persona checks. |
 | `95088d8` | `refactor(cleanup): remove unused components and optimize production bundle chunking (M10 Section 10)` | Deleted dead components (AdminView.tsx, StatCard.tsx, Badge.tsx). Verified 0 console.log and 0 TODO comments in src/. Configured Rollup manualChunks in vite.config.ts splitting vendor react, icons, and views so all production chunks are under 500 KB (largest chunk is 305.60 KB). |
@@ -526,3 +527,69 @@ Executes the comprehensive release gate:
   - Changing audience preserves name, email, phone, and sign-in identifier while clearing password inputs.
 - **Removal of Tabs**:
   - The tab component, `role="tab"`, `role="tablist"`, and tab CSS are completely removed from all authentication screens.
+
+## 12. My Profile and Accessible User Menu (M10.1)
+
+### 12.1 User Menu WAI-ARIA and Keyboard Navigation
+- **Menu Container**:
+  - Semantic `role="menu"` with `aria-orientation="vertical"` and `aria-label="User account actions"`.
+  - Items rendered as interactive buttons with `role="menuitem"`.
+- **Keyboard Navigation**:
+  - `ArrowDown` / `ArrowUp`: Focus cycles downward or upward through menu items, wrapping at boundaries.
+  - `Home` / `End`: Moves focus directly to the first or last menu item.
+  - `Escape`: Closes the menu immediately and returns keyboard focus to the avatar trigger button.
+  - `Tab`: Closes the menu immediately and resumes normal document tab order.
+- **Theme Display Row**:
+  - Displays the label `"Theme"` and the current value once (`"Theme: Light"` or `"Theme: Dark"`), eliminating duplicated or redundant labels.
+- **Current Page Indication**:
+  - The menu item corresponding to the active view (`/profile`) sets `aria-current="page"`.
+
+### 12.2 Single Profile Entry Point and Route
+- **Shared Route**:
+  - Exactly one shared profile page at `/profile`.
+  - The `"My Profile"` menu item navigates to `/profile` for every authenticated role (MD, Doctor, Receptionist, Patient).
+  - Clicking `"My Profile"` closes the user menu and moves keyboard focus to `#profile-heading`.
+- **Patient Portal Tab Streamlining**:
+  - The legacy Profile tab is removed from the Patient Portal navigation and sidebar.
+  - Patient Portal tabs consist strictly of: `Appointments`, `Records`, `Prescriptions`, `Invoices`.
+  - Any direct link or navigation targeting the old patient profile tab redirects cleanly to `/profile`.
+
+### 12.3 Role-Specific Content and Fields (Two Cards Desktop / One Column Mobile)
+- **Responsive Layout**:
+  - Desktop (>= 1024px): 2 equal cards side-by-side (`Contact Details` and `Security & Password`).
+  - Mobile / Tablet (< 1024px): 1 column vertical stack.
+- **Patient Content**:
+  - **Linked Account**:
+    - `"Contact Details"` card: Phone number, residential address, emergency contact name, relationship, phone number, and account email.
+    - `"Security & Password"` card: Password change form and session security summary.
+  - **Unlinked Account (`claimPending` or no clinic record)**:
+    - Displays exclusively the `"Security & Password"` card. Contact details card is omitted until clinic linkage is verified.
+- **Staff Content (MD, Doctor, Receptionist, Administrators)**:
+  - `"Contact Details"` card:
+    - Plain read-only rows: Full Name, Staff ID (canonical format), Job Title, Department, and Assigned Roles.
+    - Plain muted notice: `"To change these details, ask an administrator."`.
+    - Editable fields: Phone number and account email.
+    - Zero emergency contact fields.
+  - `"Security & Password"` card: Password change form and session security summary.
+- **Clinical Data Scoping**:
+  - Clinical data (vitals, diagnoses, allergies, prescriptions, visit notes) never appears on the profile page.
+
+### 12.4 Form Behavior, Security & Audit Logging
+- **Dirty State Tracking**:
+  - `"Save Contact Details"` button remains disabled until at least one field has changed and while a save request is pending.
+- **Unsaved Changes Navigation Guard**:
+  - Attempting to leave `/profile` (via navigation links or browser Back/Forward) with uncommitted contact details opens a confirmation modal: `"Discard changes?"` with `"Keep editing"` (retains state) and `"Discard"` (clears edits and proceeds).
+- **Email Change Password Verification**:
+  - Because email serves as the sign-in username, updating the email address exposes a mandatory `"Current password"` input and requires valid re-authentication before saving.
+  - 5 consecutive invalid current password attempts triggers account lockout under standard security rules.
+- **Phone and Email Uniqueness**:
+  - Contact edits validate uniqueness across all active accounts and patient records under M5 invariants.
+- **Security & Password Form**:
+  - Current password, new password, and confirm password inputs each feature an accessible 44px show/hide toggle button with `aria-label` and `aria-pressed`.
+  - Standard autocomplete attributes: `current-password`, `new-password`, `tel`, `email`.
+  - Password policy guidance and session security description are derived directly from source constants (`PASSWORD_POLICY` and session timeout configurations).
+- **Security Ledger Audit Logging**:
+  - Contact details updates record `profile_updated` in the security ledger (`AccessAuditLogEntry`).
+  - Password changes record `password_changed` in the security ledger.
+  - Ledger entries strictly exclude raw or hashed passwords and sensitive credential secrets.
+

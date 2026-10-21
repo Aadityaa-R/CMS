@@ -6,8 +6,8 @@ import {
   SESSION_INACTIVITY_TIMEOUT_MS,
   MAX_FAILED_ATTEMPTS,
   LOCKOUT_DURATION_MS,
-  PASSWORD_MIN_LENGTH,
   PBKDF2_ITERATIONS,
+  PASSWORD_POLICY,
 } from './authConstants';
 import { SessionData, Account } from '../types/storage';
 
@@ -106,20 +106,30 @@ export async function verifyPassword(
   return computedHash.toLowerCase() === targetHash.toLowerCase();
 }
 
+export function getPasswordPolicyText(): string {
+  return PASSWORD_POLICY.description;
+}
+
+export function getSessionSecurityText(): string {
+  const inactivityMinutes = Math.round(SESSION_INACTIVITY_TIMEOUT_MS / (60 * 1000));
+  const lockoutMinutes = Math.round(LOCKOUT_DURATION_MS / (60 * 1000));
+  return `Inactivity timeout automatically logs out sessions after ${inactivityMinutes} minutes of idle time. Accounts lock for ${lockoutMinutes} minutes after consecutive failed sign-in attempts.`;
+}
+
 export function validatePasswordPolicy(password: string): { valid: boolean; error?: string } {
-  if (!password || password.length < PASSWORD_MIN_LENGTH) {
+  if (!password || password.length < PASSWORD_POLICY.minLength) {
     return {
       valid: false,
-      error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters long.`,
+      error: `Password must be at least ${PASSWORD_POLICY.minLength} characters long.`,
     };
   }
-  if (!/[a-zA-Z]/.test(password)) {
+  if (PASSWORD_POLICY.requireLetter && !/[a-zA-Z]/.test(password)) {
     return {
       valid: false,
       error: 'Password must contain at least one letter.',
     };
   }
-  if (!/[0-9]/.test(password)) {
+  if (PASSWORD_POLICY.requireNumber && !/[0-9]/.test(password)) {
     return {
       valid: false,
       error: 'Password must contain at least one number.',

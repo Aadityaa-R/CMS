@@ -8,40 +8,32 @@ import {
   User,
   Settings,
   LogOut,
-  Shield,
-  Mail,
-  BadgeCheck,
   Moon,
   Sun,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { useNotifications } from '@/context/NotificationContext';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
-  onNavigate?: (tab: string) => void;
+  onNavigate?: (tab: string, subTab?: string) => void;
+  activeTab?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) => {
-  const { currentUser, currentRole, logout, updateCurrentUser } = useAuth();
+export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, activeTab }) => {
+  const { currentUser, currentRole, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { userNotifications, unreadCount, markAsRead, markAllAsRead, dismissNotification } = useNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileName, setProfileName] = useState('');
-  const [profileTitle, setProfileTitle] = useState('');
-  const [profileDepartment, setProfileDepartment] = useState('');
-  const [profileBadgeNumber, setProfileBadgeNumber] = useState('');
-  const [profileEmail, setProfileEmail] = useState('');
-  const [profileFeedback, setProfileFeedback] = useState(false);
-  const [profileError, setProfileError] = useState('');
+  const [menuFocusedIndex, setMenuFocusedIndex] = useState<number>(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const avatarButtonRef = useRef<HTMLButtonElement>(null);
+  const menuItemsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -51,6 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsDropdownOpen(false);
+        setMenuFocusedIndex(-1);
       }
       if (
         notificationsRef.current &&
@@ -69,60 +62,78 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
   const handleOpenProfile = () => {
     setIsDropdownOpen(false);
-    setIsEditingProfile(false);
-    setProfileName(currentUser.name);
-    setProfileTitle(currentUser.title || '');
-    setProfileDepartment(currentUser.department || '');
-    setProfileBadgeNumber(currentUser.badgeNumber || '');
-    setProfileEmail(currentUser.email);
-    setProfileFeedback(false);
-    setProfileError('');
-    setIsProfileModalOpen(true);
-  };
-
-  const handleStartEdit = () => {
-    setProfileName(currentUser.name);
-    setProfileTitle(currentUser.title || '');
-    setProfileDepartment(currentUser.department || '');
-    setProfileBadgeNumber(currentUser.badgeNumber || '');
-    setProfileEmail(currentUser.email);
-    setProfileError('');
-    setIsEditingProfile(true);
-  };
-
-  const handleSaveProfile = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!profileName.trim()) {
-      setProfileError('Full name is required.');
-      return;
-    }
-    if (!profileEmail.trim()) {
-      setProfileError('Email address is required.');
-      return;
-    }
-    updateCurrentUser({
-      name: profileName.trim() || currentUser.name,
-      title: profileTitle.trim() || currentUser.title,
-      department: profileDepartment.trim() || currentUser.department,
-      badgeNumber: profileBadgeNumber.trim() || currentUser.badgeNumber,
-      email: profileEmail.trim() || currentUser.email,
-    });
-    setIsEditingProfile(false);
-    setProfileError('');
-    setProfileFeedback(true);
+    setMenuFocusedIndex(-1);
+    onNavigate?.('profile');
     setTimeout(() => {
-      setProfileFeedback(false);
-    }, 3500);
+      const heading = document.getElementById('profile-heading');
+      if (heading) {
+        heading.focus();
+      }
+    }, 50);
   };
 
   const handleOpenSettings = () => {
     setIsDropdownOpen(false);
+    setMenuFocusedIndex(-1);
     setIsSettingsModalOpen(true);
   };
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
+    setMenuFocusedIndex(-1);
     logout();
+  };
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setMenuFocusedIndex((prev) => {
+        const next = prev < 3 ? prev + 1 : 0;
+        menuItemsRef.current[next]?.focus();
+        return next;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setMenuFocusedIndex((prev) => {
+        const next = prev > 0 ? prev - 1 : 3;
+        menuItemsRef.current[next]?.focus();
+        return next;
+      });
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setMenuFocusedIndex(0);
+      menuItemsRef.current[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setMenuFocusedIndex(3);
+      menuItemsRef.current[3]?.focus();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsDropdownOpen(false);
+      setMenuFocusedIndex(-1);
+      avatarButtonRef.current?.focus();
+    } else if (e.key === 'Tab') {
+      setIsDropdownOpen(false);
+      setMenuFocusedIndex(-1);
+    }
+  };
+
+  const handleAvatarKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsDropdownOpen(true);
+      setMenuFocusedIndex(0);
+      setTimeout(() => {
+        menuItemsRef.current[0]?.focus();
+      }, 20);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setIsDropdownOpen(true);
+      setMenuFocusedIndex(3);
+      setTimeout(() => {
+        menuItemsRef.current[3]?.focus();
+      }, 20);
+    }
   };
 
   return (
@@ -275,18 +286,39 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
           {/* Profile Dropdown Container: only the profile icon */}
           <div className="relative pl-3 border-l border-slate-200 dark:border-slate-800" ref={dropdownRef}>
             <button
+              ref={avatarButtonRef}
+              id="user-menu-button"
               type="button"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={() => {
+                const next = !isDropdownOpen;
+                setIsDropdownOpen(next);
+                if (next) {
+                  setMenuFocusedIndex(0);
+                  setTimeout(() => menuItemsRef.current[0]?.focus(), 20);
+                } else {
+                  setMenuFocusedIndex(-1);
+                }
+              }}
+              onKeyDown={handleAvatarKeyDown}
               className="w-10 h-10 rounded-xl bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium transition-all cursor-pointer outline-none focus:outline-none focus:ring-0"
               aria-label="User profile menu"
+              aria-haspopup="menu"
               aria-expanded={isDropdownOpen}
+              aria-controls="user-menu"
             >
               <User className="w-5 h-5 text-white" />
             </button>
 
             {/* Dropdown Menu */}
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-fadeIn">
+              <div
+                ref={menuRef}
+                id="user-menu"
+                role="menu"
+                aria-labelledby="user-menu-button"
+                onKeyDown={handleMenuKeyDown}
+                className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-modal dark:shadow-none print:shadow-none border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-fadeIn"
+              >
                 {/* Header item with user information */}
                 <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs truncate">
@@ -302,19 +334,37 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
                 {/* Option 1: Profile */}
                 <button
+                  ref={(el) => (menuItemsRef.current[0] = el)}
+                  id="menu-item-profile"
                   type="button"
+                  role="menuitem"
+                  tabIndex={menuFocusedIndex === 0 ? 0 : -1}
+                  aria-current={activeTab === 'profile' ? 'page' : undefined}
                   onClick={handleOpenProfile}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer outline-none focus:outline-none focus:ring-0"
+                  className={`w-full flex items-center justify-between px-4 py-2 text-xs transition-colors text-left cursor-pointer outline-none focus:bg-slate-100 dark:focus:bg-slate-800 ${
+                    activeTab === 'profile'
+                      ? 'font-semibold text-teal-700 dark:text-teal-400 bg-slate-50 dark:bg-slate-800/40'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
                 >
-                  <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                  <span>Profile</span>
+                  <div className="flex items-center gap-2.5">
+                    <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <span>Profile</span>
+                  </div>
+                  {activeTab === 'profile' && (
+                    <span className="text-[0.6875rem] text-teal-600 dark:text-teal-400 font-medium">Active</span>
+                  )}
                 </button>
 
                 {/* Option 2: Settings */}
                 <button
+                  ref={(el) => (menuItemsRef.current[1] = el)}
+                  id="menu-item-settings"
                   type="button"
+                  role="menuitem"
+                  tabIndex={menuFocusedIndex === 1 ? 0 : -1}
                   onClick={handleOpenSettings}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer outline-none focus:outline-none focus:ring-0"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 transition-colors text-left cursor-pointer outline-none"
                 >
                   <Settings className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   <span>Settings</span>
@@ -322,9 +372,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
                 {/* Option 3: Theme Switcher (Light / Dark Mode) */}
                 <button
+                  ref={(el) => (menuItemsRef.current[2] = el)}
+                  id="menu-item-theme"
                   type="button"
+                  role="menuitem"
+                  tabIndex={menuFocusedIndex === 2 ? 0 : -1}
                   onClick={toggleTheme}
-                  className="w-full flex items-center justify-between px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer outline-none focus:outline-none focus:ring-0"
+                  className="w-full flex items-center justify-between px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 transition-colors text-left cursor-pointer outline-none"
                 >
                   <div className="flex items-center gap-2.5">
                     {theme === 'dark' ? (
@@ -332,7 +386,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
                     ) : (
                       <Moon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     )}
-                    <span>Theme: {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                    <span>Theme</span>
                   </div>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                     {theme === 'dark' ? 'Dark' : 'Light'}
@@ -343,9 +397,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
                 {/* Option 4: Log Out */}
                 <button
+                  ref={(el) => (menuItemsRef.current[3] = el)}
+                  id="menu-item-logout"
                   type="button"
+                  role="menuitem"
+                  tabIndex={menuFocusedIndex === 3 ? 0 : -1}
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 transition-colors text-left font-medium cursor-pointer outline-none focus:outline-none focus:ring-0"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 focus:bg-rose-50 dark:focus:bg-rose-950/40 transition-colors text-left font-medium cursor-pointer outline-none"
                 >
                   <LogOut className="w-4 h-4 text-rose-500" />
                   <span>Log Out</span>
@@ -355,168 +413,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
           </div>
         </div>
       </header>
-
-      {/* User Profile Details Modal */}
-      <Modal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        title={isEditingProfile ? 'Edit Personnel Profile' : 'Personnel Profile'}
-        description={
-          isEditingProfile
-            ? 'Update your authorized clinical credentials and departmental assignment.'
-            : 'Authorized account credentials and departmental assignment.'
-        }
-        maxWidth="md"
-        footer={
-          isEditingProfile ? (
-            <div className="flex items-center justify-end gap-2 w-full">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsEditingProfile(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={handleSaveProfile}
-              >
-                Save Changes
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between w-full">
-              <span className="text-xs text-teal-700 dark:text-teal-400 font-medium">
-                {profileFeedback ? 'Profile updated successfully.' : ''}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleStartEdit}
-                >
-                  Edit Details
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={() => setIsProfileModalOpen(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          )
-        }
-      >
-        {isEditingProfile ? (
-          <form onSubmit={handleSaveProfile} className="space-y-3.5" noValidate>
-            {profileError && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
-                {profileError}
-              </div>
-            )}
-            <Input
-              label="Full Name"
-              value={profileName}
-              onChange={(e) => {
-                setProfileName(e.target.value);
-                if (profileError) setProfileError('');
-              }}
-              placeholder="e.g. Dr. Marcus Vance, MD"
-              error={!profileName.trim() && profileError ? 'Full name is required' : undefined}
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Professional Title / Position"
-                value={profileTitle}
-                onChange={(e) => setProfileTitle(e.target.value)}
-                placeholder="e.g. Lead Consulting Physician"
-              />
-              <Input
-                label="Badge / Terminal ID"
-                value={profileBadgeNumber}
-                onChange={(e) => setProfileBadgeNumber(e.target.value)}
-                placeholder="e.g. DOC-101"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Department"
-                value={profileDepartment}
-                onChange={(e) => setProfileDepartment(e.target.value)}
-                placeholder="e.g. Clinical Consultation"
-              />
-              <Input
-                label="Email Address"
-                type="email"
-                value={profileEmail}
-                onChange={(e) => {
-                  setProfileEmail(e.target.value);
-                  if (profileError) setProfileError('');
-                }}
-                placeholder="e.g. marcus.vance@beaconhealth.com"
-                error={!profileEmail.trim() && profileError ? 'Email address is required' : undefined}
-              />
-            </div>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-              <div className="w-12 h-12 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold text-sm">
-                <User className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                  {currentUser.name}
-                </div>
-                <div className="text-xs text-teal-700 dark:text-teal-400 font-medium capitalize">
-                  {currentRole.replace('_', ' ')}
-                </div>
-                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
-                  {currentUser.title || 'Clinical Personnel'}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[0.625rem] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
-                  <Mail className="w-3 h-3" /> Email Address
-                </span>
-                <span className="font-medium text-slate-800 dark:text-slate-200 break-all">
-                  {currentUser.email}
-                </span>
-              </div>
-              <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[0.625rem] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
-                  <Shield className="w-3 h-3" /> Department
-                </span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">
-                  {currentUser.department || 'Outpatient Services'}
-                </span>
-              </div>
-              <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[0.625rem] text-slate-500 dark:text-slate-400 uppercase font-semibold block flex items-center gap-1">
-                  <BadgeCheck className="w-3 h-3" /> Badge / Terminal ID
-                </span>
-                <span className="font-mono font-medium text-slate-800 dark:text-slate-200">
-                  {currentUser.badgeNumber || 'STAFF-100'}
-                </span>
-              </div>
-              <div className="p-3 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-[0.625rem] text-slate-500 dark:text-slate-400 uppercase font-semibold block">
-                  Session Status
-                </span>
-                <span className="font-medium text-teal-700 dark:text-teal-400">
-                  Active & Verified
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
 
       {/* Terminal Settings Modal */}
       <Modal

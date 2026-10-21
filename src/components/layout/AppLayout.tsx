@@ -13,7 +13,9 @@ import { ReceptionistView } from '@/views/ReceptionistView';
 import { AccessControlView } from '@/views/AccessControlView';
 import { AttendanceView } from '@/views/AttendanceView';
 import { BillingView } from '@/views/BillingView';
+import { ProfileView } from '@/views/ProfileView';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isAdmin, hasCapability, canViewBilling } from '@/lib/permissions';
 import { useClinic } from '@/context/ClinicContext';
@@ -24,8 +26,11 @@ export const AppLayout: React.FC = () => {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
+      const pathname = window.location.pathname.toLowerCase();
+      if (pathname === '/profile' || pathname.startsWith('/profile/')) return 'profile';
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
+      if (tabParam === 'profile') return 'profile';
       if (tabParam) return tabParam;
       return currentRole === 'patient' ? 'overview' : 'dashboard';
     } catch {
@@ -42,6 +47,33 @@ export const AppLayout: React.FC = () => {
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
+  const [isProfileDirty, setIsProfileDirty] = useState<boolean>(false);
+  const [pendingNav, setPendingNav] = useState<{ tab: string; subTab?: string } | null>(null);
+
+  // Sync URL history state on popstate
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        const pathname = window.location.pathname.toLowerCase();
+        if (pathname === '/profile' || pathname.startsWith('/profile/')) {
+          setActiveTab('profile');
+          setActiveSubTab(undefined);
+          return;
+        }
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam === 'profile') {
+          setActiveTab('profile');
+          setActiveSubTab(undefined);
+          return;
+        }
+        setActiveTab(tabParam || (currentRole === 'patient' ? 'overview' : 'dashboard'));
+        setActiveSubTab(params.get('subtab') || undefined);
+      } catch {}
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentRole]);
 
   // Whenever the active role changes upon login, reset the active module tab to default landing tab
   useEffect(() => {
@@ -89,12 +121,48 @@ export const AppLayout: React.FC = () => {
     );
   }
 
-  const handleNavigate = (tab: string, subTab?: string) => {
+  const executeNavigate = (tab: string, subTab?: string) => {
+    if (tab === 'profile') {
+      try {
+        window.history.pushState({}, '', '/profile');
+      } catch {}
+    } else {
+      try {
+        const url = new URL(window.location.href);
+        if (url.pathname === '/profile') {
+          url.pathname = '/';
+        }
+        url.searchParams.set('tab', tab);
+        if (subTab) {
+          url.searchParams.set('subtab', subTab);
+        } else {
+          url.searchParams.delete('subtab');
+        }
+        window.history.pushState({}, '', url.pathname + url.search);
+      } catch {}
+    }
     setActiveTab(tab);
     setActiveSubTab(subTab);
   };
 
+  const handleNavigate = (tab: string, subTab?: string) => {
+    if (activeTab === 'profile' && isProfileDirty && tab !== 'profile') {
+      setPendingNav({ tab, subTab });
+      return;
+    }
+    executeNavigate(tab, subTab);
+  };
+
   const renderActiveView = () => {
+    if (activeTab === 'profile' || (typeof window !== 'undefined' && window.location.pathname.toLowerCase() === '/profile')) {
+      return (
+        <ProfileView
+          onNavigate={handleNavigate}
+          onDirtyChange={setIsProfileDirty}
+        />
+      );
+    }
+
     if (currentRole === 'patient') {
       return <PatientView activeTab={activeSubTab || (activeTab === 'dashboard' ? 'overview' : activeTab)} />;
     }
@@ -176,10 +244,7 @@ export const AppLayout: React.FC = () => {
         {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
         <Sidebar
           activeTab={activeTab}
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            setActiveSubTab(undefined);
-          }}
+          onTabChange={(tab) => handleNavigate(tab)}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           isCollapsed={isSidebarCollapsed}
@@ -190,6 +255,7 @@ export const AppLayout: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           {/* Header with profile & logout - pinned at top */}
           <Navbar
+            activeTab={activeTab}
             onNavigate={handleNavigate}
             onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
           />
@@ -202,6 +268,46 @@ export const AppLayout: React.FC = () => {
           </main>
         </div>
       </div>
+
+      {/* Discard changes dialog when attempting to navigate away from dirty profile */}
+      {pendingNav && (
+        <Modal
+          isOpen={true}
+          onClose={() => setPendingNav(null)}
+          title="Discard changes?"
+          description="You have unsaved changes to your contact details. Are you sure you want to discard them?"
+          maxWidth="sm"
+          footer={
+            <div className="flex items-center justify-end gap-3 w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPendingNav(null)}
+              >
+                Keep editing
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setIsProfileDirty(false);
+                  const target = pendingNav;
+                  setPendingNav(null);
+                  if (target) {
+                    executeNavigate(target.tab, target.subTab);
+                  }
+                }}
+              >
+                Discard
+              </Button>
+            </div>
+          }
+        >
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            Any modifications you made will not be saved.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 };

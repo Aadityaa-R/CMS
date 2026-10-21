@@ -50,7 +50,7 @@ interface PatientPortalProps {
   activeTab?: string;
 }
 
-type PortalTab = 'appointments' | 'records' | 'prescriptions' | 'invoices' | 'profile';
+type PortalTab = 'appointments' | 'records' | 'prescriptions' | 'invoices';
 
 function formatTodayDateString(): string {
   const d = new Date();
@@ -89,7 +89,7 @@ function formatAppointmentStatus(apt: Appointment): string {
 }
 
 export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initialActiveTab = 'appointments' }) => {
-  const { currentUser, updateCurrentUser, changePassword, verifyCurrentPassword } = useAuth();
+  const { currentUser } = useAuth();
   const {
     doctors,
     patients: rawPatients,
@@ -98,7 +98,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     vitals: rawVitals = [],
     patientAssignments = [],
     modules = [],
-    updatePatient,
     bookAppointment: clinicBookAppointment,
     cancelAppointmentAction,
     rescheduleAppointmentAction,
@@ -116,16 +115,22 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     if (initialActiveTab === 'records') return 'records';
     if (initialActiveTab === 'prescriptions') return 'prescriptions';
     if (initialActiveTab === 'invoices' || initialActiveTab === 'billing') return 'invoices';
-    if (initialActiveTab === 'profile') return 'profile';
     return 'appointments';
   });
 
   useEffect(() => {
-    if (initialActiveTab === 'records') setActiveTab('records');
-    else if (initialActiveTab === 'prescriptions') setActiveTab('prescriptions');
-    else if (initialActiveTab === 'invoices' || initialActiveTab === 'billing') setActiveTab('invoices');
-    else if (initialActiveTab === 'profile') setActiveTab('profile');
-    else if (
+    if (initialActiveTab === 'profile') {
+      try {
+        window.history.replaceState({}, '', '/profile');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } catch {}
+    } else if (initialActiveTab === 'records') {
+      setActiveTab('records');
+    } else if (initialActiveTab === 'prescriptions') {
+      setActiveTab('prescriptions');
+    } else if (initialActiveTab === 'invoices' || initialActiveTab === 'billing') {
+      setActiveTab('invoices');
+    } else if (
       initialActiveTab === 'appointments' ||
       initialActiveTab === 'overview' ||
       initialActiveTab === 'portal'
@@ -505,132 +510,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     if (rc) setPatientReceipt(rc);
   };
 
-  // 5. PROFILE TAB STATE
-  const [contactPhone, setContactPhone] = useState(patient?.phone || '');
-  const [contactAddress, setContactAddress] = useState(patient?.address || '');
-  const [contactEmergName, setContactEmergName] = useState(patient?.emergencyContact?.name || '');
-  const [contactEmergRel, setContactEmergRel] = useState(patient?.emergencyContact?.relationship || '');
-  const [contactEmergPhone, setContactEmergPhone] = useState(patient?.emergencyContact?.phone || '');
-  const [contactEmail, setContactEmail] = useState(patient?.email || currentUser.email || '');
-  const [contactVerifyPassword, setContactVerifyPassword] = useState('');
-  const [contactError, setContactError] = useState('');
-  const [contactSuccess, setContactSuccess] = useState('');
-  const [isSavingContact, setIsSavingContact] = useState(false);
-
-  useEffect(() => {
-    if (patient) {
-      setContactPhone(patient.phone || '');
-      setContactAddress(patient.address || '');
-      setContactEmergName(patient.emergencyContact?.name || '');
-      setContactEmergRel(patient.emergencyContact?.relationship || '');
-      setContactEmergPhone(patient.emergencyContact?.phone || '');
-      setContactEmail(patient.email || currentUser.email || '');
-    }
-  }, [patient, currentUser.email]);
-
-  const handleSaveContact = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!patient) return;
-    setContactError('');
-    setContactSuccess('');
-
-    const cleanPhone = contactPhone.trim();
-    const cleanAddress = contactAddress.trim();
-    const cleanEmail = contactEmail.trim().toLowerCase();
-
-    if (!cleanPhone) {
-      setContactError('Phone number is required.');
-      return;
-    }
-    if (!cleanAddress) {
-      setContactError('Address is required.');
-      return;
-    }
-    if (!cleanEmail) {
-      setContactError('Email address is required.');
-      return;
-    }
-
-    const emailChanged = cleanEmail !== (patient.email || '').toLowerCase();
-    if (emailChanged) {
-      if (!contactVerifyPassword.trim()) {
-        setContactError('Current password is required to confirm an email change.');
-        return;
-      }
-      setIsSavingContact(true);
-      const isPassValid = await verifyCurrentPassword(contactVerifyPassword);
-      if (!isPassValid) {
-        setIsSavingContact(false);
-        setContactError('Current password is incorrect.');
-        return;
-      }
-    } else {
-      setIsSavingContact(true);
-    }
-
-    updatePatient(patient.id, {
-      phone: cleanPhone,
-      address: cleanAddress,
-      email: cleanEmail,
-      emergencyContact: {
-        name: contactEmergName.trim() || 'Primary Contact',
-        relationship: contactEmergRel.trim() || 'Relative',
-        phone: contactEmergPhone.trim() || cleanPhone,
-      },
-    });
-
-    updateCurrentUser({
-      email: cleanEmail,
-    });
-
-    setIsSavingContact(false);
-    setContactVerifyPassword('');
-    setContactSuccess('Contact details updated successfully.');
-    showNotice('Contact profile updated.');
-  };
-
-  // PASSWORD UPDATE STATE
-  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
-  const [newPasswordInput, setNewPasswordInput] = useState('');
-  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordError('');
-    setPasswordSuccess('');
-
-    if (!currentPasswordInput) {
-      setPasswordError('Current password is required.');
-      return;
-    }
-    if (!newPasswordInput) {
-      setPasswordError('New password is required.');
-      return;
-    }
-    if (newPasswordInput !== confirmPasswordInput) {
-      setPasswordError('New password and confirmation do not match.');
-      return;
-    }
-
-    setIsUpdatingPassword(true);
-    const res = await changePassword(currentPasswordInput, newPasswordInput);
-    setIsUpdatingPassword(false);
-
-    if (!res.success) {
-      setPasswordError(res.error || 'Failed to update password.');
-      return;
-    }
-
-    setCurrentPasswordInput('');
-    setNewPasswordInput('');
-    setConfirmPasswordInput('');
-    setPasswordSuccess('Password changed successfully.');
-    showNotice('Password updated.');
-  };
-
   // Check account waiting to be linked (M5)
   if (currentUser?.claimPending) {
     return (
@@ -676,8 +555,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
         return 'My Prescriptions';
       case 'invoices':
         return 'My Invoices';
-      case 'profile':
-        return 'My Profile';
       default:
         return 'My Health Portal';
     }
@@ -1334,176 +1211,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                 onPageChange={setInvoicesPage}
               />
             )}
-          </Card>
-        </div>
-      )}
-
-      {/* TAB 5: PROFILE */}
-      {activeTab === 'profile' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Contact Details Form */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
-            <CardHeader className="px-6 py-5">
-              <CardTitle className="text-lg font-bold">Contact Details</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 flex-1 flex flex-col justify-between">
-              <form onSubmit={handleSaveContact} className="space-y-5 text-sm flex-1 flex flex-col justify-between">
-                {contactError && (
-                  <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-lg">
-                    {contactError}
-                  </div>
-                )}
-                {contactSuccess && (
-                  <div className="p-3 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 rounded-lg">
-                    {contactSuccess}
-                  </div>
-                )}
-
-                <Input
-                  label="Phone Number"
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                  placeholder="+1 (555) 000-0000"
-                  required
-                />
-
-                <Input
-                  label="Address"
-                  value={contactAddress}
-                  onChange={(e) => setContactAddress(e.target.value)}
-                  placeholder="Street, City, Zip"
-                  required
-                />
-
-                <Input
-                  label="Emergency Contact Name"
-                  value={contactEmergName}
-                  onChange={(e) => setContactEmergName(e.target.value)}
-                  placeholder="Emergency contact full name"
-                />
-
-                <Input
-                  label="Emergency Contact Relationship"
-                  value={contactEmergRel}
-                  onChange={(e) => setContactEmergRel(e.target.value)}
-                  placeholder="e.g. Spouse, Parent, Sibling"
-                />
-
-                <Input
-                  label="Emergency Contact Phone"
-                  value={contactEmergPhone}
-                  onChange={(e) => setContactEmergPhone(e.target.value)}
-                  placeholder="+1 (555) 000-0000"
-                />
-
-                <Input
-                  label="Email Address"
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  required
-                />
-
-                {contactEmail.trim().toLowerCase() !== (patient.email || '').toLowerCase() && (
-                  <div className="pt-1">
-                    <Input
-                      label="Current Password"
-                      type="password"
-                      value={contactVerifyPassword}
-                      onChange={(e) => setContactVerifyPassword(e.target.value)}
-                      placeholder="Type current password to confirm email change"
-                      required
-                    />
-                    <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mt-1">
-                      Current password is required to verify changes to your email address.
-                    </span>
-                  </div>
-                )}
-
-                <div className="pt-2 flex justify-end">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="sm"
-                    disabled={isSavingContact}
-                  >
-                    {isSavingContact ? 'Saving...' : 'Save Contact Details'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Password Update Form */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
-            <CardHeader className="px-6 py-5">
-              <CardTitle className="text-lg font-bold">Security & Password</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 flex-1 flex flex-col justify-between">
-              <form onSubmit={handleUpdatePassword} className="space-y-5 text-sm flex-1 flex flex-col justify-between">
-                {passwordError && (
-                  <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-lg">
-                    {passwordError}
-                  </div>
-                )}
-                {passwordSuccess && (
-                  <div className="p-3 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 rounded-lg">
-                    {passwordSuccess}
-                  </div>
-                )}
-
-                <Input
-                  label="Current Password"
-                  type="password"
-                  value={currentPasswordInput}
-                  onChange={(e) => setCurrentPasswordInput(e.target.value)}
-                  placeholder="Enter your current password"
-                  required
-                />
-
-                <Input
-                  label="New Password"
-                  type="password"
-                  value={newPasswordInput}
-                  onChange={(e) => setNewPasswordInput(e.target.value)}
-                  placeholder="Enter new password"
-                  required
-                />
-
-                <Input
-                  label="Confirm New Password"
-                  type="password"
-                  value={confirmPasswordInput}
-                  onChange={(e) => setConfirmPasswordInput(e.target.value)}
-                  placeholder="Confirm new password"
-                  required
-                />
-
-                <div className="space-y-2.5 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                  <span className="uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider text-xs">
-                    Password & Session Security Policy
-                  </span>
-                  <p className="leading-relaxed">
-                    Passwords must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character.
-                  </p>
-                  <p className="leading-relaxed text-slate-500 dark:text-slate-400 text-xs">
-                    Inactivity timeout automatically logs out sessions after 30 minutes of idle time. Accounts lock for 5 minutes after consecutive failed sign-in attempts.
-                  </p>
-                </div>
-
-                <div className="pt-4 flex justify-end">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="sm"
-                    disabled={isUpdatingPassword}
-                  >
-                    {isUpdatingPassword ? 'Updating...' : 'Change Password'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
           </Card>
         </div>
       )}

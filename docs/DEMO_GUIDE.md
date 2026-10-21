@@ -127,6 +127,23 @@ Select the **Patient** option on the chooser step for registered patient account
 
 ---
 
+### Walkthrough 7: My Profile and Accessible User Menu Navigation (M10.1)
+
+1. **Access User Menu**: Sign in as any persona (e.g. Dr. Nathan Hayes or Eleanor Wright). Click the user avatar in the top navigation bar or press Enter while the avatar button is focused.
+2. **Accessible Keyboard Navigation**: Navigate menu options using `ArrowDown` and `ArrowUp` (with cyclic boundary wrapping), jump to start/end using `Home` / `End`, or dismiss with `Escape` (returning focus to the avatar button). Note the single, unified `"Theme"` row.
+3. **Open My Profile**: Activate the `"My Profile"` menu item. The menu closes and immediately routes to `/profile`, automatically moving keyboard focus to the `#profile-heading` title. Notice that the menu item displays `aria-current="page"` while on `/profile`.
+4. **Inspect Patient Portal Tabs**: Sign in as Eleanor Wright and observe the Patient Portal navigation tabs: `Appointments`, `Records`, `Prescriptions`, and `Invoices`. The redundant Profile tab is removed; all profile actions are unified at `/profile`.
+5. **Inspect Role-Specific Layout**:
+   - **For Staff**: The Contact Details card displays read-only rows for Name, canonical Staff ID, Job Title, Department, and Roles, with the plain guidance line `"To change these details, ask an administrator."`, followed by editable phone and email.
+   - **For Patients**: The Contact Details card provides residential address and emergency contact fields (name, relationship, phone).
+6. **Form Behavior & Safety Guard**:
+   - Edit any contact field: note that the **Save Contact Details** button enables only upon detecting changes.
+   - Click another tab or link while edits are uncommitted: the system presents a **Discard changes?** modal with **Keep editing** and **Discard** options.
+   - Attempt changing your email address: observe the mandatory **Current password** verification requirement before updates are committed.
+7. **Security & Password Management**: Inspect the **Security & Password** card featuring 44px show/hide toggle controls, standard autocomplete semantics, and password policy guidance derived directly from platform constants. All successful mutations write to the security ledger without storing or exposing passwords.
+
+---
+
 ## 4. System Reset and Baseline Recovery
 
 To restore all demonstration data back to its original factory state at any time:

@@ -45,7 +45,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
     patients: rawPatients,
     appointments: rawAppointments,
     prescriptions: rawPrescriptions,
-    vitals: rawVitals,
+    vitals: rawVitals = [],
     patientAssignments = [],
     modules = [],
     addPatient,

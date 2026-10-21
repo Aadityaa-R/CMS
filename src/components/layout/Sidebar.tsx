@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Clock,
   FileText,
-  User,
+  Calendar,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -71,11 +71,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     // Patients have fixed access to their own outpatient portal
     if (currentRole === 'patient') {
       return [
-        { id: 'overview', label: 'My Health Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
-        { id: 'records', label: 'My Records', icon: <FileText className="w-4 h-4" /> },
-        { id: 'prescriptions', label: 'My Prescriptions', icon: <Pill className="w-4 h-4" /> },
-        { id: 'billing', label: 'My Invoices', icon: <CreditCard className="w-4 h-4" /> },
-        { id: 'profile', label: 'My Profile', icon: <User className="w-4 h-4" /> },
+        { id: 'overview', label: 'Appointments', icon: <Calendar className="w-4 h-4" /> },
+        { id: 'records', label: 'Records', icon: <FileText className="w-4 h-4" /> },
+        { id: 'prescriptions', label: 'Prescriptions', icon: <Pill className="w-4 h-4" /> },
+        { id: 'billing', label: 'Invoices', icon: <CreditCard className="w-4 h-4" /> },
       ];
     }
 
