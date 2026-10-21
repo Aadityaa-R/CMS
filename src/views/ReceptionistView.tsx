@@ -1103,26 +1103,26 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Checked In</div>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{totalCheckedIn}</div>
+                <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Total Checked In</div>
+                <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1.5">{totalCheckedIn}</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Currently Waiting</div>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{currentlyWaiting}</div>
+                <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Currently Waiting</div>
+                <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1.5">{currentlyWaiting}</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">In Consultation</div>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{inConsultation}</div>
+                <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">In Consultation</div>
+                <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1.5">{inConsultation}</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Completed Today</div>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{completedToday}</div>
+                <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Completed Today</div>
+                <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1.5">{completedToday}</div>
               </CardContent>
             </Card>
           </div>

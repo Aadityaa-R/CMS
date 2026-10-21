@@ -1137,19 +1137,19 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <div className="order-1 lg:col-span-2 flex flex-col">
               {activePatient && activeAppointment ? (
                 <Card className="h-full flex flex-col">
-                  <CardHeader>
-                    <CardTitle>
+                  <CardHeader className="px-6 py-5">
+                    <CardTitle className="text-xl font-bold tracking-tight">
                       Active Consultation Desk: {activePatient.firstName} {activePatient.lastName}
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
                       {activePatient.mrn} • {activePatient.age} yrs • {activePatient.gender} • Blood Group: {activePatient.bloodGroup}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
+                  <CardContent className="space-y-6 sm:space-y-7 p-6 flex-1 flex flex-col justify-between">
                     {/* Allergies */}
                     <div>
                       {!isEditingAllergies ? (
-                        <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                        <div className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
                           <span>
                             Allergies:{' '}
                             {allergyInput.trim() && allergyInput.toLowerCase().trim() !== 'none' ? (
@@ -1164,14 +1164,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             <button
                               type="button"
                               onClick={handleStartEditAllergies}
-                              className="text-xs text-teal-600 dark:text-teal-400 hover:underline font-medium cursor-pointer"
+                              className="text-sm text-teal-600 dark:text-teal-400 hover:underline font-semibold cursor-pointer"
                             >
                               {allergyInput.trim() && allergyInput.toLowerCase().trim() !== 'none' ? 'Edit' : 'Add'}
                             </button>
                           )}
                         </div>
                       ) : (
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
                           <div className="flex-1 sm:max-w-md">
                             <Input
                               value={allergyDraft}
@@ -1186,13 +1186,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 }
                               }}
                               placeholder="e.g. Penicillin, Peanuts"
-                              className="text-xs py-1"
+                              className="text-sm py-2"
                               autoFocus
                             />
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
-                              size="xs"
+                              size="sm"
                               variant="secondary"
                               onClick={handleSaveAllergies}
                               disabled={!hasAllergyChanged}
@@ -1200,7 +1200,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               Save
                             </Button>
                             <Button
-                              size="xs"
+                              size="sm"
                               variant="outline"
                               onClick={handleCancelEditAllergies}
                             >
@@ -1212,29 +1212,30 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     </div>
 
                     {/* Consultation Chief Complaint */}
-                    <div className="text-xs space-y-1">
-                      <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                    <div className="space-y-2">
+                      <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                         Chief Complaint & Reason for Visit
                       </span>
-                      <p className="text-slate-900 dark:text-slate-100 font-medium">
+                      <p className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug">
                         {activeAppointment.reasonForVisit}
                       </p>
                       {activeAppointment.notes && (
-                        <p className="text-slate-500 dark:text-slate-400 text-[0.6875rem]">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
                           Intake Note: {activeAppointment.notes}
                         </p>
                       )}
                     </div>
 
                     {/* Clinical Triage Vitals: 5 cols on desktop, 3 on tablet, 2 on phones */}
-                    <div className="space-y-2">
-                      <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block">
+                    <div className="space-y-3">
+                      <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                         Clinical Triage Vitals
                       </span>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                         <Input
                           label={getVitalLabel('BP Systolic (mmHg)', vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp)}
+                          labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
                           inputMode="numeric"
                           placeholder="120"
                           value={vitalsForm.systolicBp}
@@ -1242,10 +1243,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.systolicBp}
-                          className="text-xs py-1.5"
+                          className="text-sm py-2 font-medium"
                         />
                         <Input
                           label={getVitalLabel('BP Diastolic (mmHg)', vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp)}
+                          labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
                           inputMode="numeric"
                           placeholder="80"
                           value={vitalsForm.diastolicBp}
@@ -1253,10 +1255,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.diastolicBp}
-                          className="text-xs py-1.5"
+                          className="text-sm py-2 font-medium"
                         />
                         <Input
                           label={getVitalLabel('Heart Rate (bpm)', vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm)}
+                          labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
                           inputMode="numeric"
                           placeholder="72"
                           value={vitalsForm.heartRateBpm}
@@ -1264,10 +1267,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.heartRateBpm}
-                          className="text-xs py-1.5"
+                          className="text-sm py-2 font-medium"
                         />
                         <Input
                           label={getVitalLabel('O2 Saturation (%)', vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct)}
+                          labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
                           inputMode="numeric"
                           placeholder="98"
                           value={vitalsForm.oxygenSaturationPct}
@@ -1275,10 +1279,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.oxygenSaturationPct}
-                          className="text-xs py-1.5"
+                          className="text-sm py-2 font-medium"
                         />
                         <Input
                           label={getVitalLabel('Temperature (°C)', vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius)}
+                          labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
                           inputMode="decimal"
                           placeholder="36.8"
                           value={vitalsForm.temperatureCelsius}
@@ -1286,14 +1291,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                           disabled={isReadOnlyView}
                           error={vitalErrors.temperatureCelsius}
-                          className="text-xs py-1.5"
+                          className="text-sm py-2 font-medium"
                         />
                       </div>
 
                       {!isReadOnlyView && (
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 pt-1">
                           <Button
-                            size="xs"
+                            size="sm"
                             variant="secondary"
                             onClick={handleSaveVitals}
                             disabled={!hasVitalsChanged || hasVitalErrors || !vitalsForm.systolicBp.trim() || !vitalsForm.diastolicBp.trim() || !vitalsForm.heartRateBpm.trim() || !vitalsForm.oxygenSaturationPct.trim() || !vitalsForm.temperatureCelsius.trim()}
@@ -1301,7 +1306,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             Save Vitals
                           </Button>
                           {vitalsSavedMessage && (
-                            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                               Vitals saved
                             </span>
                           )}
@@ -1311,11 +1316,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                     {/* Action Row: wraps on mobile with full width buttons and Conclude Visit last */}
                     {!isReadOnlyView && (
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="w-full sm:w-auto"
+                          className="w-full sm:w-auto text-sm px-4 py-2"
                           onClick={() => {
                             setClinicalNotesText(activeAppointment.notes || '');
                             setIsNotesModalOpen(true);
@@ -1326,7 +1331,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <Button
                           size="sm"
                           variant="outline"
-                          className="w-full sm:w-auto"
+                          className="w-full sm:w-auto text-sm px-4 py-2"
                           disabled={!canPrescribe(currentUser, activePatient.id, patientAssignments, modules)}
                           onClick={() => handleOpenPrescriptionModal(activePatient.id)}
                         >
@@ -1335,7 +1340,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <Button
                           size="sm"
                           variant="primary"
-                          className="w-full sm:w-auto order-last sm:order-none"
+                          className="w-full sm:w-auto order-last sm:order-none text-sm px-5 py-2 font-semibold"
                           onClick={() => setIsConcludeModalOpen(true)}
                         >
                           Conclude Visit
@@ -1356,21 +1361,21 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             {/* Right Column / Order 2 on Mobile: Patient Summary Card */}
             <div className="order-2 lg:col-span-1 flex flex-col">
               <Card className="h-full flex flex-col">
-                <CardHeader>
-                  <CardTitle>Patient Summary</CardTitle>
+                <CardHeader className="px-6 py-5">
+                  <CardTitle className="text-xl font-bold tracking-tight">Patient Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3.5 text-xs flex-1 flex flex-col justify-between">
+                <CardContent className="space-y-6 text-sm p-6 flex-1 flex flex-col justify-between">
                   {summaryPatient ? (
                     <>
                       {/* Section 1: Previous Visit Record */}
-                      <div className="space-y-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider">
+                      <div className="space-y-2.5 pb-4 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                           Previous Visit Record
                         </span>
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-baseline gap-2 py-0.5">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                               {lastCompletedApt?.dateTime
                                 ? new Date(lastCompletedApt.dateTime).toLocaleDateString('en-GB', {
                                     day: '2-digit',
@@ -1383,48 +1388,48 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                           {summaryPatient.previousVitals ? (
                             <>
-                              <div className="flex justify-between items-baseline gap-2">
-                                <span className="text-slate-500 dark:text-slate-400 shrink-0">Blood Pressure:</span>
-                                <span className="text-slate-700 dark:text-slate-300 text-right">
+                              <div className="flex justify-between items-baseline gap-2 py-0.5">
+                                <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Blood Pressure:</span>
+                                <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                                   {summaryPatient.previousVitals.systolicBp ?? '--'}/{summaryPatient.previousVitals.diastolicBp ?? '--'} mmHg
                                 </span>
                               </div>
-                              <div className="flex justify-between items-baseline gap-2">
-                                <span className="text-slate-500 dark:text-slate-400 shrink-0">Heart Rate:</span>
-                                <span className="text-slate-700 dark:text-slate-300 text-right">
+                              <div className="flex justify-between items-baseline gap-2 py-0.5">
+                                <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Heart Rate:</span>
+                                <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                                   {summaryPatient.previousVitals.heartRateBpm ?? '--'} bpm
                                 </span>
                               </div>
-                              <div className="flex justify-between items-baseline gap-2">
-                                <span className="text-slate-500 dark:text-slate-400 shrink-0">SpO2:</span>
-                                <span className="text-slate-700 dark:text-slate-300 text-right">
+                              <div className="flex justify-between items-baseline gap-2 py-0.5">
+                                <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">SpO2:</span>
+                                <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                                   {summaryPatient.previousVitals.oxygenSaturationPct ?? '--'}%
                                 </span>
                               </div>
-                              <div className="flex justify-between items-baseline gap-2">
-                                <span className="text-slate-500 dark:text-slate-400 shrink-0">Temperature:</span>
-                                <span className="text-slate-700 dark:text-slate-300 text-right">
+                              <div className="flex justify-between items-baseline gap-2 py-0.5">
+                                <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Temperature:</span>
+                                <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                                   {summaryPatient.previousVitals.temperatureCelsius ?? '--'} °C
                                 </span>
                               </div>
                             </>
                           ) : (
-                            <div className="flex justify-between items-baseline gap-2">
-                              <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit Vitals:</span>
-                              <span className="text-slate-700 dark:text-slate-300 text-right">None recorded</span>
+                            <div className="flex justify-between items-baseline gap-2 py-0.5">
+                              <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Last Visit Vitals:</span>
+                              <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">None recorded</span>
                             </div>
                           )}
 
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Reason:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right line-clamp-2" title={lastCompletedApt?.reasonForVisit || undefined}>
+                          <div className="flex justify-between items-baseline gap-2 py-0.5">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Last Reason:</span>
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right line-clamp-2" title={lastCompletedApt?.reasonForVisit || undefined}>
                               {lastCompletedApt?.reasonForVisit || 'None recorded'}
                             </span>
                           </div>
 
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Consulting Doctor:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                          <div className="flex justify-between items-baseline gap-2 py-0.5">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Consulting Doctor:</span>
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                               {lastCompletedApt?.doctorName || 'None recorded'}
                             </span>
                           </div>
@@ -1432,23 +1437,23 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
 
                       {/* Section 2: Clinical Profile */}
-                      <div className="space-y-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider">
+                      <div className="space-y-2.5 pb-4 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                           Clinical Profile
                         </span>
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-baseline gap-2 py-0.5">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                               {summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
                                 ? deduplicateList(summaryPatient.chronicConditions).join(', ')
                                 : 'None recorded'}
                             </span>
                           </div>
 
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                          <div className="flex justify-between items-baseline gap-2 py-0.5">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                               {(() => {
                                 const activeMeds = activeMedications(summaryPatient.id, prescriptions, new Date());
                                 if (activeMeds.length > 0) return activeMeds.join(', ');
@@ -1457,9 +1462,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             </span>
                           </div>
 
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Known Allergies:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                          <div className="flex justify-between items-baseline gap-2 py-0.5">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Known Allergies:</span>
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                               {summaryPatient.allergies && summaryPatient.allergies.length > 0
                                 ? summaryPatient.allergies.join(', ')
                                 : 'None recorded'}
@@ -1469,14 +1474,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
 
                       {/* Section 3: Demographics & Primary Care */}
-                      <div className="space-y-2">
-                        <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider">
+                      <div className="space-y-2.5">
+                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                           Demographics & Primary Care
                         </span>
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Primary Doctor:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-baseline gap-2 py-0.5">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Primary Doctor:</span>
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                               {(() => {
                                 const docId = getAssignedDoctorId(summaryPatient.id, patientAssignments);
                                 const doc = doctors.find((d) => d.id === docId);
@@ -1485,18 +1490,18 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             </span>
                           </div>
 
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Contact Phone:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                          <div className="flex justify-between items-baseline gap-2 py-0.5">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Contact Phone:</span>
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                               {summaryPatient.phone || 'None recorded'}
                             </span>
                           </div>
 
                           {summaryPatient.emergencyContact && summaryPatient.emergencyContact.name && (
-                            <div className="flex justify-between items-baseline gap-2">
-                              <span className="text-slate-500 dark:text-slate-400 shrink-0">Emergency Contact:</span>
+                            <div className="flex justify-between items-baseline gap-2 py-0.5">
+                              <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Emergency Contact:</span>
                               <span
-                                className="text-slate-700 dark:text-slate-300 text-right truncate max-w-[180px]"
+                                className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right truncate max-w-[200px]"
                                 title={`${summaryPatient.emergencyContact.name} (${summaryPatient.emergencyContact.relationship || 'Contact'}) • ${summaryPatient.emergencyContact.phone}`}
                               >
                                 {summaryPatient.emergencyContact.name} ({summaryPatient.emergencyContact.relationship || 'Contact'})
@@ -1504,9 +1509,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             </div>
                           )}
 
-                          <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Registered Date:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                          <div className="flex justify-between items-baseline gap-2 py-0.5">
+                            <span className="text-sm text-slate-500 dark:text-slate-400 shrink-0">Registered Date:</span>
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 text-right">
                               {summaryPatient.registeredDate
                                 ? new Date(summaryPatient.registeredDate).toLocaleDateString('en-GB', {
                                     day: '2-digit',
@@ -1520,7 +1525,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
                     </>
                   ) : (
-                    <div className="flex-1 flex items-center justify-center p-6 text-center text-slate-500 dark:text-slate-400">
+                    <div className="flex-1 flex items-center justify-center p-6 text-center text-slate-500 dark:text-slate-400 text-sm">
                       No active consultation
                     </div>
                   )}
@@ -1535,7 +1540,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
+                      <span className="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block">
                         MD Clinical Queue Inspector
                       </span>
                     </div>

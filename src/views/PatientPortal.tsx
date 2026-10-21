@@ -717,7 +717,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                     ? `${upcomingAppointments[0].dateTime.slice(0, 10)} ${upcomingAppointments[0].dateTime.slice(11, 16)}`
                     : 'None scheduled'}
                 </span>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
                   Next Appointment
                 </span>
               </div>
@@ -728,7 +728,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                 <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   {formatCurrency(totalBalanceDue)}
                 </span>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
                   Balance Due
                 </span>
               </div>
@@ -739,7 +739,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                 <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   {activePrescriptionsCount}
                 </span>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
                   Active Prescriptions
                 </span>
               </div>
@@ -750,7 +750,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                 <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   {visitsThisYear}
                 </span>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
                   Visits this year
                 </span>
               </div>
@@ -1343,11 +1343,11 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Contact Details Form */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
-            <CardHeader>
-              <CardTitle>Contact Details</CardTitle>
+            <CardHeader className="px-6 py-5">
+              <CardTitle className="text-lg font-bold">Contact Details</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              <form onSubmit={handleSaveContact} className="space-y-4 text-xs flex-1 flex flex-col justify-between">
+            <CardContent className="p-6 flex-1 flex flex-col justify-between">
+              <form onSubmit={handleSaveContact} className="space-y-5 text-sm flex-1 flex flex-col justify-between">
                 {contactError && (
                   <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-lg">
                     {contactError}
@@ -1437,11 +1437,11 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
           {/* Password Update Form */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
-            <CardHeader>
-              <CardTitle>Security & Password</CardTitle>
+            <CardHeader className="px-6 py-5">
+              <CardTitle className="text-lg font-bold">Security & Password</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              <form onSubmit={handleUpdatePassword} className="space-y-4 text-xs flex-1 flex flex-col justify-between">
+            <CardContent className="p-6 flex-1 flex flex-col justify-between">
+              <form onSubmit={handleUpdatePassword} className="space-y-5 text-sm flex-1 flex flex-col justify-between">
                 {passwordError && (
                   <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-lg">
                     {passwordError}
@@ -1480,15 +1480,15 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   required
                 />
 
-                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[0.6875rem] text-slate-500 dark:text-slate-400">
-                  <span className="uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider text-[0.625rem]">
+                <div className="space-y-2.5 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                  <span className="uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider text-xs">
                     Password & Session Security Policy
                   </span>
-                  <p>
+                  <p className="leading-relaxed">
                     Passwords must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character.
                   </p>
-                  <p>
-                    Inactivity timeout will automatically disconnect active sessions after 30 minutes of idle time. Accounts are locked for 5 minutes after multiple failed sign-in attempts.
+                  <p className="leading-relaxed text-slate-500 dark:text-slate-400 text-xs">
+                    Inactivity timeout automatically logs out sessions after 30 minutes of idle time. Accounts lock for 5 minutes after consecutive failed sign-in attempts.
                   </p>
                 </div>
 

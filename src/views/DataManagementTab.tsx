@@ -244,28 +244,28 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
                 <span>Browser Storage Status</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-5 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <CardContent className="p-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Storage Location</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1.5">Storage Location</span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
                     {stats?.mode === 'browser' ? 'Local browser storage (localStorage)' : 'In-memory session (Resets on reload)'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Last Saved</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1.5">Last Saved</span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
                     {stats?.lastSaved ? new Date(stats.lastSaved).toLocaleString() : 'Not recorded'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Approximate Data Size</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1.5">Approximate Data Size</span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
                     {stats?.totalSizeFormatted || '0 KB'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Schema Version</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1.5">Schema Version</span>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
                     Version 1 (Active)
                   </span>

@@ -550,13 +550,13 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-1">
                 <div className="p-3 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block">Today's Date</span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">Today's Date</span>
                   <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {todayStr} ({dayOfWeek(todayStr)})
                   </span>
                 </div>
                 <div className="p-3 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block">Current Status</span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">Current Status</span>
                   <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {isUserOnLeaveToday
                       ? 'Approved Leave'
@@ -568,13 +568,13 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                   </span>
                 </div>
                 <div className="p-3 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block">Clock In Time</span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">Clock In Time</span>
                   <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {formatTimeStr(todayRecord?.clockIn || null)}
                   </span>
                 </div>
                 <div className="p-3 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block">Clock Out Time</span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">Clock Out Time</span>
                   <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {formatTimeStr(todayRecord?.clockOut || null)}
                   </span>
@@ -783,19 +783,19 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
             return (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mb-1">On Shift Today</span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">On Shift Today</span>
                   <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{onShiftCount}</span>
                 </div>
                 <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mb-1">Clocked In</span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">Clocked In</span>
                   <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{clockedInCount}</span>
                 </div>
                 <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mb-1">Late Arrivals</span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">Late Arrivals</span>
                   <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{lateCount}</span>
                 </div>
                 <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mb-1">On Approved Leave</span>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">On Approved Leave</span>
                   <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{leaveCount}</span>
                 </div>
               </div>

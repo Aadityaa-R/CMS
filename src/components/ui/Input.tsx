@@ -2,6 +2,7 @@ import React from 'react';
 
 interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'label'> {
   label?: React.ReactNode;
+  labelClassName?: string;
   error?: string;
   helperText?: string;
   icon?: React.ReactNode;
@@ -10,6 +11,7 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
 export const Input = React.forwardRef<HTMLInputElement, InputProps>((
   {
     label,
+    labelClassName = '',
     error,
     helperText,
     icon,
@@ -29,7 +31,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>((
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
+          className={`block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 ${labelClassName}`}
         >
           {label}
         </label>
