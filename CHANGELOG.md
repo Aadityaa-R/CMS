@@ -5,6 +5,9 @@ All notable changes to the Beacon Health Clinic Management System will be docume
 ## [Unreleased] - 2026-10-21
 
 ### Added
+- Roles Card Full-Width Layout and Balanced Column Spacing:
+  - Expanded the Roles (3) directory card in `src/views/AccessControlView.tsx` from `w-fit max-w-full min-w-[40rem]` to `w-full`, matching the exact horizontal width of the Role Clearance Governance card above it and eliminating the right-hand whitespace void.
+  - Distributed table columns proportionally across the full-width card (`w-5/12` for Role, `w-2/12` for Accesses, `w-2/12` for Members, and `w-3/12 text-right` for Actions) with `max-w-xl` on descriptions, ensuring balanced and legible data presentation.
 - Formulary Header Button Spacing:
   - Added vertical margin (`mt-3.5`) between the "+ Add Medicine" button and the subtitle description line above it in `FormularyTab.tsx`, eliminating cramped layout collision.
 - Dashboard Carousel Alignment and Compact Navigation Arrows:

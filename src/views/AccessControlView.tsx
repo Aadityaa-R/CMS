@@ -1529,7 +1529,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             })()
           ) : (
             /* Roles Directory Table View */
-            <Card className="border border-slate-200 dark:border-slate-800 w-fit max-w-full min-w-[40rem]">
+            <Card className="border border-slate-200 dark:border-slate-800 w-full">
               <CardHeader
                 action={
                   <div className="flex items-center gap-2">
@@ -1572,10 +1572,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   <Table stackBelow="lg">
                     <TableHeader>
                       <TableRow>
-                        <TableHead kind="short" priority={1}>Role</TableHead>
-                        <TableHead kind="short" priority={4}>Accesses</TableHead>
-                        <TableHead kind="short" priority={2}>Members</TableHead>
-                        <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
+                        <TableHead kind="short" priority={1} className="w-5/12">Role</TableHead>
+                        <TableHead kind="short" priority={4} className="w-2/12">Accesses</TableHead>
+                        <TableHead kind="short" priority={2} className="w-2/12">Members</TableHead>
+                        <TableHead kind="short" priority={3} isActions className="w-3/12 text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1588,23 +1588,23 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       ) : (
                         filteredRolesList.slice((modulesPage - 1) * 10, modulesPage * 10).map((mod) => (
                           <TableRow key={mod.id}>
-                            <TableCell label="Role" isPrimary kind="short" priority={1}>
+                            <TableCell label="Role" isPrimary kind="short" priority={1} className="w-5/12">
                               <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
                                 {mod.name}
                               </div>
                               {mod.description && (
-                                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
+                                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5 max-w-xl">
                                   {mod.description}
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell label="Accesses" kind="short" priority={4} className="text-xs text-slate-700 dark:text-slate-300">
+                            <TableCell label="Accesses" kind="short" priority={4} className="w-2/12 text-xs text-slate-700 dark:text-slate-300">
                               {mod.accessIds.length} {mod.accessIds.length === 1 ? 'access' : 'accesses'}
                             </TableCell>
-                            <TableCell label="Members" kind="short" priority={2} className="text-xs text-slate-700 dark:text-slate-300">
+                            <TableCell label="Members" kind="short" priority={2} className="w-2/12 text-xs text-slate-700 dark:text-slate-300">
                               {mod.memberIds.length} {mod.memberIds.length === 1 ? 'member' : 'members'}
                             </TableCell>
-                            <TableCell label="Actions" isActions fullWidthOnStack kind="short" priority={3} className="text-right">
+                            <TableCell label="Actions" isActions fullWidthOnStack kind="short" priority={3} className="w-3/12 text-right">
                               <RowActions
                                 actions={[
                                   {
