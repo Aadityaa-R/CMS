@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useSidebar } from '@/context/SidebarContext';
+import { focusIfKeyboard } from '@/lib/inputMode';
 import {
   Menu,
+  X,
   Bell,
   Building2,
   User,
@@ -24,6 +27,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, activeTab }) => {
   const { currentUser, currentRole, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { isOpen: isSidebarOpen, toggle: toggleSidebar } = useSidebar();
   const { userNotifications, unreadCount, markAsRead, markAllAsRead, dismissNotification } = useNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -67,7 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
     setTimeout(() => {
       const heading = document.getElementById('profile-heading');
       if (heading) {
-        heading.focus();
+        focusIfKeyboard(heading);
       }
     }, 50);
   };
@@ -141,16 +145,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
       <header className="h-20 bg-slate-50 dark:bg-slate-950 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
         {/* Brand / Clinic Title */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {onToggleSidebar && (
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              className="p-2 -ml-1 rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0"
-              aria-label="Toggle navigation menu"
-            >
+          <button
+            type="button"
+            data-sidebar-ignore-outside="true"
+            onClick={onToggleSidebar || toggleSidebar}
+            className={`w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] p-2.5 rounded-lg lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 ${
+              isSidebarOpen
+                ? 'bg-slate-200 dark:bg-slate-800 text-teal-600 dark:text-teal-400'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            title={isSidebarOpen ? 'Close menu' : 'Open menu'}
+            aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isSidebarOpen}
+            aria-controls="sidebar-navigation"
+          >
+            {isSidebarOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
               <Menu className="w-5 h-5" />
-            </button>
-          )}
+            )}
+          </button>
           <button
             type="button"
             onClick={() => onNavigate?.(currentRole === 'patient' ? 'overview' : 'dashboard')}

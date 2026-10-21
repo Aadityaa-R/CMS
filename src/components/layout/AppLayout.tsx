@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
+import { SidebarProvider } from '@/context/SidebarContext';
 import { LoginView } from '@/views/LoginView';
 
 // Role views
@@ -47,8 +48,6 @@ export const AppLayout: React.FC = () => {
       return undefined;
     }
   });
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
   const [isProfileDirty, setIsProfileDirty] = useState<boolean>(false);
   const [pendingNav, setPendingNav] = useState<{ tab: string; subTab?: string } | null>(null);
 
@@ -224,94 +223,91 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className={`h-screen flex flex-col font-sans antialiased overflow-hidden ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
-            {/* Skip to main content link for keyboard users */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:dark:bg-slate-900 focus:text-slate-900 focus:dark:text-slate-100 focus:border focus:border-slate-300 focus:dark:border-slate-700 focus:rounded-lg focus:shadow-modal focus:outline-none text-xs font-semibold"
-      >
-        Skip to main content
-      </a>
+    <SidebarProvider>
+      <div className={`h-screen flex flex-col font-sans antialiased overflow-hidden ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+        {/* Skip to main content link for keyboard users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:dark:bg-slate-900 focus:text-slate-900 focus:dark:text-slate-100 focus:border focus:border-slate-300 focus:dark:border-slate-700 focus:rounded-lg focus:shadow-modal focus:outline-none text-xs font-semibold"
+        >
+          Skip to main content
+        </a>
 
-      {/* Global polite live region for screen reader announcements */}
-      <div
-        id="global-status-region"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      />
-
-      <div className="flex-1 flex overflow-hidden h-full">
-        {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
-        <Sidebar
-          activeTab={activeTab}
-          onTabChange={(tab) => handleNavigate(tab)}
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        {/* Global polite live region for screen reader announcements */}
+        <div
+          id="global-status-region"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
         />
 
-        {/* Content Shell */}
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-          {/* Header with profile & logout - pinned at top */}
-          <Navbar
+        <div className="flex-1 flex overflow-hidden h-full">
+          {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
+          <Sidebar
             activeTab={activeTab}
-            onNavigate={handleNavigate}
-            onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+            onTabChange={(tab) => handleNavigate(tab)}
           />
 
-          {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
-          <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto w-full p-4 sm:p-6 outline-none">
-            <ErrorBoundary>
-              <PageContainer>
-                {renderActiveView()}
-              </PageContainer>
-            </ErrorBoundary>
-          </main>
-        </div>
-      </div>
+          {/* Content Shell */}
+          <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+            {/* Header with profile & logout - pinned at top */}
+            <Navbar
+              activeTab={activeTab}
+              onNavigate={handleNavigate}
+            />
 
-      {/* Discard changes dialog when attempting to navigate away from dirty profile */}
-      {pendingNav && (
-        <Modal
-          isOpen={true}
-          onClose={() => setPendingNav(null)}
-          title="Discard changes?"
-          description="You have unsaved changes to your contact details. Are you sure you want to discard them?"
-          maxWidth="sm"
-          footer={
-            <div className="flex items-center justify-end gap-3 w-full">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPendingNav(null)}
-              >
-                Keep editing
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  setIsProfileDirty(false);
-                  const target = pendingNav;
-                  setPendingNav(null);
-                  if (target) {
-                    executeNavigate(target.tab, target.subTab);
-                  }
-                }}
-              >
-                Discard
-              </Button>
-            </div>
-          }
-        >
-          <p className="text-xs text-slate-600 dark:text-slate-400">
-            Any modifications you made will not be saved.
-          </p>
-        </Modal>
-      )}
-    </div>
+            {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
+            <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto w-full p-4 sm:p-6 outline-none">
+              <ErrorBoundary>
+                <PageContainer>
+                  {renderActiveView()}
+                </PageContainer>
+              </ErrorBoundary>
+            </main>
+          </div>
+        </div>
+
+        {/* Discard changes dialog when attempting to navigate away from dirty profile */}
+        {pendingNav && (
+          <Modal
+            isOpen={true}
+            onClose={() => setPendingNav(null)}
+            title="Discard changes?"
+            description="You have unsaved changes to your contact details. Are you sure you want to discard them?"
+            maxWidth="sm"
+            footer={
+              <div className="flex items-center justify-end gap-3 w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPendingNav(null)}
+                >
+                  Keep editing
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    setIsProfileDirty(false);
+                    const target = pendingNav;
+                    setPendingNav(null);
+                    if (target) {
+                      executeNavigate(target.tab, target.subTab);
+                    }
+                  }}
+                >
+                  Discard
+                </Button>
+              </div>
+            }
+          >
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Any modifications you made will not be saved.
+            </p>
+          </Modal>
+        )}
+      </div>
+    </SidebarProvider>
   );
 };

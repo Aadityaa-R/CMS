@@ -843,4 +843,57 @@ Executes the comprehensive release gate:
   - `w-fit max-w-full min-w-[40rem]`, left-aligned within the page container.
   - Applied to Reception Lounge & Registry, Past Appointments, Visit History, Access Control Roles & Directory, Dev Credentials Directory, and Daily Summary Cards.
 
+---
+
+## 18. SIDEBAR ARCHITECTURE AND FOCUS SPECIFICATION (M10.8)
+
+### 18.1 Single Source of Truth
+- **Unified State**: A single boolean state (`isOpen`) provided by `SidebarProvider` (`src/context/SidebarContext.tsx`) controls the open or closed state of the sidebar across all devices. No component maintains a separate copy of open/collapsed state.
+- **Initial Load State**: Starts collapsed (`3.5rem` / `w-14` rail) on desktop and closed on phones on every application load. Never persisted across sessions or reloads.
+- **Breakpoint Crossing Reset**: Crossing the 1024px boundary (`min-width: 1024px`) via window resize, orientation change, or display scaling immediately resets `isOpen` to `false`. This guarantees that desktop and mobile layouts and toggle icons never disagree.
+
+### 18.2 Outside Pointerdown Capturing Listener & Pass-Through
+- **Capturing Listener**: When open, a capturing `pointerdown` listener on `document` listens for clicks outside the sidebar (`src/lib/sidebarOutsideClick.ts`). Removed immediately on close or unmount.
+- **Desktop One-Click Pass-Through**: The listener does not call `preventDefault()` or `stopPropagation()`. A click on a button on the page while the sidebar is open closes the sidebar AND triggers the underlying button on that exact click without requiring a second click.
+- **Phone / Tablet Overlay**: Below 1024px, a dimmed backdrop (`z-30`) catches outside pointer presses, dismissing the drawer and preventing activation of elements beneath it.
+- **Ignore Outside Press Elements**:
+  - Clicks inside the sidebar itself (`asideRef`).
+  - Clicks on toggle buttons marked with `data-sidebar-ignore-outside="true"` (preventing close-then-reopen loops).
+  - Clicks inside open modals or overlays (`[role="dialog"]`, `[data-modal]`), preserving modal interaction without closing background panels.
+- **Keyboard & Navigation Dismissal**:
+  - `Escape` closes the sidebar and returns keyboard focus directly to the toggle button.
+  - Selecting any navigation item activates the route and closes the sidebar.
+  - Tabbing through interactive elements with the keyboard does NOT close the sidebar.
+
+### 18.3 Zero Layout Shift & Floating Desktop Rail
+- **Layout Invariance**: The collapsed rail maintains an exact 3.5rem (`w-14`) width in the page layout at all times (`hidden lg:block w-14 shrink-0 h-full`).
+- **Floating Expanded Sidebar**: When opened on desktop, the expanded sidebar (`w-64`) is positioned at `z-40`, floating directly over page content. Expanding or collapsing the sidebar never reflows or shifts adjacent page content, cards, or tables.
+- **Modals Higher Z-Index**: Modals reside at `z-50`, strictly above the sidebar (`z-40`) and mobile backdrop (`z-30`).
+- **Off-Screen Inertness**: When closed on mobile, the drawer is styled with `inert="true"` and `aria-hidden="true"`, ensuring off-screen drawer items cannot receive focus or be announced by screen readers.
+
+### 18.4 Synchronized Toggle Controls & ARIA Attributes
+- **Desktop Rail Toggle**:
+  - Closed: `PanelLeftOpen` icon, `"Expand sidebar"` title and `aria-label`, `aria-expanded="false"`, `aria-controls="sidebar-navigation"`.
+  - Open: `PanelLeftClose` icon, `"Collapse sidebar"` title and `aria-label`, `aria-expanded="true"`, `aria-controls="sidebar-navigation"`.
+  - Pressed style when open: `bg-slate-800 text-teal-300`.
+- **Phone Header Toggle**:
+  - Closed: `Menu` icon, `"Open menu"` title and `aria-label`, `aria-expanded="false"`, `aria-controls="sidebar-navigation"`.
+  - Open: `X` icon, `"Close menu"` title and `aria-label`, `aria-expanded="true"`, `aria-controls="sidebar-navigation"`.
+  - Pressed style when open: `bg-slate-200 dark:bg-slate-800 text-teal-600 dark:text-teal-400`.
+- **Zero Animation**: Icons swap instantly without transitions or animation (`motion is reserved exclusively for login screen`).
+- **Touch Target**: Minimum 44px (`min-w-[2.75rem] min-h-[2.75rem]`) across all toggle buttons and navigation items.
+
+### 18.5 Focus Management & focusIfKeyboard Convention
+- **Input Mode Tracking** (`src/lib/inputMode.ts`):
+  - Tracks user input mode (`'pointer'` vs `'keyboard'`).
+  - Pointer events (`pointerdown`, `mousedown`, `touchstart`) switch mode to pointer; key events switch mode to keyboard.
+- **Helper Convention**: `focusIfKeyboard(element)` executes `element.focus()` strictly when the current input mode is `'keyboard'`.
+  - Replaced non-essential programmatic focus calls (sidebar cleanup, modal cleanup focus restore after pointer click, profile heading focus on mouse click, booking modal dismissal).
+  - Preserved direct programmatic focus where required by accessibility standards: initial focus into a newly opened modal/form and returning focus to the toggle button after `Escape` from the sidebar.
+- **Global Focus Styles** (`src/index.css`):
+  - Outlines are completely suppressed on plain `:focus` and pointer clicks (`:focus:not(:focus-visible) { outline: none !important; box-shadow: none !important; }`).
+  - Static 1px accent outline (`outline: 1px solid var(--focus-outline)`) is strictly reserved for `:focus-visible` (keyboard navigation).
+  - Eliminates all stray focus bars and outlines across sidebar and application headers after mouse interaction.
+
+
 

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { focusIfKeyboard } from '@/lib/inputMode';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { useBilling } from '@/context/BillingContext';
@@ -250,7 +251,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
   const handleCloseBookModal = () => {
     setIsBookModalOpen(false);
     setTimeout(() => {
-      bookButtonRef.current?.focus();
+      focusIfKeyboard(bookButtonRef.current);
     }, 0);
   };
 
@@ -315,7 +316,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     setIsBookModalOpen(false);
     showNotice(`Appointment booked for ${bookingDate} at ${bookingSlot}.`);
     setTimeout(() => {
-      bookButtonRef.current?.focus();
+      focusIfKeyboard(bookButtonRef.current);
     }, 0);
   };
 

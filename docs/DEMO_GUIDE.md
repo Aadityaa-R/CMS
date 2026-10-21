@@ -103,6 +103,15 @@ Select the **Patient** option on the chooser step for registered patient account
 
 1. **Sign in as Clinic Administrator**: Under the **Clinic Staff** option, sign in as Dr. Marcus Vance (`md` / `Doctor@123`). Navigate to **Administrative** > **Data Management** tab.
 2. **Export Baseline Storage**: Under Backup Operations, click **Export System Backup**. The browser downloads a complete JSON snapshot file formatted as `cms-backup-YYYY-MM-DD.json` containing all schema-validated collections.
+
+---
+
+### Walkthrough 5: Responsive Sidebar, Floating Desktop Rail, and Outside-Click Interaction (M10.8)
+
+1. **Desktop Rail Behavior**: In any clinical role at 1024px or wider, observe the collapsed sidebar rail (3.5rem width, 44px minimum touch targets). Click the toggle button to expand the sidebar (16rem). Notice that the expanded panel floats over the page content without shifting page cards or buttons.
+2. **One-Click Dismissal**: With the sidebar expanded, click any action button on the underlying page. In a single click, the sidebar closes and the underlying action triggers immediately with no layout shift or second click required.
+3. **No Stray Focus Bars**: Click throughout the interface using a mouse: observe that no focus outlines or stray vertical bars appear on sidebar items or toggle buttons. Switch to keyboard navigation using Tab and observe the static 1px high-contrast outline on active elements.
+4. **Mobile Drawer Navigation**: Below 1024px, the header button toggles between 'Open menu' and 'Close menu' with synchronized Menu and X icons. Tapping the dimmed backdrop or pressing Escape dismisses the drawer, and off-screen drawer items are strictly inert.
 3. **Introduce a State Change**: Navigate to **Administrative** > **Clearances** and approve or reject a pending clearance, or record a sample payment in Billing.
 4. **Restore Previous Snapshot**: Return to **Administrative** > **Data Management**. Click **Import Backup**, select the previously exported JSON file, and type **RESTORE** into the safety confirmation dialog.
 5. **Verify Reversion and Safe Undo**: The system restores all collections in-place, invalidates stale memory caches, and displays a prominent "Restore Undo Snapshot" option allowing immediate rollback if needed.

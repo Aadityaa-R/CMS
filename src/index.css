@@ -77,10 +77,16 @@ html.dark {
     @apply bg-slate-950 text-slate-100;
   }
 
-  /* Static keyboard-only focus outline with >= 3:1 contrast (Milestone M10 Section 2) */
+  /* Static keyboard-only focus outline with >= 3:1 contrast (Milestone M10 Section 2, M10.8) */
   :focus-visible {
     outline: 1px solid var(--focus-outline);
     outline-offset: 1px;
+  }
+
+  /* Universal suppression of outlines on plain pointer :focus (Milestone M10.8) */
+  :focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   /* Universal Selection Color */
@@ -111,9 +117,21 @@ html.dark {
     -webkit-tap-highlight-color: transparent;
   }
 
-  button:focus, [role="button"]:focus {
+  button:focus,
+  [role="button"]:focus,
+  a:focus,
+  [tabindex]:focus,
+  summary:focus {
     outline: none !important;
     box-shadow: none !important;
+  }
+
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  a:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 1px solid var(--focus-outline) !important;
+    outline-offset: 1px !important;
   }
 
   /* Universal UI Base for Text Inputs - low specificity so utility classes (pl-11, etc.) override */

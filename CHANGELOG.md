@@ -5,6 +5,16 @@ All notable changes to the Beacon Health Clinic Management System will be docume
 ## [Unreleased] - 2026-10-21
 
 ### Added
+- Sidebar State, Outside Press, and Stray Focus Bar Elimination (M10.8):
+  - Created single source of truth `SidebarProvider` (`src/context/SidebarContext.tsx`) shared across desktop rail, phone header button, and backdrop overlay.
+  - Reset sidebar state to closed automatically upon crossing the 1024px breakpoint via resize and orientation listeners.
+  - Implemented floating desktop sidebar with fixed 3.5rem (`w-14`) rail placeholder, completely eliminating page layout shifts on expand/collapse.
+  - Added capturing pointerdown outside-click listener (`src/lib/sidebarOutsideClick.ts`) that closes the sidebar while passing clicks to underlying page buttons in a single press.
+  - Synchronized toggle icons, titles, and ARIA attributes (`PanelLeftOpen`/`PanelLeftClose` on desktop, `Menu`/`X` on mobile, `aria-expanded`, `aria-controls`).
+  - Added `inert="true"` and `aria-hidden="true"` to off-screen mobile drawer.
+  - Created input mode tracking module (`src/lib/inputMode.ts`) and helper `focusIfKeyboard` to eliminate stray focus outlines and vertical bars after mouse clicks.
+  - Updated global focus CSS rules to suppress plain `:focus` outlines and show static 1px outline strictly on `:focus-visible`.
+  - Added unit and component test suite in `tests/sidebar.test.tsx` (15 tests passing 100%).
 - Table Column Distribution and Priority-Based Responsive Fit (M10.7):
   - Added `kind?: 'short' | 'text'` to `ColumnDef` (default `'short'` with `white-space: nowrap`; `'text'` with `min-width: 14rem` and 2-line clamp).
   - Added `priority?: number` to `ColumnDef` (1 = never hidden; higher numbers hide first on constrained viewports).

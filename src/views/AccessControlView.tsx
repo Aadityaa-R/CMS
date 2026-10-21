@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { focusIfKeyboard } from '@/lib/inputMode';
 import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/ClinicContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -487,9 +488,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     setIsDiscardModalOpen(false);
     setSelectedStaffId(null);
     setTimeout(() => {
-      if (openerRef.current && typeof openerRef.current.focus === 'function') {
-        openerRef.current.focus();
-      }
+      focusIfKeyboard(openerRef.current);
     }, 50);
   };
 
@@ -514,9 +513,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   useEffect(() => {
     if (prevSelectedStaffIdRef.current && !selectedStaffId) {
       setTimeout(() => {
-        if (openerRef.current && typeof openerRef.current.focus === 'function') {
-          openerRef.current.focus();
-        }
+        focusIfKeyboard(openerRef.current);
       }, 50);
     }
     prevSelectedStaffIdRef.current = selectedStaffId;

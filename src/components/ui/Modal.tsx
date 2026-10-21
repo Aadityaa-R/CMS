@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { focusIfKeyboard } from '@/lib/inputMode';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -97,8 +98,8 @@ export const Modal: React.FC<ModalProps> = ({
         clearTimeout(timer);
         document.body.style.overflow = 'unset';
         window.removeEventListener('keydown', handleKeyDown);
-        if (openerRef.current && typeof openerRef.current.focus === 'function') {
-          openerRef.current.focus();
+        if (openerRef.current) {
+          focusIfKeyboard(openerRef.current);
         }
       };
     }

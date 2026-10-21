@@ -206,6 +206,7 @@ describe('M10.2: Patient Portal Prominent Book Appointment & Dashboard Refinemen
       renderPortal();
 
       const bookButton = screen.getByRole('button', { name: 'Book Appointment' });
+      fireEvent.keyDown(bookButton, { key: 'Enter' });
       fireEvent.click(bookButton);
 
       // Modal is displayed
