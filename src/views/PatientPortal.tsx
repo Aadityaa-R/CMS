@@ -1342,12 +1342,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       {activeTab === 'profile' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Contact Details Form */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
             <CardHeader>
               <CardTitle>Contact Details</CardTitle>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSaveContact} className="space-y-4 text-xs">
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <form onSubmit={handleSaveContact} className="space-y-4 text-xs flex-1 flex flex-col justify-between">
                 {contactError && (
                   <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-lg">
                     {contactError}
@@ -1436,12 +1436,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           </Card>
 
           {/* Password Update Form */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
             <CardHeader>
               <CardTitle>Security & Password</CardTitle>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleUpdatePassword} className="space-y-4 text-xs">
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <form onSubmit={handleUpdatePassword} className="space-y-4 text-xs flex-1 flex flex-col justify-between">
                 {passwordError && (
                   <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-lg">
                     {passwordError}
@@ -1480,11 +1480,19 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   required
                 />
 
-                <p className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
-                  Password must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character.
-                </p>
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[0.6875rem] text-slate-500 dark:text-slate-400">
+                  <span className="uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider text-[0.625rem]">
+                    Password & Session Security Policy
+                  </span>
+                  <p>
+                    Passwords must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character.
+                  </p>
+                  <p>
+                    Inactivity timeout will automatically disconnect active sessions after 30 minutes of idle time. Accounts are locked for 5 minutes after multiple failed sign-in attempts.
+                  </p>
+                </div>
 
-                <div className="pt-2 flex justify-end">
+                <div className="pt-4 flex justify-end">
                   <Button
                     type="submit"
                     variant="primary"

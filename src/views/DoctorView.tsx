@@ -1134,9 +1134,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         <div className="space-y-6">
           <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
             {/* Active Patient Desk (Order 1 on mobile, 2 cols on desktop) */}
-            <div className="order-1 lg:col-span-2 space-y-4">
+            <div className="order-1 lg:col-span-2 flex flex-col">
               {activePatient && activeAppointment ? (
-                <Card>
+                <Card className="h-full flex flex-col">
                   <CardHeader>
                     <CardTitle>
                       Active Consultation Desk: {activePatient.firstName} {activePatient.lastName}
@@ -1145,7 +1145,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       {activePatient.mrn} • {activePatient.age} yrs • {activePatient.gender} • Blood Group: {activePatient.bloodGroup}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
                     {/* Allergies */}
                     <div>
                       {!isEditingAllergies ? (
@@ -1345,8 +1345,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   </CardContent>
                 </Card>
               ) : (
-                <Card>
-                  <CardContent className="p-12 text-center text-slate-500 dark:text-slate-400 text-xs">
+                <Card className="h-full flex flex-col">
+                  <CardContent className="p-12 text-center text-slate-500 dark:text-slate-400 text-xs flex-1 flex items-center justify-center">
                     No active consultation selected. Choose a patient from the queue below.
                   </CardContent>
                 </Card>
@@ -1354,100 +1354,173 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             </div>
 
             {/* Right Column / Order 2 on Mobile: Patient Summary Card */}
-            <div className="order-2 lg:col-span-1 space-y-4">
-              <Card>
+            <div className="order-2 lg:col-span-1 flex flex-col">
+              <Card className="h-full flex flex-col">
                 <CardHeader>
                   <CardTitle>Patient Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 text-xs">
+                <CardContent className="space-y-3.5 text-xs flex-1 flex flex-col justify-between">
                   {summaryPatient ? (
                     <>
-                      {/* Last Visit Details */}
-                      <div className="space-y-1.5 pb-2.5 border-b border-slate-100 dark:border-slate-800">
-                        <div className="flex justify-between items-baseline gap-2">
-                          <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
-                          <span className="text-slate-700 dark:text-slate-300 text-right">
-                            {lastCompletedApt?.dateTime
-                              ? new Date(lastCompletedApt.dateTime).toLocaleDateString('en-GB', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })
-                              : summaryPatient.lastVisitDate || 'None recorded'}
-                          </span>
-                        </div>
-
-                        {summaryPatient.previousVitals ? (
-                          <>
-                            <div className="flex justify-between items-baseline gap-2">
-                              <span className="text-slate-500 dark:text-slate-400 shrink-0">Blood Pressure:</span>
-                              <span className="text-slate-700 dark:text-slate-300 text-right">
-                                {summaryPatient.previousVitals.systolicBp ?? '--'}/{summaryPatient.previousVitals.diastolicBp ?? '--'} mmHg
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-baseline gap-2">
-                              <span className="text-slate-500 dark:text-slate-400 shrink-0">Heart Rate:</span>
-                              <span className="text-slate-700 dark:text-slate-300 text-right">
-                                {summaryPatient.previousVitals.heartRateBpm ?? '--'} bpm
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-baseline gap-2">
-                              <span className="text-slate-500 dark:text-slate-400 shrink-0">SpO2:</span>
-                              <span className="text-slate-700 dark:text-slate-300 text-right">
-                                {summaryPatient.previousVitals.oxygenSaturationPct ?? '--'}%
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-baseline gap-2">
-                              <span className="text-slate-500 dark:text-slate-400 shrink-0">Temperature:</span>
-                              <span className="text-slate-700 dark:text-slate-300 text-right">
-                                {summaryPatient.previousVitals.temperatureCelsius ?? '--'} °C
-                              </span>
-                            </div>
-                          </>
-                        ) : (
+                      {/* Section 1: Previous Visit Record */}
+                      <div className="space-y-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider">
+                          Previous Visit Record
+                        </span>
+                        <div className="space-y-1.5">
                           <div className="flex justify-between items-baseline gap-2">
-                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit Vitals:</span>
-                            <span className="text-slate-700 dark:text-slate-300 text-right">None recorded</span>
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit:</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                              {lastCompletedApt?.dateTime
+                                ? new Date(lastCompletedApt.dateTime).toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })
+                                : summaryPatient.lastVisitDate || 'None recorded'}
+                            </span>
                           </div>
-                        )}
 
-                        <div className="flex justify-between items-baseline gap-2">
-                          <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Reason:</span>
-                          <span className="text-slate-700 dark:text-slate-300 text-right line-clamp-2" title={lastCompletedApt?.reasonForVisit || undefined}>
-                            {lastCompletedApt?.reasonForVisit || 'None recorded'}
-                          </span>
-                        </div>
+                          {summaryPatient.previousVitals ? (
+                            <>
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-slate-500 dark:text-slate-400 shrink-0">Blood Pressure:</span>
+                                <span className="text-slate-700 dark:text-slate-300 text-right">
+                                  {summaryPatient.previousVitals.systolicBp ?? '--'}/{summaryPatient.previousVitals.diastolicBp ?? '--'} mmHg
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-slate-500 dark:text-slate-400 shrink-0">Heart Rate:</span>
+                                <span className="text-slate-700 dark:text-slate-300 text-right">
+                                  {summaryPatient.previousVitals.heartRateBpm ?? '--'} bpm
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-slate-500 dark:text-slate-400 shrink-0">SpO2:</span>
+                                <span className="text-slate-700 dark:text-slate-300 text-right">
+                                  {summaryPatient.previousVitals.oxygenSaturationPct ?? '--'}%
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-slate-500 dark:text-slate-400 shrink-0">Temperature:</span>
+                                <span className="text-slate-700 dark:text-slate-300 text-right">
+                                  {summaryPatient.previousVitals.temperatureCelsius ?? '--'} °C
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex justify-between items-baseline gap-2">
+                              <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Visit Vitals:</span>
+                              <span className="text-slate-700 dark:text-slate-300 text-right">None recorded</span>
+                            </div>
+                          )}
 
-                        <div className="flex justify-between items-baseline gap-2">
-                          <span className="text-slate-500 dark:text-slate-400 shrink-0">Consulting Doctor:</span>
-                          <span className="text-slate-700 dark:text-slate-300 text-right">
-                            {lastCompletedApt?.doctorName || 'None recorded'}
-                          </span>
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Last Reason:</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-right line-clamp-2" title={lastCompletedApt?.reasonForVisit || undefined}>
+                              {lastCompletedApt?.reasonForVisit || 'None recorded'}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Consulting Doctor:</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                              {lastCompletedApt?.doctorName || 'None recorded'}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-baseline gap-2">
-                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
-                        <span className="text-slate-700 dark:text-slate-300 text-right">
-                          {summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
-                            ? deduplicateList(summaryPatient.chronicConditions).join(', ')
-                            : 'None recorded'}
+                      {/* Section 2: Clinical Profile */}
+                      <div className="space-y-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider">
+                          Clinical Profile
                         </span>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Chronic Conditions:</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                              {summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
+                                ? deduplicateList(summaryPatient.chronicConditions).join(', ')
+                                : 'None recorded'}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                              {(() => {
+                                const activeMeds = activeMedications(summaryPatient.id, prescriptions, new Date());
+                                if (activeMeds.length > 0) return activeMeds.join(', ');
+                                return 'None recorded';
+                              })()}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Known Allergies:</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                              {summaryPatient.allergies && summaryPatient.allergies.length > 0
+                                ? summaryPatient.allergies.join(', ')
+                                : 'None recorded'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex justify-between items-baseline gap-2">
-                        <span className="text-slate-500 dark:text-slate-400 shrink-0">Current Medications:</span>
-                        <span className="text-slate-700 dark:text-slate-300 text-right">
-                          {(() => {
-                            const activeMeds = activeMedications(summaryPatient.id, prescriptions, new Date());
-                            if (activeMeds.length > 0) return activeMeds.join(', ');
-                            return 'None recorded';
-                          })()}
+                      {/* Section 3: Demographics & Primary Care */}
+                      <div className="space-y-2">
+                        <span className="text-[0.625rem] uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wider">
+                          Demographics & Primary Care
                         </span>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Primary Doctor:</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                              {(() => {
+                                const docId = getAssignedDoctorId(summaryPatient.id, patientAssignments);
+                                const doc = doctors.find((d) => d.id === docId);
+                                return doc ? doc.name : 'Unassigned';
+                              })()}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Contact Phone:</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                              {summaryPatient.phone || 'None recorded'}
+                            </span>
+                          </div>
+
+                          {summaryPatient.emergencyContact && summaryPatient.emergencyContact.name && (
+                            <div className="flex justify-between items-baseline gap-2">
+                              <span className="text-slate-500 dark:text-slate-400 shrink-0">Emergency Contact:</span>
+                              <span
+                                className="text-slate-700 dark:text-slate-300 text-right truncate max-w-[180px]"
+                                title={`${summaryPatient.emergencyContact.name} (${summaryPatient.emergencyContact.relationship || 'Contact'}) • ${summaryPatient.emergencyContact.phone}`}
+                              >
+                                {summaryPatient.emergencyContact.name} ({summaryPatient.emergencyContact.relationship || 'Contact'})
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 shrink-0">Registered Date:</span>
+                            <span className="text-slate-700 dark:text-slate-300 text-right">
+                              {summaryPatient.registeredDate
+                                ? new Date(summaryPatient.registeredDate).toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })
+                                : 'Recorded'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </>
                   ) : (
-                    <div className="p-6 text-center text-slate-500 dark:text-slate-400">
+                    <div className="flex-1 flex items-center justify-center p-6 text-center text-slate-500 dark:text-slate-400">
                       No active consultation
                     </div>
                   )}

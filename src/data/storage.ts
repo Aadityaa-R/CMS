@@ -476,7 +476,7 @@ export async function resetDemoData(actingUser = 'Administrator'): Promise<void>
   // Add ledger entry
   const repoLedger = getRepository<any>('ledger');
   await repoLedger.create({
-    id: `audit-${Date.now()}`,
+    id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     timestamp: new Date().toISOString(),
     action: 'demo_data_reset',
     subject: 'Demonstration System State',
@@ -586,7 +586,7 @@ export async function importBackupData(backup: BackupData, actingUser = 'Adminis
   // Log to ledger
   const repoLedger = getRepository<any>('ledger');
   await repoLedger.create({
-    id: `audit-${Date.now()}`,
+    id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     timestamp: new Date().toISOString(),
     action: 'data_imported',
     subject: 'System Backup Restore',

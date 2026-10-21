@@ -236,7 +236,7 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
       {/* Storage Status & Management Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Storage Status */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 flex flex-col justify-between">
           <Card>
             <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
               <CardTitle className="flex items-center gap-2">
@@ -310,7 +310,7 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
         </div>
 
         {/* Right Column: Actions and Configuration */}
-        <div className="space-y-6">
+        <div className="space-y-6 flex flex-col justify-between">
           {/* Storage Configuration */}
           <Card>
             <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -337,11 +337,11 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
           </Card>
 
           {/* Backup & Restore Controls */}
-          <Card>
+          <Card className="flex-1 flex flex-col justify-between">
             <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
               <CardTitle>Backup and Restore</CardTitle>
             </CardHeader>
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-5 space-y-3 flex-1 flex flex-col justify-between">
               <Button
                 variant="outline"
                 className="w-full justify-start text-xs min-h-[44px]"
