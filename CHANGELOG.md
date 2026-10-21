@@ -5,6 +5,12 @@ All notable changes to the Beacon Health Clinic Management System will be docume
 ## [Unreleased] - 2026-10-21
 
 ### Added
+- Smooth Flowing Sidebar Movement:
+  - Enabled smooth fluid transitions for desktop sidebar expansion/collapse (3.5rem to 15rem) and mobile drawer slide with hardware acceleration (`transition-all duration-300 ease-in-out will-change-[width,transform]`).
+  - Added smooth width and opacity transitions for sidebar labels, role headers, and branding details (`transition-all duration-300 ease-in-out`).
+  - Added smooth opacity fade for mobile drawer backdrop overlay (`transition-opacity duration-300 ease-in-out`).
+  - Preserved instant transitions under `motion-reduce:transition-none` for accessibility.
+  - Verified 0 layout overlap during and after transition across 1920x1080, 1366x768, 1024x768, and 360x800.
 - Sidebar Layout Non-Covering Two-Column Shell & Bubbling Click Dismissal (M10.8b):
   - Amended M10.8 sections 2 and 5 to establish a true two-column shell where Column 1 is the sidebar (3.5rem collapsed, 15rem expanded) and Column 2 contains the header and page content together.
   - Eliminated desktop spacer elements and fixed viewport positioning on desktop; expanding Column 1 moves Column 2 synchronously so nothing in the header or page is ever covered.

@@ -146,7 +146,7 @@ async function main() {
           if (expandBtn) expandBtn.click();
         })()
       `);
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 400));
 
       // Check expanded geometry: sidebar right edge MUST equal header left edge (NO overlap)
       const expandedGeom = await evaluate(ws, `
@@ -208,7 +208,7 @@ async function main() {
         if (openBtn) openBtn.click();
       })()
     `);
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 400));
 
     const mobileDrawerCheck = await evaluate(ws, `
       (() => {

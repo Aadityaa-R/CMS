@@ -179,13 +179,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Phone/tablet dimmed overlay (captures touches outside drawer and prevents under-press) */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden cursor-pointer"
-          onClick={close}
-          aria-hidden="true"
-        />
-      )}
+      <div
+        className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden cursor-pointer transition-opacity duration-300 ease-in-out motion-reduce:transition-none ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={close}
+        aria-hidden="true"
+      />
 
       {/* Two-Column Shell Sidebar container: static on desktop (3.5rem collapsed, 15rem expanded), drawer on mobile */}
       <aside
@@ -194,10 +194,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         aria-label="Sidebar Navigation"
         inert={!isOpen && isMobile ? '' : undefined}
         aria-hidden={!isOpen && isMobile ? 'true' : undefined}
-        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col overflow-hidden shrink-0 select-none h-full border-r border-slate-800 ${
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col overflow-hidden shrink-0 select-none h-full border-r border-slate-800 transition-all duration-300 ease-in-out motion-reduce:transition-none will-change-[width,transform] ${
           isOpen
             ? 'w-[15rem] lg:w-[15rem] translate-x-0 shadow-2xl lg:shadow-none'
-            : 'w-64 -translate-x-full lg:translate-x-0 lg:w-[3.5rem]'
+            : 'w-[15rem] -translate-x-full lg:translate-x-0 lg:w-[3.5rem]'
         }`}
       >
         {/* Brand / Role header & Single Console Toggle Control */}
@@ -209,7 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               data-sidebar-ignore-outside="true"
               onClick={toggle}
-              className={`w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0 ${
+              className={`w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0 transition-colors duration-200 ${
                 isOpen
                   ? 'bg-slate-800 text-teal-300'
                   : 'text-teal-400 hover:text-teal-300 hover:bg-slate-800/70'
@@ -228,7 +228,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Clinic Portal Brand Details */}
             <div
-              className={`overflow-hidden whitespace-nowrap ${
+              className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out motion-reduce:transition-none ${
                 isOpen ? 'max-w-[170px] opacity-100 ml-2.5' : 'lg:max-w-0 lg:opacity-0 lg:ml-0 max-w-[170px] opacity-100 ml-2.5'
               }`}
             >
@@ -250,7 +250,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             data-sidebar-ignore-outside="true"
             onClick={close}
-            className="w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 shrink-0"
+            className="w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 shrink-0 transition-colors duration-200"
             title="Close drawer"
             aria-label="Close drawer"
           >
@@ -276,7 +276,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={item.label}
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
-                className={`w-full h-11 min-h-[2.75rem] flex items-center px-2 rounded-lg text-xs font-medium cursor-pointer outline-none focus:outline-none focus:ring-0 ${
+                className={`w-full h-11 min-h-[2.75rem] flex items-center px-2 rounded-lg text-xs font-medium cursor-pointer outline-none focus:outline-none focus:ring-0 transition-colors duration-200 ${
                   isActive
                     ? 'bg-teal-600 text-white'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'
@@ -290,7 +290,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {item.icon}
                 </span>
                 <span
-                  className={`overflow-hidden whitespace-nowrap truncate ${
+                  className={`overflow-hidden whitespace-nowrap truncate transition-all duration-300 ease-in-out motion-reduce:transition-none ${
                     isOpen ? 'max-w-[170px] opacity-100 ml-2.5' : 'lg:max-w-0 lg:opacity-0 lg:ml-0 max-w-[170px] opacity-100 ml-2.5'
                   }`}
                 >

@@ -865,9 +865,15 @@ Executes the comprehensive release gate:
   - Selecting any navigation item activates the route and closes the sidebar.
   - Tabbing through interactive elements with the keyboard does NOT close the sidebar.
 
-### 18.3 Two-Column Shell Layout: Nothing is Ever Covered (M10.8b Amendment)
+### 18.3 Two-Column Shell Layout & Smooth Flowing Movement (M10.8b Amendment)
 - **Two-Column Shell**: A clean two-column flex layout where Column 1 is the sidebar at its current width (`3.5rem` / `56px` collapsed, `15rem` / `240px` expanded), and Column 2 contains the header and page content together (`flex-1 min-w-0`).
-- **Zero Viewport Overlap**: At widths of 1024px and up, no part of the header (clinic logo, clinic name, notification bell, user menu) or page content overlaps the sidebar rectangle, whether the sidebar is open or closed. Expanding or collapsing changes Column 1's width and Column 2 moves synchronously with it.
+- **Smooth Flowing Transition**:
+  - The sidebar transitions fluidly with `transition-all duration-300 ease-in-out will-change-[width,transform]` (`motion-reduce:transition-none`).
+  - Column 2 resizes synchronously in real-time alongside Column 1 without jumping or snapping.
+  - Sidebar labels and clinic branding details smoothly expand and collapse with `transition-all duration-300 ease-in-out` (`max-width`, `opacity`, `margin-left`).
+  - Mobile dimmed backdrop smoothly fades with `transition-opacity duration-300 ease-in-out`.
+  - Accessible reduced motion: `motion-reduce:transition-none` automatically disables animations when the user requests reduced motion.
+- **Zero Viewport Overlap**: At widths of 1024px and up, no part of the header (clinic logo, clinic name, notification bell, user menu) or page content overlaps the sidebar rectangle, whether the sidebar is open, closed, or transitioning. Expanding or collapsing changes Column 1's width and Column 2 moves synchronously with it.
 - **No Spacer Elements**: Zero spacer elements and zero fixed headers positioned from the viewport left edge.
 - **Responsive Width Adaptation**: The page content and tables adapt dynamically to the narrower column width via container `ResizeObserver`, ensuring zero horizontal page scroll at 1024px and wider.
 - **Mobile Drawer (< 1024px)**: The drawer slides over the page at `z-40` with the dimmed backdrop (`z-30`). A dedicated close button (`X`) is located inside the drawer header (`title="Close drawer"`), ensuring it is never covered or hidden.

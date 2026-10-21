@@ -298,8 +298,15 @@ describe('Sidebar Fixes & Two-Column Non-Covering Layout (M10.8b)', () => {
       expect(phoneToggle.getAttribute('aria-expanded')).toBe('false');
     });
 
-    it('toggles desktop sidebar open to 15rem width and updates aria attributes', () => {
+    it('toggles desktop sidebar open to 15rem width and updates aria attributes with smooth transition', () => {
       renderWithProviders(<LayoutHarness />);
+      const asideBefore = document.getElementById('sidebar-navigation');
+      expect(asideBefore?.className).toContain('transition-all');
+      expect(asideBefore?.className).toContain('duration-300');
+      expect(asideBefore?.className).toContain('ease-in-out');
+      expect(asideBefore?.className).toContain('motion-reduce:transition-none');
+      expect(asideBefore?.className).toContain('will-change-[width,transform]');
+
       const desktopToggle = screen.getByTitle('Expand sidebar');
       fireEvent.click(desktopToggle);
 
