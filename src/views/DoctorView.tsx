@@ -1616,13 +1616,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <Table stackBelow="lg">
                       <TableHeader>
                         <TableRow>
-                          <TableHead width="fit">Patient</TableHead>
-                          <TableHead width="fit" className="text-center">#</TableHead>
-                          <TableHead width="fit">Time</TableHead>
-                          <TableHead width="fit" hideBelow="md">Appt ID</TableHead>
-                          <TableHead width="flex">Complaint</TableHead>
-                          <TableHead width="fit">Status</TableHead>
-                          <TableHead width="fit" isActions className="text-right whitespace-nowrap">Actions</TableHead>
+                          <TableHead kind="short" priority={1}>Patient</TableHead>
+                          <TableHead kind="short" priority={7} className="text-center">#</TableHead>
+                          <TableHead kind="short" priority={4}>Time</TableHead>
+                          <TableHead kind="short" priority={6} hideBelow="md">Appt ID</TableHead>
+                          <TableHead kind="text" priority={5}>Complaint</TableHead>
+                          <TableHead kind="short" priority={2}>Status</TableHead>
+                          <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1636,30 +1636,31 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 key={apt.id}
                                 className={isCurrent ? 'bg-teal-50/50 dark:bg-teal-950/30' : ''}
                               >
-                                <TableCell width="fit" isPrimary label="Patient" className="font-bold text-slate-900 dark:text-slate-100">
+                                <TableCell kind="short" priority={1} isPrimary label="Patient" className="font-bold text-slate-900 dark:text-slate-100">
                                   {apt.patientName}
                                 </TableCell>
-                                <TableCell width="fit" label="Token #" className="text-center text-slate-700 dark:text-slate-300">
+                                <TableCell kind="short" priority={7} label="Token #" className="text-center text-slate-700 dark:text-slate-300">
                                   {apt.tokenNumber}
                                 </TableCell>
-                                <TableCell width="fit" label="Time" className="text-slate-700 dark:text-slate-300">
+                                <TableCell kind="short" priority={4} label="Time" className="text-slate-700 dark:text-slate-300">
                                   {formatTime(apt.dateTime)}
                                 </TableCell>
-                                <TableCell width="fit" label="Appt ID" hideBelow="md" className="text-slate-700 dark:text-slate-300">
-                                  <TableTruncate>{apt.appointmentNumber}</TableTruncate>
+                                <TableCell kind="short" priority={6} label="Appt ID" hideBelow="md" className="font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                  {apt.appointmentNumber}
                                 </TableCell>
                                 <TableCell
-                                  width="flex"
+                                  kind="text"
+                                  priority={5}
                                   label="Complaint"
                                   className="text-slate-600 dark:text-slate-300"
                                   title={apt.reasonForVisit}
                                 >
                                   <span className="line-clamp-2">{apt.reasonForVisit}</span>
                                 </TableCell>
-                                <TableCell width="fit" label="Status" id={`appt-status-${apt.id}`} className="text-slate-700 dark:text-slate-300">
+                                <TableCell kind="short" priority={2} label="Status" id={`appt-status-${apt.id}`} className="text-slate-700 dark:text-slate-300">
                                   {formatAppointmentStatus(apt.status)}
                                 </TableCell>
-                                <TableCell width="fit" isActions label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                                <TableCell kind="short" priority={3} isActions label="Actions" fullWidthOnStack className="text-right">
                                   {isInConsultation && isCurrent ? (
                                     <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                                       Current patient
@@ -1745,16 +1746,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead width="fit">Patient Name</TableHead>
-                    <TableHead width="fit">MRN</TableHead>
-                    <TableHead width="fit" hideBelow="xl">Demographics</TableHead>
-                    <TableHead width="fit">Today</TableHead>
-                    <TableHead width="fit" hideBelow="sm">Phone</TableHead>
-                    <TableHead width="fit" hideBelow="xl">Blood Group</TableHead>
-                    <TableHead width="fit" hideBelow="sm">Allergies</TableHead>
-                    <TableHead width="flex" hideBelow="lg">Chronic Conditions</TableHead>
-                    {isAdmin(currentUser) && <TableHead width="fit" hideBelow="md">Assigned Doctor</TableHead>}
-                    <TableHead width="fit" isActions className="text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead kind="short" priority={1}>Patient Name</TableHead>
+                    <TableHead kind="short" priority={2}>MRN</TableHead>
+                    <TableHead kind="short" priority={6} hideBelow="xl">Demographics</TableHead>
+                    <TableHead kind="short" priority={3}>Today</TableHead>
+                    <TableHead kind="short" priority={5} hideBelow="sm">Phone</TableHead>
+                    <TableHead kind="short" priority={9} hideBelow="xl">Blood Group</TableHead>
+                    <TableHead kind="text" priority={7} hideBelow="sm">Allergies</TableHead>
+                    <TableHead kind="text" priority={8} hideBelow="lg">Chronic Conditions</TableHead>
+                    {isAdmin(currentUser) && <TableHead kind="short" priority={10} hideBelow="md">Assigned Doctor</TableHead>}
+                    <TableHead kind="short" priority={4} isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1850,7 +1851,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       return (
                         <TableRow key={pat.id}>
-                          <TableCell width="fit" isPrimary label="Patient Name">
+                          <TableCell kind="short" priority={1} isPrimary label="Patient Name">
                             <div className="font-bold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
@@ -1858,33 +1859,33 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               <TableTruncate>{pat.email}</TableTruncate>
                             </div>
                           </TableCell>
-                          <TableCell width="fit" label="MRN" className="text-slate-700 dark:text-slate-300">
+                          <TableCell kind="short" priority={2} label="MRN" className="text-slate-700 dark:text-slate-300">
                             <TableTruncate>{pat.mrn}</TableTruncate>
                           </TableCell>
-                          <TableCell width="fit" label="Demographics" hideBelow="xl" className="text-slate-700 dark:text-slate-300 capitalize">
+                          <TableCell kind="short" priority={6} label="Demographics" hideBelow="xl" className="text-slate-700 dark:text-slate-300 capitalize">
                             {pat.age} yrs • {pat.gender}
                           </TableCell>
-                          <TableCell width="fit" label="Today" id={`today-pat-${pat.id}`} className="text-slate-700 dark:text-slate-300 font-medium">
+                          <TableCell kind="short" priority={3} label="Today" id={`today-pat-${pat.id}`} className="text-slate-700 dark:text-slate-300 font-medium">
                             {todayText}
                           </TableCell>
-                          <TableCell width="fit" label="Phone" hideBelow="sm" className="text-slate-700 dark:text-slate-300">
+                          <TableCell kind="short" priority={5} label="Phone" hideBelow="sm" className="text-slate-700 dark:text-slate-300">
                             {pat.phone}
                           </TableCell>
-                          <TableCell width="fit" label="Blood Group" hideBelow="xl" className="text-slate-700 dark:text-slate-300">
+                          <TableCell kind="short" priority={9} label="Blood Group" hideBelow="xl" className="text-slate-700 dark:text-slate-300">
                             {pat.bloodGroup}
                           </TableCell>
-                          <TableCell width="fit" label="Allergies" hideBelow="sm" className="text-slate-600 dark:text-slate-400 break-words">
+                          <TableCell kind="text" priority={7} label="Allergies" hideBelow="sm" className="text-slate-600 dark:text-slate-400 break-words">
                             {pat.allergies && pat.allergies.length > 0 ? deduplicateList(pat.allergies).join(', ') : 'None recorded'}
                           </TableCell>
-                          <TableCell width="flex" label="Chronic Conditions" hideBelow="lg" className="text-slate-600 dark:text-slate-400 break-words">
+                          <TableCell kind="text" priority={8} label="Chronic Conditions" hideBelow="lg" className="text-slate-600 dark:text-slate-400 break-words">
                             {pat.chronicConditions && pat.chronicConditions.length > 0 ? deduplicateList(pat.chronicConditions).join(', ') : 'None recorded'}
                           </TableCell>
                           {isAdmin(currentUser) && (
-                            <TableCell width="fit" label="Assigned Doctor" hideBelow="md" className="text-slate-700 dark:text-slate-300">
+                            <TableCell kind="short" priority={10} label="Assigned Doctor" hideBelow="md" className="text-slate-700 dark:text-slate-300">
                               {assignedDoc ? assignedDoc.name : <span className="italic text-slate-400">Unassigned</span>}
                             </TableCell>
                           )}
-                          <TableCell width="fit" isActions label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                          <TableCell kind="short" priority={4} isActions label="Actions" fullWidthOnStack className="text-right">
                             <RowActions
                               actions={patientActions}
                               subject={`${pat.firstName} ${pat.lastName}`}
@@ -1943,32 +1944,32 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead width="fit">Rx #</TableHead>
-                    <TableHead width="fit">Patient</TableHead>
-                    <TableHead width="fit" hideBelow="sm">Date</TableHead>
-                    <TableHead width="fit">Diagnosis</TableHead>
-                    <TableHead width="flex">Regimen</TableHead>
-                    <TableHead width="fit">Status</TableHead>
-                    <TableHead width="fit" isActions className="text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead kind="short" priority={1}>Rx #</TableHead>
+                    <TableHead kind="short" priority={2}>Patient</TableHead>
+                    <TableHead kind="short" priority={5} hideBelow="sm">Date</TableHead>
+                    <TableHead kind="text" priority={6}>Diagnosis</TableHead>
+                    <TableHead kind="text" priority={7}>Regimen</TableHead>
+                    <TableHead kind="short" priority={3}>Status</TableHead>
+                    <TableHead kind="short" priority={4} isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPrescriptions.length > 0 ? (
                     paginatedPrescriptions.map((rx) => (
                       <TableRow key={rx.id}>
-                        <TableCell width="fit" isPrimary label="Rx #" className="font-medium text-slate-700 dark:text-slate-300">
+                        <TableCell kind="short" priority={1} isPrimary label="Rx #" className="font-medium text-slate-700 dark:text-slate-300">
                           <TableTruncate>{rx.prescriptionNumber}</TableTruncate>
                         </TableCell>
-                        <TableCell width="fit" label="Patient" className="font-semibold text-slate-900 dark:text-slate-100">
+                        <TableCell kind="short" priority={2} label="Patient" className="font-semibold text-slate-900 dark:text-slate-100">
                           {rx.patientName}
                         </TableCell>
-                        <TableCell width="fit" label="Date" hideBelow="sm" className="text-slate-600 dark:text-slate-400">
+                        <TableCell kind="short" priority={5} label="Date" hideBelow="sm" className="text-slate-600 dark:text-slate-400">
                           {formatDate(rx.date)}
                         </TableCell>
-                        <TableCell width="fit" label="Diagnosis" className="text-slate-800 dark:text-slate-200 break-words">
+                        <TableCell kind="text" priority={6} label="Diagnosis" className="text-slate-800 dark:text-slate-200 break-words">
                           {rx.diagnosis}
                         </TableCell>
-                        <TableCell width="flex" label="Regimen">
+                        <TableCell kind="text" priority={7} label="Regimen">
                           <div className="space-y-1 text-xs">
                             {rx.items && rx.items.length > 0 ? (
                               rx.items.map((item, idx) => (
@@ -1981,12 +1982,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             )}
                           </div>
                         </TableCell>
-                        <TableCell width="fit" label="Status" className="text-xs">
+                        <TableCell kind="short" priority={3} label="Status" className="text-xs">
                           <span className={rx.status === 'cancelled' ? 'text-slate-500 dark:text-slate-400 font-medium' : 'text-slate-800 dark:text-slate-200 font-medium'}>
                             {rx.status === 'cancelled' ? 'Cancelled' : 'Active'}
                           </span>
                         </TableCell>
-                        <TableCell width="fit" isActions label="Actions" fullWidthOnStack className="text-right whitespace-nowrap">
+                        <TableCell kind="short" priority={4} isActions label="Actions" fullWidthOnStack className="text-right">
                           <RowActions
                             actions={[
                               {

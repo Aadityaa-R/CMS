@@ -576,14 +576,14 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-36">Invoice #</TableHead>
-                    <TableHead hideBelow="sm" className="w-28 whitespace-nowrap">Date</TableHead>
-                    <TableHead className="w-48">Patient</TableHead>
-                    <TableHead hideBelow="md" className="w-28 text-right whitespace-nowrap">Total</TableHead>
-                    <TableHead hideBelow="md" className="w-28 text-right whitespace-nowrap">Paid</TableHead>
-                    <TableHead className="w-28 text-right whitespace-nowrap">Balance</TableHead>
-                    <TableHead className="w-28 whitespace-nowrap">Status</TableHead>
-                    <TableHead isActions className="w-44 text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead kind="short" priority={1}>Invoice #</TableHead>
+                    <TableHead kind="short" priority={8} hideBelow="sm">Date</TableHead>
+                    <TableHead kind="short" priority={2}>Patient</TableHead>
+                    <TableHead kind="short" priority={6} hideBelow="md" className="text-right">Total</TableHead>
+                    <TableHead kind="short" priority={7} hideBelow="md" className="text-right">Paid</TableHead>
+                    <TableHead kind="short" priority={3} className="text-right">Balance</TableHead>
+                    <TableHead kind="short" priority={4}>Status</TableHead>
+                    <TableHead kind="short" priority={5} isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -598,7 +598,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
 
                       const statusLabel =
                         currentStatus === 'paid'
-                          ? 'Paid'
+                           ? 'Paid'
                           : currentStatus === 'partially_paid'
                           ? 'Partially Paid'
                           : currentStatus === 'void'
@@ -612,15 +612,15 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
 
                       return (
                         <TableRow key={inv.id}>
-                          <TableCell width="fit" isPrimary label="Invoice #">
+                          <TableCell kind="short" priority={1} isPrimary label="Invoice #">
                             <span className="font-medium text-slate-900 dark:text-slate-100">
                               {inv.number || (inv as any).invoiceNumber || 'Unknown'}
                             </span>
                           </TableCell>
-                          <TableCell hideBelow="sm" label="Date" className="w-28 text-slate-600 dark:text-slate-400">
+                          <TableCell kind="short" priority={8} hideBelow="sm" label="Date" className="text-slate-600 dark:text-slate-400">
                             {inv.issuedAt ? formatDate(inv.issuedAt.split('T')[0]) : (inv as any).date ? formatDate((inv as any).date.split('T')[0]) : '—'}
                           </TableCell>
-                          <TableCell width="flex" label="Patient">
+                          <TableCell kind="short" priority={2} label="Patient">
                             <div className="font-medium text-slate-900 dark:text-slate-100">
                               {inv.patientName || 'Registered Patient'}
                             </div>
@@ -628,16 +628,16 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                               {mrn}
                             </div>
                           </TableCell>
-                          <TableCell width="fit" hideBelow="md" label="Total" className="text-right text-slate-700 dark:text-slate-300">
+                          <TableCell kind="short" priority={6} hideBelow="md" label="Total" className="text-right text-slate-700 dark:text-slate-300">
                             {formatCurrency(total)}
                           </TableCell>
-                          <TableCell width="fit" hideBelow="md" label="Paid" className="text-right text-slate-700 dark:text-slate-300">
+                          <TableCell kind="short" priority={7} hideBelow="md" label="Paid" className="text-right text-slate-700 dark:text-slate-300">
                             {formatCurrency(paid)}
                           </TableCell>
-                          <TableCell width="fit" label="Balance" className="text-right font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={3} label="Balance" className="text-right font-medium text-slate-900 dark:text-slate-100">
                             {formatCurrency(due)}
                           </TableCell>
-                          <TableCell width="fit" label="Status">
+                          <TableCell kind="short" priority={4} label="Status">
                             <span
                               className={
                                 currentStatus === 'paid'
@@ -652,7 +652,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                               {statusLabel}
                             </span>
                           </TableCell>
-                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
+                          <TableCell kind="short" priority={5} isActions label="Actions" className="text-right">
                             <RowActions
                               actions={[
                                 {
@@ -762,15 +762,15 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-36">Receipt #</TableHead>
-                    <TableHead hideBelow="sm" className="w-32 whitespace-nowrap">Date & Time</TableHead>
-                    <TableHead className="w-32 whitespace-nowrap">Invoice #</TableHead>
-                    <TableHead className="w-44">Patient</TableHead>
-                    <TableHead hideBelow="md" className="w-24 whitespace-nowrap">Method</TableHead>
-                    <TableHead className="w-28 text-right whitespace-nowrap">Amount</TableHead>
-                    <TableHead hideBelow="md" className="w-24 whitespace-nowrap">Type</TableHead>
-                    <TableHead hideBelow="lg" className="w-36">Received By</TableHead>
-                    <TableHead isActions className="w-40 text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead kind="short" priority={1}>Receipt #</TableHead>
+                    <TableHead kind="short" priority={7} hideBelow="sm">Date & Time</TableHead>
+                    <TableHead kind="short" priority={4}>Invoice #</TableHead>
+                    <TableHead kind="short" priority={2}>Patient</TableHead>
+                    <TableHead kind="short" priority={6} hideBelow="md">Method</TableHead>
+                    <TableHead kind="short" priority={3} className="text-right">Amount</TableHead>
+                    <TableHead kind="short" priority={8} hideBelow="md">Type</TableHead>
+                    <TableHead kind="short" priority={9} hideBelow="lg">Received By</TableHead>
+                    <TableHead kind="short" priority={5} isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -798,29 +798,29 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
 
                       return (
                         <TableRow key={p.id}>
-                          <TableCell width="fit" isPrimary label="Receipt #">
+                          <TableCell kind="short" priority={1} isPrimary label="Receipt #">
                             <span className="font-medium text-slate-900 dark:text-slate-100">
                               {p.receiptNumber || p.id || 'Unknown'}
                             </span>
                           </TableCell>
-                          <TableCell width="fit" hideBelow="sm" label="Date & Time" className="text-slate-600 dark:text-slate-400">
+                          <TableCell kind="short" priority={7} hideBelow="sm" label="Date & Time" className="text-slate-600 dark:text-slate-400">
                             {displayDate}
                           </TableCell>
-                          <TableCell width="fit" label="Invoice #" className="text-slate-700 dark:text-slate-300">
+                          <TableCell kind="short" priority={4} label="Invoice #" className="text-slate-700 dark:text-slate-300">
                             {invoiceNumberDisplay}
                           </TableCell>
-                          <TableCell width="flex" label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={2} label="Patient" className="font-medium text-slate-900 dark:text-slate-100">
                             {patientNameDisplay}
                           </TableCell>
-                          <TableCell width="fit" hideBelow="md" label="Method" className="uppercase text-slate-600 dark:text-slate-400">
+                          <TableCell kind="short" priority={6} hideBelow="md" label="Method" className="uppercase text-slate-600 dark:text-slate-400">
                             {p.method || 'Unknown'}
                           </TableCell>
-                          <TableCell width="fit" label="Amount" className="text-right font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={3} label="Amount" className="text-right font-medium text-slate-900 dark:text-slate-100">
                             <span className={p.kind === 'reversal' ? 'text-rose-600 dark:text-rose-400' : ''}>
                               {p.kind === 'reversal' ? `-${formatCurrency(p.amount)}` : formatCurrency(p.amount)}
                             </span>
                           </TableCell>
-                          <TableCell width="fit" hideBelow="md" label="Type">
+                          <TableCell kind="short" priority={8} hideBelow="md" label="Type">
                             <span
                               className={
                                 p.kind === 'reversal'
@@ -833,10 +833,10 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                               {p.kind === 'reversal' ? 'Reversal' : isReversed ? 'Reversed' : 'Payment'}
                             </span>
                           </TableCell>
-                          <TableCell width="fit" hideBelow="lg" label="Received By" className="text-slate-600 dark:text-slate-400">
+                          <TableCell kind="short" priority={9} hideBelow="lg" label="Received By" className="text-slate-600 dark:text-slate-400">
                             <TableTruncate>{receiver}</TableTruncate>
                           </TableCell>
-                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
+                          <TableCell kind="short" priority={5} isActions label="Actions" className="text-right">
                             <RowActions
                               actions={[
                                 {

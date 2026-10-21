@@ -112,9 +112,9 @@ describe('Layout Uniformity - M10.4 Requirements', () => {
     }
 
     const testColumns: ColumnDef<TestRow>[] = [
-      { key: 'date', header: 'Date', width: 'fit' },
-      { key: 'notes', header: 'Notes', width: 'flex' },
-      { key: 'status', header: 'Status', width: 'fit' },
+      { key: 'date', header: 'Date', kind: 'short' },
+      { key: 'notes', header: 'Notes', kind: 'text' },
+      { key: 'status', header: 'Status', kind: 'short' },
     ];
 
     const testData: TestRow[] = [
@@ -122,20 +122,14 @@ describe('Layout Uniformity - M10.4 Requirements', () => {
       { id: '2', date: '16 Oct 2026', notes: '', status: 'Scheduled' },
     ];
 
-    it('applies fit and flex classes correctly to Table headers and cells', () => {
+    it('applies kind classes correctly to Table headers and cells', () => {
       const { container } = render(
         <Table columns={testColumns} data={testData} keyExtractor={(r) => r.id} />
       );
 
       const ths = container.querySelectorAll('th');
-      expect(ths[0].className).toContain('w-auto');
       expect(ths[0].className).toContain('whitespace-nowrap');
-
-      expect(ths[1].className).toContain('w-full');
-      expect(ths[1].className).toContain('min-w-0');
-      expect(ths[1].className).toContain('break-words');
-
-      expect(ths[2].className).toContain('w-auto');
+      expect(ths[1].className).toContain('min-w-[14rem]');
       expect(ths[2].className).toContain('whitespace-nowrap');
 
       const secondRowTds = container.querySelectorAll('tbody tr')[1].querySelectorAll('td');
@@ -149,14 +143,14 @@ describe('Layout Uniformity - M10.4 Requirements', () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead width="fit">Code</TableHead>
-              <TableHead width="flex">Description</TableHead>
+              <TableHead kind="short">Code</TableHead>
+              <TableHead kind="text">Description</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell width="fit">ABC</TableCell>
-              <TableCell width="flex">{''}</TableCell>
+              <TableCell kind="short">ABC</TableCell>
+              <TableCell kind="text">{''}</TableCell>
             </TableRow>
           </TableBody>
         </Table>

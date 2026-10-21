@@ -733,12 +733,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead width="fit">Date</TableHead>
-                    <TableHead width="fit">Time</TableHead>
-                    <TableHead width="fit">Doctor</TableHead>
-                    <TableHead width="flex">Reason</TableHead>
-                    <TableHead width="fit">Status</TableHead>
-                    <TableHead width="fit" isActions className="text-right">Actions</TableHead>
+                    <TableHead kind="short" priority={1}>Date</TableHead>
+                    <TableHead kind="short" priority={5}>Time</TableHead>
+                    <TableHead kind="short" priority={4}>Doctor</TableHead>
+                    <TableHead kind="text" priority={6}>Reason</TableHead>
+                    <TableHead kind="short" priority={2}>Status</TableHead>
+                    <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -769,19 +769,19 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                         : [];
                       return (
                         <TableRow key={apt.id}>
-                          <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="short" priority={1} label="Date" className="text-slate-600 dark:text-slate-300">
                             {formatDate(apt.dateTime.slice(0, 10))}
                           </TableCell>
-                          <TableCell width="fit" label="Time" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="short" priority={5} label="Time" className="text-slate-600 dark:text-slate-300">
                             {formatTime(apt.dateTime.slice(11, 16))}
                           </TableCell>
-                          <TableCell width="fit" label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={4} label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
                             {formatDoctorName(apt.doctorName)}
                           </TableCell>
-                          <TableCell width="flex" label="Reason" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="text" priority={6} label="Reason" className="text-slate-600 dark:text-slate-300">
                             {apt.reasonForVisit}
                           </TableCell>
-                          <TableCell width="fit" label="Status" id={`portal-apt-status-${apt.id}`} className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="short" priority={2} label="Status" id={`portal-apt-status-${apt.id}`} className="text-slate-600 dark:text-slate-300">
                             <div>
                               {apt.needsReschedule && (
                                 <span className="text-xs text-amber-700 dark:text-amber-400 block mb-1">
@@ -796,7 +796,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                               )}
                             </div>
                           </TableCell>
-                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
+                          <TableCell kind="short" priority={3} isActions label="Actions" className="text-right whitespace-nowrap">
                             <RowActions
                               actions={appointmentActions}
                               subject={`appointment with ${apt.doctorName}`}
@@ -821,7 +821,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           </Card>
 
           {/* Past Appointments Table */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 w-fit max-w-full min-w-[40rem]">
             <CardHeader>
               <CardTitle>Past Appointments</CardTitle>
             </CardHeader>
@@ -829,10 +829,10 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead width="fit">Date</TableHead>
-                    <TableHead width="fit">Time</TableHead>
-                    <TableHead width="flex">Doctor</TableHead>
-                    <TableHead width="fit">Status</TableHead>
+                    <TableHead kind="short" priority={1}>Date</TableHead>
+                    <TableHead kind="short" priority={4}>Time</TableHead>
+                    <TableHead kind="short" priority={3}>Doctor</TableHead>
+                    <TableHead kind="short" priority={2}>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -845,16 +845,16 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   ) : (
                     paginatedPast.map((apt) => (
                       <TableRow key={apt.id}>
-                        <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                        <TableCell kind="short" priority={1} label="Date" className="text-slate-600 dark:text-slate-300">
                           {formatDate(apt.dateTime.slice(0, 10))}
                         </TableCell>
-                        <TableCell width="fit" label="Time" className="text-slate-600 dark:text-slate-300">
+                        <TableCell kind="short" priority={4} label="Time" className="text-slate-600 dark:text-slate-300">
                           {formatTime(apt.dateTime.slice(11, 16))}
                         </TableCell>
-                        <TableCell width="flex" label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
+                        <TableCell kind="short" priority={3} label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
                           {formatDoctorName(apt.doctorName)}
                         </TableCell>
-                        <TableCell width="fit" label="Status" className="text-slate-600 dark:text-slate-300">
+                        <TableCell kind="short" priority={2} label="Status" className="text-slate-600 dark:text-slate-300">
                           {formatAppointmentStatus(apt)}
                         </TableCell>
                       </TableRow>
@@ -986,7 +986,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           </DetailGrid>
 
           {/* Card: Visit History - NO notes or comments */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 w-fit max-w-full min-w-[40rem]">
             <CardHeader>
               <CardTitle>Visit History</CardTitle>
             </CardHeader>
@@ -994,10 +994,10 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead width="fit">Date</TableHead>
-                    <TableHead width="fit">Doctor</TableHead>
-                    <TableHead width="fit">Department</TableHead>
-                    <TableHead width="flex">Reason</TableHead>
+                    <TableHead kind="short" priority={1}>Date</TableHead>
+                    <TableHead kind="short" priority={2}>Doctor</TableHead>
+                    <TableHead kind="short" priority={3}>Department</TableHead>
+                    <TableHead kind="text" priority={4}>Reason</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1010,16 +1010,16 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                   ) : (
                     paginatedVisitHistory.map((v) => (
                       <TableRow key={v.id}>
-                        <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                        <TableCell kind="short" priority={1} label="Date" className="text-slate-600 dark:text-slate-300">
                           {formatDate(v.dateTime.slice(0, 10))}
                         </TableCell>
-                        <TableCell width="fit" label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
+                        <TableCell kind="short" priority={2} label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
                           {formatDoctorName(v.doctorName)}
                         </TableCell>
-                        <TableCell width="fit" label="Department" className="text-slate-600 dark:text-slate-300">
+                        <TableCell kind="short" priority={3} label="Department" className="text-slate-600 dark:text-slate-300">
                           {v.department}
                         </TableCell>
-                        <TableCell width="flex" label="Reason" className="text-slate-600 dark:text-slate-300">
+                        <TableCell kind="text" priority={4} label="Reason" className="text-slate-600 dark:text-slate-300">
                           {v.reasonForVisit}
                         </TableCell>
                       </TableRow>
@@ -1051,12 +1051,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead width="fit">Date</TableHead>
-                    <TableHead width="fit">Doctor</TableHead>
-                    <TableHead width="fit">Diagnosis</TableHead>
-                    <TableHead width="flex">Regimen</TableHead>
-                    <TableHead width="fit">Status</TableHead>
-                    <TableHead width="fit" isActions className="text-right">Actions</TableHead>
+                    <TableHead kind="short" priority={1}>Date</TableHead>
+                    <TableHead kind="short" priority={4}>Doctor</TableHead>
+                    <TableHead kind="text" priority={5}>Diagnosis</TableHead>
+                    <TableHead kind="text" priority={6}>Regimen</TableHead>
+                    <TableHead kind="short" priority={2}>Status</TableHead>
+                    <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1073,22 +1073,22 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
                       return (
                         <TableRow key={rx.id}>
-                          <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="short" priority={1} label="Date" className="text-slate-600 dark:text-slate-300">
                             {formatDate(rx.date)}
                           </TableCell>
-                          <TableCell width="fit" label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={4} label="Doctor" className="font-medium text-slate-900 dark:text-slate-100">
                             {formatDoctorName(rx.doctorName)}
                           </TableCell>
-                          <TableCell width="fit" label="Diagnosis" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="text" priority={5} label="Diagnosis" className="text-slate-600 dark:text-slate-300">
                             {rx.diagnosis}
                           </TableCell>
-                          <TableCell width="flex" label="Regimen" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="text" priority={6} label="Regimen" className="text-slate-600 dark:text-slate-300">
                             {summary}
                           </TableCell>
-                          <TableCell width="fit" label="Status" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="short" priority={2} label="Status" className="text-slate-600 dark:text-slate-300">
                             {statusText}
                           </TableCell>
-                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
+                          <TableCell kind="short" priority={3} isActions label="Actions" className="text-right whitespace-nowrap">
                             <RowActions
                               actions={[
                                 {
@@ -1143,14 +1143,14 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Table stackBelow="lg">
                 <TableHeader>
                   <TableRow>
-                    <TableHead width="fit">Invoice #</TableHead>
-                    <TableHead width="fit">Date</TableHead>
-                    <TableHead width="flex">Doctor</TableHead>
-                    <TableHead width="fit">Total</TableHead>
-                    <TableHead width="fit">Paid</TableHead>
-                    <TableHead width="fit">Balance</TableHead>
-                    <TableHead width="fit">Status</TableHead>
-                    <TableHead width="fit" isActions className="text-right">Actions</TableHead>
+                    <TableHead kind="short" priority={1}>Invoice #</TableHead>
+                    <TableHead kind="short" priority={8}>Date</TableHead>
+                    <TableHead kind="short" priority={7}>Doctor</TableHead>
+                    <TableHead kind="short" priority={5}>Total</TableHead>
+                    <TableHead kind="short" priority={6}>Paid</TableHead>
+                    <TableHead kind="short" priority={2}>Balance</TableHead>
+                    <TableHead kind="short" priority={4}>Status</TableHead>
+                    <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1178,28 +1178,28 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
                       return (
                         <TableRow key={inv.id}>
-                          <TableCell width="fit" label="Invoice #" className="font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={1} label="Invoice #" className="font-medium text-slate-900 dark:text-slate-100">
                             {inv.number || (inv as any).invoiceNumber || 'Unknown'}
                           </TableCell>
-                          <TableCell width="fit" label="Date" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="short" priority={8} label="Date" className="text-slate-600 dark:text-slate-300">
                             {formatDate(inv.issuedAt || (inv as any).date)}
                           </TableCell>
-                          <TableCell width="flex" label="Doctor" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="short" priority={7} label="Doctor" className="text-slate-600 dark:text-slate-300">
                             {inv.doctorName || 'Consulting Physician'}
                           </TableCell>
-                          <TableCell width="fit" label="Total" className="text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={5} label="Total" className="text-slate-900 dark:text-slate-100">
                             {formatCurrency(total)}
                           </TableCell>
-                          <TableCell width="fit" label="Paid" className="text-teal-600 dark:text-teal-400">
+                          <TableCell kind="short" priority={6} label="Paid" className="text-teal-600 dark:text-teal-400">
                             {formatCurrency(paid)}
                           </TableCell>
-                          <TableCell width="fit" label="Balance" className="font-semibold text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={2} label="Balance" className="font-semibold text-slate-900 dark:text-slate-100">
                             {formatCurrency(balance)}
                           </TableCell>
-                          <TableCell width="fit" label="Status" className="text-slate-600 dark:text-slate-300">
+                          <TableCell kind="short" priority={4} label="Status" className="text-slate-600 dark:text-slate-300">
                             {statusLabel}
                           </TableCell>
-                          <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
+                          <TableCell kind="short" priority={3} isActions label="Actions" className="text-right whitespace-nowrap">
                             <RowActions
                               actions={[
                                 {

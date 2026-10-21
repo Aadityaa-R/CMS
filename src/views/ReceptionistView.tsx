@@ -719,44 +719,51 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'token',
       header: 'Token',
-      width: 'fit',
+      kind: 'short',
+      priority: 2,
       render: (apt) => <span className="font-semibold text-slate-900 dark:text-slate-100">{apt.tokenNumber > 0 ? `#${apt.tokenNumber}` : '-'}</span>,
     },
     {
       key: 'patient',
       header: 'Patient',
       isPrimary: true,
-      width: 'fit',
+      kind: 'short',
+      priority: 1,
       render: (apt) => <span className="font-medium text-slate-900 dark:text-slate-100">{apt.patientName}</span>,
     },
     {
       key: 'doctor',
       header: 'Doctor',
-      width: 'flex',
+      kind: 'short',
+      priority: 7,
       render: (apt) => <span>{apt.doctorName}</span>,
     },
     {
       key: 'arrivalTime',
       header: 'Arrival Time',
-      width: 'fit',
+      kind: 'short',
+      priority: 5,
       render: (apt) => <span>{formatTime(apt.checkedInAt || apt.dateTime)}</span>,
     },
     {
       key: 'waitTime',
       header: 'Wait Time',
-      width: 'fit',
+      kind: 'short',
+      priority: 6,
       render: (apt) => <span>{calculateWaitTimeMinutes(apt.checkedInAt)} min</span>,
     },
     {
       key: 'status',
       header: 'Status',
-      width: 'fit',
+      kind: 'short',
+      priority: 3,
       render: (apt) => <span className="text-slate-700 dark:text-slate-300 font-medium">{apt.status}</span>,
     },
     {
       key: 'actions',
       header: 'Actions',
-      width: 'fit',
+      kind: 'short',
+      priority: 4,
       isActions: true,
       render: (apt) => {
         const isConcluded = apt.status === 'in_consultation' || apt.status === 'completed';
@@ -789,14 +796,16 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'time',
       header: 'Time',
-      width: 'fit',
+      kind: 'short',
+      priority: 2,
       render: (apt) => <span>{apt.dateTime ? formatTime(apt.dateTime) : '-'}</span>,
     },
     {
       key: 'patient',
       header: 'Patient',
       isPrimary: true,
-      width: 'fit',
+      kind: 'short',
+      priority: 1,
       render: (apt) => {
         const patInvoices = billingInvoices.filter((inv) => inv.patientId === apt.patientId);
         const due = patInvoices.reduce((acc, inv) => acc + balanceDue(inv, billingPayments), 0);
@@ -815,25 +824,29 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'doctor',
       header: 'Doctor',
-      width: 'flex',
+      kind: 'short',
+      priority: 5,
       render: (apt) => <span>{apt.doctorName}</span>,
     },
     {
       key: 'source',
       header: 'Source',
-      width: 'fit',
+      kind: 'short',
+      priority: 6,
       render: (apt) => <span>{apt.source || 'reception'}</span>,
     },
     {
       key: 'status',
       header: 'Status',
-      width: 'fit',
+      kind: 'short',
+      priority: 3,
       render: (apt) => <span className="text-slate-700 dark:text-slate-300 font-medium">{apt.status}</span>,
     },
     {
       key: 'actions',
       header: 'Actions',
-      width: 'fit',
+      kind: 'short',
+      priority: 4,
       isActions: true,
       render: (apt) => {
         const isToday = agendaDate === todayStr;
@@ -867,31 +880,36 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       key: 'name',
       header: 'Name',
       isPrimary: true,
-      width: 'fit',
+      kind: 'short',
+      priority: 1,
       render: (p) => <span className="font-medium text-slate-900 dark:text-slate-100">{p.firstName} {p.lastName}</span>,
     },
     {
       key: 'mrn',
       header: 'MRN',
-      width: 'fit',
+      kind: 'short',
+      priority: 2,
       render: (p) => <span>{p.mrn}</span>,
     },
     {
       key: 'dobAge',
       header: 'DOB / Age',
-      width: 'fit',
+      kind: 'short',
+      priority: 5,
       render: (p) => <span>{formatDate(p.dob)} ({p.age})</span>,
     },
     {
       key: 'phone',
       header: 'Phone',
-      width: 'fit',
+      kind: 'short',
+      priority: 4,
       render: (p) => <span>{p.phone}</span>,
     },
     {
       key: 'assignedDoctor',
       header: 'Assigned Doctor',
-      width: 'flex',
+      kind: 'short',
+      priority: 6,
       render: (p) => {
         const docId = getAssignedDoctorId(p.id, patientAssignments);
         const doc = doctors.find((d) => d.id === docId);
@@ -901,7 +919,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'actions',
       header: 'Actions',
-      width: 'fit',
+      kind: 'short',
+      priority: 3,
       isActions: true,
       render: (p) => (
         <RowActions
@@ -927,32 +946,37 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'time',
       header: 'Time',
-      width: 'fit',
+      kind: 'short',
+      priority: 3,
       render: (entry) => <span>{formatTime(entry.time)}</span>,
     },
     {
       key: 'type',
       header: 'Type',
       isPrimary: true,
-      width: 'fit',
+      kind: 'short',
+      priority: 1,
       render: (entry) => <span className="font-medium text-slate-900 dark:text-slate-100">{entry.type}</span>,
     },
     {
       key: 'patient',
       header: 'Patient',
-      width: 'fit',
+      kind: 'short',
+      priority: 2,
       render: (entry) => <span>{entry.patientName}</span>,
     },
     {
       key: 'performedBy',
       header: 'Performed by',
-      width: 'fit',
+      kind: 'short',
+      priority: 4,
       render: (entry) => <span>{entry.performedBy}</span>,
     },
     {
       key: 'details',
       header: 'Details',
-      width: 'flex',
+      kind: 'text',
+      priority: 5,
       render: (entry) => <span>{entry.details}</span>,
     },
   ];
@@ -962,7 +986,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       key: 'name',
       header: 'Account Name',
       isPrimary: true,
-      width: 'fit',
+      kind: 'short',
+      priority: 1,
       render: (claim) => (
         <div>
           <span className="font-semibold text-slate-900 dark:text-slate-100">{claim.accountName}</span>
@@ -973,7 +998,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'email',
       header: 'Email / Phone',
-      width: 'fit',
+      kind: 'short',
+      priority: 5,
       render: (claim) => (
         <div>
           <div className="text-xs text-slate-700 dark:text-slate-300">{claim.accountEmail}</div>
@@ -984,7 +1010,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'mrn',
       header: 'Matched MRN',
-      width: 'fit',
+      kind: 'short',
+      priority: 2,
       render: (claim) => (
         <span className="text-xs text-slate-800 dark:text-slate-200">{claim.existingMrn}</span>
       ),
@@ -993,7 +1020,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       key: 'requestedAt',
       header: 'Requested At',
       hideBelow: 'md',
-      width: 'fit',
+      kind: 'short',
+      priority: 6,
       render: (claim) => (
         <span className="text-xs text-slate-600 dark:text-slate-400">
           {claim.requestedAt ? `${formatDate(claim.requestedAt.slice(0, 10))} ${formatTime(claim.requestedAt.slice(11, 16))}` : 'N/A'}
@@ -1003,7 +1031,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'status',
       header: 'Status',
-      width: 'flex',
+      kind: 'short',
+      priority: 3,
       render: (claim) => (
         <span className="text-xs capitalize text-slate-700 dark:text-slate-300 font-medium">
           {claim.status}
@@ -1013,6 +1042,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     {
       key: 'actions',
       header: 'Actions',
+      kind: 'short',
+      priority: 4,
       isActions: true,
       render: (claim) => {
         if (claim.status !== 'pending') {
@@ -1278,7 +1309,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
             </div>
           </div>
 
-          <Card>
+          <Card className="w-fit max-w-full min-w-[40rem]">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle>Today's Intake Log ({intakeLogs.length})</CardTitle>
             </CardHeader>

@@ -600,14 +600,14 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                 <Table stackBelow="lg">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Day</TableHead>
-                      <TableHead>Clock In</TableHead>
-                      <TableHead>Clock Out</TableHead>
-                      <TableHead>Hours Worked</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Notes</TableHead>
-                      {canManage && <TableHead isActions className="text-right">Actions</TableHead>}
+                      <TableHead kind="short" priority={1}>Date</TableHead>
+                      <TableHead kind="short" priority={4}>Day</TableHead>
+                      <TableHead kind="short" priority={5}>Clock In</TableHead>
+                      <TableHead kind="short" priority={6}>Clock Out</TableHead>
+                      <TableHead kind="short" priority={7}>Hours Worked</TableHead>
+                      <TableHead kind="short" priority={2}>Status</TableHead>
+                      <TableHead kind="text" priority={8}>Notes</TableHead>
+                      {canManage && <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -625,21 +625,21 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                           const status = formatRecordStatus(rec, userShift);
                           return (
                             <TableRow key={rec.id}>
-                              <TableCell label="Date" isPrimary className="font-semibold text-slate-900 dark:text-slate-100">
+                              <TableCell label="Date" isPrimary kind="short" priority={1} className="font-semibold text-slate-900 dark:text-slate-100">
                                 {rec.date}
                               </TableCell>
-                              <TableCell label="Day">{dayOfWeek(rec.date)}</TableCell>
-                              <TableCell label="Clock In">{formatTimeStr(rec.clockIn)}</TableCell>
-                              <TableCell label="Clock Out">{formatTimeStr(rec.clockOut)}</TableCell>
-                              <TableCell label="Hours Worked">{worked > 0 ? `${worked.toFixed(2)} hrs` : '--'}</TableCell>
-                              <TableCell label="Status">{status}</TableCell>
-                              <TableCell label="Notes">
+                              <TableCell label="Day" kind="short" priority={4}>{dayOfWeek(rec.date)}</TableCell>
+                              <TableCell label="Clock In" kind="short" priority={5}>{formatTimeStr(rec.clockIn)}</TableCell>
+                              <TableCell label="Clock Out" kind="short" priority={6}>{formatTimeStr(rec.clockOut)}</TableCell>
+                              <TableCell label="Hours Worked" kind="short" priority={7}>{worked > 0 ? `${worked.toFixed(2)} hrs` : '--'}</TableCell>
+                              <TableCell label="Status" kind="short" priority={2}>{status}</TableCell>
+                              <TableCell label="Notes" kind="text" priority={8}>
                                 {rec.correctionReason
                                   ? `Corrected: ${rec.correctionReason}`
                                   : rec.note || '--'}
                               </TableCell>
                               {canManage && (
-                                <TableCell isActions label="Actions" className="text-right">
+                                <TableCell isActions label="Actions" kind="short" priority={3} className="text-right">
                                   <RowActions
                                     actions={[
                                       {
@@ -691,12 +691,12 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                 <Table stackBelow="lg">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Decision</TableHead>
-                      <TableHead isActions className="text-right">Actions</TableHead>
+                      <TableHead kind="short" priority={1}>Type</TableHead>
+                      <TableHead kind="short" priority={4}>Duration</TableHead>
+                      <TableHead kind="text" priority={5}>Reason</TableHead>
+                      <TableHead kind="short" priority={2}>Status</TableHead>
+                      <TableHead kind="text" priority={6}>Decision</TableHead>
+                      <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -711,24 +711,24 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                         .slice((myLeavesPage - 1) * 10, myLeavesPage * 10)
                         .map((req) => (
                           <TableRow key={req.id}>
-                            <TableCell label="Type" isPrimary className="font-semibold text-slate-900 dark:text-slate-100">
+                            <TableCell label="Type" isPrimary kind="short" priority={1} className="font-semibold text-slate-900 dark:text-slate-100">
                               {req.type} Leave
                             </TableCell>
-                            <TableCell label="Duration">
+                            <TableCell label="Duration" kind="short" priority={4}>
                               {req.fromDate} to {req.toDate}
                             </TableCell>
-                            <TableCell label="Reason">{req.reason}</TableCell>
-                            <TableCell label="Status" className="capitalize">
+                            <TableCell label="Reason" kind="text" priority={5}>{req.reason}</TableCell>
+                            <TableCell label="Status" kind="short" priority={2} className="capitalize">
                               {req.status}
                             </TableCell>
-                            <TableCell label="Decision">
+                            <TableCell label="Decision" kind="text" priority={6}>
                               {req.decisionNote
                                 ? `${req.status === 'approved' ? 'Approved' : 'Rejected'}: ${req.decisionNote}`
                                 : req.decidedBy
                                 ? `Decided by ${req.decidedBy}`
                                 : 'Awaiting review'}
                             </TableCell>
-                            <TableCell isActions label="Actions" className="text-right">
+                            <TableCell isActions label="Actions" kind="short" priority={3} className="text-right">
                               {req.status === 'pending' && (
                                 <RowActions
                                   actions={[
@@ -833,12 +833,12 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                     <Table stackBelow="lg">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Staff Member</TableHead>
-                          <TableHead>Scheduled Shift</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Clock In</TableHead>
-                          <TableHead>Clock Out</TableHead>
-                          <TableHead isActions className="text-right">Actions</TableHead>
+                          <TableHead kind="short" priority={1}>Staff Member</TableHead>
+                          <TableHead kind="short" priority={4}>Scheduled Shift</TableHead>
+                          <TableHead kind="short" priority={2}>Status</TableHead>
+                          <TableHead kind="short" priority={5}>Clock In</TableHead>
+                          <TableHead kind="short" priority={6}>Clock Out</TableHead>
+                          <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -867,18 +867,18 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
 
                               return (
                                 <TableRow key={shift.id}>
-                                  <TableCell label="Staff Member" isPrimary className="font-semibold text-slate-900 dark:text-slate-100">
+                                  <TableCell label="Staff Member" isPrimary kind="short" priority={1} className="font-semibold text-slate-900 dark:text-slate-100">
                                     {shift.staffName || shift.staffId}
                                   </TableCell>
-                                  <TableCell label="Scheduled Shift">
+                                  <TableCell label="Scheduled Shift" kind="short" priority={4}>
                                     {isScheduled
                                       ? `${shift.start} - ${shift.end}`
                                       : 'Scheduled Off'}
                                   </TableCell>
-                                  <TableCell label="Status">{statusText}</TableCell>
-                                  <TableCell label="Clock In">{formatTimeStr(rec?.clockIn || null)}</TableCell>
-                                  <TableCell label="Clock Out">{formatTimeStr(rec?.clockOut || null)}</TableCell>
-                                  <TableCell isActions label="Actions" className="text-right">
+                                  <TableCell label="Status" kind="short" priority={2}>{statusText}</TableCell>
+                                  <TableCell label="Clock In" kind="short" priority={5}>{formatTimeStr(rec?.clockIn || null)}</TableCell>
+                                  <TableCell label="Clock Out" kind="short" priority={6}>{formatTimeStr(rec?.clockOut || null)}</TableCell>
+                                  <TableCell isActions label="Actions" kind="short" priority={3} className="text-right">
                                     <RowActions
                                       actions={[
                                         ...(!rec?.clockIn
@@ -1097,13 +1097,13 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                     <Table stackBelow="lg">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Staff Member</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Dates</TableHead>
-                          <TableHead>Reason</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Decision Notes</TableHead>
-                          <TableHead isActions className="text-right">Actions</TableHead>
+                          <TableHead kind="short" priority={1}>Staff Member</TableHead>
+                          <TableHead kind="short" priority={4}>Type</TableHead>
+                          <TableHead kind="short" priority={5}>Dates</TableHead>
+                          <TableHead kind="text" priority={6}>Reason</TableHead>
+                          <TableHead kind="short" priority={2}>Status</TableHead>
+                          <TableHead kind="text" priority={7}>Decision Notes</TableHead>
+                          <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1122,25 +1122,25 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
 
                               return (
                                 <TableRow key={req.id}>
-                                  <TableCell label="Staff Member" isPrimary className="font-semibold text-slate-900 dark:text-slate-100">
+                                  <TableCell label="Staff Member" isPrimary kind="short" priority={1} className="font-semibold text-slate-900 dark:text-slate-100">
                                     {req.staffName || req.staffId}
                                   </TableCell>
-                                  <TableCell label="Type">{req.type} Leave</TableCell>
-                                  <TableCell label="Dates">
+                                  <TableCell label="Type" kind="short" priority={4}>{req.type} Leave</TableCell>
+                                  <TableCell label="Dates" kind="short" priority={5}>
                                     {req.fromDate} to {req.toDate}
                                   </TableCell>
-                                  <TableCell label="Reason">{req.reason}</TableCell>
-                                  <TableCell label="Status" className="capitalize">
+                                  <TableCell label="Reason" kind="text" priority={6}>{req.reason}</TableCell>
+                                  <TableCell label="Status" kind="short" priority={2} className="capitalize">
                                     {req.status}
                                   </TableCell>
-                                  <TableCell label="Decision Notes">
+                                  <TableCell label="Decision Notes" kind="text" priority={7}>
                                     {req.decisionNote
                                       ? req.decisionNote
                                       : req.decidedBy
                                       ? `Authorized by ${req.decidedBy}`
                                       : 'Pending review'}
                                   </TableCell>
-                                  <TableCell isActions label="Actions" className="text-right">
+                                  <TableCell isActions label="Actions" kind="short" priority={3} className="text-right">
                                     {req.status === 'pending' && (
                                       <RowActions
                                         actions={
@@ -1207,12 +1207,12 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                 <Table stackBelow="lg">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Staff Member</TableHead>
-                      <TableHead>Scheduled Days</TableHead>
-                      <TableHead>Shift Start</TableHead>
-                      <TableHead>Shift End</TableHead>
-                      <TableHead>Grace Period</TableHead>
-                      <TableHead isActions className="text-right">Actions</TableHead>
+                      <TableHead kind="short" priority={1}>Staff Member</TableHead>
+                      <TableHead kind="short" priority={5}>Scheduled Days</TableHead>
+                      <TableHead kind="short" priority={2}>Shift Start</TableHead>
+                      <TableHead kind="short" priority={4}>Shift End</TableHead>
+                      <TableHead kind="short" priority={6}>Grace Period</TableHead>
+                      <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1220,14 +1220,14 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                       .slice((shiftsPage - 1) * 10, shiftsPage * 10)
                       .map((shift) => (
                         <TableRow key={shift.id}>
-                          <TableCell label="Staff Member" isPrimary className="font-semibold text-slate-900 dark:text-slate-100">
+                          <TableCell label="Staff Member" isPrimary kind="short" priority={1} className="font-semibold text-slate-900 dark:text-slate-100">
                             {shift.staffName || shift.staffId}
                           </TableCell>
-                          <TableCell label="Scheduled Days">{shift.days.join(', ')}</TableCell>
-                          <TableCell label="Shift Start">{shift.start}</TableCell>
-                          <TableCell label="Shift End">{shift.end}</TableCell>
-                          <TableCell label="Grace Period">{shift.graceMinutes} minutes</TableCell>
-                          <TableCell isActions label="Actions" className="text-right">
+                          <TableCell label="Scheduled Days" kind="short" priority={5}>{shift.days.join(', ')}</TableCell>
+                          <TableCell label="Shift Start" kind="short" priority={2}>{shift.start}</TableCell>
+                          <TableCell label="Shift End" kind="short" priority={4}>{shift.end}</TableCell>
+                          <TableCell label="Grace Period" kind="short" priority={6}>{shift.graceMinutes} minutes</TableCell>
+                          <TableCell isActions label="Actions" kind="short" priority={3} className="text-right">
                             <RowActions
                               actions={[
                                 {

@@ -294,12 +294,12 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
             <Table stackBelow="lg">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-4/12 min-w-[180px]">Medicine</TableHead>
-                  <TableHead className="w-2/12 min-w-[130px]">Class</TableHead>
-                  <TableHead className="w-1/12 min-w-[90px]">Form</TableHead>
-                  <TableHead className="w-3/12 min-w-[150px]">Strengths</TableHead>
-                  <TableHead className="w-1/12 min-w-[80px]">Status</TableHead>
-                  <TableHead className="w-1/12 min-w-[140px] text-right">Actions</TableHead>
+                  <TableHead kind="short" priority={1}>Medicine</TableHead>
+                  <TableHead kind="short" priority={4}>Class</TableHead>
+                  <TableHead kind="short" priority={5}>Form</TableHead>
+                  <TableHead kind="text" priority={6}>Strengths</TableHead>
+                  <TableHead kind="short" priority={2}>Status</TableHead>
+                  <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -312,7 +312,7 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
                 ) : (
                   paginatedMedicines.map((med) => (
                     <TableRow key={med.id}>
-                      <TableCell width="fit" label="Medicine">
+                      <TableCell kind="short" priority={1} label="Medicine">
                         <div className="font-medium text-slate-900 dark:text-slate-100">
                           {med.genericName}
                         </div>
@@ -322,19 +322,19 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell width="fit" label="Class" className="text-slate-700 dark:text-slate-300">
+                      <TableCell kind="short" priority={4} label="Class" className="text-slate-700 dark:text-slate-300">
                         {DRUG_CLASS_LABELS[med.drugClass] || med.drugClass}
                       </TableCell>
-                      <TableCell width="fit" label="Form" className="text-slate-700 dark:text-slate-300">
+                      <TableCell kind="short" priority={5} label="Form" className="text-slate-700 dark:text-slate-300">
                         {med.form}
                       </TableCell>
-                      <TableCell width="flex" label="Strengths" className="text-slate-600 dark:text-slate-300">
+                      <TableCell kind="text" priority={6} label="Strengths" className="text-slate-600 dark:text-slate-300">
                         {med.strengths.join(', ')}
                       </TableCell>
-                      <TableCell width="fit" label="Status" className="text-slate-700 dark:text-slate-300">
+                      <TableCell kind="short" priority={2} label="Status" className="text-slate-700 dark:text-slate-300">
                         {med.active ? 'Active' : 'Inactive'}
                       </TableCell>
-                      <TableCell width="fit" isActions label="Actions" className="text-right whitespace-nowrap">
+                      <TableCell kind="short" priority={3} isActions label="Actions" className="text-right whitespace-nowrap">
                         <RowActions
                           actions={[
                             {

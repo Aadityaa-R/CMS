@@ -64,38 +64,38 @@ export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = (
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 w-fit max-w-full min-w-[40rem]">
         <Table stackBelow="sm">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-3/12 min-w-[120px]">Role</TableHead>
-              <TableHead className="w-2/12 min-w-[100px]">Username</TableHead>
-              <TableHead hideBelow="sm" className="w-2/12 min-w-[100px]">Password</TableHead>
-              <TableHead hideBelow="sm" className="w-3/12 min-w-[160px]">Assigned Staff & Hint</TableHead>
-              <TableHead className="w-2/12 min-w-[80px] text-right whitespace-nowrap">Action</TableHead>
+              <TableHead kind="short" priority={1}>Role</TableHead>
+              <TableHead kind="short" priority={2}>Username</TableHead>
+              <TableHead kind="short" priority={4}>Password</TableHead>
+              <TableHead kind="short" priority={5}>Assigned Staff & Hint</TableHead>
+              <TableHead kind="short" priority={3} isActions className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {credentialsList.map((c) => (
               <TableRow key={c.username}>
-                <TableCell label="Role" className="w-3/12 min-w-[120px]">
+                <TableCell label="Role" kind="short" priority={1}>
                   <span className="font-medium text-teal-700 dark:text-teal-400">
                     {c.label}
                   </span>
                 </TableCell>
-                <TableCell label="Username" className="w-2/12 min-w-[100px] text-[0.6875rem] text-slate-700">
+                <TableCell label="Username" kind="short" priority={2} className="text-[0.6875rem] text-slate-700">
                   {c.username}
                 </TableCell>
-                <TableCell label="Password" hideBelow="sm" className="w-2/12 min-w-[100px] text-[0.6875rem] text-slate-700">
+                <TableCell label="Password" kind="short" priority={4} className="text-[0.6875rem] text-slate-700">
                   {c.password}
                 </TableCell>
-                <TableCell label="Assigned Staff" hideBelow="sm" className="w-3/12 min-w-[160px]">
+                <TableCell label="Assigned Staff" kind="short" priority={5}>
                   <div className="text-xs text-slate-800 font-medium truncate">{c.fullName}</div>
                   <div className="text-[0.625rem] text-slate-500 mt-0.5 leading-snug">
                     {getRoleHint(c.role)}
                   </div>
                 </TableCell>
-                <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[80px] text-right whitespace-nowrap">
+                <TableCell label="Action" fullWidthOnStack kind="short" priority={3} isActions className="text-right">
                   <Button
                     size="xs"
                     variant="outline"

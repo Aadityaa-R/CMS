@@ -737,15 +737,8 @@ Executes the comprehensive release gate:
   - Billing View: Invoice Summary and Payment Receipt details converted to `DetailList`.
   - Data Management: Browser Storage Status and Collection Record Counts converted to `DetailList`.
 
-### 15.3 Table Column Sizing and Empty Cells
-- **Column Sizing Rules**:
-  - Predictable-width columns (`Date`, `Time`, `Token`, `MRN`, `Phone`, `Status`, `Actions`) enforce `width="fit"`:
-    - Header & Cell classes: `w-auto whitespace-nowrap`.
-    - Auto-sized to content plus cell padding, eliminating unnecessary blank gaps.
-  - Exactly one long-text column per table (`Reason`, `Complaint`, `Regimen`, `Notes`, or `Patient` / `Doctor` when no narrative column exists) enforces `width="flex"`:
-    - Header & Cell classes: `w-full min-w-0 break-words`.
-    - Expands to absorb remaining horizontal space while supporting natural line wrapping.
-  - Actions column maintains `width="fit"`, `text-right`, and `whitespace-nowrap`.
+### 15.3 Table Column Sizing and Empty Cells (Superseded by Section 17 / M10.7)
+- **Superseded Column Sizing Rules**: The former `width="fit"` and `width="flex"` column width options are replaced in full by Section 17 (Table Column Distribution Specification, M10.7) using `table-layout: auto`, `ColumnDef.kind` (`'short' | 'text'`), and pure priority-based responsive hiding.
 - **Empty Cell Fallback**:
   - Every empty cell (`null`, `undefined`, `""`, or whitespace-only) across compound and configuration-driven tables displays a plain em-dash (`"—"`).
   - Actions cells and loading/error states are exempt.
@@ -808,4 +801,46 @@ Executes the comprehensive release gate:
   - Max padding factor: `1.5` (`1.125rem` max row padding).
   - Extra height in the shorter column is distributed evenly across that column's rows by increasing row padding up to the `1.5` multiplier cap.
   - Any remaining height past the `1.5` cap is retained as clean bottom space inside the card content rather than creating an empty gap between cards.
+
+---
+
+## 17. TABLE COLUMN DISTRIBUTION SPECIFICATION (M10.7)
+
+### 17.1 Column Distribution Architecture
+- **Table Layout**: `table-layout: auto; width: 100%`.
+  - Zero fixed or percentage column width classes anywhere (`w-X/12`, `w-XX`, `min-w-[Xpx]`).
+  - The legacy `width?: 'fit' | 'flex'` options are removed from `ColumnDef`.
+- **Column Kinds** (`ColumnDef.kind`):
+  - `'short'` (default): Never wraps (`white-space: nowrap`), applied to names, IDs, dates, times, status, badges, numbers, and actions.
+  - `'text'`: Minimum width of 14rem (`min-w-[14rem]`), wraps up to 2 lines (`line-clamp-2 max-w-xl break-words`). Applied to narrative content such as Complaint, Reason, Regimen, Diagnosis, Details, Notes, and Address.
+- **Cell Padding**: Uniform 1rem horizontal padding (`px-4 py-3`) across all cells, ensuring spare width is distributed proportionally across all columns based on content.
+- **Sticky Actions Column**:
+  - `nowrap`, right-aligned.
+  - Uses the row's own background (`bg-inherit z-10`), seamlessly showing row highlights (e.g., current row or hover) and header background without content peek-through.
+  - RowActions: At 768px and wider (`md:flex-nowrap`), all buttons sit in a single row with equal widths (`flex-1 min-w-[6.5rem]`). Never stacks at desktop/tablet widths.
+
+### 17.2 Fit-by-Priority Responsive System
+- **ColumnDef.priority**: 1 = highest priority (never hidden); higher numbers hide first as viewport or container width decreases.
+- **Pure Function** (`calculateVisibleColumns`):
+  - Compares the sum of visible columns' minimum content widths against container width.
+  - Sequentially hides the highest-priority-number column until remaining columns fit comfortably.
+  - Returns `isStacked: true` when container width is below 768px or when priority-1 columns alone exceed container width.
+  - Tested with unit tests covering priority ordering, early stopping, priority 1 retention, and stack mode fallback.
+
+### 17.3 Column Priorities Across Clinic Tables
+- **Doctor Worklist**: Patient (1), Status (2), Actions (3), Time (4), Complaint (5, text), Appt ID (6), # (7).
+- **Doctor Patients Tab**: Patient (1), Today (2), Actions (3), Last Visit (4), Total Visits (5), Phone (6), Age/Gender (7).
+- **Reception Lounge**: Patient (1), Status (2), Actions (3), Time (4), Doctor (5).
+- **Reception Appointments**: Patient (1), Status (2), Actions (3), Time (4), Doctor (5), Reason (6, text).
+- **Billing Invoices**: Invoice # (1), Patient/Balance (2), Actions (3), Status (4), Total (5), Paid (6), Issued Date (7), Due Date (8).
+- **Patient Portal Appointments**: Date (1), Status (2), Actions (3), Doctor (4), Time (5), Reason (6, text).
+- **Dev Credentials**: Role (1), Username (2), Action (3), Password (4), Assigned Staff & Hint (5).
+- **Clearance Requests / Approvals**: Applicant (1), Role (2), Actions (3), Applied (4), Department (5), Badge ID (6), Notes (7, text).
+- **Security Audit Ledger**: Subject (1), Action (2), Timestamp (3), Role (4), Details (5, text), Authorized By (6).
+
+### 17.4 Few-Column Card Sizing
+- Tables with 5 or fewer columns where content would otherwise create excessive horizontal whitespace shrink to fit their content:
+  - `w-fit max-w-full min-w-[40rem]`, left-aligned within the page container.
+  - Applied to Reception Lounge & Registry, Past Appointments, Visit History, Access Control Roles & Directory, Dev Credentials Directory, and Daily Summary Cards.
+
 

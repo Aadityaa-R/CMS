@@ -968,12 +968,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-2/12 min-w-[80px]">Time</TableHead>
-                      <TableHead className="w-4/12 min-w-[130px]">Patient</TableHead>
-                      <TableHead className="w-3/12 min-w-[120px]">Doctor</TableHead>
-                      <TableHead className="w-3/12 min-w-[90px]">Status</TableHead>
+                      <TableHead kind="short" priority={4}>Time</TableHead>
+                      <TableHead kind="short" priority={1}>Patient</TableHead>
+                      <TableHead kind="short" priority={5}>Doctor</TableHead>
+                      <TableHead kind="short" priority={2}>Status</TableHead>
                       {hasCheckIn && (
-                        <TableHead className="w-2/12 min-w-[90px] text-right">Action</TableHead>
+                        <TableHead kind="short" priority={3} isActions className="text-right">Action</TableHead>
                       )}
                     </TableRow>
                   </TableHeader>
@@ -987,20 +987,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       paginatedAppointments.map((apt) => (
                         <TableRow key={apt.id}>
-                          <TableCell label="Time" className="w-2/12 min-w-[80px] text-slate-600 dark:text-slate-300">
+                          <TableCell label="Time" kind="short" priority={4} className="text-slate-600 dark:text-slate-300">
                             {apt.time}
                           </TableCell>
-                          <TableCell label="Patient" className="w-4/12 min-w-[130px] font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Patient" kind="short" priority={1} className="font-medium text-slate-900 dark:text-slate-100">
                             {apt.patientName}
                           </TableCell>
-                          <TableCell label="Doctor" className="w-3/12 min-w-[120px] text-slate-600 dark:text-slate-300">
+                          <TableCell label="Doctor" kind="short" priority={5} className="text-slate-600 dark:text-slate-300">
                             {apt.doctorName}
                           </TableCell>
-                          <TableCell label="Status" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" kind="short" priority={2} className="text-slate-600 dark:text-slate-300">
                             {formatStatusText(apt.status)}
                           </TableCell>
                           {hasCheckIn && (
-                            <TableCell label="Action" fullWidthOnStack className="w-2/12 min-w-[90px] text-right whitespace-nowrap">
+                            <TableCell label="Action" fullWidthOnStack kind="short" priority={3} isActions className="text-right">
                               {apt.status === 'scheduled' ? (
                                 <Button
                                   size="sm"
@@ -1046,9 +1046,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-6/12 min-w-[180px]">Item</TableHead>
-                      <TableHead className="w-3/12 min-w-[90px]">Count</TableHead>
-                      <TableHead className="w-3/12 min-w-[100px] text-right">Action</TableHead>
+                      <TableHead kind="short" priority={1}>Item</TableHead>
+                      <TableHead kind="short" priority={2}>Count</TableHead>
+                      <TableHead kind="short" priority={3} isActions className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1061,13 +1061,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       metrics1.needsAttention.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell label="Item" className="w-6/12 min-w-[180px] font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Item" kind="short" priority={1} className="font-medium text-slate-900 dark:text-slate-100">
                             {item.label}
                           </TableCell>
-                          <TableCell label="Count" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300 font-semibold">
+                          <TableCell label="Count" kind="short" priority={2} className="text-slate-600 dark:text-slate-300 font-semibold">
                             {item.count}
                           </TableCell>
-                          <TableCell label="Action" fullWidthOnStack className="w-3/12 min-w-[100px] text-right whitespace-nowrap">
+                          <TableCell label="Action" fullWidthOnStack kind="short" priority={3} isActions className="text-right">
                             <button
                               type="button"
                               onClick={() => onNavigate?.(item.navigateTab, item.navigateSubTab)}
@@ -1103,9 +1103,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <Table stackBelow="md">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-5/12 min-w-[140px]">Name</TableHead>
-                      <TableHead className="w-3/12 min-w-[100px]">Shift Start</TableHead>
-                      <TableHead className="w-4/12 min-w-[130px]">Status</TableHead>
+                      <TableHead kind="short" priority={1}>Name</TableHead>
+                      <TableHead kind="short" priority={3}>Shift Start</TableHead>
+                      <TableHead kind="short" priority={2}>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1118,13 +1118,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     ) : (
                       metrics1.staffPresence.lateOrNotList.map((st) => (
                         <TableRow key={st.staffId}>
-                          <TableCell label="Name" className="w-5/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
+                          <TableCell label="Name" kind="short" priority={1} className="font-medium text-slate-900 dark:text-slate-100">
                             {st.name}
                           </TableCell>
-                          <TableCell label="Shift Start" className="w-3/12 min-w-[100px] text-slate-600 dark:text-slate-300">
+                          <TableCell label="Shift Start" kind="short" priority={3} className="text-slate-600 dark:text-slate-300">
                             {st.shiftStart}
                           </TableCell>
-                          <TableCell label="Status" className="w-4/12 min-w-[130px] text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" kind="short" priority={2} className="text-slate-600 dark:text-slate-300">
                             {st.status}
                           </TableCell>
                         </TableRow>
@@ -1201,10 +1201,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             <Table stackBelow="md">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-3/12 min-w-[90px]">Date</TableHead>
-                  <TableHead className="w-2/12 min-w-[80px]">Time</TableHead>
-                  <TableHead className="w-4/12 min-w-[120px]">Doctor</TableHead>
-                  <TableHead className="w-3/12 min-w-[90px]">Status</TableHead>
+                  <TableHead kind="short" priority={1}>Date</TableHead>
+                  <TableHead kind="short" priority={4}>Time</TableHead>
+                  <TableHead kind="short" priority={3}>Doctor</TableHead>
+                  <TableHead kind="short" priority={2}>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1217,16 +1217,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 ) : (
                   paginatedPatientAppointments.map((apt) => (
                     <TableRow key={apt.id}>
-                      <TableCell label="Date" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                      <TableCell label="Date" kind="short" priority={1} className="text-slate-600 dark:text-slate-300">
                         {apt.date}
                       </TableCell>
-                      <TableCell label="Time" className="w-2/12 min-w-[80px] text-slate-600 dark:text-slate-300">
+                      <TableCell label="Time" kind="short" priority={4} className="text-slate-600 dark:text-slate-300">
                         {apt.time}
                       </TableCell>
-                      <TableCell label="Doctor" className="w-4/12 min-w-[120px] font-medium text-slate-900 dark:text-slate-100">
+                      <TableCell label="Doctor" kind="short" priority={3} className="font-medium text-slate-900 dark:text-slate-100">
                         {apt.doctorName}
                       </TableCell>
-                      <TableCell label="Status" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                      <TableCell label="Status" kind="short" priority={2} className="text-slate-600 dark:text-slate-300">
                         {formatStatusText(apt.status)}
                       </TableCell>
                     </TableRow>
@@ -1260,9 +1260,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             <Table stackBelow="md">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-3/12 min-w-[90px]">Date</TableHead>
-                  <TableHead className="w-5/12 min-w-[140px]">Medication</TableHead>
-                  <TableHead className="w-4/12 min-w-[110px]">Doctor</TableHead>
+                  <TableHead kind="short" priority={1}>Date</TableHead>
+                  <TableHead kind="text" priority={2}>Medication</TableHead>
+                  <TableHead kind="short" priority={3}>Doctor</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1275,13 +1275,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 ) : (
                   paginatedPatientRx.map((rx) => (
                     <TableRow key={rx.id}>
-                      <TableCell label="Date" className="w-3/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                      <TableCell label="Date" kind="short" priority={1} className="text-slate-600 dark:text-slate-300">
                         {rx.date}
                       </TableCell>
-                      <TableCell label="Medication" className="w-5/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
+                      <TableCell label="Medication" kind="text" priority={2} className="font-medium text-slate-900 dark:text-slate-100">
                         {rx.medications}
                       </TableCell>
-                      <TableCell label="Doctor" className="w-4/12 min-w-[110px] text-slate-600 dark:text-slate-300">
+                      <TableCell label="Doctor" kind="short" priority={3} className="text-slate-600 dark:text-slate-300">
                         {rx.doctorName}
                       </TableCell>
                     </TableRow>
@@ -1665,29 +1665,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       <Table stackBelow="md">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-4/12 min-w-[140px]">Doctor</TableHead>
-                            <TableHead className="w-2/12 min-w-[90px]">Booked</TableHead>
-                            <TableHead className="w-2/12 min-w-[90px]">Checked In</TableHead>
-                            <TableHead className="w-2/12 min-w-[90px]">Completed</TableHead>
-                            <TableHead className="w-2/12 min-w-[100px] text-right">Prescriptions</TableHead>
+                            <TableHead kind="short" priority={1}>Doctor</TableHead>
+                            <TableHead kind="short" priority={5}>Booked</TableHead>
+                            <TableHead kind="short" priority={4}>Checked In</TableHead>
+                            <TableHead kind="short" priority={2}>Completed</TableHead>
+                            <TableHead kind="short" priority={3} className="text-right">Prescriptions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {dailySummaryData.byDoctor.map((d) => (
                             <TableRow key={d.doctorId}>
-                              <TableCell label="Doctor" className="w-4/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
+                              <TableCell label="Doctor" kind="short" priority={1} className="font-medium text-slate-900 dark:text-slate-100">
                                 {d.doctorName}
                               </TableCell>
-                              <TableCell label="Booked" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                              <TableCell label="Booked" kind="short" priority={5} className="text-slate-600 dark:text-slate-300">
                                 {d.booked}
                               </TableCell>
-                              <TableCell label="Checked In" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                              <TableCell label="Checked In" kind="short" priority={4} className="text-slate-600 dark:text-slate-300">
                                 {d.checkedIn}
                               </TableCell>
-                              <TableCell label="Completed" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                              <TableCell label="Completed" kind="short" priority={2} className="text-slate-600 dark:text-slate-300">
                                 {d.completed}
                               </TableCell>
-                              <TableCell label="Prescriptions" className="w-2/12 min-w-[100px] text-right text-slate-600 dark:text-slate-300">
+                              <TableCell label="Prescriptions" kind="short" priority={3} className="text-right text-slate-600 dark:text-slate-300">
                                 {d.prescriptions}
                               </TableCell>
                             </TableRow>
@@ -1710,29 +1710,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       <Table stackBelow="md">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-4/12 min-w-[140px]">Name</TableHead>
-                            <TableHead className="w-2/12 min-w-[90px]">Registrations</TableHead>
-                            <TableHead className="w-2/12 min-w-[90px]">Check-ins</TableHead>
-                            <TableHead className="w-2/12 min-w-[90px]">Bookings</TableHead>
-                            <TableHead className="w-2/12 min-w-[120px] text-right">Payments</TableHead>
+                            <TableHead kind="short" priority={1}>Name</TableHead>
+                            <TableHead kind="short" priority={5}>Registrations</TableHead>
+                            <TableHead kind="short" priority={3}>Check-ins</TableHead>
+                            <TableHead kind="short" priority={4}>Bookings</TableHead>
+                            <TableHead kind="short" priority={2} className="text-right">Payments</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {dailySummaryData.byReceptionist.map((r) => (
                             <TableRow key={r.receptionistId}>
-                              <TableCell label="Name" className="w-4/12 min-w-[140px] font-medium text-slate-900 dark:text-slate-100">
+                              <TableCell label="Name" kind="short" priority={1} className="font-medium text-slate-900 dark:text-slate-100">
                                 {r.receptionistName}
                               </TableCell>
-                              <TableCell label="Registrations" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                              <TableCell label="Registrations" kind="short" priority={5} className="text-slate-600 dark:text-slate-300">
                                 {r.registrations}
                               </TableCell>
-                              <TableCell label="Check-ins" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                              <TableCell label="Check-ins" kind="short" priority={3} className="text-slate-600 dark:text-slate-300">
                                 {r.checkIns}
                               </TableCell>
-                              <TableCell label="Bookings" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
+                              <TableCell label="Bookings" kind="short" priority={4} className="text-slate-600 dark:text-slate-300">
                                 {r.bookings}
                               </TableCell>
-                              <TableCell label="Payments" className="w-2/12 min-w-[120px] text-right text-slate-600 dark:text-slate-300">
+                              <TableCell label="Payments" kind="short" priority={2} className="text-right text-slate-600 dark:text-slate-300">
                                 {r.paymentsCount} ({r.formattedPaymentsTotal})
                               </TableCell>
                             </TableRow>

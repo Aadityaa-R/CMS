@@ -2,6 +2,23 @@
 
 All notable changes to the Beacon Health Clinic Management System will be documented in this file.
 
+## [Unreleased] - 2026-10-21
+
+### Added
+- Table Column Distribution and Priority-Based Responsive Fit (M10.7):
+  - Added `kind?: 'short' | 'text'` to `ColumnDef` (default `'short'` with `white-space: nowrap`; `'text'` with `min-width: 14rem` and 2-line clamp).
+  - Added `priority?: number` to `ColumnDef` (1 = never hidden; higher numbers hide first on constrained viewports).
+  - Pure function `calculateVisibleColumns` computing responsive column visibility and stack fallback (< 768px or priority-1 overflow).
+  - Container ResizeObserver in `Table` comparing visible column minimum content widths against container width.
+  - Sticky Actions cell using row background (`bg-inherit`) and equal-width action buttons in a single row (`md:flex-nowrap`, min 6.5rem width).
+  - Few-column table card shrink-to-fit (`w-fit max-w-full min-w-[40rem]`) when a table has 5 or fewer columns.
+  - Unit test suite `tests/tableColumnDistribution.test.tsx` verifying priority ordering, nowrap properties, and single-row actions.
+
+### Changed
+- Replaced fixed and percentage widths in all table column definitions across Doctor, Receptionist, Billing, Patient Portal, Access Control, Attendance, Formulary, Credentials, Patient View, and Dashboard views with `kind` and `priority`.
+- Standardized horizontal cell padding across all tables to uniform 1rem (`px-4 py-3`).
+- Updated Section 17 of `PROJECT_SPECIFICATION_AND_RULES.md` documenting M10.7 table column distribution.
+
 ## [demo-v4] - 2026-10-21
 
 ### Added

@@ -36,7 +36,7 @@ export const RowActions: React.FC<RowActionsProps> = ({
 
   return (
     <div
-      className={`flex flex-wrap items-center justify-end gap-2 w-full max-sm:justify-start ${className}`}
+      className={`flex flex-wrap items-center md:flex-nowrap justify-end gap-2 w-full max-sm:justify-start whitespace-nowrap ${className}`}
       role="group"
       aria-label={subject ? `Actions for ${subject}` : 'Row actions'}
     >
@@ -59,7 +59,7 @@ export const RowActions: React.FC<RowActionsProps> = ({
             aria-label={accessibleName}
             aria-describedby={statusId}
             title={action.title}
-            className={`min-w-[6.5rem] min-h-[2rem] max-sm:min-h-[44px] pointer-coarse:min-h-[44px] whitespace-nowrap text-center justify-center ${
+            className={`min-w-[6.5rem] flex-1 min-h-[2rem] max-sm:min-h-[44px] pointer-coarse:min-h-[44px] whitespace-nowrap text-center justify-center ${
               action.className || ''
             }`}
           >
