@@ -45,6 +45,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/Table';
+import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { Printer } from 'lucide-react';
 
 interface PatientPortalProps {
@@ -747,7 +748,23 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                     </TableRow>
                   ) : (
                     paginatedUpcoming.map((apt) => {
-                      const canModify = canModifyAppointment(apt);
+                      const isScheduled = apt.status === 'scheduled';
+                      const canModify = isScheduled && canModifyAppointment(apt);
+                      const isPastCutoffScheduled = isScheduled && !canModifyAppointment(apt);
+                      const appointmentActions: RowActionItem[] = canModify
+                        ? [
+                            {
+                              label: 'Reschedule',
+                              onClick: () => handleOpenReschedule(apt),
+                              ariaLabel: `Reschedule appointment on ${apt.dateTime.slice(0, 10)} at ${apt.dateTime.slice(11, 16)}`,
+                            },
+                            {
+                              label: 'Cancel',
+                              onClick: () => handleOpenCancel(apt),
+                              ariaLabel: `Cancel appointment on ${apt.dateTime.slice(0, 10)} at ${apt.dateTime.slice(11, 16)}`,
+                            },
+                          ]
+                        : [];
                       return (
                         <TableRow key={apt.id}>
                           <TableCell label="Date" className="w-2/12 min-w-[90px] text-slate-600 dark:text-slate-300">
@@ -762,7 +779,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                           <TableCell label="Reason" className="w-3/12 min-w-[140px] text-slate-600 dark:text-slate-300">
                             {apt.reasonForVisit}
                           </TableCell>
-                          <TableCell label="Status" className="w-2/12 min-w-[110px] text-slate-600 dark:text-slate-300">
+                          <TableCell label="Status" id={`portal-apt-status-${apt.id}`} className="w-2/12 min-w-[110px] text-slate-600 dark:text-slate-300">
                             <div>
                               {apt.needsReschedule && (
                                 <span className="text-xs text-amber-700 dark:text-amber-400 block mb-1">
@@ -770,41 +787,19 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                                 </span>
                               )}
                               <span>{formatAppointmentStatus(apt)}</span>
+                              {isPastCutoffScheduled && (
+                                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">
+                                  Changes closed. Call the clinic.
+                                </span>
+                              )}
                             </div>
                           </TableCell>
-                          <TableCell label="Actions" className="w-2/12 min-w-[140px] text-right whitespace-nowrap">
-                            {canModify ? (
-                              <div className="flex items-center justify-end space-x-2">
-                                <Button
-                                  size="xs"
-                                  variant="outline"
-                                  onClick={() => handleOpenReschedule(apt)}
-                                >
-                                  Reschedule
-                                </Button>
-                                <Button
-                                  size="xs"
-                                  variant="outline"
-                                  onClick={() => handleOpenCancel(apt)}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            ) : (
-                              <div>
-                                <div className="flex items-center justify-end space-x-2 opacity-50">
-                                  <Button size="xs" variant="outline" disabled>
-                                    Reschedule
-                                  </Button>
-                                  <Button size="xs" variant="outline" disabled>
-                                    Cancel
-                                  </Button>
-                                </div>
-                                <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 block mt-1 text-right">
-                                  Changes close 2 hours before appointment
-                                </span>
-                              </div>
-                            )}
+                          <TableCell isActions label="Actions" className="w-2/12 min-w-[140px] text-right whitespace-nowrap">
+                            <RowActions
+                              actions={appointmentActions}
+                              subject={`appointment with ${apt.doctorName}`}
+                              statusId={`portal-apt-status-${apt.id}`}
+                            />
                           </TableCell>
                         </TableRow>
                       );
@@ -1140,14 +1135,17 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                           <TableCell label="Status" className="w-2/12 min-w-[120px] text-slate-600 dark:text-slate-300">
                             {statusText}
                           </TableCell>
-                          <TableCell label="Actions" className="w-1/12 min-w-[80px] text-right whitespace-nowrap">
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              onClick={() => setViewingPrescription(rx)}
-                            >
-                              View
-                            </Button>
+                          <TableCell isActions label="Actions" className="w-1/12 min-w-[80px] text-right whitespace-nowrap">
+                            <RowActions
+                              actions={[
+                                {
+                                  label: 'View',
+                                  onClick: () => setViewingPrescription(rx),
+                                  ariaLabel: `View prescription ${rx.prescriptionNumber}`,
+                                },
+                              ]}
+                              subject={rx.prescriptionNumber}
+                            />
                           </TableCell>
                         </TableRow>
                       );
@@ -1248,25 +1246,26 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                           <TableCell label="Status" className="w-1/12 min-w-[90px] text-slate-600 dark:text-slate-300">
                             {statusLabel}
                           </TableCell>
-                          <TableCell label="Actions" className="w-1/12 min-w-[130px] text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end space-x-1.5">
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                onClick={() => setPatientViewingInvoice(inv)}
-                              >
-                                Details
-                              </Button>
-                              {balance > 0 && currentStatus !== 'void' && (
-                                <Button
-                                  size="xs"
-                                  variant="outline"
-                                  onClick={() => handleOpenPayModal(inv)}
-                                >
-                                  Pay Now
-                                </Button>
-                              )}
-                            </div>
+                          <TableCell isActions label="Actions" className="w-1/12 min-w-[130px] text-right whitespace-nowrap">
+                            <RowActions
+                              actions={[
+                                {
+                                  label: 'Details',
+                                  onClick: () => setPatientViewingInvoice(inv),
+                                  ariaLabel: `View details for invoice ${inv.number}`,
+                                },
+                                ...(balance > 0 && currentStatus !== 'void'
+                                  ? [
+                                      {
+                                        label: 'Pay Now',
+                                        onClick: () => handleOpenPayModal(inv),
+                                        ariaLabel: `Pay balance for invoice ${inv.number}`,
+                                      },
+                                    ]
+                                  : []),
+                              ]}
+                              subject={inv.number}
+                            />
                           </TableCell>
                         </TableRow>
                       );

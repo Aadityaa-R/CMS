@@ -58,12 +58,17 @@ Every feature, component, test, and line of code in this project strictly obeys 
 - **Never hardcode static dates in seed scenario generators**: All dates in `src/data/demoScenario.ts` are dynamically generated relative to execution time (`now: Date = new Date()`), guaranteeing that "today" is always today, "yesterday" is yesterday, and aging records maintain accurate relative days.
 - **Never display raw stack traces in the UI**: Unhandled render exceptions are caught by `ErrorBoundary`, which logs full details to the console only and renders a plain-text recovery screen with "Reload page" and "Reset demo data" options.
 
+### 2.5 Row Actions and Disabled Controls Governance (M10.3)
+- **Table Row Actions**: Row actions show only what is possible now; the reason for anything missing is the row's visible Status text (which has an accessible ID referenced by `aria-describedby` or visible row context). Tables must never render disabled buttons with sibling helper text. All table actions use the shared `RowActions` component (`src/components/ui/RowActions.tsx`) with a 0.5rem gap, compact uniform button heights, a minimum width of 6.5rem, touch targets of at least 44px, and accessible names specifying the row subject.
+- **Controls Outside Tables**: Controls outside tables that stay disabled (such as prominent form submission triggers or patient portal Book Appointment when at booking limit) keep visible plain helper text explaining why the action is disabled.
+
 ---
 
 ## 3. CHRONOLOGICAL CHANGELOG OF PAST TASKS & COMMITS
 
 | Commit Hash | Commit Message / Feature Description | User Intent & Key Actions |
 | :--- | :--- | :--- |
+| (M10.3) | `feat(ui): implement shared RowActions component and clean up crowded table action cells (M10.3)` | Replaced M1.5 disabled button helper text rule for table rows with RowActions policy: row actions render only what is currently possible without disabled buttons or helper text; status cells indicate current state with accessible IDs. Created shared RowActions component with 0.5rem gap, 6.5rem min-width, compact size, 44px touch targets, and accessible subject labels. Added plain-text Today column on doctor Patients tab with hideBelow="xl" on Demographics and Blood Group. Scoped Start Consultation strictly to Checked In rows on doctor worklist. Partitioned patient portal appointment actions to hide post-cutoff with "Changes closed. Call the clinic." line in Status. Cleaned tables across Reception, Attendance, Access Control, Billing, and Formulary. Added automated scanner and integration test suite in tests/rowActionsCleanup.test.tsx. |
 | (M10.2) | `feat(ui): make Book Appointment prominent on patient portal and refine dashboard actions (M10.2)` | Positioned Book Appointment directly under page title above summary cards as the only primary button on the page (min-h-[3.5rem], px-8, text-lg font-semibold, full-width below 640px); focus returns to button upon closing modal; disabled with plain helper text for unlinked patient or active booking limit (MAX_ACTIVE_BOOKINGS=2); outline Pay Balance button opens Pay Now modal for oldest unpaid invoice when balance > 0; removed old counts row; partitioned Upcoming (today or later and open) and Past (closed or past open with "Not concluded" status); unified single currency symbol CURRENCY_SYMBOL = '₹' across all screens via formatCurrency. |
 | (M10.1) | `feat(ui): implement shared profile page and accessible user menu navigation (M10.1)` | Implemented single shared My Profile page at /profile for all roles; accessible WAI-ARIA role="menu" with full keyboard navigation (arrows, Home/End, Escape, Tab); streamlined Patient Portal tabs removing Profile tab; role-specific profile layout (2 cards desktop, 1 column mobile) with staff read-only metadata and patient contact fields; dirty tracking with unsaved changes guard modal; current password verification on email change; 44px password show/hide toggles; constant-derived policy text; zero password data in ledger entries. |
 | (M9.6) | `feat(motion): implement login and sign-up screen motion, ECG background, and test suite (M9.6)` | Implemented deliberate exception for sign-in and sign-up screens: motion tokens (loginMotion.css/ts), staggered entrance sequence (<=700ms), 200ms view crossfade, decorative EcgBackground heartbeat wipe with tab visibility pausing, show-password toggle crossfade (150ms), credentials accordion (250ms), button pressed state scale(0.98), failed sign-in card shake (350ms) with polite live region, success exit transition (250ms), prefers-reduced-motion fallback, and updated footer text warning. Added tests/loginMotion.test.tsx (6 tests). |
@@ -640,5 +645,55 @@ Executes the comprehensive release gate:
 - **Single Configured Currency**:
   - Configured currency symbol exported as `CURRENCY_SYMBOL = '₹'` from `src/lib/money.ts`.
   - All monetary values across all screens, tables, modals, and charts format strictly through `formatCurrency(cents)` in integer minor units.
+
+---
+
+## 14. ROW ACTIONS & TABLE CELL CLEANUP SPECIFICATION (M10.3)
+
+### 14.1 Shared RowActions Component Architecture
+- **Location**: `src/components/ui/RowActions.tsx`.
+- **Layout & Wrapping**:
+  - Rendered as an inline flex group right-aligned on desktop (`justify-end`), wrapping with `gap-2` (`0.5rem`).
+  - Mobile / Stack mode: full-width wrapping row (`max-sm:justify-start`).
+- **Button Sizing & Accessibility**:
+  - Buttons use compact size (`size="xs"`, uniform height `h-8` / `min-h-[2rem]`) and minimum width `min-w-[6.5rem]` (`104px`).
+  - Touch devices: minimum touch target of `44px` (`touch:min-h-[44px] pointer-coarse:min-h-[44px] max-sm:min-h-[44px]`).
+  - Accessible names include the row subject (e.g. `"Prescribe for Sophia Chen"`).
+  - Empty group: returns `null`, leaving the table cell completely empty.
+- **Rule Replacement**:
+  - Replaces the legacy M1.5 rule requiring helper text under disabled controls inside tables.
+  - Table row actions render **only** actions that are currently possible.
+  - The reason for any action being absent is communicated via the row's visible Status cell (which has an ID linked via `aria-describedby` or visible row context).
+  - Controls outside tables that remain disabled continue to display visible helper text.
+
+### 14.2 Doctor Patients Tab
+- **"Today" Column**:
+  - Always visible plain text column (stack mode label `"Today: <value>"`).
+  - Values derived strictly from patient's appointment today with the signed-in physician:
+    1. `"No visit today"`
+    2. `"Not checked in"` (scheduled)
+    3. `"Checked in"`
+    4. `"In consultation"`
+    5. `"Completed"`
+    6. `"Cancelled"`
+- **Actions Cell Order**:
+  1. `Admit to Desk` (first, rendered only when patient is `Checked in` or `In consultation`).
+  2. `Prescribe` (rendered when physician has prescribing capability and patient is assigned).
+  3. `Transfer` / `Assign` (rendered when care transfer is permitted).
+- **Responsive Width Management**:
+  - Low-priority columns `Demographics` and `Blood Group` enforce `hideBelow="xl"` (hidden between 1024px and 1279px) so the actions cell never crowds.
+
+### 14.3 Doctor Consultation Worklist
+- `Start Consultation` is rendered strictly for appointments with status `Checked In`.
+- Appointments with status `Scheduled` render `View File` only.
+- Disabled buttons and helper text (`"Not checked in yet"`) are eliminated.
+
+### 14.4 Patient Portal Appointments
+- `Reschedule` and `Cancel` are rendered strictly for appointments that are `scheduled` and before the cutoff (`canModifyAppointment(apt)`).
+- When the cutoff has passed for a scheduled appointment:
+  - Both action buttons are hidden.
+  - The Status cell displays a second muted line: `"Changes closed. Call the clinic."`.
+- Appointments `in_consultation` or `completed` display no actions and no extra line.
+
 
 

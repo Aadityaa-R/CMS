@@ -10,6 +10,8 @@ import { Select } from '@/components/ui/Select';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTruncate } from '@/components/ui/Table';
+import { RowActions, RowActionItem } from '@/components/ui/RowActions';
+import { formatLocalDate, parseLocalDateKey } from '@/lib/time';
 import {
   CheckCircle2,
   Filter,
@@ -41,6 +43,7 @@ import {
   getScopedAppointments,
   getScopedPrescriptions,
 } from '@/lib/selectors';
+import { resolveDoctorId } from '@/lib/staffIds';
 import { isDoctorAvailable } from '@/lib/availability';
 import {
   formatRegimen,
@@ -1685,59 +1688,36 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 >
                                   <span className="line-clamp-2">{apt.reasonForVisit}</span>
                                 </TableCell>
-                                <TableCell label="Status" className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                <TableCell label="Status" id={`appt-status-${apt.id}`} className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
                                   {formatAppointmentStatus(apt.status)}
                                 </TableCell>
                                 <TableCell isActions label="Actions" fullWidthOnStack className="w-48 text-right whitespace-nowrap">
-                                  <div className="flex items-center justify-end gap-2">
-                                    {isInConsultation && isCurrent ? (
-                                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                        Current patient
-                                      </span>
-                                    ) : (
-                                      <>
-                                        <Button
-                                          size="xs"
-                                          variant="outline"
-                                          className="whitespace-nowrap"
-                                          onClick={() => setSelectedAppointmentId(apt.id)}
-                                          aria-label={`View file for ${apt.patientName}`}
-                                        >
-                                          View File
-                                        </Button>
-                                        {isInConsultation ? (
-                                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                            Current patient
-                                          </span>
-                                        ) : (
-                                          !isReadOnlyView &&
-                                          apt.status !== 'completed' && (
-                                            <div className="flex flex-col items-start gap-1">
-                                              <Button
-                                                size="xs"
-                                                variant="outline"
-                                                className="whitespace-nowrap"
-                                                disabled={apt.status === 'scheduled'}
-                                                onClick={() => {
-                                                  if (apt.status !== 'scheduled') {
-                                                    handleStartConsultation(apt);
-                                                  }
-                                                }}
-                                                aria-label={`Start consultation for ${apt.patientName}`}
-                                              >
-                                                Start Consultation
-                                              </Button>
-                                              {apt.status === 'scheduled' && (
-                                                <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
-                                                  Not checked in yet
-                                                </span>
-                                              )}
-                                            </div>
-                                          )
-                                        )}
-                                      </>
-                                    )}
-                                  </div>
+                                  {isInConsultation && isCurrent ? (
+                                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                      Current patient
+                                    </span>
+                                  ) : (
+                                    <RowActions
+                                      actions={[
+                                        {
+                                          label: 'View File',
+                                          onClick: () => setSelectedAppointmentId(apt.id),
+                                          ariaLabel: `View file for ${apt.patientName}`,
+                                        },
+                                        ...(!isReadOnlyView && apt.status === 'checked_in'
+                                          ? [
+                                              {
+                                                label: 'Start Consultation',
+                                                onClick: () => handleStartConsultation(apt),
+                                                ariaLabel: `Start consultation for ${apt.patientName}`,
+                                              },
+                                            ]
+                                          : []),
+                                      ]}
+                                      subject={apt.patientName}
+                                      statusId={`appt-status-${apt.id}`}
+                                    />
+                                  )}
                                 </TableCell>
                               </TableRow>
                             );
@@ -1799,13 +1779,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   <TableRow>
                     <TableHead className="w-48">Patient Name</TableHead>
                     <TableHead className="w-28 whitespace-nowrap">MRN</TableHead>
-                    <TableHead hideBelow="md" className="w-32 whitespace-nowrap">Demographics</TableHead>
+                    <TableHead hideBelow="xl" className="w-32 whitespace-nowrap">Demographics</TableHead>
+                    <TableHead className="w-32 whitespace-nowrap">Today</TableHead>
                     <TableHead hideBelow="sm" className="w-36 whitespace-nowrap">Phone</TableHead>
-                    <TableHead hideBelow="md" className="w-24 whitespace-nowrap">Blood Group</TableHead>
+                    <TableHead hideBelow="xl" className="w-24 whitespace-nowrap">Blood Group</TableHead>
                     <TableHead hideBelow="sm" className="w-1/6 min-w-[140px]">Allergies</TableHead>
                     <TableHead hideBelow="lg" className="w-1/6 min-w-[140px]">Chronic Conditions</TableHead>
                     {isAdmin(currentUser) && <TableHead hideBelow="md" className="w-36 whitespace-nowrap">Assigned Doctor</TableHead>}
-                    <TableHead isActions className="w-44 text-right whitespace-nowrap">Actions</TableHead>
+                    <TableHead isActions className="w-48 text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1813,20 +1794,91 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     paginatedPatients.map((pat) => {
                       const assignedDocId = getAssignedDoctorId(pat.id, patientAssignments);
                       const assignedDoc = doctors.find((d) => d.id === assignedDocId);
-                      const activeApt = appointments.find(
-                        (a) => a.patientId === pat.id && (a.status === 'in_consultation' || a.status === 'checked_in' || a.status === 'scheduled')
-                      );
-                      const isScheduled = activeApt?.status === 'scheduled';
-                      const canAdmit = Boolean(activeApt && !isScheduled);
-                      const admitTitle = !activeApt
-                        ? 'No active appointment'
-                        : isScheduled
-                        ? 'Patient has not been checked in'
-                        : undefined;
+
+                      const signedInDoctor = doctors.find((d) => d.id === resolveDoctorId(currentUser) || d.email === currentUser?.email);
+                      const doctorIdForToday = signedInDoctor?.id || resolveDoctorId(currentUser) || activeDoctorId;
+                      const todayKey = formatLocalDate();
+                      const patientTodayAppointments = appointments.filter((a) => {
+                        return (
+                          a.patientId === pat.id &&
+                          a.doctorId === doctorIdForToday &&
+                          parseLocalDateKey(a.dateTime) === todayKey
+                        );
+                      });
+
+                      const statusPriority: Record<string, number> = {
+                        in_consultation: 1,
+                        checked_in: 2,
+                        scheduled: 3,
+                        completed: 4,
+                        cancelled: 5,
+                      };
+
+                      const topApt = patientTodayAppointments.length > 0
+                        ? [...patientTodayAppointments].sort((a, b) => (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99))[0]
+                        : null;
+
+                      let todayText = 'No visit today';
+                      if (topApt) {
+                        switch (topApt.status) {
+                          case 'scheduled':
+                            todayText = 'Not checked in';
+                            break;
+                          case 'checked_in':
+                            todayText = 'Checked in';
+                            break;
+                          case 'in_consultation':
+                            todayText = 'In consultation';
+                            break;
+                          case 'completed':
+                            todayText = 'Completed';
+                            break;
+                          case 'cancelled':
+                            todayText = 'Cancelled';
+                            break;
+                          default:
+                            todayText = formatAppointmentStatus(topApt.status);
+                            break;
+                        }
+                      }
+
                       const isUnassigned = !assignedDocId;
                       const canTransfer = isUnassigned
                         ? isAdmin(currentUser)
                         : canTransferPatient(currentUser, pat.id, patientAssignments);
+
+                      const patientActions: RowActionItem[] = [];
+
+                      // 1. Admit to Desk (first, when shown: only when Checked in or In consultation)
+                      const canAdmitToday = Boolean(topApt && (topApt.status === 'checked_in' || topApt.status === 'in_consultation'));
+                      if (!isReadOnlyView && canAdmitToday && topApt) {
+                        patientActions.push({
+                          label: 'Admit to Desk',
+                          onClick: () => {
+                            setSelectedAppointmentId(topApt.id);
+                            setSelectedTab('overview');
+                          },
+                          ariaLabel: `Admit ${pat.firstName} ${pat.lastName} to desk`,
+                        });
+                      }
+
+                      // 2. Prescribe (second)
+                      if (!isReadOnlyView && canPrescribe(currentUser, pat.id, patientAssignments, modules)) {
+                        patientActions.push({
+                          label: 'Prescribe',
+                          onClick: () => handleOpenPrescriptionModal(pat.id),
+                          ariaLabel: `Prescribe for ${pat.firstName} ${pat.lastName}`,
+                        });
+                      }
+
+                      // 3. Transfer / Assign (third)
+                      if (canTransfer) {
+                        patientActions.push({
+                          label: isUnassigned ? 'Assign' : 'Transfer',
+                          onClick: () => handleOpenTransferModal(pat),
+                          ariaLabel: `${isUnassigned ? 'Assign' : 'Transfer'} ${pat.firstName} ${pat.lastName}`,
+                        });
+                      }
 
                       return (
                         <TableRow key={pat.id}>
@@ -1841,13 +1893,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           <TableCell label="MRN" className="w-28 whitespace-nowrap text-slate-700 dark:text-slate-300">
                             <TableTruncate>{pat.mrn}</TableTruncate>
                           </TableCell>
-                          <TableCell label="Demographics" hideBelow="md" className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300 capitalize">
+                          <TableCell label="Demographics" hideBelow="xl" className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300 capitalize">
                             {pat.age} yrs • {pat.gender}
+                          </TableCell>
+                          <TableCell label="Today" id={`today-pat-${pat.id}`} className="w-32 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">
+                            {todayText}
                           </TableCell>
                           <TableCell label="Phone" hideBelow="sm" className="w-36 whitespace-nowrap text-slate-700 dark:text-slate-300">
                             {pat.phone}
                           </TableCell>
-                          <TableCell label="Blood Group" hideBelow="md" className="w-24 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                          <TableCell label="Blood Group" hideBelow="xl" className="w-24 whitespace-nowrap text-slate-700 dark:text-slate-300">
                             {pat.bloodGroup}
                           </TableCell>
                           <TableCell label="Allergies" hideBelow="sm" className="w-1/6 min-w-[140px] text-slate-600 dark:text-slate-400 break-words">
@@ -1861,63 +1916,19 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               {assignedDoc ? assignedDoc.name : <span className="italic text-slate-400">Unassigned</span>}
                             </TableCell>
                           )}
-                          <TableCell isActions label="Actions" fullWidthOnStack className="w-44 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-2 flex-wrap sm:flex-nowrap">
-                              {canTransfer && (
-                                <Button
-                                  size="xs"
-                                  variant="outline"
-                                  className="whitespace-nowrap"
-                                  onClick={() => handleOpenTransferModal(pat)}
-                                  aria-label={`${isUnassigned ? 'Assign' : 'Transfer'} ${pat.firstName} ${pat.lastName}`}
-                                >
-                                  {isUnassigned ? 'Assign' : 'Transfer'}
-                                </Button>
-                              )}
-                              {!isReadOnlyView ? (
-                                <>
-                                  <div className="flex flex-col items-end gap-0.5">
-                                    <Button
-                                      size="xs"
-                                      variant="outline"
-                                      className="whitespace-nowrap"
-                                      disabled={!canAdmit}
-                                      onClick={() => {
-                                        if (activeApt && canAdmit) {
-                                          setSelectedAppointmentId(activeApt.id);
-                                          setSelectedTab('overview');
-                                        }
-                                      }}
-                                      aria-label={`Admit ${pat.firstName} ${pat.lastName} to desk`}
-                                    >
-                                      Admit to Desk
-                                    </Button>
-                                    {!canAdmit && admitTitle && (
-                                      <span className="text-[0.625rem] text-slate-500 dark:text-slate-400">
-                                        {admitTitle}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <Button
-                                    size="xs"
-                                    variant="outline"
-                                    className="whitespace-nowrap"
-                                    disabled={!canPrescribe(currentUser, pat.id, patientAssignments, modules)}
-                                    onClick={() => handleOpenPrescriptionModal(pat.id)}
-                                    aria-label={`Prescribe for ${pat.firstName} ${pat.lastName}`}
-                                  >
-                                    Prescribe
-                                  </Button>
-                                </>
-                              ) : null}
-                            </div>
+                          <TableCell isActions label="Actions" fullWidthOnStack className="w-48 text-right whitespace-nowrap">
+                            <RowActions
+                              actions={patientActions}
+                              subject={`${pat.firstName} ${pat.lastName}`}
+                              statusId={`today-pat-${pat.id}`}
+                            />
                           </TableCell>
                         </TableRow>
                       );
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={isAdmin(currentUser) ? 9 : 8} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                      <TableCell colSpan={isAdmin(currentUser) ? 10 : 9} className="py-8 text-center text-slate-500 dark:text-slate-400">
                         No patients found
                       </TableCell>
                     </TableRow>
@@ -2008,28 +2019,25 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           </span>
                         </TableCell>
                         <TableCell isActions label="Actions" fullWidthOnStack className="w-1/12 min-w-[100px] text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              className="whitespace-nowrap"
-                              onClick={() => setViewingPrescription(rx)}
-                              aria-label={`View prescription ${rx.prescriptionNumber}`}
-                            >
-                              View
-                            </Button>
-                            {canCancelPrescription(currentUser, rx, modules) && rx.status !== 'cancelled' && (
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                className="whitespace-nowrap"
-                                onClick={() => handleOpenCancelModal(rx)}
-                                aria-label={`Cancel prescription ${rx.prescriptionNumber}`}
-                              >
-                                Cancel
-                              </Button>
-                            )}
-                          </div>
+                          <RowActions
+                            actions={[
+                              {
+                                label: 'View',
+                                onClick: () => setViewingPrescription(rx),
+                                ariaLabel: `View prescription ${rx.prescriptionNumber} for ${rx.patientName}`,
+                              },
+                              ...(canCancelPrescription(currentUser, rx, modules) && rx.status !== 'cancelled'
+                                ? [
+                                    {
+                                      label: 'Cancel',
+                                      onClick: () => handleOpenCancelModal(rx),
+                                      ariaLabel: `Cancel prescription ${rx.prescriptionNumber} for ${rx.patientName}`,
+                                    },
+                                  ]
+                                : []),
+                            ]}
+                            subject={rx.patientName}
+                          />
                         </TableCell>
                       </TableRow>
                     ))

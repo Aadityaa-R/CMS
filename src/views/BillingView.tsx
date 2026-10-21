@@ -43,6 +43,7 @@ import {
   TableCell,
   TableTruncate,
 } from '@/components/ui/Table';
+import { RowActions } from '@/components/ui/RowActions';
 import { Printer } from 'lucide-react';
 
 export interface BillingViewProps {
@@ -651,24 +652,26 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                             </span>
                           </TableCell>
                           <TableCell isActions label="Actions" className="w-44 text-right">
-                            <div className="flex items-center justify-end space-x-2">
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                onClick={() => handleOpenViewInvoice(inv)}
-                              >
-                                View
-                              </Button>
-                              {canRecord && (
-                                <Button
-                                  size="xs"
-                                  variant="primary"
-                                  onClick={() => openRecordPaymentModal(inv)}
-                                >
-                                  Record Payment
-                                </Button>
-                              )}
-                            </div>
+                            <RowActions
+                              actions={[
+                                {
+                                  label: 'View',
+                                  onClick: () => handleOpenViewInvoice(inv),
+                                  ariaLabel: `View invoice ${inv.number}`,
+                                },
+                                ...(canRecord
+                                  ? [
+                                      {
+                                        label: 'Record Payment',
+                                        variant: 'primary' as const,
+                                        onClick: () => openRecordPaymentModal(inv),
+                                        ariaLabel: `Record payment for invoice ${inv.number}`,
+                                      },
+                                    ]
+                                  : []),
+                              ]}
+                              subject={inv.number}
+                            />
                           </TableCell>
                         </TableRow>
                       );
@@ -833,24 +836,25 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                             <TableTruncate>{receiver}</TableTruncate>
                           </TableCell>
                           <TableCell isActions label="Actions" className="w-40 text-right">
-                            <div className="flex items-center justify-end space-x-2">
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                onClick={() => handleOpenReceipt(p.id)}
-                              >
-                                View Receipt
-                              </Button>
-                              {canReverse && (
-                                <Button
-                                  size="xs"
-                                  variant="outline"
-                                  onClick={() => openReversalModal(p)}
-                                >
-                                  Reverse
-                                </Button>
-                              )}
-                            </div>
+                            <RowActions
+                              actions={[
+                                {
+                                  label: 'View Receipt',
+                                  onClick: () => handleOpenReceipt(p.id),
+                                  ariaLabel: `View receipt for ${p.receiptNumber}`,
+                                },
+                                ...(canReverse
+                                  ? [
+                                      {
+                                        label: 'Reverse',
+                                        onClick: () => openReversalModal(p),
+                                        ariaLabel: `Reverse payment ${p.receiptNumber}`,
+                                      },
+                                    ]
+                                  : []),
+                              ]}
+                              subject={p.receiptNumber}
+                            />
                           </TableCell>
                         </TableRow>
                       );

@@ -25,6 +25,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/Table';
+import { RowActions } from '@/components/ui/RowActions';
 import {
   formatDate,
   dayOfWeek,
@@ -644,13 +645,16 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                               </TableCell>
                               {canManage && (
                                 <TableCell isActions label="Actions" className="text-right">
-                                  <Button
-                                    size="xs"
-                                    variant="outline"
-                                    onClick={() => handleOpenCorrectRecord(rec)}
-                                  >
-                                    Correct
-                                  </Button>
+                                  <RowActions
+                                    actions={[
+                                      {
+                                        label: 'Correct',
+                                        onClick: () => handleOpenCorrectRecord(rec),
+                                        ariaLabel: `Correct attendance record for ${rec.date}`,
+                                      },
+                                    ]}
+                                    subject={`attendance record for ${rec.date}`}
+                                  />
                                 </TableCell>
                               )}
                             </TableRow>
@@ -731,13 +735,16 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                             </TableCell>
                             <TableCell isActions label="Actions" className="text-right">
                               {req.status === 'pending' && (
-                                <Button
-                                  size="xs"
-                                  variant="outline"
-                                  onClick={() => handleCancelLeave(req.id)}
-                                >
-                                  Cancel
-                                </Button>
+                                <RowActions
+                                  actions={[
+                                    {
+                                      label: 'Cancel',
+                                      onClick: () => handleCancelLeave(req.id),
+                                      ariaLabel: `Cancel leave request from ${req.fromDate} to ${req.toDate}`,
+                                    },
+                                  ]}
+                                  subject={`leave request from ${req.fromDate} to ${req.toDate}`}
+                                />
                               )}
                             </TableCell>
                           </TableRow>
@@ -877,31 +884,33 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                                   <TableCell label="Clock In">{formatTimeStr(rec?.clockIn || null)}</TableCell>
                                   <TableCell label="Clock Out">{formatTimeStr(rec?.clockOut || null)}</TableCell>
                                   <TableCell isActions label="Actions" className="text-right">
-                                    <div className="flex items-center justify-end gap-2 flex-wrap">
-                                      {!rec?.clockIn && (
-                                        <Button
-                                          size="xs"
-                                          variant="outline"
-                                          onClick={() =>
-                                            setQuickClockInTarget({
-                                              staffId: shift.staffId,
-                                              staffName: shift.staffName || shift.staffId,
-                                            })
-                                          }
-                                        >
-                                          Quick Clock In
-                                        </Button>
-                                      )}
-                                      {rec && (
-                                        <Button
-                                          size="xs"
-                                          variant="outline"
-                                          onClick={() => handleOpenCorrectRecord(rec)}
-                                        >
-                                          Correct
-                                        </Button>
-                                      )}
-                                    </div>
+                                    <RowActions
+                                      actions={[
+                                        ...(!rec?.clockIn
+                                          ? [
+                                              {
+                                                label: 'Quick Clock In',
+                                                onClick: () =>
+                                                  setQuickClockInTarget({
+                                                    staffId: shift.staffId,
+                                                    staffName: shift.staffName || shift.staffId,
+                                                  }),
+                                                ariaLabel: `Quick clock in for ${shift.staffName || shift.staffId}`,
+                                              },
+                                            ]
+                                          : []),
+                                        ...(rec
+                                          ? [
+                                              {
+                                                label: 'Correct',
+                                                onClick: () => handleOpenCorrectRecord(rec),
+                                                ariaLabel: `Correct attendance record for ${shift.staffName || shift.staffId}`,
+                                              },
+                                            ]
+                                          : []),
+                                      ]}
+                                      subject={shift.staffName || shift.staffId}
+                                    />
                                   </TableCell>
                                 </TableRow>
                               );
@@ -1138,31 +1147,27 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                                   </TableCell>
                                   <TableCell isActions label="Actions" className="text-right">
                                     {req.status === 'pending' && (
-                                      <div className="flex flex-col items-end gap-1">
-                                        <div className="flex items-center justify-end gap-2 flex-wrap">
-                                          <Button
-                                            size="xs"
-                                            variant="primary"
-                                            disabled={cannotDecideSelf}
-                                            onClick={() => handleApproveLeave(req)}
-                                          >
-                                            Approve
-                                          </Button>
-                                          <Button
-                                            size="xs"
-                                            variant="outline"
-                                            disabled={cannotDecideSelf}
-                                            onClick={() => handleOpenRejectModal(req)}
-                                          >
-                                            Reject
-                                          </Button>
-                                        </div>
-                                        {cannotDecideSelf && (
-                                          <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
-                                            Cannot decide own leave request
-                                          </span>
-                                        )}
-                                      </div>
+                                      <RowActions
+                                        actions={
+                                          !cannotDecideSelf
+                                            ? [
+                                                {
+                                                  label: 'Approve',
+                                                  variant: 'primary',
+                                                  onClick: () => handleApproveLeave(req),
+                                                  ariaLabel: `Approve leave request for ${req.staffName || req.staffId}`,
+                                                },
+                                                {
+                                                  label: 'Reject',
+                                                  variant: 'outline',
+                                                  onClick: () => handleOpenRejectModal(req),
+                                                  ariaLabel: `Reject leave request for ${req.staffName || req.staffId}`,
+                                                },
+                                              ]
+                                            : []
+                                        }
+                                        subject={`leave request for ${req.staffName || req.staffId}`}
+                                      />
                                     )}
                                   </TableCell>
                                 </TableRow>
@@ -1228,13 +1233,16 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                           <TableCell label="Shift End">{shift.end}</TableCell>
                           <TableCell label="Grace Period">{shift.graceMinutes} minutes</TableCell>
                           <TableCell isActions label="Actions" className="text-right">
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              onClick={() => handleOpenEditShift(shift)}
-                            >
-                              Edit Shift
-                            </Button>
+                            <RowActions
+                              actions={[
+                                {
+                                  label: 'Edit Shift',
+                                  onClick: () => handleOpenEditShift(shift),
+                                  ariaLabel: `Edit shift for ${shift.staffName || shift.staffId}`,
+                                },
+                              ]}
+                              subject={shift.staffName || shift.staffId}
+                            />
                           </TableCell>
                         </TableRow>
                       ))}

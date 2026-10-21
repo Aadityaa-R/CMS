@@ -14,6 +14,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/Table';
+import { RowActions } from '@/components/ui/RowActions';
 import { Plus, CheckCircle2 } from 'lucide-react';
 import { User } from '@/types';
 import { Medicine, DrugClass, MedicineForm } from '@/types/prescribing';
@@ -333,23 +334,22 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
                       <TableCell label="Status" className="w-1/12 min-w-[80px] text-slate-700 dark:text-slate-300">
                         {med.active ? 'Active' : 'Inactive'}
                       </TableCell>
-                      <TableCell label="Actions" className="w-1/12 min-w-[140px] text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={() => handleOpenEditModal(med)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={() => handleToggleStatus(med)}
-                          >
-                            {med.active ? 'Deactivate' : 'Activate'}
-                          </Button>
-                        </div>
+                      <TableCell isActions label="Actions" className="w-1/12 min-w-[140px] text-right whitespace-nowrap">
+                        <RowActions
+                          actions={[
+                            {
+                              label: 'Edit',
+                              onClick: () => handleOpenEditModal(med),
+                              ariaLabel: `Edit medicine ${med.genericName}`,
+                            },
+                            {
+                              label: med.active ? 'Deactivate' : 'Activate',
+                              onClick: () => handleToggleStatus(med),
+                              ariaLabel: `${med.active ? 'Deactivate' : 'Activate'} medicine ${med.genericName}`,
+                            },
+                          ]}
+                          subject={med.genericName}
+                        />
                       </TableCell>
                     </TableRow>
                   ))

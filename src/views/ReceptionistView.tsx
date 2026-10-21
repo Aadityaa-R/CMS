@@ -11,6 +11,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, ColumnDef } from '@/components/ui/Table';
+import { RowActions } from '@/components/ui/RowActions';
 import { Appointment, Patient, AccessAuditLogEntry } from '@/types';
 import { getScopedPatients, getScopedAppointments } from '@/lib/selectors';
 import { getAssignedDoctorId, hasCapability } from '@/lib/permissions';
@@ -753,24 +754,25 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       render: (apt) => {
         const isConcluded = apt.status === 'in_consultation' || apt.status === 'completed';
         return (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isConcluded}
-              onClick={() => handleCallNext(apt)}
-            >
-              Call Next
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isConcluded}
-              onClick={() => handleMarkCompleted(apt)}
-            >
-              Mark Completed
-            </Button>
-          </div>
+          <RowActions
+            actions={
+              !isConcluded
+                ? [
+                    {
+                      label: 'Call Next',
+                      onClick: () => handleCallNext(apt),
+                      ariaLabel: `Call next for ${apt.patientName}`,
+                    },
+                    {
+                      label: 'Mark Completed',
+                      onClick: () => handleMarkCompleted(apt),
+                      ariaLabel: `Mark ${apt.patientName} completed`,
+                    },
+                  ]
+                : []
+            }
+            subject={apt.patientName}
+          />
         );
       },
     },
@@ -827,19 +829,21 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         const canCheckInItem = isToday && isScheduled && isDocAvailable;
 
         return (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="primary"
-              disabled={!canCheckInItem}
-              onClick={() => handleCheckInBooked(apt)}
-            >
-              Check In
-            </Button>
-            {!isDocAvailable && isScheduled && isToday && (
-              <span className="text-xs text-slate-500 dark:text-slate-400">Doctor unavailable today</span>
-            )}
-          </div>
+          <RowActions
+            actions={
+              canCheckInItem
+                ? [
+                    {
+                      label: 'Check In',
+                      variant: 'primary',
+                      onClick: () => handleCheckInBooked(apt),
+                      ariaLabel: `Check in ${apt.patientName}`,
+                    },
+                  ]
+                : []
+            }
+            subject={apt.patientName}
+          />
         );
       },
     },
@@ -881,14 +885,21 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       header: 'Actions',
       isActions: true,
       render: (p) => (
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => handleOpenWalkInForPatient(p)}>
-            Check In
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => handleOpenBookingForPatient(p)}>
-            Book
-          </Button>
-        </div>
+        <RowActions
+          actions={[
+            {
+              label: 'Check In',
+              onClick: () => handleOpenWalkInForPatient(p),
+              ariaLabel: `Check in ${p.firstName} ${p.lastName}`,
+            },
+            {
+              label: 'Book',
+              onClick: () => handleOpenBookingForPatient(p),
+              ariaLabel: `Book appointment for ${p.firstName} ${p.lastName}`,
+            },
+          ]}
+          subject={`${p.firstName} ${p.lastName}`}
+        />
       ),
     },
   ];
@@ -983,34 +994,28 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           );
         }
         return (
-          <div className="flex flex-col items-start gap-1">
-            <div className="flex items-center gap-2">
-              <Button
-                size="xs"
-                variant="outline"
-                disabled={!canManageRegistration}
-                onClick={() => handleApproveClaim(claim)}
-              >
-                Approve
-              </Button>
-              <Button
-                size="xs"
-                variant="outline"
-                disabled={!canManageRegistration}
-                onClick={() => {
-                  setRejectClaimTarget(claim);
-                  setRejectClaimReason('');
-                }}
-              >
-                Reject
-              </Button>
-            </div>
-            {!canManageRegistration && (
-              <span className="text-[0.625rem] text-slate-500 dark:text-slate-400">
-                Requires registration access
-              </span>
-            )}
-          </div>
+          <RowActions
+            actions={
+              canManageRegistration
+                ? [
+                    {
+                      label: 'Approve',
+                      onClick: () => handleApproveClaim(claim),
+                      ariaLabel: `Approve claim for ${claim.accountName}`,
+                    },
+                    {
+                      label: 'Reject',
+                      onClick: () => {
+                        setRejectClaimTarget(claim);
+                        setRejectClaimReason('');
+                      },
+                      ariaLabel: `Reject claim for ${claim.accountName}`,
+                    },
+                  ]
+                : []
+            }
+            subject={claim.accountName}
+          />
         );
       },
     },

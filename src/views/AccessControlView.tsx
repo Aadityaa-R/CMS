@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTruncate } from '@/components/ui/Table';
+import { RowActions } from '@/components/ui/RowActions';
 import { Filter, ArrowLeft, X } from 'lucide-react';
 import { User, UserRole, StaffAccessRecord, StaffPermission, AccessModule, StandardCapability } from '@/types';
 import { PendingStaffApproval, INITIAL_PENDING_APPROVALS } from '@/data/mockData';
@@ -1485,28 +1486,29 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                     <TableCell label="Status" className="w-2/12 min-w-[100px] text-xs text-slate-700 dark:text-slate-300">
                                       {isRevokedStatus ? 'Revoked' : 'Active'}
                                     </TableCell>
-                                    <TableCell label="Actions" fullWidthOnStack className="w-2/12 min-w-[120px] text-right whitespace-nowrap">
-                                      <Button
-                                        size="xs"
-                                        variant="outline"
-                                        disabled={!removeCheck.allowed}
-                                        title={!removeCheck.allowed ? removeCheck.reason : undefined}
-                                        onClick={() => {
-                                          if (staff) {
-                                            setRemoveMemberTarget({
-                                              module: currentModule,
-                                              staff,
-                                            });
-                                          }
-                                        }}
-                                      >
-                                        Remove
-                                      </Button>
-                                      {!removeCheck.allowed && removeCheck.reason && (
-                                        <div className="text-[0.625rem] text-slate-500 mt-1">
-                                          {removeCheck.reason}
-                                        </div>
-                                      )}
+                                    <TableCell label="Actions" isActions fullWidthOnStack className="w-2/12 min-w-[120px] text-right whitespace-nowrap">
+                                      <RowActions
+                                        actions={
+                                          removeCheck.allowed
+                                            ? [
+                                                {
+                                                  label: 'Remove',
+                                                  variant: 'outline',
+                                                  onClick: () => {
+                                                    if (staff) {
+                                                      setRemoveMemberTarget({
+                                                        module: currentModule,
+                                                        staff,
+                                                      });
+                                                    }
+                                                  },
+                                                  ariaLabel: `Remove ${staffName} from ${currentModule.name}`,
+                                                },
+                                              ]
+                                            : []
+                                        }
+                                        subject={staffName}
+                                      />
                                     </TableCell>
                                   </TableRow>
                                 );
@@ -1606,16 +1608,19 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                               {mod.memberIds.length} {mod.memberIds.length === 1 ? 'member' : 'members'}
                             </TableCell>
                             <TableCell label="Actions" isActions fullWidthOnStack className="w-3/12 min-w-[160px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10">
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedModuleId(mod.id);
-                                  setModuleMembersPage(1);
-                                }}
-                              >
-                                Configure Role
-                              </Button>
+                              <RowActions
+                                actions={[
+                                  {
+                                    label: 'Configure Role',
+                                    onClick: () => {
+                                      setSelectedModuleId(mod.id);
+                                      setModuleMembersPage(1);
+                                    },
+                                    ariaLabel: `Configure role for ${mod.name}`,
+                                  },
+                                ]}
+                                subject={mod.name}
+                              />
                             </TableCell>
                           </TableRow>
                         ))
@@ -1870,26 +1875,26 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                       <TableCell label="Accesses" className="w-3/12 min-w-[120px] text-xs text-slate-700 dark:text-slate-300">
                                         {mod.accessIds.length} {mod.accessIds.length === 1 ? 'access' : 'accesses'}
                                       </TableCell>
-                                      <TableCell label="Actions" fullWidthOnStack className="w-3/12 min-w-[120px] text-right whitespace-nowrap">
-                                        <Button
-                                          size="xs"
-                                          variant="outline"
-                                          disabled={!removeCheck.allowed}
-                                          title={!removeCheck.allowed ? removeCheck.reason : undefined}
-                                          onClick={() =>
-                                            setConsoleConfirmRemoveModule({
-                                              moduleId: mod.id,
-                                              moduleName: mod.name,
-                                            })
+                                      <TableCell label="Actions" isActions fullWidthOnStack className="w-3/12 min-w-[120px] text-right whitespace-nowrap">
+                                        <RowActions
+                                          actions={
+                                            removeCheck.allowed
+                                              ? [
+                                                  {
+                                                    label: 'Remove',
+                                                    variant: 'outline',
+                                                    onClick: () =>
+                                                      setConsoleConfirmRemoveModule({
+                                                        moduleId: mod.id,
+                                                        moduleName: mod.name,
+                                                      }),
+                                                    ariaLabel: `Remove module ${mod.name}`,
+                                                  },
+                                                ]
+                                              : []
                                           }
-                                        >
-                                          Remove
-                                        </Button>
-                                        {!removeCheck.allowed && removeCheck.reason && (
-                                          <div className="text-[0.625rem] text-slate-500 mt-1">
-                                            {removeCheck.reason}
-                                          </div>
-                                        )}
+                                          subject={mod.name}
+                                        />
                                       </TableCell>
                                     </TableRow>
                                   );
@@ -2113,14 +2118,16 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                           {moduleNames}
                                         </TableCell>
                                         <TableCell label="Actions" isActions fullWidthOnStack className="w-2/12 min-w-[130px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10">
-                                          <Button
-                                            size="xs"
-                                            variant="outline"
-                                            aria-label={`Manage access for ${staff.staffName}`}
-                                            onClick={(e) => togglePersonSelection(staff.id, e.currentTarget)}
-                                          >
-                                            Manage Access
-                                          </Button>
+                                          <RowActions
+                                            actions={[
+                                              {
+                                                label: 'Manage Access',
+                                                onClick: (e) => togglePersonSelection(staff.id, e?.currentTarget as HTMLElement),
+                                                ariaLabel: `Manage access for ${staff.staffName}`,
+                                              },
+                                            ]}
+                                            subject={staff.staffName}
+                                          />
                                         </TableCell>
                                       </TableRow>
                                     );
@@ -2329,29 +2336,24 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                             </div>
                           </TableCell>
                           <TableCell label="Actions" isActions fullWidthOnStack className="w-2/12 min-w-[150px] text-right whitespace-nowrap sticky right-0 bg-white dark:bg-slate-900 z-10">
-                            <div className="flex flex-wrap items-center justify-end gap-2 [&_button]:min-h-[44px]">
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                className="min-w-[64px]"
-                                aria-label={`Approve ${req.staffName}`}
-                                onClick={() => setApproveTarget(req)}
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                className="min-w-[64px]"
-                                aria-label={`Reject ${req.staffName}`}
-                                onClick={() => {
-                                  setRejectTarget(req);
-                                  setRejectReason('');
-                                }}
-                              >
-                                Reject
-                              </Button>
-                            </div>
+                            <RowActions
+                              actions={[
+                                {
+                                  label: 'Approve',
+                                  onClick: () => setApproveTarget(req),
+                                  ariaLabel: `Approve ${req.staffName}`,
+                                },
+                                {
+                                  label: 'Reject',
+                                  onClick: () => {
+                                    setRejectTarget(req);
+                                    setRejectReason('');
+                                  },
+                                  ariaLabel: `Reject ${req.staffName}`,
+                                },
+                              ]}
+                              subject={req.staffName}
+                            />
                           </TableCell>
                         </TableRow>
                       ))
