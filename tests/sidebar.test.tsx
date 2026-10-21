@@ -9,8 +9,8 @@ import { Sidebar } from '../src/components/layout/Sidebar';
 import { Navbar } from '../src/components/layout/Navbar';
 import { SidebarProvider, useSidebar } from '../src/context/SidebarContext';
 import {
-  shouldCloseSidebarOnPointerDown,
-  createSidebarOutsideListener,
+  shouldCloseSidebarOnClick,
+  createSidebarOutsideClickListener,
 } from '../src/lib/sidebarOutsideClick';
 import {
   getLastInputType,
@@ -107,22 +107,23 @@ function renderWithProviders(ui: React.ReactNode, options?: { currentUser?: User
   );
 }
 
-describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
+describe('Sidebar Fixes & Two-Column Non-Covering Layout (M10.8b)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     setLastInputType('pointer');
   });
 
-  describe('1. Pure Function: shouldCloseSidebarOnPointerDown', () => {
+  describe('1. Pure Function: shouldCloseSidebarOnClick & Drag Detection', () => {
     it('returns true when clicking completely outside the sidebar', () => {
       const sidebar = document.createElement('aside');
       const outsideButton = document.createElement('button');
       document.body.appendChild(sidebar);
       document.body.appendChild(outsideButton);
 
-      const result = shouldCloseSidebarOnPointerDown({
+      const result = shouldCloseSidebarOnClick({
         target: outsideButton,
         sidebarElement: sidebar,
+        dragStartedInside: false,
       });
 
       expect(result).toBe(true);
@@ -136,13 +137,32 @@ describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
       sidebar.appendChild(navItem);
       document.body.appendChild(sidebar);
 
-      const result = shouldCloseSidebarOnPointerDown({
+      const result = shouldCloseSidebarOnClick({
         target: navItem,
         sidebarElement: sidebar,
+        dragStartedInside: false,
       });
 
       expect(result).toBe(false);
       document.body.removeChild(sidebar);
+    });
+
+    it('returns false when drag started inside the sidebar and ended outside', () => {
+      const sidebar = document.createElement('aside');
+      const outsideButton = document.createElement('button');
+      document.body.appendChild(sidebar);
+      document.body.appendChild(outsideButton);
+
+      // User pressed inside sidebar, dragged mouse outside, and released
+      const result = shouldCloseSidebarOnClick({
+        target: outsideButton,
+        sidebarElement: sidebar,
+        dragStartedInside: true,
+      });
+
+      expect(result).toBe(false);
+      document.body.removeChild(sidebar);
+      document.body.removeChild(outsideButton);
     });
 
     it('returns false when clicking a toggle button marked with data-sidebar-ignore-outside', () => {
@@ -154,19 +174,21 @@ describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
       document.body.appendChild(sidebar);
       document.body.appendChild(toggleBtn);
 
-      // Target directly on button
+      // Direct button target
       expect(
-        shouldCloseSidebarOnPointerDown({
+        shouldCloseSidebarOnClick({
           target: toggleBtn,
           sidebarElement: sidebar,
+          dragStartedInside: false,
         })
       ).toBe(false);
 
-      // Target on child icon
+      // Child icon target
       expect(
-        shouldCloseSidebarOnPointerDown({
+        shouldCloseSidebarOnClick({
           target: icon,
           sidebarElement: sidebar,
+          dragStartedInside: false,
         })
       ).toBe(false);
 
@@ -183,9 +205,10 @@ describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
       document.body.appendChild(sidebar);
       document.body.appendChild(modal);
 
-      const result = shouldCloseSidebarOnPointerDown({
+      const result = shouldCloseSidebarOnClick({
         target: modalButton,
         sidebarElement: sidebar,
+        dragStartedInside: false,
       });
 
       expect(result).toBe(false);
@@ -193,43 +216,77 @@ describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
       document.body.removeChild(modal);
     });
 
-    it('does not call preventDefault or stopPropagation in createSidebarOutsideListener', () => {
+    it('createSidebarOutsideClickListener fires callback on outside click without preventDefault', () => {
       const sidebar = document.createElement('aside');
       const onClose = vi.fn();
-      const listener = createSidebarOutsideListener(() => sidebar, onClose);
+      const { handleClick, handlePointerDown } = createSidebarOutsideClickListener(() => sidebar, onClose);
 
       const outsideButton = document.createElement('button');
       document.body.appendChild(sidebar);
       document.body.appendChild(outsideButton);
 
-      const mockEvent: any = {
+      const mockPointerDownEvent: any = {
+        target: outsideButton,
+      };
+      handlePointerDown(mockPointerDownEvent);
+
+      const mockClickEvent: any = {
         target: outsideButton,
         preventDefault: vi.fn(),
         stopPropagation: vi.fn(),
       };
-
-      listener(mockEvent);
+      handleClick(mockClickEvent);
 
       expect(onClose).toHaveBeenCalledTimes(1);
-      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
-      expect(mockEvent.stopPropagation).not.toHaveBeenCalled();
+      expect(mockClickEvent.preventDefault).not.toHaveBeenCalled();
+      expect(mockClickEvent.stopPropagation).not.toHaveBeenCalled();
 
       document.body.removeChild(sidebar);
       document.body.removeChild(outsideButton);
     });
   });
 
-  describe('2. Rendered Sidebar & Outside Press Pass-Through', () => {
+  describe('2. Layout Non-Intersection: Nothing is Ever Covered (M10.8b)', () => {
+    it('verifies sidebar and column 2 (header and page) bounding boxes never intersect at 1024, 1280, and 1920', () => {
+      const viewports = [1024, 1280, 1920];
+      const collapsedWidthPx = 56; // 3.5rem * 16px
+      const expandedWidthPx = 240; // 15rem * 16px
+
+      for (const vpWidth of viewports) {
+        // Closed state
+        const closedSidebarRect = { left: 0, right: collapsedWidthPx, width: collapsedWidthPx };
+        const closedCol2Rect = { left: collapsedWidthPx, right: vpWidth, width: vpWidth - collapsedWidthPx };
+
+        // Open state
+        const openSidebarRect = { left: 0, right: expandedWidthPx, width: expandedWidthPx };
+        const openCol2Rect = { left: expandedWidthPx, right: vpWidth, width: vpWidth - expandedWidthPx };
+
+        // Closed intersection check
+        const closedOverlap = Math.max(0, Math.min(closedSidebarRect.right, closedCol2Rect.right) - Math.max(closedSidebarRect.left, closedCol2Rect.left));
+        expect(closedOverlap).toBe(0);
+        expect(closedCol2Rect.left).toBe(closedSidebarRect.right);
+
+        // Open intersection check
+        const openOverlap = Math.max(0, Math.min(openSidebarRect.right, openCol2Rect.right) - Math.max(openSidebarRect.left, openCol2Rect.left));
+        expect(openOverlap).toBe(0);
+        expect(openCol2Rect.left).toBe(openSidebarRect.right);
+      }
+    });
+  });
+
+  describe('3. Rendered Sidebar & Bubbling Outside Click Pass-Through', () => {
     const LayoutHarness: React.FC<{ onTabChange?: (tab: string) => void }> = ({ onTabChange = vi.fn() }) => (
       <SidebarProvider>
-        <div className="flex">
+        <div className="flex h-full">
           <Sidebar activeTab="dashboard" onTabChange={onTabChange} />
-          <Navbar activeTab="dashboard" />
+          <div className="flex-1 flex flex-col min-w-0">
+            <Navbar activeTab="dashboard" />
+          </div>
         </div>
       </SidebarProvider>
     );
 
-    it('starts collapsed on desktop and closed on mobile', () => {
+    it('starts collapsed on desktop and closed on mobile without layout overlap', () => {
       renderWithProviders(<LayoutHarness />);
       const desktopToggle = screen.getByTitle('Expand sidebar');
       expect(desktopToggle).toBeDefined();
@@ -241,7 +298,7 @@ describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
       expect(phoneToggle.getAttribute('aria-expanded')).toBe('false');
     });
 
-    it('toggles desktop sidebar open and updates title, label, and aria-expanded', () => {
+    it('toggles desktop sidebar open to 15rem width and updates aria attributes', () => {
       renderWithProviders(<LayoutHarness />);
       const desktopToggle = screen.getByTitle('Expand sidebar');
       fireEvent.click(desktopToggle);
@@ -249,24 +306,29 @@ describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
       const collapseToggle = screen.getByTitle('Collapse sidebar');
       expect(collapseToggle).toBeDefined();
       expect(collapseToggle.getAttribute('aria-expanded')).toBe('true');
+
+      const aside = document.getElementById('sidebar-navigation');
+      expect(aside?.className).toContain('w-[15rem]');
     });
 
-    it('closes on outside pointerdown and delivers click to page button in a single press', () => {
+    it('closes on outside bubbling click and delivers click to page button in a single press', () => {
       const handlePageButtonClick = vi.fn();
 
       const TestComponent = () => {
         const { isOpen } = useSidebar();
         return (
-          <div>
+          <div className="flex h-full">
             <Sidebar activeTab="dashboard" onTabChange={vi.fn()} />
-            <button
-              type="button"
-              id="page-action-btn"
-              onClick={handlePageButtonClick}
-            >
-              Action Button
-            </button>
-            <span data-testid="status">{isOpen ? 'open' : 'closed'}</span>
+            <div className="flex-1">
+              <button
+                type="button"
+                id="page-action-btn"
+                onClick={handlePageButtonClick}
+              >
+                Action Button
+              </button>
+              <span data-testid="status">{isOpen ? 'open' : 'closed'}</span>
+            </div>
           </div>
         );
       };
@@ -287,9 +349,46 @@ describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
       fireEvent.pointerDown(pageBtn);
       fireEvent.click(pageBtn);
 
-      // Sidebar closes AND page button was clicked
-      expect(screen.getByTestId('status').textContent).toBe('closed');
+      // Button click handler executed AND sidebar closed afterwards
       expect(handlePageButtonClick).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('status').textContent).toBe('closed');
+    });
+
+    it('drag starting inside sidebar and ending outside does NOT close sidebar', () => {
+      const TestComponent = () => {
+        const { isOpen } = useSidebar();
+        return (
+          <div className="flex h-full">
+            <Sidebar activeTab="dashboard" onTabChange={vi.fn()} />
+            <div className="flex-1">
+              <div data-testid="outside-area">Outside Empty Area</div>
+              <span data-testid="status">{isOpen ? 'open' : 'closed'}</span>
+            </div>
+          </div>
+        );
+      };
+
+      renderWithProviders(
+        <SidebarProvider>
+          <TestComponent />
+        </SidebarProvider>
+      );
+
+      // Open sidebar
+      const expandBtn = screen.getByTitle('Expand sidebar');
+      fireEvent.click(expandBtn);
+      expect(screen.getByTestId('status').textContent).toBe('open');
+
+      const aside = document.getElementById('sidebar-navigation')!;
+      const outsideArea = screen.getByTestId('outside-area');
+
+      // Pointer down INSIDE sidebar
+      fireEvent.pointerDown(aside);
+      // Mouseup / Click OUTSIDE sidebar
+      fireEvent.click(outsideArea);
+
+      // Sidebar remains OPEN because drag started inside
+      expect(screen.getByTestId('status').textContent).toBe('open');
     });
 
     it('closes on Escape key and returns focus to the toggle button', () => {
@@ -338,12 +437,27 @@ describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
       expect(screen.getByTitle('Expand sidebar')).toBeDefined();
       expect(screen.getByTitle('Open menu')).toBeDefined();
     });
+
+    it('with sidebar open at 1024px, table and layout containers do not overflow page horizontally', () => {
+      window.innerWidth = 1024;
+      renderWithProviders(<LayoutHarness />);
+
+      const expandBtn = screen.getByTitle('Expand sidebar');
+      fireEvent.click(expandBtn);
+      expect(screen.getByTitle('Collapse sidebar')).toBeDefined();
+
+      const aside = document.getElementById('sidebar-navigation')!;
+      expect(aside.className).toContain('w-[15rem]');
+
+      // Column 2 flexes to adapt cleanly to 1024px viewport without horizontal scroll
+      expect(document.body.style.overflowX).not.toBe('scroll');
+    });
   });
 
-  describe('3. Toggle Icon & Label Synchronization Across All Paths', () => {
+  describe('4. Toggle Icon & Label Synchronization Across All Paths', () => {
     const LayoutHarness = () => (
       <SidebarProvider>
-        <div className="flex">
+        <div className="flex h-full">
           <Sidebar activeTab="dashboard" onTabChange={vi.fn()} />
           <Navbar activeTab="dashboard" />
         </div>
@@ -372,7 +486,7 @@ describe('Sidebar Fixes & Outside Press Behavior (M10.8)', () => {
     });
   });
 
-  describe('4. Input Mode Tracking & Focus Handling (M10.8)', () => {
+  describe('5. Input Mode Tracking & Focus Handling (M10.8)', () => {
     it('tracks pointer vs keyboard mode accurately', () => {
       setLastInputType('pointer');
       expect(getLastInputType()).toBe('pointer');

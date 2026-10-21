@@ -1,22 +1,30 @@
 /**
- * Sidebar Outside Press Logic (M10.8)
+ * Sidebar Outside Click Logic (M10.8b)
  *
- * Pure function and event listener factory to handle closing the sidebar
- * on outside pointer presses without obstructing underlying clicks.
+ * Bubbling click listener and drag-detection logic to close the sidebar
+ * when clicking outside, ensuring underlying element click handlers run first
+ * and drags starting inside the sidebar do not trigger a close.
  */
 
 export interface ShouldCloseSidebarOptions {
   target: EventTarget | null;
   sidebarElement: HTMLElement | null;
+  dragStartedInside?: boolean;
 }
 
 /**
- * Determines whether a pointer down event outside the sidebar should trigger close.
+ * Determines whether a bubbling click event outside the sidebar should trigger close.
  */
-export function shouldCloseSidebarOnPointerDown({
+export function shouldCloseSidebarOnClick({
   target,
   sidebarElement,
+  dragStartedInside = false,
 }: ShouldCloseSidebarOptions): boolean {
+  // A press that started inside the sidebar and ended outside (drag) does not close it
+  if (dragStartedInside) {
+    return false;
+  }
+
   if (!target || !(target instanceof Node)) {
     return false;
   }
@@ -26,17 +34,17 @@ export function shouldCloseSidebarOnPointerDown({
     return false;
   }
 
-  // 1. Do not close if the press is inside the sidebar element
+  // 1. Do not close if the click is inside the sidebar element
   if (sidebarElement && (sidebarElement === element || sidebarElement.contains(element))) {
     return false;
   }
 
-  // 2. Do not close if the press is on a toggle button marked with data-sidebar-ignore-outside
+  // 2. Do not close if the click is on a toggle button marked with data-sidebar-ignore-outside
   if (element.closest('[data-sidebar-ignore-outside]')) {
     return false;
   }
 
-  // 3. Do not close if the press is inside a Modal or higher dialog overlay
+  // 3. Do not close if the click is inside a Modal or higher dialog overlay
   if (element.closest('[role="dialog"], [data-modal]')) {
     return false;
   }
@@ -45,18 +53,40 @@ export function shouldCloseSidebarOnPointerDown({
 }
 
 /**
- * Factory for creating the capturing pointerdown event listener.
- * Does NOT call preventDefault() or stopPropagation(), ensuring the click
- * that closes the sidebar also activates the element under the pointer.
+ * Factory for creating the outside click listener pair:
+ * - handlePointerDown: tracks if press started inside the sidebar (preventing drag-dismissal).
+ * - handleClick: bubbling click listener that closes sidebar without preventing default or stopping propagation.
  */
-export function createSidebarOutsideListener(
+export function createSidebarOutsideClickListener(
   getSidebarElement: () => HTMLElement | null,
   onClose: () => void
-): (e: PointerEvent | MouseEvent) => void {
-  return (e: PointerEvent | MouseEvent) => {
-    if (shouldCloseSidebarOnPointerDown({ target: e.target, sidebarElement: getSidebarElement() })) {
+): {
+  handleClick: (e: MouseEvent) => void;
+  handlePointerDown: (e: PointerEvent | MouseEvent) => void;
+} {
+  let dragStartedInside = false;
+
+  const handlePointerDown = (e: PointerEvent | MouseEvent) => {
+    const sidebar = getSidebarElement();
+    const target = e.target as HTMLElement | null;
+    dragStartedInside = !!(sidebar && target && (sidebar === target || sidebar.contains(target)));
+  };
+
+  const handleClick = (e: MouseEvent) => {
+    const shouldClose = shouldCloseSidebarOnClick({
+      target: e.target,
+      sidebarElement: getSidebarElement(),
+      dragStartedInside,
+    });
+    // Reset drag tracking after click
+    dragStartedInside = false;
+
+    if (shouldClose) {
       onClose();
+      // NOTE: Do NOT call preventDefault() or stopPropagation()!
+      // In bubbling phase, the clicked element's onClick has already fired.
     }
   };
-}
 
+  return { handleClick, handlePointerDown };
+}

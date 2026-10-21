@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/ClinicContext';
 import { useSidebar } from '@/context/SidebarContext';
-import { shouldCloseSidebarOnPointerDown } from '@/lib/sidebarOutsideClick';
+import { shouldCloseSidebarOnClick } from '@/lib/sidebarOutsideClick';
 import { hasCapability, canViewBilling } from '@/lib/permissions';
 import {
   LayoutDashboard,
@@ -16,6 +16,7 @@ import {
   Clock,
   FileText,
   Calendar,
+  X,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -74,23 +75,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
   }, []);
 
-  // Capturing pointerdown listener outside the sidebar
+  // Bubbling click listener outside the sidebar with drag detection (M10.8b)
   useEffect(() => {
     if (!isOpen) return;
 
+    let dragStartedInside = false;
+
     const handlePointerDown = (e: Event) => {
-      if (shouldCloseSidebarOnPointerDown({ target: e.target, sidebarElement: asideRef.current })) {
+      const sidebar = asideRef.current;
+      const target = e.target as HTMLElement | null;
+      dragStartedInside = !!(sidebar && target && (sidebar === target || sidebar.contains(target)));
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      const shouldClose = shouldCloseSidebarOnClick({
+        target: e.target,
+        sidebarElement: asideRef.current,
+        dragStartedInside,
+      });
+      dragStartedInside = false;
+
+      if (shouldClose) {
         close();
-        // Do NOT stop propagation or prevent default on desktop,
-        // so elements under the pointer receive the click immediately.
+        // Do NOT call preventDefault() or stopPropagation()!
+        // In bubbling phase, the clicked element's onClick has already fired.
       }
     };
 
     document.addEventListener('pointerdown', handlePointerDown, true);
     document.addEventListener('mousedown', handlePointerDown, true);
+    document.addEventListener('click', handleClick, false);
+
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown, true);
       document.removeEventListener('mousedown', handlePointerDown, true);
+      document.removeEventListener('click', handleClick, false);
     };
   }, [isOpen, close]);
 
@@ -168,25 +187,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      {/* Desktop rail placeholder keeping exact 3.5rem (w-14) in the page layout without shift */}
-      <div className="hidden lg:block w-14 shrink-0 h-full border-r border-slate-800 bg-slate-900" aria-hidden="true" />
-
-      {/* Sidebar container */}
+      {/* Two-Column Shell Sidebar container: static on desktop (3.5rem collapsed, 15rem expanded), drawer on mobile */}
       <aside
         id="sidebar-navigation"
         ref={asideRef}
         aria-label="Sidebar Navigation"
         inert={!isOpen && isMobile ? '' : undefined}
         aria-hidden={!isOpen && isMobile ? 'true' : undefined}
-        className={`fixed top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col overflow-hidden shrink-0 select-none h-full border-r border-slate-800 ${
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col overflow-hidden shrink-0 select-none h-full border-r border-slate-800 ${
           isOpen
-            ? 'w-64 translate-x-0 shadow-2xl'
-            : 'w-64 -translate-x-full lg:translate-x-0 lg:w-14'
+            ? 'w-[15rem] lg:w-[15rem] translate-x-0 shadow-2xl lg:shadow-none'
+            : 'w-64 -translate-x-full lg:translate-x-0 lg:w-[3.5rem]'
         }`}
       >
         {/* Brand / Role header & Single Console Toggle Control */}
         <div className="pt-3 pb-1 px-1.5 flex items-center justify-between shrink-0">
-          <div className="flex items-center min-w-0">
+          <div className="flex items-center min-w-0 flex-1">
             {/* Sidebar Toggle Button with 44px minimum touch target */}
             <button
               ref={toggleButtonRef}
@@ -228,6 +244,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Close button inside drawer on mobile (M10.8b) */}
+          <button
+            type="button"
+            data-sidebar-ignore-outside="true"
+            onClick={close}
+            className="w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 shrink-0"
+            title="Close drawer"
+            aria-label="Close drawer"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation list */}

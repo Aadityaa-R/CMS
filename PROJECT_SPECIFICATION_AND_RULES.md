@@ -852,10 +852,10 @@ Executes the comprehensive release gate:
 - **Initial Load State**: Starts collapsed (`3.5rem` / `w-14` rail) on desktop and closed on phones on every application load. Never persisted across sessions or reloads.
 - **Breakpoint Crossing Reset**: Crossing the 1024px boundary (`min-width: 1024px`) via window resize, orientation change, or display scaling immediately resets `isOpen` to `false`. This guarantees that desktop and mobile layouts and toggle icons never disagree.
 
-### 18.2 Outside Pointerdown Capturing Listener & Pass-Through
-- **Capturing Listener**: When open, a capturing `pointerdown` listener on `document` listens for clicks outside the sidebar (`src/lib/sidebarOutsideClick.ts`). Removed immediately on close or unmount.
-- **Desktop One-Click Pass-Through**: The listener does not call `preventDefault()` or `stopPropagation()`. A click on a button on the page while the sidebar is open closes the sidebar AND triggers the underlying button on that exact click without requiring a second click.
-- **Phone / Tablet Overlay**: Below 1024px, a dimmed backdrop (`z-30`) catches outside pointer presses, dismissing the drawer and preventing activation of elements beneath it.
+### 18.2 Outside Click Listener & Element Activation (M10.8b Amendment)
+- **Bubbling Click Listener**: When open, a bubbling `click` listener on `document` listens for clicks outside the sidebar (`src/lib/sidebarOutsideClick.ts`). Removed immediately on close or unmount.
+- **Underlying Action Runs First**: Because the click listener operates in the bubbling phase, the clicked element's `onClick` handler fires first. The sidebar closes and the layout moves only afterwards.
+- **Drag Detection**: Tracks pointerdown origin; a press that starts inside the sidebar and ends outside (a drag) does not close the sidebar.
 - **Ignore Outside Press Elements**:
   - Clicks inside the sidebar itself (`asideRef`).
   - Clicks on toggle buttons marked with `data-sidebar-ignore-outside="true"` (preventing close-then-reopen loops).
@@ -865,11 +865,14 @@ Executes the comprehensive release gate:
   - Selecting any navigation item activates the route and closes the sidebar.
   - Tabbing through interactive elements with the keyboard does NOT close the sidebar.
 
-### 18.3 Zero Layout Shift & Floating Desktop Rail
-- **Layout Invariance**: The collapsed rail maintains an exact 3.5rem (`w-14`) width in the page layout at all times (`hidden lg:block w-14 shrink-0 h-full`).
-- **Floating Expanded Sidebar**: When opened on desktop, the expanded sidebar (`w-64`) is positioned at `z-40`, floating directly over page content. Expanding or collapsing the sidebar never reflows or shifts adjacent page content, cards, or tables.
+### 18.3 Two-Column Shell Layout: Nothing is Ever Covered (M10.8b Amendment)
+- **Two-Column Shell**: A clean two-column flex layout where Column 1 is the sidebar at its current width (`3.5rem` / `56px` collapsed, `15rem` / `240px` expanded), and Column 2 contains the header and page content together (`flex-1 min-w-0`).
+- **Zero Viewport Overlap**: At widths of 1024px and up, no part of the header (clinic logo, clinic name, notification bell, user menu) or page content overlaps the sidebar rectangle, whether the sidebar is open or closed. Expanding or collapsing changes Column 1's width and Column 2 moves synchronously with it.
+- **No Spacer Elements**: Zero spacer elements and zero fixed headers positioned from the viewport left edge.
+- **Responsive Width Adaptation**: The page content and tables adapt dynamically to the narrower column width via container `ResizeObserver`, ensuring zero horizontal page scroll at 1024px and wider.
+- **Mobile Drawer (< 1024px)**: The drawer slides over the page at `z-40` with the dimmed backdrop (`z-30`). A dedicated close button (`X`) is located inside the drawer header (`title="Close drawer"`), ensuring it is never covered or hidden.
 - **Modals Higher Z-Index**: Modals reside at `z-50`, strictly above the sidebar (`z-40`) and mobile backdrop (`z-30`).
-- **Off-Screen Inertness**: When closed on mobile, the drawer is styled with `inert="true"` and `aria-hidden="true"`, ensuring off-screen drawer items cannot receive focus or be announced by screen readers.
+- **Off-Screen Inertness**: When closed on mobile, the drawer is styled with `inert=""` and `aria-hidden="true"`, ensuring off-screen drawer items cannot receive focus or be announced by screen readers.
 
 ### 18.4 Synchronized Toggle Controls & ARIA Attributes
 - **Desktop Rail Toggle**:

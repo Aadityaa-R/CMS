@@ -5,6 +5,11 @@ All notable changes to the Beacon Health Clinic Management System will be docume
 ## [Unreleased] - 2026-10-21
 
 ### Added
+- Sidebar Layout Non-Covering Two-Column Shell & Bubbling Click Dismissal (M10.8b):
+  - Amended M10.8 sections 2 and 5 to establish a true two-column shell where Column 1 is the sidebar (3.5rem collapsed, 15rem expanded) and Column 2 contains the header and page content together.
+  - Eliminated desktop spacer elements and fixed viewport positioning on desktop; expanding Column 1 moves Column 2 synchronously so nothing in the header or page is ever covered.
+  - Replaced capturing pointerdown with a bubbling click outside listener with drag detection, guaranteeing underlying button handlers fire first before sidebar closes.
+  - Added dedicated close button (X) inside the mobile drawer header to ensure it is never covered or hidden.
 - Sidebar State, Outside Press, and Stray Focus Bar Elimination (M10.8):
   - Created single source of truth `SidebarProvider` (`src/context/SidebarContext.tsx`) shared across desktop rail, phone header button, and backdrop overlay.
   - Reset sidebar state to closed automatically upon crossing the 1024px breakpoint via resize and orientation listeners.
