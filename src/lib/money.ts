@@ -9,6 +9,11 @@
  */
 
 /**
+ * Configured currency symbol for the application.
+ */
+export const CURRENCY_SYMBOL = '₹';
+
+/**
  * Formats an amount in integer minor units (paisa/cents) into a standard Indian Rupee currency string.
  * Examples:
  * - 12000 -> "₹120.00"
@@ -18,7 +23,7 @@
  */
 export function formatCurrency(cents: number): string {
   if (cents === null || cents === undefined || isNaN(cents)) {
-    return '₹0.00';
+    return `${CURRENCY_SYMBOL}0.00`;
   }
   const isNegative = cents < 0;
   const absCents = Math.round(Math.abs(cents));
@@ -28,7 +33,7 @@ export function formatCurrency(cents: number): string {
   const rupeesFormatted = rupees.toLocaleString('en-IN');
   const remainderFormatted = String(remainder).padStart(2, '0');
 
-  const formatted = `₹${rupeesFormatted}.${remainderFormatted}`;
+  const formatted = `${CURRENCY_SYMBOL}${rupeesFormatted}.${remainderFormatted}`;
   return isNegative ? `-${formatted}` : formatted;
 }
 

@@ -26,6 +26,7 @@ import {
 } from '@/lib/permissions';
 import { getRepository } from '@/data/storage';
 import { Account } from '@/types/storage';
+import { CURRENCY_SYMBOL } from '@/lib/money';
 import { DataManagementTab } from './DataManagementTab';
 import { FormularyTab } from './FormularyTab';
 
@@ -2242,7 +2243,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                       onChange={(e) => setAddFormSpecialization(e.target.value)}
                     />
                     <Input
-                      label="Consultation Fee (₹)"
+                      label={`Consultation Fee (${CURRENCY_SYMBOL})`}
                       type="number"
                       placeholder="120"
                       value={addFormFee}
@@ -2681,7 +2682,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 onChange={(e) => setAddFormSpecialization(e.target.value)}
               />
               <Input
-                label="Consultation Fee (₹)"
+                label={`Consultation Fee (${CURRENCY_SYMBOL})`}
                 type="number"
                 placeholder="120"
                 value={addFormFee}

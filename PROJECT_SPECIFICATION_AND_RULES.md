@@ -64,6 +64,7 @@ Every feature, component, test, and line of code in this project strictly obeys 
 
 | Commit Hash | Commit Message / Feature Description | User Intent & Key Actions |
 | :--- | :--- | :--- |
+| (M10.2) | `feat(ui): make Book Appointment prominent on patient portal and refine dashboard actions (M10.2)` | Positioned Book Appointment directly under page title above summary cards as the only primary button on the page (min-h-[3.5rem], px-8, text-lg font-semibold, full-width below 640px); focus returns to button upon closing modal; disabled with plain helper text for unlinked patient or active booking limit (MAX_ACTIVE_BOOKINGS=2); outline Pay Balance button opens Pay Now modal for oldest unpaid invoice when balance > 0; removed old counts row; partitioned Upcoming (today or later and open) and Past (closed or past open with "Not concluded" status); unified single currency symbol CURRENCY_SYMBOL = '₹' across all screens via formatCurrency. |
 | (M10.1) | `feat(ui): implement shared profile page and accessible user menu navigation (M10.1)` | Implemented single shared My Profile page at /profile for all roles; accessible WAI-ARIA role="menu" with full keyboard navigation (arrows, Home/End, Escape, Tab); streamlined Patient Portal tabs removing Profile tab; role-specific profile layout (2 cards desktop, 1 column mobile) with staff read-only metadata and patient contact fields; dirty tracking with unsaved changes guard modal; current password verification on email change; 44px password show/hide toggles; constant-derived policy text; zero password data in ledger entries. |
 | (M9.6) | `feat(motion): implement login and sign-up screen motion, ECG background, and test suite (M9.6)` | Implemented deliberate exception for sign-in and sign-up screens: motion tokens (loginMotion.css/ts), staggered entrance sequence (<=700ms), 200ms view crossfade, decorative EcgBackground heartbeat wipe with tab visibility pausing, show-password toggle crossfade (150ms), credentials accordion (250ms), button pressed state scale(0.98), failed sign-in card shake (350ms) with polite live region, success exit transition (250ms), prefers-reduced-motion fallback, and updated footer text warning. Added tests/loginMotion.test.tsx (6 tests). |
 | `b068382` | `docs(qa): complete final walkthrough inspection matrix (M10 Section 11)` | Performed exhaustive walkthrough across all 8 personas, 8 workstations, modals, forms, filters, and viewports. Published full 72-checkpoint audit matrix in docs/FINAL_CHECK.md. Extended tests/tabsAudit.test.tsx with additional persona checks. |
@@ -592,4 +593,52 @@ Executes the comprehensive release gate:
   - Contact details updates record `profile_updated` in the security ledger (`AccessAuditLogEntry`).
   - Password changes record `password_changed` in the security ledger.
   - Ledger entries strictly exclude raw or hashed passwords and sensitive credential secrets.
+
+## 13. Patient Portal Prominent Book Appointment and Dashboard Refinement (M10.2)
+
+### 13.1 Prominent Book Appointment Action
+- **Position & Hierarchy**:
+  - Located directly under the page heading (`#portal-heading`) and immediately above the summary metric cards.
+  - Left-aligned on desktop screens (`sm:w-auto`), expanding to full container width on viewports under 640px (`w-full`).
+  - Visible without scrolling at 360x800 and 1920x1080 across light and dark themes with minimum 4.5:1 text contrast.
+  - First interactive control in `#main-content` document tab order.
+  - Designated as the single filled (primary) button on the patient portal dashboard.
+- **Button Styling Tokens**:
+  - Minimum height: `3.5rem` (`56px`, strictly >= 44px touch target).
+  - Horizontal padding: `2rem` (`px-8`).
+  - Font size: `1.125rem` (`text-lg`), `font-semibold`.
+  - Static keyboard-only outline ring; zero icons, zero hover scale or motion effects.
+- **Modal Lifecycle & Focus Retention**:
+  - Activating the button opens the Book Consultation modal.
+  - Dismissing the modal (via Cancel button, Escape key, or submission completion) returns focus directly to the Book Appointment trigger button.
+- **Disabled State & Plain Helper Text**:
+  - When booking is unavailable, the button remains visible in a disabled state (`disabled={true}`) with plain muted helper text:
+    - **Unlinked Patient Account**: `"Your account is waiting to be linked to your clinic record."`
+    - **Active Booking Limit (`MAX_ACTIVE_BOOKINGS = 2`)**: `"You already have 2 upcoming appointments."`
+
+### 13.2 Pay Balance Action
+- **Contextual Visibility**:
+  - Rendered when total outstanding balance due is greater than zero (`totalBalanceDue > 0`).
+  - Hidden when outstanding balance is zero.
+- **Layout & Interaction**:
+  - Outlined button style (`variant="outline"`) placed immediately next to Book Appointment on desktop (`sm:flex-row`), and stacked below Book Appointment on mobile (`flex-col`).
+  - Minimum height `3.5rem` (`px-8`, `text-lg`, `font-semibold`, `w-full sm:w-auto`).
+  - Activating Pay Balance directly opens the simulated Pay Now modal for the patient's oldest outstanding invoice.
+
+### 13.3 Upcoming vs. Past Appointment Partitioning
+- **Upcoming Appointments**:
+  - Strictly filters appointments where `appointmentDate >= today` and status is open (`'scheduled' | 'checked_in' | 'in_consultation'`).
+  - Sorted ascending by scheduled start time.
+- **Past Appointments**:
+  - Contains concluded appointments (`'completed' | 'cancelled' | 'no_show'`).
+  - Contains past unconcluded appointments (`appointmentDate < today` with open status), displaying the status text `"Not concluded"`.
+  - Sorted descending by date.
+- **Subheader Counts Cleanup**:
+  - The redundant subheader counts row (`Upcoming (X) • Past (Y)` and small outline Book Appointment button) is permanently removed from the view.
+
+### 13.4 Universal Currency Configuration
+- **Single Configured Currency**:
+  - Configured currency symbol exported as `CURRENCY_SYMBOL = '₹'` from `src/lib/money.ts`.
+  - All monetary values across all screens, tables, modals, and charts format strictly through `formatCurrency(cents)` in integer minor units.
+
 

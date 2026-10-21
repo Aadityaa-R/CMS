@@ -144,6 +144,17 @@ Select the **Patient** option on the chooser step for registered patient account
 
 ---
 
+### Walkthrough 8: Patient Dashboard Prominent Actions & Booking Limits (M10.2)
+
+1. **Sign in as Registered Patient**: Under the **Patient** option, sign in as Eleanor Wright (`patient` / `Patient@123`).
+2. **Inspect Prominent Book Appointment Action**: Observe that the filled primary **Book Appointment** button is immediately visible at the very top of the content area, placed directly under the page heading and above the summary metric cards. On screens under 640px, the button spans full width; on desktop, it is left-aligned.
+3. **Inspect Contextual Pay Balance Action**: Notice the outline **Pay Balance** button rendered beside Book Appointment when an outstanding balance is present. Clicking it immediately opens the simulated payment modal for Eleanor's oldest unpaid invoice.
+4. **Test Booking Modal Lifecycle**: Click **Book Appointment**. The Book Consultation modal appears. Press Escape or click Cancel: the modal dismisses and keyboard focus immediately returns to the Book Appointment trigger button.
+5. **Inspect Upcoming & Past Partitioning**: Notice the clean layout without redundant subheader counts. The Upcoming Appointments table holds open consultations for today or later, while the Past Appointments table lists completed records and past open appointments with the status text `"Not concluded"`.
+6. **Inspect Booking Limit & Unlinked Account**: When a patient account has 2 active upcoming bookings (`MAX_ACTIVE_BOOKINGS = 2`), the Book Appointment button remains visible but is disabled with the helper message `"You already have 2 upcoming appointments."`. For unlinked self-registered accounts, the button is disabled with `"Your account is waiting to be linked to your clinic record."`.
+
+---
+
 ## 4. System Reset and Baseline Recovery
 
 To restore all demonstration data back to its original factory state at any time:

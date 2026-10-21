@@ -32,6 +32,7 @@ import {
   PatientsAndVisitsBucket,
   FeesAndPaymentsBucket,
 } from '@/lib/dashboardMetrics';
+import { CURRENCY_SYMBOL } from '@/lib/money';
 
 interface DashboardViewProps {
   onNavigate?: (tab: string, subTab?: string) => void;
@@ -479,7 +480,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                         textAnchor="end"
                         className="text-[0.625rem] fill-slate-500 dark:fill-slate-400"
                       >
-                        ₹{tick}
+                        {CURRENCY_SYMBOL}{tick}
                       </text>
                     </g>
                   );

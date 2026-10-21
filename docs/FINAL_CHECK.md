@@ -79,6 +79,7 @@ Verification executed on branch `m10-final` against the dynamic demonstration sc
 | **Front Desk Specialist (David Kim)** | Billing | Payments | Open Record Payment modal on outstanding invoice | **PASS** | Operator attributed to David Kim; balance calculated in integer minor units. |
 | **Registered Patient (Eleanor Wright)** | Dashboard | Overview | Inspect personal health hub KPI summary (3 figures) | **PASS** | Displays Upcoming Appointments (1), Active Prescriptions (2), Outstanding Balance (₹0.00). |
 | **Registered Patient (Eleanor Wright)** | Patient Portal | Personal Health | Review chronic conditions and active allergies | **PASS** | Displays Penicillin and peanut allergies; Mild Hypertension; current medications deduplicated. |
+| **Registered Patient (Eleanor Wright)** | Patient Portal | Prominent Book Appointment | Inspect action placement, primary styling, and focus restore | **PASS** | Single primary button directly under heading above summary cards; min-h-[3.5rem], px-8, text-lg font-semibold; full width below 640px; closing modal returns focus to button; outline Pay Balance button opens oldest invoice when balance > 0; disabled with helper text at booking limit (MAX_ACTIVE_BOOKINGS=2) or unlinked; Upcoming holds open visits for today or later; Past shows completed and past open visits as "Not concluded". |
 | **Registered Patient (Eleanor Wright)** | Patient Portal | Appointments | View Arthur Dent appointment & test booking | **PASS** | Self-service booking modal locks to assigned doctor; respects buffer rules and slots. |
 | **Registered Patient (Eleanor Wright)** | Patient Portal | Appointments | Open accessible Cancel Appointment dialog | **PASS** | Mandatory cancellation reason dropdown; updates appointment status and notification center. |
 | **Registered Patient (Eleanor Wright)** | Patient Portal | Prescriptions | Review active regimens and dosage instructions | **PASS** | Displays Amlodipine Besylate and Hydrochlorothiazide with frequency and food timing. |
@@ -151,4 +152,11 @@ Verification executed on branch `m10-final` against the dynamic demonstration sc
    - Dirty tracking enables Save Contact Details button; navigation away with unsaved edits is intercepted by "Discard changes?" modal with Keep editing and Discard options.
    - Email modification enforces current password re-authentication before saving. 5 failed current password attempts enforces standard lockout.
    - Password controls provide 44px show/hide toggle buttons with aria-pressed. Password policy and session duration text derived directly from constants. Ledger entries recorded without storing or exposing passwords.
+8. **Patient Portal Prominent Book Appointment and Dashboard Refinement (M10.2)**:
+   - Positioned single primary Book Appointment button directly below heading above summary cards (min-h-[3.5rem], px-8, text-lg font-semibold, full-width below 640px). Closing booking modal returns focus directly to button.
+   - Contextual outline Pay Balance button displayed beside Book Appointment (stacked below on phones) when balance > 0, opening simulated Pay Now modal for oldest unpaid invoice. Hidden when balance is zero.
+   - Clear plain helper text displayed when booking is disabled: unlinked accounts display "Your account is waiting to be linked to your clinic record.", and accounts at booking limit display "You already have 2 upcoming appointments.".
+   - Upcoming Appointments strictly partitions open visits for today or later (date >= today). Past Appointments displays completed visits and past open visits with status text "Not concluded".
+   - Removed redundant subheader counts row ("Upcoming (X) • Past (Y)" and small outline Book Appointment button).
+   - Unified currency configuration with CURRENCY_SYMBOL = '₹' exported from src/lib/money.ts, eliminating hardcoded symbol interpolations.
 

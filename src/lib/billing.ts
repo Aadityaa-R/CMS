@@ -16,10 +16,10 @@ import {
 export const DEFAULT_CONSULTATION_FEE_CENTS = 10000; // $100.00
 export const CLINIC_NAME = 'Beacon Health Clinic';
 
-import { formatCurrency, migrateConsultationFee } from '@/lib/money';
+import { formatCurrency, migrateConsultationFee, CURRENCY_SYMBOL } from '@/lib/money';
 import { formatDoctorName } from '@/lib/doctorNames';
 
-export { formatCurrency, migrateConsultationFee };
+export { formatCurrency, migrateConsultationFee, CURRENCY_SYMBOL };
 
 /**
  * Formats an actor (createdBy, receivedBy, cancelledBy, etc.) safely into a display string.

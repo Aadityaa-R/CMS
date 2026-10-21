@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { useBilling } from '@/context/BillingContext';
@@ -13,6 +13,7 @@ import {
   getAvailableSlots,
   CANCEL_CUTOFF_MINUTES,
   BOOKING_WINDOW_DAYS,
+  MAX_ACTIVE_BOOKINGS,
 } from '@/lib/scheduling';
 import { formatRegimen, activeMedications } from '@/lib/prescribing';
 import { getAssignedDoctorId } from '@/lib/permissions';
@@ -70,6 +71,12 @@ function formatMaxBookingDateString(): string {
 
 function formatAppointmentStatus(apt: Appointment): string {
   if (apt.needsReschedule) return 'Needs rescheduling';
+  const today = formatTodayDateString();
+  const aptDate = apt.dateTime.slice(0, 10);
+  const isOpen = apt.status === 'scheduled' || apt.status === 'checked_in' || apt.status === 'in_consultation';
+  if (isOpen && aptDate < today) {
+    return 'Not concluded';
+  }
   switch (apt.status) {
     case 'scheduled':
       return 'Scheduled';
@@ -182,14 +189,25 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
   // 1. APPOINTMENTS TAB STATE
   const upcomingAppointments = useMemo(() => {
+    const today = formatTodayDateString();
     return scopedAppointments
-      .filter((a) => a.status === 'scheduled' || a.status === 'checked_in' || a.status === 'in_consultation')
+      .filter((a) => {
+        const aptDate = a.dateTime.slice(0, 10);
+        const isOpen = a.status === 'scheduled' || a.status === 'checked_in' || a.status === 'in_consultation';
+        return isOpen && aptDate >= today;
+      })
       .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
   }, [scopedAppointments]);
 
   const pastAppointments = useMemo(() => {
+    const today = formatTodayDateString();
     return scopedAppointments
-      .filter((a) => a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show')
+      .filter((a) => {
+        const aptDate = a.dateTime.slice(0, 10);
+        const isClosed = a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show';
+        const isPastOpen = (a.status === 'scheduled' || a.status === 'checked_in' || a.status === 'in_consultation') && aptDate < today;
+        return isClosed || isPastOpen;
+      })
       .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
   }, [scopedAppointments]);
 
@@ -206,7 +224,8 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     return pastAppointments.slice(start, start + 10);
   }, [pastAppointments, pastPage]);
 
-  // BOOK APPOINTMENT MODAL STATE
+  // BOOK APPOINTMENT MODAL & BUTTON STATE
+  const bookButtonRef = useRef<HTMLButtonElement>(null);
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [bookingDoctorId, setBookingDoctorId] = useState('');
   const [bookingDate, setBookingDate] = useState(formatTodayDateString());
@@ -214,6 +233,23 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
   const [bookingReason, setBookingReason] = useState('');
   const [bookingError, setBookingError] = useState('');
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+
+  const activeBookingsCount = useMemo(() => {
+    if (!patient) return 0;
+    return scopedAppointments.filter((a) => {
+      if (a.patientId !== patient.id) return false;
+      return a.status === 'scheduled' || a.status === 'confirmed';
+    }).length;
+  }, [patient, scopedAppointments]);
+
+  const isAtBookingLimit = activeBookingsCount >= MAX_ACTIVE_BOOKINGS;
+
+  const handleCloseBookModal = () => {
+    setIsBookModalOpen(false);
+    setTimeout(() => {
+      bookButtonRef.current?.focus();
+    }, 0);
+  };
 
   useEffect(() => {
     if (isBookModalOpen) {
@@ -275,6 +311,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
     setIsBookModalOpen(false);
     showNotice(`Appointment booked for ${bookingDate} at ${bookingSlot}.`);
+    setTimeout(() => {
+      bookButtonRef.current?.focus();
+    }, 0);
   };
 
   // RESCHEDULE APPOINTMENT MODAL STATE
@@ -446,6 +485,25 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     return scopedInvoices.reduce((acc, inv) => acc + balanceDue(inv, billingPayments), 0);
   }, [scopedInvoices, billingPayments]);
 
+  const oldestUnpaidInvoice = useMemo(() => {
+    const unpaid = scopedInvoices
+      .filter((inv) => balanceDue(inv, billingPayments) > 0)
+      .sort((a, b) => {
+        const timeA = new Date(a.issuedAt || (a as any).date || 0).getTime();
+        const timeB = new Date(b.issuedAt || (b as any).date || 0).getTime();
+        return timeA - timeB;
+      });
+    return unpaid.length > 0 ? unpaid[0] : null;
+  }, [scopedInvoices, billingPayments]);
+
+  const isUnlinked = Boolean(currentUser?.claimPending || !patient);
+  const isBookingDisabled = isUnlinked || isAtBookingLimit;
+  const bookingHelperText = isUnlinked
+    ? 'Your account is waiting to be linked to your clinic record.'
+    : isAtBookingLimit
+    ? `You already have ${activeBookingsCount} upcoming appointments.`
+    : null;
+
   const currentYear = new Date().getFullYear();
   const visitsThisYear = useMemo(() => {
     return scopedAppointments.filter((a) => {
@@ -510,32 +568,33 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     if (rc) setPatientReceipt(rc);
   };
 
-  // Check account waiting to be linked (M5)
-  if (currentUser?.claimPending) {
+  // Check account waiting to be linked (M5 / M10.2)
+  if (isUnlinked) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-12">
         <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
-            My Portal
+          <h1 id="portal-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+            My Health Portal
           </h1>
         </div>
-        <div className="p-8 text-center border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
-          <p className="text-sm text-slate-700 dark:text-slate-300">
-            Your account is waiting to be linked to your clinic record.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
-  if (!patient) {
-    return (
-      <div className="space-y-6">
-        <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
-            My Portal
-          </h1>
+        {/* Action Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+            <Button
+              ref={bookButtonRef}
+              variant="primary"
+              disabled={true}
+              className="min-h-[3.5rem] px-8 text-lg font-semibold w-full sm:w-auto text-center justify-center"
+            >
+              Book Appointment
+            </Button>
+          </div>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {bookingHelperText}
+          </span>
         </div>
+
         <div className="p-8 text-center border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
           <p className="text-sm text-slate-700 dark:text-slate-300">
             Your account is waiting to be linked to your clinic record.
@@ -575,9 +634,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
         </div>
       )}
 
-      {/* Page Title - Section title without duplicate sub-heading tabs */}
+      {/* Page Title */}
       <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+        <h1 id="portal-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
           {getTabTitle()}
         </h1>
       </div>
@@ -585,6 +644,34 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       {/* TAB 1: APPOINTMENTS */}
       {activeTab === 'appointments' && (
         <div className="space-y-6">
+          {/* Prominent Action Row: Directly under page title, above summary figures */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+              <Button
+                ref={bookButtonRef}
+                variant="primary"
+                disabled={isBookingDisabled}
+                onClick={() => setIsBookModalOpen(true)}
+                className="min-h-[3.5rem] px-8 text-lg font-semibold w-full sm:w-auto text-center justify-center"
+              >
+                Book Appointment
+              </Button>
+              {totalBalanceDue > 0 && oldestUnpaidInvoice && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleOpenPayModal(oldestUnpaidInvoice)}
+                  className="min-h-[3.5rem] px-8 text-lg font-semibold w-full sm:w-auto text-center justify-center"
+                >
+                  Pay Balance
+                </Button>
+              )}
+            </div>
+            {bookingHelperText && (
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {bookingHelperText}
+              </span>
+            )}
+          </div>
           {/* Patient Summary Metric Cards: Separate individual cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
@@ -632,21 +719,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                 </span>
               </div>
             </Card>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                Upcoming ({upcomingAppointments.length}) • Past ({pastAppointments.length})
-              </span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsBookModalOpen(true)}
-            >
-              Book Appointment
-            </Button>
           </div>
 
           {/* Upcoming Appointments Table */}
@@ -1188,7 +1260,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                               {balance > 0 && currentStatus !== 'void' && (
                                 <Button
                                   size="xs"
-                                  variant="primary"
+                                  variant="outline"
                                   onClick={() => handleOpenPayModal(inv)}
                                 >
                                   Pay Now
@@ -1219,7 +1291,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       {isBookModalOpen && (
         <Modal
           isOpen={isBookModalOpen}
-          onClose={() => setIsBookModalOpen(false)}
+          onClose={handleCloseBookModal}
           title="Book Consultation"
           fullScreenOnMobile={true}
           maxWidth="lg"
@@ -1228,7 +1300,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsBookModalOpen(false)}
+                onClick={handleCloseBookModal}
                 disabled={isSubmittingBooking}
               >
                 Cancel

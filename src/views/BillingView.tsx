@@ -4,6 +4,7 @@ import { useClinic } from '@/context/ClinicContext';
 import { useBilling } from '@/context/BillingContext';
 import {
   formatCurrency,
+  CURRENCY_SYMBOL,
   dollarsToCents,
   centsToDollars,
   invoiceTotal,
@@ -962,7 +963,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               </p>
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg space-y-1">
                 <div>
-                  <strong>Amount:</strong> ₹{paymentAmountDollars}
+                  <strong>Amount:</strong> {formatCurrency(Math.round(Number(paymentAmountDollars || 0) * 100))}
                 </div>
                 <div>
                   <strong>Method:</strong> {paymentMethod.toUpperCase()}
@@ -981,7 +982,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
             <form onSubmit={handleProceedToConfirmPayment} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Payment Amount (₹)
+                  Payment Amount ({CURRENCY_SYMBOL})
                 </label>
                 <input
                   type="number"
@@ -1206,7 +1207,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Amount (₹)
+                          Amount ({CURRENCY_SYMBOL})
                         </label>
                         <input
                           type="number"
@@ -1245,7 +1246,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                     <div className="grid grid-cols-3 gap-2">
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Amount (₹)
+                          Amount ({CURRENCY_SYMBOL})
                         </label>
                         <input
                           type="number"
