@@ -762,3 +762,50 @@ Executes the comprehensive release gate:
   - `formatDate(input)`: Canonical display format `"15 Oct 2026"` (unpadded day, 3-letter month, 4-digit year). Returns `"—"` for empty inputs.
   - `formatTime(input)`: Canonical 24-hour display format `"09:30"` (two-digit hour, two-digit minute). Normalizes AM/PM strings and ISO strings. Returns `"—"` for empty inputs.
   - `formatLocalDate(date)`: Canonical ISO key formatter `"YYYY-MM-DD"` reserved for data keys, database storage, and calendar indexing.
+
+---
+
+## 16. BALANCED TWO-COLUMN PATIENT RECORDS LAYOUT SPECIFICATION (M10.5)
+
+### 16.1 Responsive Balanced Grid Architecture
+- **Location**: `src/components/ui/DetailList.tsx` (`DetailGrid`).
+- **Balanced Two-Column Placement (>=1024px)**:
+  - Container applies CSS Grid with two columns and two auto rows:
+    - `grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-[auto_auto] items-stretch gap-6 w-full`.
+  - Child Card 0 (Personal Information): Spans both rows in Column 1:
+    - `lg:row-span-2 lg:col-start-1 lg:row-start-1 flex flex-col h-full`.
+  - Child Card 1 (Medical Profile): Placed in Column 2, Row 1:
+    - `lg:col-start-2 lg:row-start-1 flex flex-col h-full`.
+  - Child Card 2 (Latest Vitals): Placed in Column 2, Row 2:
+    - `lg:col-start-2 lg:row-start-2 flex flex-col h-full`.
+  - Card Gap: Standard `gap-6` (`1.5rem` / `24px`) between stacked cards in column 2 and between columns.
+  - Alignment: `items-stretch` ensures the outer bottom edges of column 1 (Card 0) and column 2 (Card 2) align cleanly.
+- **Single-Column Stacking Order (<1024px)**:
+  - On viewports below 1024px, the grid collapses to `grid-cols-1` with single-column natural stacking:
+    1. Personal Information (Card 0)
+    2. Medical Profile (Card 1)
+    3. Latest Vitals (Card 2)
+  - Full-width stacked order is maintained naturally without row spanning.
+- **Subsequent Content**:
+  - Visit History and cards placed below `DetailGrid` remain full width.
+
+### 16.2 DetailList Columns Option & Container Query Pairing
+- **Option**: `columns={1 | 2}` on `DetailList` (defaults to `1`).
+- **Container Query Responsive Paired Rows**:
+  - `DetailList` applies the `.detail-list-container` class declaring `container-type: inline-size;`.
+  - When container width is at least `28rem` (`448px`), `@container (min-width: 28rem)` renders pairs of items in two-column rows (`detail-pair-row` with `grid-template-columns: repeat(2, minmax(0, 1fr))` and a vertical border divider).
+  - Paired items in Latest Vitals:
+    1. Blood Pressure | Heart Rate
+    2. Temperature | SpO2
+    3. BMI | Recorded
+  - Each item in the pair preserves the canonical label column width (`8rem` on mobile, `10rem` on desktop), left-aligned values, and standard row padding.
+  - When container width is under `28rem`, items gracefully collapse to single-column full-width rows with dividers.
+
+### 16.3 Equal Bottoms and Padding Balancing Algorithm
+- **Equal Bottoms**: All cards use `flex flex-col h-full`, allowing their internal `DetailList` elements to stretch and absorb vertical space.
+- **Balancing Function**: `calculateBalancedPadding(extraHeightPx, rowCount, standardPaddingRem, remInPx)`:
+  - Standard row padding: `0.75rem` (`py-3`).
+  - Max padding factor: `1.5` (`1.125rem` max row padding).
+  - Extra height in the shorter column is distributed evenly across that column's rows by increasing row padding up to the `1.5` multiplier cap.
+  - Any remaining height past the `1.5` cap is retained as clean bottom space inside the card content rather than creating an empty gap between cards.
+

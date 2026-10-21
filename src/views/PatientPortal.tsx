@@ -878,14 +878,14 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       {/* TAB 2: RECORDS */}
       {activeTab === 'records' && (
         <div className="space-y-6">
-          <DetailGrid>
+          <DetailGrid balanced>
             {/* Card: Personal Record */}
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full">
               <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <DetailList>
+              <CardContent className="p-0 flex-1 flex flex-col justify-between">
+                <DetailList className="flex-1">
                   <DetailItem label="Name" value={`${patient.firstName} ${patient.lastName}`} />
                   <DetailItem label="MRN" value={patient.mrn} />
                   <DetailItem label="Date of Birth" value={`${formatDate(patient.dob)} (Age ${patient.age})`} />
@@ -912,12 +912,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             </Card>
 
             {/* Card: Medical Profile */}
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full">
               <CardHeader>
                 <CardTitle>Medical Profile</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <DetailList>
+              <CardContent className="p-0 flex-1 flex flex-col justify-between">
+                <DetailList className="flex-1">
                   <DetailItem
                     label="Allergies"
                     value={patient.allergies && patient.allergies.length > 0 ? patient.allergies.join(', ') : 'None reported'}
@@ -944,17 +944,13 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             </Card>
 
             {/* Card: Latest Vitals */}
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full">
               <CardHeader>
                 <CardTitle>Latest Vitals</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 flex-1 flex flex-col justify-between">
                 {patientVitalsRecord ? (
-                  <DetailList>
-                    <DetailItem
-                      label="Recording Date"
-                      value={`${formatDate(patientVitalsRecord.recordedAt.slice(0, 10))} ${formatTime(patientVitalsRecord.recordedAt.slice(11, 16))}`}
-                    />
+                  <DetailList columns={2} className="flex-1">
                     <DetailItem
                       label="Blood Pressure"
                       value={`${patientVitalsRecord.systolicBp}/${patientVitalsRecord.diastolicBp} mmHg`}
@@ -974,6 +970,10 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                     <DetailItem
                       label="BMI"
                       value={patientVitalsRecord.bmi}
+                    />
+                    <DetailItem
+                      label="Recorded"
+                      value={`${formatDate(patientVitalsRecord.recordedAt.slice(0, 10))} ${formatTime(patientVitalsRecord.recordedAt.slice(11, 16))}`}
                     />
                   </DetailList>
                 ) : (

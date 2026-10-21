@@ -391,3 +391,19 @@ tr.block .table-cell-truncate {
 }
 
 
+
+/* DetailList Container Queries for 2-column paired rows (M10.5) */
+.detail-list-container {
+  container-type: inline-size;
+}
+
+@container (min-width: 28rem) {
+  .detail-pair-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .detail-pair-row > div:not(:first-child) {
+    border-top-width: 0 !important;
+    border-left-width: 1px !important;
+  }
+}
