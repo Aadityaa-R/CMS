@@ -254,7 +254,7 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800">
           <div>
             <CardTitle>Formulary ({medicines.length})</CardTitle>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Approved clinical medication registry for outpatient electronic prescribing.
             </p>
           </div>
@@ -263,6 +263,7 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
             variant="primary"
             icon={<Plus className="w-4 h-4" />}
             onClick={handleOpenAddModal}
+            className="mt-3.5"
           >
             Add Medicine
           </Button>
