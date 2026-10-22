@@ -7,7 +7,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
 } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -516,11 +515,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>Today's Attendance Status</CardTitle>
-                  <CardDescription>
-                    {userShift
-                      ? `Scheduled Shift: ${userShift.days.join(', ')} • ${userShift.start} to ${userShift.end} (${userShift.graceMinutes} min grace)`
-                      : 'No fixed shift schedule assigned.'}
-                  </CardDescription>
                 </div>
                 <div className="flex items-center gap-3">
                   <Button
@@ -593,7 +587,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>My Attendance Records</CardTitle>
-                  <CardDescription>Detailed clock in, clock out, and total hours worked log.</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -681,7 +674,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>My Leave Requests</CardTitle>
-                  <CardDescription>Track pending and past leave applications.</CardDescription>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => setIsRequestModalOpen(true)}>
                   Request Leave
@@ -812,7 +804,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>Daily Staff Roster: {todayStr}</CardTitle>
-                  <CardDescription>Real-time presence, shift coverage, and quick clock-in overrides.</CardDescription>
                 </div>
                 <div className="w-full sm:w-64">
                   <Input
@@ -942,9 +933,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>Clinic-Wide Monthly Attendance Sheet</CardTitle>
-                  <CardDescription>
-                    Audited presence grid showing status codes across all calendar days of the month.
-                  </CardDescription>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="w-36">
@@ -1070,7 +1058,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>Staff Leave Administration Queue</CardTitle>
-                  <CardDescription>Review, approve, or reject staff leave submissions.</CardDescription>
                 </div>
                 <div className="w-44">
                   <Select
@@ -1200,7 +1187,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>Staff Shift Configurations</CardTitle>
-                  <CardDescription>Manage daily shift schedules, grace periods, and duty days.</CardDescription>
                 </div>
               </div>
             </CardHeader>
