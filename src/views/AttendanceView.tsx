@@ -976,7 +976,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
             </CardHeader>
             <CardContent>
               {/* Legend */}
-              <div className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+              <div className="mb-4 text-xs font-bold text-slate-800 dark:text-slate-200">
                 P: Present • A: Absent • LV: Approved Leave • OFF: Scheduled Off • -: Future or Not Clocked In
               </div>
 
