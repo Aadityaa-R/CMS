@@ -1087,7 +1087,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   );
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-3.5 pb-4">
       {/* Print Stylesheet */}
       <style>{`
         @media print {
@@ -1115,9 +1115,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       `}</style>
 
       {/* Header: Title & Date Range */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between no-print">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between no-print">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             Dashboard
           </h1>
         </div>
@@ -1151,7 +1151,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               role="tab"
               aria-selected={activeTab === 'overview'}
               aria-current={activeTab === 'overview' ? 'page' : undefined}
-              className={`py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+              className={`py-1.5 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'overview'
                   ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -1168,7 +1168,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               role="tab"
               aria-selected={activeTab === 'daily_summary'}
               aria-current={activeTab === 'daily_summary' ? 'page' : undefined}
-              className={`py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+              className={`py-1.5 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'daily_summary'
                   ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -1193,7 +1193,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
               {metrics1.summaryFigures.map((fig) => (
                 <Card
                   key={fig.label}

@@ -142,14 +142,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
 
   return (
     <>
-      <header className="h-20 bg-slate-900 text-slate-300 border-b border-slate-800 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
+      <header className="h-14 bg-slate-900 text-slate-300 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 transition-colors">
         {/* Brand / Clinic Title */}
         <div className="flex items-center gap-2 sm:gap-4">
           <button
             type="button"
             data-sidebar-ignore-outside="true"
             onClick={onToggleSidebar || toggleSidebar}
-            className={`w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] p-2.5 rounded-lg lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 ${
+            className={`w-9 h-9 min-w-[2.25rem] min-h-[2.25rem] p-2 rounded-lg lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 ${
               isSidebarOpen
                 ? 'bg-slate-800 text-teal-300'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -171,11 +171,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
             className="flex items-center gap-3 text-left cursor-pointer outline-none focus:outline-none focus:ring-0 group"
             title={currentRole === 'patient' ? 'Go to My Portal' : 'Go to Dashboard'}
           >
-            <div className="w-11 h-11 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold ring-2 ring-teal-500/20 group-hover:bg-teal-700 transition-colors">
-              <Building2 className="w-6 h-6" />
+            <div className="w-9 h-9 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold ring-2 ring-teal-500/20 group-hover:bg-teal-700 transition-colors">
+              <Building2 className="w-5 h-5" />
             </div>
             <div className="min-w-0 text-left">
-              <h1 className="font-bold text-slate-100 text-sm sm:text-base md:text-lg leading-tight tracking-tight truncate max-w-[190px] sm:max-w-none">
+              <h1 className="font-bold text-slate-100 text-sm sm:text-base leading-tight tracking-tight truncate max-w-[190px] sm:max-w-none">
                 Beacon Health Clinic
               </h1>
             </div>
@@ -311,13 +311,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
                 }
               }}
               onKeyDown={handleAvatarKeyDown}
-              className="w-10 h-10 rounded-xl bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium transition-all cursor-pointer outline-none focus:outline-none focus:ring-0"
+              className="w-9 h-9 rounded-lg bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium transition-all cursor-pointer outline-none focus:outline-none focus:ring-0"
               aria-label="User profile menu"
               aria-haspopup="menu"
               aria-expanded={isDropdownOpen}
               aria-controls="user-menu"
             >
-              <User className="w-5 h-5 text-white" />
+              <User className="w-4 h-4 text-white" />
             </button>
 
             {/* Dropdown Menu */}
