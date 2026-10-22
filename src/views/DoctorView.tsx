@@ -165,8 +165,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   useEffect(() => {
     const inConsult = doctorAppointments.find((a) => a.status === 'in_consultation');
+    const checkedIn = doctorAppointments
+      .filter((a) => a.status === 'checked_in')
+      .sort((a, b) => (a.tokenNumber || 999) - (b.tokenNumber || 999))[0];
     if (inConsult) {
       setSelectedAppointmentId(inConsult.id);
+    } else if (checkedIn) {
+      setSelectedAppointmentId(checkedIn.id);
     } else if (doctorAppointments.length > 0) {
       setSelectedAppointmentId(doctorAppointments[0].id);
     } else {
@@ -175,8 +180,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   }, [activeDoctorId]);
 
   const activeAppointment =
-    doctorAppointments.find((a) => a.id === selectedAppointmentId) ||
+    doctorAppointments.find((a) => a.id === selectedAppointmentId && a.status !== 'completed') ||
     doctorAppointments.find((a) => a.status === 'in_consultation') ||
+    doctorAppointments
+      .filter((a) => a.status === 'checked_in')
+      .sort((a, b) => (a.tokenNumber || 999) - (b.tokenNumber || 999))[0] ||
+    (selectedAppointmentId ? doctorAppointments.find((a) => a.id === selectedAppointmentId) : null) ||
+    doctorAppointments.find((a) => a.status === 'scheduled') ||
     doctorAppointments[0] ||
     null;
   const activePatient = activeAppointment ? patients.find((p) => p.id === activeAppointment.patientId) : null;
@@ -471,7 +481,40 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       updatePatient(activePatient.id, { allergies });
     }
     updateAppointmentStatus(aptId, 'completed');
-    showNotification(`Consultation concluded for ${patientName}. Visit marked completed.`);
+
+    // Find next waiting patient for this specific doctor
+    const nextWaiting = doctorAppointments
+      .filter((a) => a.id !== aptId && a.status === 'checked_in')
+      .sort((a, b) => {
+        if (a.tokenNumber && b.tokenNumber) return a.tokenNumber - b.tokenNumber;
+        if (a.tokenNumber) return -1;
+        if (b.tokenNumber) return 1;
+        return new Date(a.checkedInAt || a.dateTime).getTime() - new Date(b.checkedInAt || b.dateTime).getTime();
+      })[0];
+
+    if (nextWaiting) {
+      setSelectedAppointmentId(nextWaiting.id);
+      setSelectedTab('overview');
+      showNotification(
+        `Consultation concluded for ${patientName}. Next waiting patient loaded: ${nextWaiting.patientName}${
+          nextWaiting.tokenNumber ? ` (Token #${nextWaiting.tokenNumber})` : ''
+        }.`
+      );
+    } else {
+      const nextScheduled = doctorAppointments
+        .filter((a) => a.id !== aptId && a.status === 'scheduled')
+        .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())[0];
+      if (nextScheduled) {
+        setSelectedAppointmentId(nextScheduled.id);
+        setSelectedTab('overview');
+        showNotification(
+          `Consultation concluded for ${patientName}. No more checked-in patients waiting; next scheduled patient: ${nextScheduled.patientName}.`
+        );
+      } else {
+        setSelectedAppointmentId('');
+        showNotification(`Consultation concluded for ${patientName}. No more patients waiting for this desk.`);
+      }
+    }
   };
 
   // Default Item Factory
@@ -1528,6 +1571,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       {/* Single Footer Row: Actions */}
                       {!isReadOnlyView && (
                         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex-none">
+                          {activeAppointment.status === 'checked_in' && (
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              className="text-xs sm:text-sm px-4 py-2 min-h-[2.25rem] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                              onClick={() => handleStartConsultation(activeAppointment)}
+                            >
+                              Start Consultation
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
@@ -1548,14 +1601,16 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           >
                             Prescribe
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            className="text-xs sm:text-sm px-4 py-2 min-h-[2.25rem] font-semibold"
-                            onClick={() => setIsConcludeModalOpen(true)}
-                          >
-                            Conclude Visit
-                          </Button>
+                          {activeAppointment.status !== 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              className="text-xs sm:text-sm px-4 py-2 min-h-[2.25rem] font-semibold"
+                              onClick={() => setIsConcludeModalOpen(true)}
+                            >
+                              Conclude Visit
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
