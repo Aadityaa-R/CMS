@@ -64,16 +64,7 @@ const formatStatusText = (status: string): string => {
   }
 };
 
-const getGreeting = (name: string): string => {
-  const hour = new Date().getHours();
-  let timeGreeting = 'Good morning';
-  if (hour >= 12 && hour < 18) {
-    timeGreeting = 'Good afternoon';
-  } else if (hour >= 18 || hour < 4) {
-    timeGreeting = 'Good evening';
-  }
-  return `${timeGreeting}, ${name}`;
-};
+
 
 // Grouped bar chart component for Patients and Visits
 interface PatientsAndVisitsChartProps {
@@ -1000,7 +991,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     return list.slice(start, start + 10);
   }, [metrics1.patientRecentPrescriptions, patientRxPage]);
 
-  const greeting = getGreeting(currentUser?.name || 'User');
 
   const chartsCards = (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1403,11 +1393,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         }
       `}</style>
 
-      {/* Header: Greeting & Date Range */}
+      {/* Header: Title & Date Range */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between no-print">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            {greeting}
+            Dashboard
           </h1>
         </div>
 
