@@ -78,7 +78,6 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
   activeBucket,
   onBucketChange,
 }) => {
-  const [formatMode, setFormatMode] = useState<'graph' | 'table'>('graph');
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState<number>(600);
 
@@ -133,69 +132,25 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
           <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
             Patients and Visits
           </h3>
-          <div className="flex items-center gap-3">
-            {/* Format toggle: Graph / Table */}
-            <div
-              role="tablist"
-              aria-label="Patients and visits format"
-              className="flex items-center border border-slate-200 dark:border-slate-700 rounded p-0.5 bg-slate-50 dark:bg-slate-800/80"
-            >
+          <div className="flex items-center gap-2 sm:gap-3">
+            {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
               <button
+                key={b}
                 type="button"
-                role="tab"
-                aria-selected={formatMode === 'graph'}
-                onClick={() => setFormatMode('graph')}
-                className={`px-2 py-0.5 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                  formatMode === 'graph'
-                    ? 'bg-teal-600 text-white'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                onClick={() => onBucketChange(b)}
+                className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
+                  activeBucket === b
+                    ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
                 }`}
               >
-                Graph
+                {b.charAt(0).toUpperCase() + b.slice(1)}
               </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={formatMode === 'table'}
-                onClick={() => setFormatMode('table')}
-                className={`px-2 py-0.5 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                  formatMode === 'table'
-                    ? 'bg-teal-600 text-white'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
-              >
-                Table
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-3">
-              {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => onBucketChange(b)}
-                  className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
-                    activeBucket === b
-                      ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
-                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
-                  }`}
-                >
-                  {b.charAt(0).toUpperCase() + b.slice(1)}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
 
         <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
-          <div
-            className="flex w-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none"
-            style={{
-              transform: formatMode === 'table' ? 'translateX(-100%)' : 'translateX(0%)',
-            }}
-          >
-            {/* Slide 1: Graph SVG */}
-            <div className="w-full shrink-0" aria-hidden={formatMode !== 'graph'}>
           <svg
             role="img"
             aria-label="Grouped bar chart showing new patients and visits"
@@ -303,39 +258,6 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
           </svg>
         </div>
 
-        {/* Slide 2: Data Table */}
-        <div className="w-full shrink-0" aria-hidden={formatMode !== 'table'}>
-          <div className="h-56 sm:h-64 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-lg">
-            <table className="w-full text-left text-fs-body">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0 text-fs-th">
-                <tr>
-                  <th scope="col" className="px-3.5 py-2 font-semibold">Period</th>
-                  <th scope="col" className="px-3.5 py-2 font-semibold">New Patients</th>
-                  <th scope="col" className="px-3.5 py-2 font-semibold">Visits</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
-                {buckets.map((b) => (
-                  <tr key={b.dateKey} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                    <td className="px-3.5 py-2 font-medium">{b.label}</td>
-                    <td className="px-3.5 py-2">{b.newPatients}</td>
-                    <td className="px-3.5 py-2">{b.visits}</td>
-                  </tr>
-                ))}
-                {buckets.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="px-3.5 py-6 text-center text-slate-400">
-                      No data available for this range
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
     {/* Visually hidden screen reader table */}
     <div className="sr-only">
       <table>
@@ -389,7 +311,6 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
   activeBucket,
   onBucketChange,
 }) => {
-  const [formatMode, setFormatMode] = useState<'graph' | 'table'>('graph');
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState<number>(600);
 
@@ -457,70 +378,26 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
           <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
             Fees and Payments
           </h3>
-          <div className="flex items-center gap-3">
-            {/* Format toggle: Graph / Table */}
-            <div
-              role="tablist"
-              aria-label="Fees and payments format"
-              className="flex items-center border border-slate-200 dark:border-slate-700 rounded p-0.5 bg-slate-50 dark:bg-slate-800/80"
-            >
+          <div className="flex items-center gap-2 sm:gap-3">
+            {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
               <button
+                key={b}
                 type="button"
-                role="tab"
-                aria-selected={formatMode === 'graph'}
-                onClick={() => setFormatMode('graph')}
-                className={`px-2 py-0.5 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                  formatMode === 'graph'
-                    ? 'bg-teal-600 text-white'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                onClick={() => onBucketChange(b)}
+                className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
+                  activeBucket === b
+                    ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
                 }`}
               >
-                Graph
+                {b.charAt(0).toUpperCase() + b.slice(1)}
               </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={formatMode === 'table'}
-                onClick={() => setFormatMode('table')}
-                className={`px-2 py-0.5 text-xs font-semibold rounded cursor-pointer transition-colors ${
-                  formatMode === 'table'
-                    ? 'bg-teal-600 text-white'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
-              >
-                Table
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-3">
-              {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => onBucketChange(b)}
-                  className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
-                    activeBucket === b
-                      ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
-                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
-                  }`}
-                >
-                  {b.charAt(0).toUpperCase() + b.slice(1)}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
 
         <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
-          <div
-            className="flex w-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none"
-            style={{
-              transform: formatMode === 'table' ? 'translateX(-100%)' : 'translateX(0%)',
-            }}
-          >
-            {/* Slide 1: Graph SVG */}
-            <div className="w-full shrink-0" aria-hidden={formatMode !== 'graph'}>
-              <svg
+          <svg
                 role="img"
                 aria-label="Line chart showing fees billed and payments collected"
                 viewBox="0 0 600 240"
@@ -611,39 +488,6 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                   </text>
                 )}
               </svg>
-            </div>
-
-            {/* Slide 2: Data Table */}
-            <div className="w-full shrink-0" aria-hidden={formatMode !== 'table'}>
-              <div className="h-56 sm:h-64 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-lg">
-                <table className="w-full text-left text-fs-body">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0 text-fs-th">
-                    <tr>
-                      <th scope="col" className="px-3.5 py-2 font-semibold">Period</th>
-                      <th scope="col" className="px-3.5 py-2 font-semibold">Billed</th>
-                      <th scope="col" className="px-3.5 py-2 font-semibold">Collected</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
-                    {buckets.map((b) => (
-                      <tr key={b.dateKey} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                        <td className="px-3.5 py-2 font-medium">{b.label}</td>
-                        <td className="px-3.5 py-2">{formatCurrency(b.billed * 100)}</td>
-                        <td className="px-3.5 py-2">{formatCurrency(b.collected * 100)}</td>
-                      </tr>
-                    ))}
-                    {buckets.length === 0 && (
-                      <tr>
-                        <td colSpan={3} className="px-3.5 py-6 text-center text-slate-400">
-                          No fee records for this range
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
