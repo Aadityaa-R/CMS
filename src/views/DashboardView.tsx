@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
@@ -88,6 +88,24 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
   onBucketChange,
 }) => {
   const [formatMode, setFormatMode] = useState<'graph' | 'table'>('graph');
+  const chartWrapperRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState<number>(600);
+
+  useEffect(() => {
+    if (!chartWrapperRef.current || typeof ResizeObserver === 'undefined') return;
+    const update = (w: number) => {
+      if (w > 0) setChartWidth(w);
+    };
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        update(entry.contentRect.width);
+      }
+    });
+    ro.observe(chartWrapperRef.current);
+    update(chartWrapperRef.current.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+
   const maxVal = Math.max(1, ...buckets.map((b) => Math.max(b.newPatients, b.visits)));
   const yCeiling = maxVal <= 4 ? 4 : maxVal <= 8 ? 8 : maxVal <= 12 ? 12 : Math.ceil(maxVal / 5) * 5;
   const gridTicks = [0, yCeiling * 0.25, yCeiling * 0.5, yCeiling * 0.75, yCeiling];
@@ -96,11 +114,32 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
   const slotWidth = n > 0 ? 520 / n : 520;
   const barWidth = Math.max(3, Math.min(16, (slotWidth - 6) / 2));
 
+  const visibleLabelIndices = useMemo(() => {
+    if (n === 0) return new Set<number>();
+    const remPx = typeof window !== 'undefined'
+      ? parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+      : 16;
+    const minSpacingPx = 5 * remPx; // about one label per 5rem (~80px)
+
+    const visible = new Set<number>();
+    let lastXPx = -Infinity;
+
+    for (let i = 0; i < n; i++) {
+      const slotCenterX = 45 + (i + 0.5) * slotWidth;
+      const xPx = (slotCenterX / 600) * chartWidth;
+      if (xPx - lastXPx >= minSpacingPx) {
+        visible.add(i);
+        lastXPx = xPx;
+      }
+    }
+    return visible;
+  }, [n, slotWidth, chartWidth]);
+
   return (
     <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between">
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+          <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
             Patients and Visits
           </h3>
           <div className="flex items-center gap-3">
@@ -157,7 +196,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
           </div>
         </div>
 
-        <div className="pt-4 overflow-hidden relative">
+        <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
           <div
             className="flex w-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none"
             style={{
@@ -203,7 +242,8 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                     x={38}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[0.625rem] fill-slate-500 dark:fill-slate-400"
+                    className="text-fs-axis fill-slate-500 dark:fill-slate-400"
+                    style={{ fontSize: 'var(--fs-axis)' }}
                   >
                     {tick}
                   </text>
@@ -222,10 +262,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
               const h2 = Math.max(0, (b.visits / yCeiling) * 175);
               const y2 = 20 + 175 - h2;
 
-              const showLabel =
-                n <= 10 ||
-                (n <= 20 && i % 2 === 0) ||
-                (n > 20 && (i % 5 === 0 || i === n - 1));
+              const showLabel = visibleLabelIndices.has(i);
 
               return (
                 <g key={b.dateKey}>
@@ -257,9 +294,8 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                       x={slotCenterX}
                       y={215}
                       textAnchor="middle"
-                      className={`text-[0.625rem] fill-slate-500 dark:fill-slate-400 ${
-                        i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
-                      }`}
+                      className="text-fs-axis fill-slate-500 dark:fill-slate-400"
+                      style={{ fontSize: 'var(--fs-axis)' }}
                     >
                       {b.label}
                     </text>
@@ -279,8 +315,8 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
         {/* Slide 2: Data Table */}
         <div className="w-full shrink-0" aria-hidden={formatMode !== 'table'}>
           <div className="h-56 sm:h-64 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-lg">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0">
+            <table className="w-full text-left text-fs-body">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0 text-fs-th">
                 <tr>
                   <th scope="col" className="px-3.5 py-2 font-semibold">Period</th>
                   <th scope="col" className="px-3.5 py-2 font-semibold">New Patients</th>
@@ -334,7 +370,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
   </div>
 
       {/* Static Legend */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-fs-axis text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800" style={{ fontSize: 'var(--fs-axis)' }}>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 bg-teal-600 dark:bg-teal-500 inline-block" />
           <span>New Patients</span>
@@ -363,6 +399,24 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
   onBucketChange,
 }) => {
   const [formatMode, setFormatMode] = useState<'graph' | 'table'>('graph');
+  const chartWrapperRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState<number>(600);
+
+  useEffect(() => {
+    if (!chartWrapperRef.current || typeof ResizeObserver === 'undefined') return;
+    const update = (w: number) => {
+      if (w > 0) setChartWidth(w);
+    };
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        update(entry.contentRect.width);
+      }
+    });
+    ro.observe(chartWrapperRef.current);
+    update(chartWrapperRef.current.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+
   const maxVal = Math.max(50, ...buckets.map((b) => Math.max(b.billed, b.collected)));
   const yCeiling =
     maxVal <= 100
@@ -381,6 +435,27 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
   const calcX = (i: number) => 55 + (n <= 1 ? plotWidth / 2 : (i / (n - 1)) * plotWidth);
   const calcY = (val: number) => 20 + 175 - Math.min(175, (val / yCeiling) * 175);
 
+  const visibleLabelIndices = useMemo(() => {
+    if (n === 0) return new Set<number>();
+    const remPx = typeof window !== 'undefined'
+      ? parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+      : 16;
+    const minSpacingPx = 5 * remPx; // about one label per 5rem (~80px)
+
+    const visible = new Set<number>();
+    let lastXPx = -Infinity;
+
+    for (let i = 0; i < n; i++) {
+      const xSvg = calcX(i);
+      const xPx = (xSvg / 600) * chartWidth;
+      if (xPx - lastXPx >= minSpacingPx) {
+        visible.add(i);
+        lastXPx = xPx;
+      }
+    }
+    return visible;
+  }, [n, chartWidth]);
+
   const billedPoints = buckets.map((b, i) => `${calcX(i)},${calcY(b.billed)}`).join(' ');
   const collectedPoints = buckets.map((b, i) => `${calcX(i)},${calcY(b.collected)}`).join(' ');
 
@@ -388,7 +463,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
     <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between">
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+          <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
             Fees and Payments
           </h3>
           <div className="flex items-center gap-3">
@@ -445,7 +520,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
           </div>
         </div>
 
-        <div className="pt-4 overflow-hidden relative">
+        <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
           <div
             className="flex w-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none"
             style={{
@@ -478,7 +553,8 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                         x={48}
                         y={y + 3}
                         textAnchor="end"
-                        className="text-[0.625rem] fill-slate-500 dark:fill-slate-400"
+                        className="text-fs-axis fill-slate-500 dark:fill-slate-400"
+                        style={{ fontSize: 'var(--fs-axis)' }}
                       >
                         {CURRENCY_SYMBOL}{tick}
                       </text>
@@ -513,10 +589,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                   const yBilled = calcY(b.billed);
                   const yCollected = calcY(b.collected);
 
-                  const showLabel =
-                    n <= 10 ||
-                    (n <= 20 && i % 2 === 0) ||
-                    (n > 20 && (i % 5 === 0 || i === n - 1));
+                  const showLabel = visibleLabelIndices.has(i);
 
                   return (
                     <g key={b.dateKey}>
@@ -531,9 +604,8 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                           x={x}
                           y={215}
                           textAnchor="middle"
-                          className={`text-[0.625rem] fill-slate-500 dark:fill-slate-400 ${
-                            i % 2 !== 0 && n > 6 ? 'hidden sm:inline' : ''
-                          }`}
+                          className="text-fs-axis fill-slate-500 dark:fill-slate-400"
+                          style={{ fontSize: 'var(--fs-axis)' }}
                         >
                           {b.label}
                         </text>
@@ -553,8 +625,8 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
             {/* Slide 2: Data Table */}
             <div className="w-full shrink-0" aria-hidden={formatMode !== 'table'}>
               <div className="h-56 sm:h-64 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-lg">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0">
+                <table className="w-full text-left text-fs-body">
+                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0 text-fs-th">
                     <tr>
                       <th scope="col" className="px-3.5 py-2 font-semibold">Period</th>
                       <th scope="col" className="px-3.5 py-2 font-semibold">Billed</th>
@@ -608,7 +680,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
       </div>
 
       {/* Static Legend */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-fs-axis text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800" style={{ fontSize: 'var(--fs-axis)' }}>
         <div className="flex items-center gap-1.5">
           <span className="w-4 h-0.5 bg-teal-600 dark:bg-teal-500 inline-block" />
           <span>Billed</span>
@@ -957,10 +1029,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
             <div>
               <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
                   Today&apos;s Appointments
                 </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <span className="text-fs-label text-slate-500 dark:text-slate-400 font-normal">
                   {metrics1.todayAppointments.length}
                 </span>
               </div>
@@ -1037,10 +1109,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
             <div>
               <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
                   Needs Attention
                 </h3>
-                <span className="text-xs text-slate-500 font-medium">Action Items</span>
+                <span className="text-fs-label text-slate-500 font-normal">Action Items</span>
               </div>
               <div className="p-3 sm:p-0">
                 <Table stackBelow="md">
@@ -1091,10 +1163,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
             <div>
               <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
                   Staff Presence
                 </h3>
-                <span className="text-xs text-slate-500 font-medium">Today</span>
+                <span className="text-fs-label text-slate-500 font-normal">Today</span>
               </div>
               <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 text-xs text-slate-600 dark:text-slate-300 font-medium">
                 {metrics1.staffPresence.summaryText}
@@ -1142,10 +1214,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between">
             <div>
               <div className="pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
                   My Attendance
                 </h3>
-                <span className="text-xs text-slate-500 font-medium">Today</span>
+                <span className="text-fs-label text-slate-500 font-normal">Today</span>
               </div>
               <div className="py-4 space-y-2">
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -1190,10 +1262,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
         <div>
           <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
               Upcoming Consultations
             </h3>
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-fs-label text-slate-500 font-normal">
               {metrics1.patientUpcomingAppointments?.length || 0}
             </span>
           </div>
@@ -1249,10 +1321,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
         <div>
           <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
               Recent Prescriptions
             </h3>
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-fs-label text-slate-500 font-normal">
               {metrics1.patientRecentPrescriptions?.length || 0}
             </span>
           </div>
@@ -1420,12 +1492,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               {metrics1.summaryFigures.map((fig) => (
                 <Card
                   key={fig.label}
-                  className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between"
+                  className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col justify-between min-h-0 h-auto"
                 >
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  <span
+                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                  >
                     {fig.formattedValue ?? fig.value}
                   </span>
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5">
+                  <span
+                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                  >
                     {fig.label}
                   </span>
                 </Card>
@@ -1435,37 +1513,69 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
           {/* Front Desk Today Operational Widget */}
           {canViewWidget('front_desk_today', currentUser, modules) && metrics1.frontDeskToday && (
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 min-h-0 h-auto">
               <div className="pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="text-fs-title font-bold text-slate-900 dark:text-slate-100">
                   Front Desk Today
                 </h3>
-                <span className="text-xs text-slate-500 font-medium">Operational Status</span>
+                <span className="text-fs-label text-slate-500 font-normal">Operational Status</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div>
-                  <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                <div className="flex flex-col min-h-0 h-auto">
+                  <span
+                    className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                  >
                     {metrics1.frontDeskToday.waiting}
                   </span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Waiting</p>
+                  <p
+                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                  >
+                    Waiting
+                  </p>
                 </div>
-                <div>
-                  <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                <div className="flex flex-col min-h-0 h-auto">
+                  <span
+                    className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                  >
                     {metrics1.frontDeskToday.inConsultation}
                   </span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">In Consultation</p>
+                  <p
+                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                  >
+                    In Consultation
+                  </p>
                 </div>
-                <div>
-                  <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                <div className="flex flex-col min-h-0 h-auto">
+                  <span
+                    className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                  >
                     {metrics1.frontDeskToday.bookedToday}
                   </span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Booked Today</p>
+                  <p
+                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                  >
+                    Booked Today
+                  </p>
                 </div>
-                <div>
-                  <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                <div className="flex flex-col min-h-0 h-auto">
+                  <span
+                    className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                  >
                     {metrics1.frontDeskToday.checkedInToday}
                   </span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Checked In Today</p>
+                  <p
+                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                  >
+                    Checked In Today
+                  </p>
                 </div>
               </div>
               {metrics1.frontDeskToday.outstandingNow && (
@@ -1615,7 +1725,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 {/* Section 1: Patients (administrativeAccess or any patient access) */}
                 {dailySummaryData.patients && (
                   <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
                       Patients
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-xs">
@@ -1752,7 +1862,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 {/* Section 4: Collections */}
                 {dailySummaryData.collections && (
                   <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
                       {dailySummaryData.collections.isMyCollections ? 'My Collections' : 'Collections'}
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 text-xs">
@@ -1812,7 +1922,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 {/* Section 5: Attendance */}
                 {dailySummaryData.attendance && (
                   <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
                       Attendance
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-xs mb-4">

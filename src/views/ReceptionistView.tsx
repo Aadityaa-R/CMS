@@ -1386,28 +1386,68 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         <div className="space-y-6">
           {/* Top Summary Strip: 4 Stat Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Total Checked In</div>
-                <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1.5">{totalCheckedIn}</div>
+            <Card className="min-h-0 h-auto">
+              <CardContent className="p-4 flex flex-col min-h-0 h-auto">
+                <div
+                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                >
+                  {totalCheckedIn}
+                </div>
+                <div
+                  className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                >
+                  Total Checked In
+                </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Currently Waiting</div>
-                <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1.5">{currentlyWaiting}</div>
+            <Card className="min-h-0 h-auto">
+              <CardContent className="p-4 flex flex-col min-h-0 h-auto">
+                <div
+                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                >
+                  {currentlyWaiting}
+                </div>
+                <div
+                  className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                >
+                  Currently Waiting
+                </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">In Consultation</div>
-                <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1.5">{inConsultation}</div>
+            <Card className="min-h-0 h-auto">
+              <CardContent className="p-4 flex flex-col min-h-0 h-auto">
+                <div
+                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                >
+                  {inConsultation}
+                </div>
+                <div
+                  className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                >
+                  In Consultation
+                </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Completed Today</div>
-                <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1.5">{completedToday}</div>
+            <Card className="min-h-0 h-auto">
+              <CardContent className="p-4 flex flex-col min-h-0 h-auto">
+                <div
+                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                >
+                  {completedToday}
+                </div>
+                <div
+                  className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                >
+                  Completed Today
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -15,6 +15,78 @@
   --chart-grid: #94a3b8;
   --chart-pattern: #64748b;
   --focus-outline: #0d9488;
+
+  /* Base Text Size Tokens (standard & large) */
+  --fs-kpi: 1.875rem;
+  --fs-kpi-label: 0.875rem;
+  --fs-title: 1.125rem;
+  --fs-body: 0.875rem;
+  --fs-label: 0.75rem;
+  --fs-th: 0.75rem;
+  --fs-axis: 0.6875rem;
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --fs-kpi: 1.5rem;
+    --fs-kpi-label: 0.8125rem;
+    --fs-title: 1rem;
+    --fs-body: 0.8125rem;
+    --fs-label: 0.6875rem;
+    --fs-th: 0.6875rem;
+    --fs-axis: 0.6875rem;
+  }
+}
+
+html[data-display-size='compact'] {
+  --fs-kpi: 1.5rem;
+  --fs-kpi-label: 0.8125rem;
+  --fs-title: 1rem;
+  --fs-body: 0.8125rem;
+  --fs-label: 0.6875rem;
+  --fs-th: 0.6875rem;
+  --fs-axis: 0.6875rem;
+}
+
+html[data-display-size='standard'],
+html[data-display-size='large'] {
+  --fs-kpi: 1.875rem;
+  --fs-kpi-label: 0.875rem;
+  --fs-title: 1.125rem;
+  --fs-body: 0.875rem;
+  --fs-label: 0.75rem;
+  --fs-th: 0.75rem;
+  --fs-axis: 0.6875rem;
+}
+
+.text-fs-kpi {
+  font-size: var(--fs-kpi);
+  font-weight: 700;
+}
+
+.text-fs-kpi-label {
+  font-size: var(--fs-kpi-label);
+  font-weight: 400;
+}
+
+.text-fs-title {
+  font-size: var(--fs-title);
+}
+
+.text-fs-body {
+  font-size: var(--fs-body);
+}
+
+.text-fs-label {
+  font-size: var(--fs-label);
+}
+
+.text-fs-th {
+  font-size: var(--fs-th);
+}
+
+.text-fs-axis {
+  font-size: var(--fs-axis);
 }
 
 .shadow-card {
@@ -69,6 +141,7 @@ html.dark {
 
   body {
     @apply bg-slate-50 text-slate-800 antialiased font-sans;
+    font-size: var(--fs-body);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -136,7 +209,8 @@ html.dark {
 
   /* Universal UI Base for Text Inputs - low specificity so utility classes (pl-11, etc.) override */
   input {
-    @apply rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500;
+    @apply rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-500;
+    font-size: var(--fs-body);
   }
 
   .dark input {
@@ -175,7 +249,8 @@ html.dark {
 
   /* Universal UI Base for Textarea */
   textarea {
-    @apply rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-500 resize-y;
+    @apply rounded-xl border border-slate-300 bg-white p-3 text-slate-900 placeholder:text-slate-500 resize-y;
+    font-size: var(--fs-body);
   }
 
   .dark textarea {
@@ -198,7 +273,8 @@ html.dark {
 
   /* Universal UI Base for Select Elements - eliminates native OS dropdown arrow across entire app */
   select {
-    @apply rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 cursor-pointer appearance-none;
+    @apply rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 cursor-pointer appearance-none;
+    font-size: var(--fs-body);
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.75rem center;
     background-repeat: no-repeat;
@@ -234,19 +310,23 @@ html.dark {
 
   /* Universal UI Base for Tables */
   table {
-    @apply w-full border-collapse text-left text-sm text-slate-700;
+    @apply w-full border-collapse text-left text-slate-700;
+    font-size: var(--fs-body);
   }
 
   thead {
-    @apply bg-slate-50/80 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500;
+    @apply bg-slate-50/80 border-b border-slate-200 font-semibold uppercase tracking-wider text-slate-500;
+    font-size: var(--fs-th);
   }
 
   th {
     @apply px-4 py-3 font-semibold;
+    font-size: var(--fs-th);
   }
 
   td {
     @apply px-4 py-3 border-b border-slate-100;
+    font-size: var(--fs-body);
   }
 
   tbody tr {

@@ -128,9 +128,9 @@ export const Select: React.FC<SelectProps> = ({
   }, [highlightedIndex, isOpen]);
 
   const triggerSizeClasses = {
-    sm: 'py-1.5 text-xs rounded-xl min-h-[36px]',
-    md: 'py-2 text-xs sm:text-sm font-medium rounded-xl min-h-[38px]',
-    lg: 'py-2.5 sm:py-3 text-sm font-medium rounded-xl min-h-[44px]',
+    sm: 'py-1.5 text-fs-body rounded-xl min-h-[36px]',
+    md: 'py-2 text-fs-body font-medium rounded-xl min-h-[38px]',
+    lg: 'py-2.5 sm:py-3 text-fs-body font-medium rounded-xl min-h-[44px]',
   };
 
   const triggerPaddingClasses = {
@@ -140,9 +140,9 @@ export const Select: React.FC<SelectProps> = ({
   };
 
   const optionItemSizeClasses = {
-    sm: 'px-2.5 py-1.5 text-xs',
-    md: 'px-3 py-2 text-xs sm:text-sm',
-    lg: 'px-4 py-2.5 text-sm',
+    sm: 'px-2.5 py-1.5 text-fs-body',
+    md: 'px-3 py-2 text-fs-body',
+    lg: 'px-4 py-2.5 text-fs-body',
   };
 
   return (
@@ -150,9 +150,7 @@ export const Select: React.FC<SelectProps> = ({
       {label && (
         <label
           htmlFor={id}
-          className={`block font-medium text-slate-700 dark:text-slate-300 mb-1.5 ${
-            size === 'lg' ? 'text-sm font-semibold' : 'text-xs'
-          }`}
+          className="block font-normal text-slate-700 dark:text-slate-300 mb-1.5 text-fs-label"
         >
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
@@ -341,9 +339,9 @@ export const Select: React.FC<SelectProps> = ({
         </button>
       )}
 
-      {error && <p id={errorId} role="alert" className="mt-1 text-xs text-rose-600">{error}</p>}
+      {error && <p id={errorId} role="alert" className="mt-1 text-fs-label text-rose-600">{error}</p>}
       {helperText && !error && (
-        <p id={helperId} className="mt-1 text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
+        <p id={helperId} className="mt-1 text-fs-label text-slate-500 dark:text-slate-400">{helperText}</p>
       )}
 
       {/* Custom Options Popover */}

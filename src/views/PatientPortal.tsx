@@ -677,48 +677,72 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             )}
           </div>
           {/* Patient Summary Metric Cards: Separate individual cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-              <div className="flex flex-col">
-                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 min-h-0 h-auto">
+              <div className="flex flex-col min-h-0 h-auto">
+                <span
+                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate text-fs-kpi leading-none"
+                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                >
                   {upcomingAppointments.length > 0
                     ? `${upcomingAppointments[0].dateTime.slice(0, 10)} ${upcomingAppointments[0].dateTime.slice(11, 16)}`
                     : 'None scheduled'}
                 </span>
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
+                <span
+                  className="font-normal text-slate-600 dark:text-slate-300 mt-1 text-fs-kpi-label leading-tight"
+                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                >
                   Next Appointment
                 </span>
               </div>
             </Card>
 
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-              <div className="flex flex-col">
-                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 min-h-0 h-auto">
+              <div className="flex flex-col min-h-0 h-auto">
+                <span
+                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                >
                   {formatCurrency(totalBalanceDue)}
                 </span>
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
+                <span
+                  className="font-normal text-slate-600 dark:text-slate-300 mt-1 text-fs-kpi-label leading-tight"
+                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                >
                   Balance Due
                 </span>
               </div>
             </Card>
 
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-              <div className="flex flex-col">
-                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 min-h-0 h-auto">
+              <div className="flex flex-col min-h-0 h-auto">
+                <span
+                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                >
                   {activePrescriptionsCount}
                 </span>
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
+                <span
+                  className="font-normal text-slate-600 dark:text-slate-300 mt-1 text-fs-kpi-label leading-tight"
+                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                >
                   Active Prescriptions
                 </span>
               </div>
             </Card>
 
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-              <div className="flex flex-col">
-                <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 min-h-0 h-auto">
+              <div className="flex flex-col min-h-0 h-auto">
+                <span
+                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                >
                   {visitsThisYear}
                 </span>
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
+                <span
+                  className="font-normal text-slate-600 dark:text-slate-300 mt-1 text-fs-kpi-label leading-tight"
+                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                >
                   Visits this year
                 </span>
               </div>

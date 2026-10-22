@@ -165,20 +165,20 @@ export const DetailItem: React.FC<DetailItemProps> = ({
         isThreeCol
           ? 'flex items-baseline justify-between gap-2'
           : 'grid grid-cols-[8rem_1fr] sm:grid-cols-[10rem_1fr] items-baseline gap-3'
-      } text-xs sm:text-sm text-left flex-auto max-h-[4.5rem] ${paddingClass} ${className}`}
+      } text-left flex-auto max-h-[4.5rem] ${paddingClass} ${className}`}
       {...props}
     >
-      <dt className="text-slate-500 dark:text-slate-400 font-normal text-left select-none break-words min-w-0">
+      <dt className="text-fs-label font-normal text-slate-500 dark:text-slate-400 text-left select-none break-words min-w-0">
         {label}
       </dt>
       <dd
-        className={`text-slate-900 dark:text-slate-100 font-normal ${
+        className={`text-fs-body font-medium text-slate-900 dark:text-slate-100 ${
           isThreeCol ? 'text-right shrink-0' : 'text-left'
         } break-words min-w-0`}
       >
         <div>{valContent}</div>
         {subtitle && (
-          <span className="block text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+          <span className="block text-fs-label text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
             {subtitle}
           </span>
         )}

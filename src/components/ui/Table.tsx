@@ -309,7 +309,7 @@ export const TableHeader: React.FC<React.HTMLAttributes<HTMLTableSectionElement>
   const stackClass = stackBelow ? stackHeaderClasses[stackBelow] : '';
   return (
     <thead
-      className={`bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[0.6875rem] tracking-wider whitespace-nowrap ${stackClass} ${className}`}
+      className={`bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-fs-th tracking-wider whitespace-nowrap ${stackClass} ${className}`}
       {...props}
     >
       {children}
@@ -415,7 +415,7 @@ export const TableHead: React.FC<TableHeadProps> = ({
   return (
     <th
       scope={scope}
-      className={`px-4 py-3 align-middle font-semibold text-slate-500 dark:text-slate-400 text-xs ${kindClass} ${hideClass} ${stickyClass} ${className}`}
+      className={`px-4 py-3 align-middle font-semibold text-slate-500 dark:text-slate-400 text-fs-th ${kindClass} ${hideClass} ${stickyClass} ${className}`}
       {...props}
     >
       {children}
@@ -500,7 +500,7 @@ export const TableCell: React.FC<TableCellProps> = ({
         className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${kindClass} ${hideClass} ${stackCellClass} ${className}`}
         {...props}
       >
-        <div className={`font-bold text-sm text-slate-900 dark:text-slate-100 ${desktopDisplay}`}>
+        <div className={`font-bold text-fs-body text-slate-900 dark:text-slate-100 ${desktopDisplay}`}>
           {wrappedContent}
         </div>
       </td>
@@ -538,11 +538,11 @@ export const TableCell: React.FC<TableCellProps> = ({
       >
         <div className={`flex items-start sm:items-center gap-2 sm:gap-3 text-left ${desktopDisplay}`}>
           <span
-            className={`${hideLabelClass} text-xs text-slate-500 dark:text-slate-400 w-28 sm:w-36 shrink-0 text-left select-none`}
+            className={`${hideLabelClass} text-fs-label text-slate-500 dark:text-slate-400 w-28 sm:w-36 shrink-0 text-left select-none`}
           >
             {label}
           </span>
-          <div className={`text-xs text-slate-800 dark:text-slate-200 text-left flex-1 ${effectiveKind === 'text' ? 'min-w-0 line-clamp-2 break-words max-w-xl' : 'break-words'}`}>
+          <div className={`text-fs-body text-slate-800 dark:text-slate-200 text-left flex-1 ${effectiveKind === 'text' ? 'min-w-0 line-clamp-2 break-words max-w-xl' : 'break-words'}`}>
             {wrappedContent}
           </div>
         </div>
@@ -552,7 +552,7 @@ export const TableCell: React.FC<TableCellProps> = ({
 
   return (
     <td
-      className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${kindClass} ${hideClass} ${stackCellClass} ${className}`}
+      className={`px-0 sm:px-4 py-1 sm:py-3 align-middle text-fs-body ${kindClass} ${hideClass} ${stackCellClass} ${className}`}
       {...props}
     >
       {wrappedContent}

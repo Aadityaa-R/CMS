@@ -778,21 +778,61 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
 
             return (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">On Shift Today</span>
-                  <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{onShiftCount}</span>
+                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900 flex flex-col min-h-0 h-auto">
+                  <span
+                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                  >
+                    {onShiftCount}
+                  </span>
+                  <span
+                    className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                  >
+                    On Shift Today
+                  </span>
                 </div>
-                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">Clocked In</span>
-                  <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{clockedInCount}</span>
+                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900 flex flex-col min-h-0 h-auto">
+                  <span
+                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                  >
+                    {clockedInCount}
+                  </span>
+                  <span
+                    className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                  >
+                    Clocked In
+                  </span>
                 </div>
-                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">Late Arrivals</span>
-                  <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{lateCount}</span>
+                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900 flex flex-col min-h-0 h-auto">
+                  <span
+                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                  >
+                    {lateCount}
+                  </span>
+                  <span
+                    className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                  >
+                    Late Arrivals
+                  </span>
                 </div>
-                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-1">On Approved Leave</span>
-                  <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{leaveCount}</span>
+                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900 flex flex-col min-h-0 h-auto">
+                  <span
+                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+                  >
+                    {leaveCount}
+                  </span>
+                  <span
+                    className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
+                  >
+                    On Approved Leave
+                  </span>
                 </div>
               </div>
             );

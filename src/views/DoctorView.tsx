@@ -1266,7 +1266,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       {/* Consultation Chief Complaint */}
                       <div className="space-y-1 flex-none">
-                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
+                        <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                           Chief Complaint & Reason for Visit
                         </span>
                         <p className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug">
@@ -1281,7 +1281,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       {/* Clinical Triage Vitals: Vertical list (Milestone M10.12) */}
                       <div className="space-y-2 flex-1 flex flex-col justify-start">
-                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block flex-none">
+                        <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block flex-none">
                           Clinical Triage Vitals
                         </span>
 
@@ -1295,7 +1295,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               >
                                 BP Systolic (mmHg)
                               </label>
-                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                              <div className="vital-last-visit-stacked text-fs-label text-slate-500 dark:text-slate-400">
                                 <span>
                                   Last visit:{' '}
                                   {summaryPatient?.previousVitals?.systolicBp !== undefined
@@ -1322,7 +1322,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-fs-label text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.systolicBp !== undefined
@@ -1346,7 +1346,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               >
                                 BP Diastolic (mmHg)
                               </label>
-                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                              <div className="vital-last-visit-stacked text-fs-label text-slate-500 dark:text-slate-400">
                                 <span>
                                   Last visit:{' '}
                                   {summaryPatient?.previousVitals?.diastolicBp !== undefined
@@ -1373,7 +1373,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-fs-label text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.diastolicBp !== undefined
@@ -1397,7 +1397,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               >
                                 Heart Rate (bpm)
                               </label>
-                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                              <div className="vital-last-visit-stacked text-fs-label text-slate-500 dark:text-slate-400">
                                 <span>
                                   Last visit:{' '}
                                   {summaryPatient?.previousVitals?.heartRateBpm !== undefined
@@ -1424,7 +1424,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-fs-label text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.heartRateBpm !== undefined
@@ -1448,7 +1448,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               >
                                 O2 Saturation (%)
                               </label>
-                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                              <div className="vital-last-visit-stacked text-fs-label text-slate-500 dark:text-slate-400">
                                 <span>
                                   Last visit:{' '}
                                   {summaryPatient?.previousVitals?.oxygenSaturationPct !== undefined
@@ -1475,7 +1475,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-fs-label text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.oxygenSaturationPct !== undefined
@@ -1499,7 +1499,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               >
                                 Temperature (C)
                               </label>
-                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                              <div className="vital-last-visit-stacked text-fs-label text-slate-500 dark:text-slate-400">
                                 <span>
                                   Last visit:{' '}
                                   {summaryPatient?.previousVitals?.temperatureCelsius !== undefined
@@ -1526,7 +1526,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-fs-label text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.temperatureCelsius !== undefined
@@ -1642,7 +1642,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <div className="flex-1 flex flex-col justify-start divide-y divide-slate-100 dark:divide-slate-800">
                       {/* Section 1: Previous Visit Record */}
                       <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
-                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
+                        <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                           Previous Visit Record
                         </span>
                         <DetailList columns={2} className="flex-1">
@@ -1711,7 +1711,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       {/* Section 2: Clinical Profile */}
                       <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
-                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
+                        <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                           Clinical Profile
                         </span>
                         <DetailList className="flex-1">
@@ -1736,7 +1736,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       {/* Section 3: Demographics & Primary Care */}
                       <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
-                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
+                        <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                           Demographics & Primary Care
                         </span>
                         <DetailList className="flex-1">
@@ -1779,7 +1779,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <Card className="!overflow-visible p-5 sm:p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <span className="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block">
+                      <span className="text-fs-label uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block">
                         MD Clinical Queue Inspector
                       </span>
                     </div>
@@ -1831,7 +1831,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <Card className="!overflow-visible p-5 sm:p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
+                      <span className="text-fs-label uppercase font-bold text-slate-400 tracking-wider block">
                         Doctor Clinical Queue Inspector
                       </span>
                     </div>
@@ -2121,7 +2121,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             <div className="font-bold text-slate-900 dark:text-slate-100">
                               {pat.firstName} {pat.lastName}
                             </div>
-                            <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
+                            <div className="text-fs-label text-slate-500 dark:text-slate-400">
                               <TableTruncate>{pat.email}</TableTruncate>
                             </div>
                           </TableCell>
@@ -2405,7 +2405,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <span className="text-fs-label font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Prescribed Medications ({prescriptionItems.length}/10)
                 </span>
                 {lastPrescriptionForPatient && (

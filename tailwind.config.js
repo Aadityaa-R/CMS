@@ -14,6 +14,13 @@ export default {
       fontSize: {
         '2xs': '0.625rem',
         'xs-plus': '0.6875rem',
+        'fs-kpi': 'var(--fs-kpi)',
+        'fs-kpi-label': 'var(--fs-kpi-label)',
+        'fs-title': 'var(--fs-title)',
+        'fs-body': 'var(--fs-body)',
+        'fs-label': 'var(--fs-label)',
+        'fs-th': 'var(--fs-th)',
+        'fs-axis': 'var(--fs-axis)',
       },
       colors: {
         clinic: {
@@ -33,4 +40,3 @@ export default {
   },
   plugins: [],
 };
-
