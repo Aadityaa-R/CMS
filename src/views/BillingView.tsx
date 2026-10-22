@@ -441,16 +441,16 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
       {/* Toast Notification */}
       {notification && (
-        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs rounded-lg">
+        <div role="status" aria-live="polite" className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 transition-all animate-fadeIn">
           {notification}
         </div>
       )}
 
       {/* Header & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Billing
@@ -459,49 +459,49 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
             Front desk cashiering, invoice oversight, and payment settlements.
           </p>
         </div>
+      </div>
 
-        {/* Underline Tabs */}
-        <div role="tablist" aria-label="Billing Tabs" className="flex space-x-6 border-b border-transparent">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('invoices');
-              setInvoicesPage(1);
-            }}
-            role="tab"
-            aria-selected={activeTab === 'invoices'}
-            aria-current={activeTab === 'invoices' ? 'page' : undefined}
-            className={`pb-2 text-xs font-semibold tracking-wider uppercase transition-colors ${
-              activeTab === 'invoices'
-                ? 'border-b-2 border-emerald-600 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            Invoices ({scopedInvoices.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('payments');
-              setPaymentsPage(1);
-            }}
-            role="tab"
-            aria-selected={activeTab === 'payments'}
-            aria-current={activeTab === 'payments' ? 'page' : undefined}
-            className={`pb-2 text-xs font-semibold tracking-wider uppercase transition-colors ${
-              activeTab === 'payments'
-                ? 'border-b-2 border-emerald-600 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            Payments ({scopedPayments.length})
-          </button>
-        </div>
+      {/* Sub-Workstation Navigation Tabs */}
+      <div role="tablist" aria-label="Billing Tabs" className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('invoices');
+            setInvoicesPage(1);
+          }}
+          role="tab"
+          aria-selected={activeTab === 'invoices'}
+          aria-current={activeTab === 'invoices' ? 'page' : undefined}
+          className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap ${
+            activeTab === 'invoices'
+              ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          Invoices ({scopedInvoices.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('payments');
+            setPaymentsPage(1);
+          }}
+          role="tab"
+          aria-selected={activeTab === 'payments'}
+          aria-current={activeTab === 'payments' ? 'page' : undefined}
+          className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap ${
+            activeTab === 'payments'
+              ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          Payments ({scopedPayments.length})
+        </button>
       </div>
 
       {/* Daily Collections Plain-Text Summary Card */}
       <Card>
-        <CardContent className="p-4 sm:p-5">
+        <CardContent className="p-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-600 dark:text-slate-400">
             <div>
               <span className="font-semibold text-slate-900 dark:text-slate-100">
@@ -539,7 +539,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
           >
             <CardTitle>Invoices</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 sm:p-5 pt-3 space-y-4">
+          <CardContent className="p-5 pt-3.5 space-y-4">
             {/* Filter controls */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
@@ -715,7 +715,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
           >
             <CardTitle>Payments</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 sm:p-5 pt-3 space-y-4">
+          <CardContent className="p-5 pt-3.5 space-y-4">
             {/* Filter controls */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="w-full sm:w-60">
