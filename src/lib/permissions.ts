@@ -611,6 +611,7 @@ export function canTransferPatient(
 ): boolean {
   if (!user) return false;
   if (isAdmin(user, modules)) return true;
+  if (user.role === 'receptionist') return true;
 
   const assignedDocId = getAssignedDoctorId(patientId, assignments);
   if (!assignedDocId) return false;

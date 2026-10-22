@@ -507,10 +507,10 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // 4. Authorization check if actingUser passed
     if (actingUser) {
       if (isInitialAssignment) {
-        if (!isAdmin(actingUser)) {
+        if (!isAdmin(actingUser) && actingUser.role !== 'receptionist') {
           return {
             success: false,
-            error: 'Only clinic administrators can assign unassigned patients.',
+            error: 'Only clinic administrators or receptionists can assign unassigned patients.',
             movedAppointmentsCount: 0,
             movedAppointmentIds: [],
             isInitialAssignment,
@@ -577,7 +577,17 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           return apt;
         })
       );
+
+      broadcastRealtimeEvent({
+        type: 'SYNC_COLLECTION',
+        collection: 'appointments',
+      });
     }
+
+    broadcastRealtimeEvent({
+      type: 'SYNC_COLLECTION',
+      collection: 'patientAssignments',
+    });
 
     if (addAuditLogEntry) {
       addAuditLogEntry({

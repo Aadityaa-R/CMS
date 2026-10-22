@@ -11,7 +11,8 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, ColumnDef } from '@/components/ui/Table';
-import { RowActions } from '@/components/ui/RowActions';
+import { RowActions, RowActionItem } from '@/components/ui/RowActions';
+import { useNotifications } from '@/context/NotificationContext';
 import { Appointment, Patient, AccessAuditLogEntry } from '@/types';
 import { getScopedPatients, getScopedAppointments } from '@/lib/selectors';
 import { getAssignedDoctorId, hasCapability } from '@/lib/permissions';
@@ -37,7 +38,8 @@ interface ReceptionistViewProps {
 }
 
 export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 'lounge' }) => {
-  const { currentUser, currentRole } = useAuth();
+  const { currentUser, currentRole, addAuditLogEntry } = useAuth();
+  const { addNotification } = useNotifications();
   const isMD = currentRole === 'md' || currentRole === 'admin' || currentUser?.role === 'md';
 
   // Map legacy and new tab ids
@@ -65,6 +67,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     modules = [],
     registerPatient,
     updatePatient,
+    transferPatient,
     checkInAppointment,
     checkInWalkIn,
     bookAppointment,
@@ -167,6 +170,124 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const [bookTime, setBookTime] = useState<string>('09:30');
   const [bookReason, setBookReason] = useState<string>('');
   const [bookError, setBookError] = useState<string>('');
+
+  // Transfer Modal State
+  const [transferTargetPatient, setTransferTargetPatient] = useState<Patient | null>(null);
+  const [targetDoctorId, setTargetDoctorId] = useState<string>('');
+  const [transferReason, setTransferReason] = useState<string>('');
+  const [transferError, setTransferError] = useState<string>('');
+
+  const targetPatientInConsultation = useMemo(() => {
+    if (!transferTargetPatient) return false;
+    return rawAppointments.some(
+      (a) => a.patientId === transferTargetPatient.id && a.status === 'in_consultation'
+    );
+  }, [transferTargetPatient, rawAppointments]);
+
+  const isTargetPatientUnassigned = useMemo(() => {
+    if (!transferTargetPatient) return false;
+    return !getAssignedDoctorId(transferTargetPatient.id, patientAssignments);
+  }, [transferTargetPatient, patientAssignments]);
+
+  const handleOpenTransferModal = (pat: Patient) => {
+    setTransferTargetPatient(pat);
+    const currentDocId = getAssignedDoctorId(pat.id, patientAssignments);
+    const availableDocs = doctors.filter(
+      (d) =>
+        d.id !== currentDocId &&
+        d.status === 'active' &&
+        hasCapability(d, 'consultationWorkstation') &&
+        isDoctorAvailable(d.id, todayStr)
+    );
+    setTargetDoctorId(availableDocs[0]?.id || '');
+    setTransferReason('');
+    setTransferError('');
+  };
+
+  const handleConfirmTransfer = () => {
+    if (!transferTargetPatient) return;
+    if (targetPatientInConsultation) {
+      setTransferError('Conclude the current consultation before transferring.');
+      return;
+    }
+    if (!targetDoctorId) {
+      setTransferError('Please select a receiving physician.');
+      return;
+    }
+    if (!isDoctorAvailable(targetDoctorId, todayStr)) {
+      setTransferError('Doctor is not available today.');
+      return;
+    }
+    if (!transferReason.trim()) {
+      setTransferError(
+        isTargetPatientUnassigned
+          ? 'Assignment reason is required for clinical records.'
+          : 'Transfer reason is required for clinical continuity.'
+      );
+      return;
+    }
+
+    const currentDocId = getAssignedDoctorId(transferTargetPatient.id, patientAssignments);
+    const oldDoc = doctors.find((d) => d.id === currentDocId);
+    const newDoc = doctors.find((d) => d.id === targetDoctorId);
+    const oldDocName = oldDoc ? oldDoc.name : 'Unassigned';
+    const newDocName = newDoc ? newDoc.name : 'Receiving Physician';
+
+    const result = transferPatient(
+      transferTargetPatient.id,
+      targetDoctorId,
+      transferReason.trim(),
+      currentUser?.id,
+      currentUser?.name,
+      currentUser
+    );
+
+    if (!result.success) {
+      setTransferError(result.error || 'Transfer failed.');
+      return;
+    }
+
+    const movedText =
+      result.movedAppointmentsCount > 0
+        ? ` Moved ${result.movedAppointmentsCount} appointment(s) (${result.movedAppointmentIds.join(', ')}).`
+        : ' No open appointments moved.';
+
+    if (addAuditLogEntry) {
+      addAuditLogEntry({
+        targetRole: 'patient',
+        targetStaffName: `${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`,
+        targetUserId: transferTargetPatient.id,
+        action: 'permission_updated',
+        description: isTargetPatientUnassigned
+          ? `Patient assigned to ${newDocName}.${movedText} Reason: ${transferReason.trim()}`
+          : `Patient care transferred from ${oldDocName} to ${newDocName}.${movedText} Reason: ${transferReason.trim()}`,
+        authorizedBy: currentUser?.name || 'Reception Staff',
+      });
+    }
+
+    if (addNotification) {
+      addNotification({
+        recipientId: targetDoctorId,
+        title: isTargetPatientUnassigned ? 'New Patient Assigned' : 'Patient Care Transferred',
+        message: isTargetPatientUnassigned
+          ? `Patient ${transferTargetPatient.firstName} ${transferTargetPatient.lastName} (${transferTargetPatient.mrn}) assigned to your care by ${currentUser?.name || 'Reception'}.`
+          : `Patient ${transferTargetPatient.firstName} ${transferTargetPatient.lastName} (${transferTargetPatient.mrn}) transferred to your care by ${currentUser?.name || 'Reception'}.${movedText}`,
+        type: 'general',
+        linkTab: 'consultation',
+      }).catch(() => {});
+    }
+
+    showNotification(
+      isTargetPatientUnassigned
+        ? `Patient ${transferTargetPatient.firstName} ${transferTargetPatient.lastName} assigned to ${newDocName}.`
+        : `Patient ${transferTargetPatient.firstName} ${transferTargetPatient.lastName} transferred to ${newDocName}.`
+    );
+
+    setTransferTargetPatient(null);
+    setTargetDoctorId('');
+    setTransferReason('');
+    setTransferError('');
+  };
 
   // Tab 1: Waiting Lounge Data
   const loungeAppointments = useMemo(() => {
@@ -818,24 +939,30 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       isActions: true,
       render: (apt) => {
         const isConcluded = apt.status === 'in_consultation' || apt.status === 'completed';
+        const pat = rawPatients.find((p) => p.id === apt.patientId);
+        const actions: RowActionItem[] = [];
+        if (!isConcluded) {
+          actions.push({
+            label: 'Call Next',
+            onClick: () => handleCallNext(apt),
+            ariaLabel: `Call next for ${apt.patientName}`,
+          });
+          actions.push({
+            label: 'Mark Completed',
+            onClick: () => handleMarkCompleted(apt),
+            ariaLabel: `Mark ${apt.patientName} completed`,
+          });
+          if (pat) {
+            actions.push({
+              label: 'Transfer',
+              onClick: () => handleOpenTransferModal(pat),
+              ariaLabel: `Transfer ${apt.patientName} to another doctor`,
+            });
+          }
+        }
         return (
           <RowActions
-            actions={
-              !isConcluded
-                ? [
-                    {
-                      label: 'Call Next',
-                      onClick: () => handleCallNext(apt),
-                      ariaLabel: `Call next for ${apt.patientName}`,
-                    },
-                    {
-                      label: 'Mark Completed',
-                      onClick: () => handleMarkCompleted(apt),
-                      ariaLabel: `Mark ${apt.patientName} completed`,
-                    },
-                  ]
-                : []
-            }
+            actions={actions}
             subject={apt.patientName}
           />
         );
@@ -904,21 +1031,29 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         const isScheduled = apt.status === 'scheduled';
         const isDocAvailable = isDoctorAvailable(apt.doctorId, todayStr);
         const canCheckInItem = isToday && isScheduled && isDocAvailable;
+        const pat = rawPatients.find((p) => p.id === apt.patientId);
+        const actions: RowActionItem[] = [];
+
+        if (canCheckInItem) {
+          actions.push({
+            label: 'Check In',
+            variant: 'primary',
+            onClick: () => handleCheckInBooked(apt),
+            ariaLabel: `Check in ${apt.patientName}`,
+          });
+        }
+
+        if (apt.status !== 'completed' && apt.status !== 'in_consultation' && pat) {
+          actions.push({
+            label: 'Transfer',
+            onClick: () => handleOpenTransferModal(pat),
+            ariaLabel: `Transfer ${apt.patientName} to another doctor`,
+          });
+        }
 
         return (
           <RowActions
-            actions={
-              canCheckInItem
-                ? [
-                    {
-                      label: 'Check In',
-                      variant: 'primary',
-                      onClick: () => handleCheckInBooked(apt),
-                      ariaLabel: `Check in ${apt.patientName}`,
-                    },
-                  ]
-                : []
-            }
+            actions={actions}
             subject={apt.patientName}
           />
         );
@@ -973,18 +1108,26 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       kind: 'short',
       priority: 3,
       isActions: true,
-      render: (p) => (
-        <RowActions
-          actions={[
-            {
-              label: 'Edit',
-              onClick: () => handleOpenEditPatient(p),
-              ariaLabel: `Edit information for ${p.firstName} ${p.lastName}`,
-            },
-          ]}
-          subject={`${p.firstName} ${p.lastName}`}
-        />
-      ),
+      render: (p) => {
+        const isUnassigned = !getAssignedDoctorId(p.id, patientAssignments);
+        return (
+          <RowActions
+            actions={[
+              {
+                label: 'Edit',
+                onClick: () => handleOpenEditPatient(p),
+                ariaLabel: `Edit information for ${p.firstName} ${p.lastName}`,
+              },
+              {
+                label: isUnassigned ? 'Assign' : 'Transfer',
+                onClick: () => handleOpenTransferModal(p),
+                ariaLabel: `${isUnassigned ? 'Assign' : 'Transfer'} care for ${p.firstName} ${p.lastName}`,
+              },
+            ]}
+            subject={`${p.firstName} ${p.lastName}`}
+          />
+        );
+      },
     },
   ];
 
@@ -2004,6 +2147,123 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           </div>
         </div>
       </Modal>
+
+      {/* Transfer Patient Care Modal */}
+      {transferTargetPatient && (
+        <Modal
+          isOpen={!!transferTargetPatient}
+          onClose={() => setTransferTargetPatient(null)}
+          title={
+            isTargetPatientUnassigned
+              ? `Assign Care: ${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`
+              : `Transfer Care: ${transferTargetPatient.firstName} ${transferTargetPatient.lastName}`
+          }
+          maxWidth="lg"
+          overflowVisible={true}
+          bodyClassName="min-h-[280px]"
+          footer={
+            <div className="flex justify-end gap-2 w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTransferTargetPatient(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={
+                  targetPatientInConsultation ||
+                  !targetDoctorId ||
+                  !isDoctorAvailable(targetDoctorId, todayStr) ||
+                  doctors.filter(
+                    (d) =>
+                      d.status === 'active' &&
+                      d.id !== getAssignedDoctorId(transferTargetPatient.id, patientAssignments) &&
+                      isDoctorAvailable(d.id, todayStr)
+                  ).length === 0
+                }
+                onClick={handleConfirmTransfer}
+              >
+                {isTargetPatientUnassigned ? 'Confirm Assignment' : 'Confirm Transfer'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            {targetPatientInConsultation && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200">
+                Conclude the current consultation before transferring.
+              </div>
+            )}
+            {transferError && !targetPatientInConsultation && (
+              <div className="p-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 rounded text-xs">
+                {transferError}
+              </div>
+            )}
+            <div>
+              <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem] mb-1">Current Assigned Physician</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {doctors.find((d) => d.id === getAssignedDoctorId(transferTargetPatient.id, patientAssignments))?.name || 'Unassigned'}
+              </span>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
+                {isTargetPatientUnassigned ? 'Assigned Physician' : 'Receiving Physician'}
+              </label>
+              {(() => {
+                const availableCandidateDocs = doctors.filter(
+                  (d) =>
+                    d.status === 'active' &&
+                    d.id !== getAssignedDoctorId(transferTargetPatient.id, patientAssignments) &&
+                    isDoctorAvailable(d.id, todayStr)
+                );
+                if (availableCandidateDocs.length === 0) {
+                  return (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-200">
+                      No doctors available
+                    </div>
+                  );
+                }
+                return (
+                  <Select
+                    size="lg"
+                    searchable={true}
+                    searchPlaceholder="Search physician by name or specialization..."
+                    value={targetDoctorId}
+                    onChange={(e) => setTargetDoctorId(e.target.value)}
+                    options={availableCandidateDocs.map((d) => ({
+                      value: d.id,
+                      label: `${d.name} (${d.specialization})`,
+                    }))}
+                  />
+                );
+              })()}
+              {targetDoctorId && !isDoctorAvailable(targetDoctorId, todayStr) && (
+                <div className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">
+                  Doctor is not available today
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="text-slate-700 dark:text-slate-300 block font-medium mb-1.5">
+                {isTargetPatientUnassigned ? 'Clinical Assignment Reason' : 'Clinical Transfer Reason'}
+              </label>
+              <Textarea
+                rows={3}
+                value={transferReason}
+                onChange={(e) => setTransferReason(e.target.value)}
+                placeholder={
+                  isTargetPatientUnassigned
+                    ? 'Document clinical indication for this initial physician assignment...'
+                    : 'Document clinical indication or continuity rationale for this transfer...'
+                }
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
