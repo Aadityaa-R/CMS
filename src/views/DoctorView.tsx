@@ -1637,10 +1637,15 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           className={`flex-1 ${summaryPatient.previousVitals ? 'border-t border-slate-100 dark:border-slate-800' : ''}`}
                         >
                           {!summaryPatient.previousVitals && (
-                            <DetailItem label="Vitals" value="None recorded" />
+                            <DetailItem
+                              label="Vitals"
+                              className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
+                              value="None recorded"
+                            />
                           )}
                           <DetailItem
                             label="Last Reason"
+                            className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
                             value={lastCompletedApt?.reasonForVisit || 'None recorded'}
                           />
                         </DetailList>
