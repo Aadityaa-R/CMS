@@ -142,14 +142,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
 
   return (
     <>
-      <header className="h-14 bg-slate-900 text-slate-300 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 transition-colors">
+      <header className="h-11 min-h-[2.75rem] bg-slate-900 text-slate-300 border-b border-slate-800 px-3 sm:px-5 flex items-center justify-between sticky top-0 z-20 transition-colors">
         {/* Brand / Clinic Title */}
         <div className="flex items-center gap-2 sm:gap-4">
           <button
             type="button"
             data-sidebar-ignore-outside="true"
             onClick={onToggleSidebar || toggleSidebar}
-            className={`w-9 h-9 min-w-[2.25rem] min-h-[2.25rem] p-2 rounded-lg lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 ${
+            className={`w-8 h-8 min-w-[2rem] min-h-[2rem] flex items-center justify-center p-1.5 rounded-lg lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 ${
               isSidebarOpen
                 ? 'bg-slate-800 text-teal-300'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -160,19 +160,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
             aria-controls="sidebar-navigation"
           >
             {isSidebarOpen ? (
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             ) : (
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4" />
             )}
           </button>
           <button
             type="button"
             onClick={() => onNavigate?.(currentRole === 'patient' ? 'overview' : 'dashboard')}
-            className="flex items-center gap-3 text-left cursor-pointer outline-none focus:outline-none focus:ring-0 group"
+            className="flex items-center gap-2.5 text-left cursor-pointer outline-none focus:outline-none focus:ring-0 group"
             title={currentRole === 'patient' ? 'Go to My Portal' : 'Go to Dashboard'}
           >
-            <div className="w-9 h-9 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold ring-2 ring-teal-500/20 group-hover:bg-teal-700 transition-colors">
-              <Building2 className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold ring-2 ring-teal-500/20 group-hover:bg-teal-700 transition-colors">
+              <Building2 className="w-4 h-4" />
             </div>
             <div className="min-w-0 text-left">
               <h1 className="font-bold text-slate-100 text-sm sm:text-base leading-tight tracking-tight truncate max-w-[190px] sm:max-w-none">
@@ -183,20 +183,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
         </div>
 
         {/* Right Section: Notifications, Profile Dropdown */}
-        <div className="flex items-center gap-4 sm:gap-5">
+        <div className="flex items-center gap-3 sm:gap-4">
 
           {/* Notifications indicator with interactive popover */}
           <div className="relative" ref={notificationsRef}>
             <button
               type="button"
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors cursor-pointer relative outline-none focus:outline-none focus:ring-0"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors cursor-pointer relative outline-none focus:outline-none focus:ring-0"
               aria-label={`Notifications (${unreadCount} unread)`}
               aria-expanded={isNotificationsOpen}
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full ring-2 ring-slate-900" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-teal-500 rounded-full ring-2 ring-slate-900" />
               )}
             </button>
 
@@ -295,7 +295,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
           </div>
 
           {/* Profile Dropdown Container: only the profile icon */}
-          <div className="relative pl-3 border-l border-slate-800" ref={dropdownRef}>
+          <div className="relative pl-2.5 border-l border-slate-800" ref={dropdownRef}>
             <button
               ref={avatarButtonRef}
               id="user-menu-button"
@@ -311,7 +311,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
                 }
               }}
               onKeyDown={handleAvatarKeyDown}
-              className="w-9 h-9 rounded-lg bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium transition-all cursor-pointer outline-none focus:outline-none focus:ring-0"
+              className="w-8 h-8 rounded-lg bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center font-medium transition-all cursor-pointer outline-none focus:outline-none focus:ring-0"
               aria-label="User profile menu"
               aria-haspopup="menu"
               aria-expanded={isDropdownOpen}
