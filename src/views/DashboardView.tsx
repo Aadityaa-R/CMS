@@ -68,14 +68,10 @@ const formatStatusText = (status: string): string => {
 // Grouped bar chart component for Patients and Visits
 interface PatientsAndVisitsChartProps {
   buckets: PatientsAndVisitsBucket[];
-  activeBucket: ChartBucketType;
-  onBucketChange: (bucket: ChartBucketType) => void;
 }
 
 const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
   buckets,
-  activeBucket,
-  onBucketChange,
 }) => {
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState<number>(600);
@@ -131,22 +127,6 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
           <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
             Patients and Visits
           </h3>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
-              <button
-                key={b}
-                type="button"
-                onClick={() => onBucketChange(b)}
-                className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
-                  activeBucket === b
-                    ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
-                }`}
-              >
-                {b.charAt(0).toUpperCase() + b.slice(1)}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
@@ -301,14 +281,10 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
 // Line chart component for Fees and Payments
 interface FeesAndPaymentsChartProps {
   buckets: FeesAndPaymentsBucket[];
-  activeBucket: ChartBucketType;
-  onBucketChange: (bucket: ChartBucketType) => void;
 }
 
 const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
   buckets,
-  activeBucket,
-  onBucketChange,
 }) => {
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState<number>(600);
@@ -377,22 +353,6 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
           <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
             Fees and Payments
           </h3>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {(['day', 'week', 'month'] as ChartBucketType[]).map((b) => (
-              <button
-                key={b}
-                type="button"
-                onClick={() => onBucketChange(b)}
-                className={`pb-1 text-xs font-semibold cursor-pointer border-b-2 transition-none ${
-                  activeBucket === b
-                    ? 'text-teal-700 dark:text-teal-400 border-teal-600 dark:border-teal-500'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-transparent'
-                }`}
-              >
-                {b.charAt(0).toUpperCase() + b.slice(1)}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
@@ -551,8 +511,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   // Overview date range & buckets
   const [dateRange, setDateRange] = useState<DateRangePreset>('this_month');
-  const [chartBucket1, setChartBucket1] = useState<ChartBucketType>('day');
-  const [chartBucket2, setChartBucket2] = useState<ChartBucketType>('day');
+  const [chartBucket1] = useState<ChartBucketType>('day');
+  const [chartBucket2] = useState<ChartBucketType>('day');
 
   // Daily Summary date picker
   const [dailySummaryDate, setDailySummaryDate] = useState<string>(() => toLocalDateKey(new Date()));
@@ -814,16 +774,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {(userIsAdmin || hasConsult) && (
         <PatientsAndVisitsChart
           buckets={metrics1.patientsAndVisits}
-          activeBucket={chartBucket1}
-          onBucketChange={setChartBucket1}
         />
       )}
 
       {hasBilling && (
         <FeesAndPaymentsChart
           buckets={metrics2.feesAndPayments || []}
-          activeBucket={chartBucket2}
-          onBucketChange={setChartBucket2}
         />
       )}
     </div>
