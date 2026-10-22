@@ -1264,30 +1264,11 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       {/* TAB 2: APPOINTMENTS */}
       {selectedTab === 'appointments' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Consultation Date:</span>
-              <div className="w-48">
-                <DatePicker value={agendaDate} onChange={(d) => setAgendaDate(d)} />
-              </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Consultation Date:</span>
+            <div className="w-48">
+              <DatePicker value={agendaDate} onChange={(d) => setAgendaDate(d)} />
             </div>
-            {!isMD && (
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => {
-                  setBookPatientId(patients[0]?.id || '');
-                  setBookDoctorId(doctors[0]?.id || '');
-                  setBookDate(agendaDate);
-                  setBookTime('09:30');
-                  setBookReason('');
-                  setBookError('');
-                  setIsBookOpen(true);
-                }}
-              >
-                Book Appointment
-              </Button>
-            )}
           </div>
 
           <Card>
