@@ -12,6 +12,7 @@ import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/Interact
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, ColumnDef } from '@/components/ui/Table';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
+import { Activity, Pill, Calendar } from 'lucide-react';
 import { useNotifications } from '@/context/NotificationContext';
 import { Appointment, Patient, AccessAuditLogEntry } from '@/types';
 import { getScopedPatients, getScopedAppointments } from '@/lib/selectors';
@@ -65,6 +66,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     doctors,
     patientAssignments = [],
     modules = [],
+    vitals = [],
+    prescriptions = [],
     registerPatient,
     updatePatient,
     transferPatient,
@@ -170,6 +173,13 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const [bookTime, setBookTime] = useState<string>('09:30');
   const [bookReason, setBookReason] = useState<string>('');
   const [bookError, setBookError] = useState<string>('');
+
+  // Patient Record Modal State
+  const [recordPatient, setRecordPatient] = useState<Patient | null>(null);
+  const handleOpenViewRecord = (pat: Patient) => {
+    const fullPatient = rawPatients.find((p) => p.id === pat.id) || pat;
+    setRecordPatient(fullPatient);
+  };
 
   // Transfer Modal State
   const [transferTargetPatient, setTransferTargetPatient] = useState<Patient | null>(null);
@@ -954,6 +964,11 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           });
           if (pat) {
             actions.push({
+              label: 'View Record',
+              onClick: () => handleOpenViewRecord(pat),
+              ariaLabel: `View record for ${apt.patientName}`,
+            });
+            actions.push({
               label: 'Transfer',
               onClick: () => handleOpenTransferModal(pat),
               ariaLabel: `Transfer ${apt.patientName} to another doctor`,
@@ -1043,6 +1058,14 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           });
         }
 
+        if (pat) {
+          actions.push({
+            label: 'View Record',
+            onClick: () => handleOpenViewRecord(pat),
+            ariaLabel: `View record for ${apt.patientName}`,
+          });
+        }
+
         if (apt.status !== 'completed' && apt.status !== 'in_consultation' && pat) {
           actions.push({
             label: 'Transfer',
@@ -1113,6 +1136,11 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         return (
           <RowActions
             actions={[
+              {
+                label: 'View Record',
+                onClick: () => handleOpenViewRecord(p),
+                ariaLabel: `View medical record for ${p.firstName} ${p.lastName}`,
+              },
               {
                 label: 'Edit',
                 onClick: () => handleOpenEditPatient(p),
@@ -2147,6 +2175,284 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           </div>
         </div>
       </Modal>
+
+      {/* Patient Record Inspection Modal */}
+      {recordPatient && (
+        <Modal
+          isOpen={!!recordPatient}
+          onClose={() => setRecordPatient(null)}
+          title={`Patient Medical Record: ${recordPatient.firstName} ${recordPatient.lastName}`}
+          maxWidth="2xl"
+          bodyClassName="max-h-[80vh] overflow-y-auto"
+          footer={
+            <div className="flex justify-end gap-2 w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRecordPatient(null)}
+              >
+                Close Record
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            {/* Header Identity & Demographics */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700/80 pb-2.5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      {recordPatient.firstName} {recordPatient.lastName}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 uppercase">
+                      {recordPatient.status || 'Active'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                    MRN: <strong className="text-slate-700 dark:text-slate-200">{recordPatient.mrn}</strong> • Registered: {recordPatient.registeredDate || 'Enrolled'}
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="block font-medium">Attending Physician:</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    {doctors.find((d) => d.id === getAssignedDoctorId(recordPatient.id, patientAssignments))?.name || 'Unassigned'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">DOB / Age</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {formatDate(recordPatient.dob)} ({recordPatient.age} yrs)
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Gender</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 capitalize">
+                    {recordPatient.gender}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Blood Group</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {recordPatient.bloodGroup || 'Not Tested'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Primary Phone</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                    {recordPatient.phone}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-xs">
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Residential Address</span>
+                  <span className="text-slate-800 dark:text-slate-200">
+                    {recordPatient.address || 'Standard Outpatient Residence'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Emergency Contact</span>
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">
+                    {recordPatient.emergencyContact?.name || 'Emergency Contact'} ({recordPatient.emergencyContact?.relationship || 'Contact'}):{' '}
+                    <span className="font-mono">{recordPatient.emergencyContact?.phone || recordPatient.phone}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Clinical Alerts: Allergies & Chronic Conditions */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3 bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/60 rounded-xl space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-xs text-rose-800 dark:text-rose-300">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                  <span>Allergy Profile & Warnings</span>
+                </div>
+                <div className="text-xs text-slate-700 dark:text-slate-300">
+                  {recordPatient.allergies && recordPatient.allergies.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {recordPatient.allergies.map((allergy, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 font-semibold text-[11px]">
+                          {allergy}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="italic text-slate-500 dark:text-slate-400">No known drug or environmental allergies recorded.</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 rounded-xl space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-xs text-amber-800 dark:text-amber-300">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                  <span>Chronic Medical Conditions</span>
+                </div>
+                <div className="text-xs text-slate-700 dark:text-slate-300">
+                  {recordPatient.chronicConditions && recordPatient.chronicConditions.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {recordPatient.chronicConditions.map((cond, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 font-semibold text-[11px]">
+                          {cond}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="italic text-slate-500 dark:text-slate-400">No active chronic medical conditions documented.</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Latest Recorded Vitals */}
+            <div className="p-3.5 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2">
+              <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                <div className="flex items-center gap-2 font-bold text-xs text-slate-800 dark:text-slate-200">
+                  <Activity className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  <span>Latest Clinical Triage Vitals</span>
+                </div>
+                {(() => {
+                  const patVitals = vitals.find((v) => v.patientId === recordPatient.id);
+                  return patVitals ? (
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      {patVitals.recordedAt.slice(0, 16).replace('T', ' ')} by {patVitals.recordedByName || 'Clinical Staff'}
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+              {(() => {
+                const patVitals = vitals.find((v) => v.patientId === recordPatient.id);
+                if (!patVitals) {
+                  return (
+                    <p className="text-xs text-slate-400 dark:text-slate-500 italic py-1">
+                      No triage vital signs recorded yet for this patient.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1 font-mono text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-sans block">Blood Pressure</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">
+                        {patVitals.systolicBp}/{patVitals.diastolicBp} mmHg
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-sans block">Heart Rate</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">
+                        {patVitals.heartRateBpm} bpm
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-sans block">O2 Saturation</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">
+                        {patVitals.oxygenSaturationPct}%
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-sans block">Temperature</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">
+                        {patVitals.temperatureCelsius}°C
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-sans block">BMI</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">
+                        {patVitals.bmi || '-'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Prescriptions & Medications */}
+            <div className="p-3.5 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                <Pill className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                <span>Active Prescriptions & Medications (e-Rx)</span>
+              </div>
+              {(() => {
+                const patientRxList = prescriptions.filter((rx) => rx.patientId === recordPatient.id);
+                if (patientRxList.length === 0) {
+                  return (
+                    <p className="text-xs text-slate-400 dark:text-slate-500 italic py-1">
+                      No active prescriptions on file for this patient.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="space-y-2 max-h-36 overflow-y-auto pt-1">
+                    {patientRxList.map((rx) => (
+                      <div key={rx.id} className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs space-y-0.5">
+                        <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-slate-100">
+                          <span className="font-mono text-teal-700 dark:text-teal-400">{rx.prescriptionNumber}</span>
+                          <span className="text-[10px] font-mono text-slate-500">{rx.date} • Dr. {rx.doctorName}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-700 dark:text-slate-300">
+                          <strong>Diagnosis:</strong> {rx.diagnosis}
+                        </div>
+                        <div className="text-[11px] text-teal-800 dark:text-teal-300 font-medium">
+                          <strong>Medicines:</strong> {rx.items.map((i) => `${i.medicineName} (${i.dosage}, ${i.frequency})`).join('; ')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Visit & Consultation History */}
+            <div className="p-3.5 bg-slate-50/80 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-xs text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                <span>Consultation & Appointment History</span>
+              </div>
+              {(() => {
+                const patApts = rawAppointments.filter((a) => a.patientId === recordPatient.id);
+                if (patApts.length === 0) {
+                  return (
+                    <p className="text-xs text-slate-400 dark:text-slate-500 italic py-1">
+                      No consultation visits recorded for this patient.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pt-1">
+                    {patApts.map((a) => (
+                      <div key={a.id} className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-semibold text-slate-900 dark:text-slate-100">
+                            Dr. {a.doctorName} • <span className="font-mono text-teal-600 dark:text-teal-400">Token #{a.tokenNumber}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            {a.dateTime ? a.dateTime.replace('T', ' ') : 'Date pending'} • {a.reasonForVisit || 'General Consultation'}
+                          </div>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
+                          a.status === 'completed'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                            : a.status === 'in_consultation'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+                            : a.status === 'checked_in'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300'
+                            : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
+                        }`}>
+                          {a.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Transfer Patient Care Modal */}
       {transferTargetPatient && (

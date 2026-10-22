@@ -61,7 +61,12 @@ export function getScopedPatients(
     );
   }
 
-  // 2. Staff without EMR Records Access: demographics only, stripped of all clinical data
+  // 2. Receptionist view: full patient directory records
+  if (currentUser.role === 'receptionist') {
+    return patients;
+  }
+
+  // 3. Staff without EMR Records Access: demographics only, stripped of all clinical data
   if (!hasCapability(currentUser, 'emrRecordsAccess', modules)) {
     return patients.map((p) => scopePatientForReceptionist(p));
   }
@@ -118,7 +123,12 @@ export function getScopedAppointments(
     );
   }
 
-  // 2. Staff without EMR Records Access: metadata only, stripped of clinical consultation notes
+  // 2. Receptionist view: full appointment records including clinical notes
+  if (currentUser.role === 'receptionist') {
+    return appointments;
+  }
+
+  // 3. Staff without EMR Records Access: metadata only, stripped of clinical consultation notes
   if (!hasCapability(currentUser, 'emrRecordsAccess', modules)) {
     return appointments.map((a) => scopeAppointmentForReceptionist(a));
   }
@@ -170,7 +180,12 @@ export function getScopedPrescriptions(
     );
   }
 
-  // 2. Staff without EMR Records Access: strictly forbidden
+  // 2. Receptionist view: can view patient prescriptions for medical records
+  if (currentUser.role === 'receptionist') {
+    return prescriptions;
+  }
+
+  // 3. Staff without EMR Records Access: strictly forbidden
   if (!hasCapability(currentUser, 'emrRecordsAccess', modules)) {
     return [];
   }

@@ -159,6 +159,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       hasCapability(currentUser, 'paymentRecording', modules)
     ) {
       items.push({ id: 'role_receptionist', label: 'Reception', icon: <UserCheck className="w-4 h-4" /> });
+      items.push({ id: 'patient', label: 'Patient Records', icon: <FileText className="w-4 h-4" /> });
     }
 
     if (canViewBilling(currentUser, modules)) {
