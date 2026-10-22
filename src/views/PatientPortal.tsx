@@ -1310,15 +1310,19 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             />
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                Available Time Slots (20 min)
+              <label id="booking-slots-label" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Available Time Slots (20 min) <span className="text-rose-500">*</span>
               </label>
               {availableBookingSlots.length === 0 ? (
                 <p className="text-xs text-slate-500 py-3">
                   No available slots on this date.
                 </p>
               ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 pt-1">
+                <div
+                  role="group"
+                  aria-labelledby="booking-slots-label"
+                  className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 pt-1"
+                >
                   {availableBookingSlots.map((slot) => {
                     const isSelected = bookingSlot === slot;
                     return (
@@ -1342,20 +1346,22 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                  Reason for Visit
+                <label htmlFor="booking-reason-input" className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                  Reason for Visit <span className="text-rose-500">*</span>
                 </label>
                 <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
                   {bookingReason.length} / 300
                 </span>
               </div>
               <textarea
+                id="booking-reason-input"
                 value={bookingReason}
                 onChange={(e) => setBookingReason(e.target.value.slice(0, 300))}
                 rows={3}
                 placeholder="Briefly state your symptoms or reason for visit (minimum 3 characters)"
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-teal-500"
                 required
+                aria-required="true"
               />
             </div>
 
