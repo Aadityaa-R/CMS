@@ -64,7 +64,7 @@ export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = (
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 w-fit max-w-full min-w-[40rem]">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 w-full">
         <Table stackBelow="sm">
           <TableHeader>
             <TableRow>
@@ -89,7 +89,7 @@ export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = (
                 <TableCell label="Password" kind="short" priority={4} className="text-[0.6875rem] text-slate-700">
                   {c.password}
                 </TableCell>
-                <TableCell label="Assigned Staff" kind="short" priority={5}>
+                <TableCell label="Assigned Staff" kind="short" priority={5} className="whitespace-normal">
                   <div className="text-xs text-slate-800 font-medium truncate">{c.fullName}</div>
                   <div className="text-[0.625rem] text-slate-500 mt-0.5 leading-snug">
                     {getRoleHint(c.role)}
