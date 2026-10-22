@@ -462,7 +462,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
           Beacon Health Clinic
         </h1>
         <p className="mt-1 text-center text-xs text-slate-400">
-          Clinic Management System (CMS) • Self-Registration Portal
+          Self-Registration Portal
         </p>
       </div>
 

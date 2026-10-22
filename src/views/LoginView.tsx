@@ -477,8 +477,8 @@ export const LoginView: React.FC = () => {
             </h1>
             <p className="mt-1 text-center text-xs text-slate-400">
               {viewMode === 'login'
-                ? 'Clinic Management System (CMS) • Multi-Role Healthcare Portal'
-                : 'Clinic Management System (CMS) • Self-Registration Portal'}
+                ? 'Multi-Role Healthcare Portal'
+                : 'Self-Registration Portal'}
             </p>
           </div>
         </div>

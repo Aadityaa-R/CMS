@@ -178,9 +178,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
               <h1 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base md:text-lg leading-tight tracking-tight truncate max-w-[190px] sm:max-w-none">
                 Beacon Health Clinic
               </h1>
-              <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
-                Clinical Management System
-              </p>
             </div>
           </button>
         </div>
