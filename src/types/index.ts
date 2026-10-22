@@ -135,7 +135,7 @@ export interface InAppNotification {
   recipientId: string;
   title: string;
   message: string;
-  type: 'booking' | 'cancellation' | 'reschedule' | 'leave' | 'general';
+  type: 'booking' | 'cancellation' | 'reschedule' | 'leave' | 'general' | 'checkin' | 'completion' | string;
   read: boolean;
   createdAt: string;
   linkTab?: string;

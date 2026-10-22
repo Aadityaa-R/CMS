@@ -15,7 +15,9 @@ import {
   AccessModule,
   StandardCapability,
   AppointmentSource,
+  InAppNotification,
 } from '@/types';
+import { broadcastRealtimeEvent, subscribeRealtimeEvent } from '@/lib/realtime';
 import {
   isAdmin,
   canTransferPatient,
@@ -320,37 +322,66 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadRepo();
   }, []);
 
-  // Cross-tab sync
+  // Cross-tab sync and realtime event listener
   useEffect(() => {
     const handleStorage = async (e: StorageEvent) => {
       if (!e.key) return;
       if (e.key === `${STORAGE_KEY_PREFIX}patients`) {
         const repo = getRepository<Patient>('patients');
+        (repo as any).invalidateCache?.();
         setPatients(await repo.list());
       }
       if (e.key === `${STORAGE_KEY_PREFIX}appointments`) {
         const repo = getRepository<Appointment>('appointments');
+        (repo as any).invalidateCache?.();
         setAppointments(await repo.list());
       }
       if (e.key === `${STORAGE_KEY_PREFIX}prescriptions`) {
         const repo = getRepository<Prescription>('prescriptions');
+        (repo as any).invalidateCache?.();
         setPrescriptions(await repo.list());
       }
       if (e.key === `${STORAGE_KEY_PREFIX}assignments`) {
         const repo = getRepository<PatientAssignment>('assignments');
+        (repo as any).invalidateCache?.();
         setPatientAssignments(await repo.list());
       }
       if (e.key === `${STORAGE_KEY_PREFIX}roles`) {
         const repo = getRepository<AccessModule>('roles');
+        (repo as any).invalidateCache?.();
         setModules(await repo.list());
       }
       if (e.key === `${STORAGE_KEY_PREFIX}formulary`) {
         const repo = getRepository<Medicine>('formulary');
+        (repo as any).invalidateCache?.();
         setMedicines(await repo.list());
       }
     };
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+
+    const unsubscribeRealtime = subscribeRealtimeEvent(async (event) => {
+      if (event.type === 'APPOINTMENT_BOOKED') {
+        const repo = getRepository<Appointment>('appointments');
+        (repo as any).invalidateCache?.();
+        setAppointments((prev) => {
+          if (prev.some((a) => a.id === event.appointment.id)) {
+            return prev.map((a) => (a.id === event.appointment.id ? event.appointment : a));
+          }
+          return [event.appointment, ...prev];
+        });
+      } else if (event.type === 'PATIENT_CHECKED_IN' || event.type === 'CONSULTATION_COMPLETED') {
+        const repo = getRepository<Appointment>('appointments');
+        (repo as any).invalidateCache?.();
+        setAppointments((prev) =>
+          prev.map((a) => (a.id === event.appointment.id ? event.appointment : a))
+        );
+      }
+    });
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      unsubscribeRealtime();
+    };
   }, []);
 
   // Write-through to repositories
@@ -717,6 +748,30 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       prev.map((a) => (a.id === appointmentId ? updatedApt : a))
     );
 
+    // Create InAppNotification for the specific doctor
+    const checkinNotif: InAppNotification = {
+      id: `notif-checkin-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      recipientId: updatedApt.doctorId,
+      title: 'Patient Checked In',
+      message: `Token #${nextToken}: ${updatedApt.patientName} has checked in and is waiting in the lounge for ${formatDoctorName(updatedApt.doctorName)}.`,
+      type: 'checkin',
+      read: false,
+      createdAt: nowIso,
+      linkTab: 'doctor',
+    };
+
+    try {
+      getRepository<InAppNotification>('notifications').create(checkinNotif).catch(() => {});
+    } catch {
+      // ignore
+    }
+
+    broadcastRealtimeEvent({
+      type: 'PATIENT_CHECKED_IN',
+      appointment: updatedApt,
+      notification: checkinNotif,
+    });
+
     if (addAuditLogEntry) {
       addAuditLogEntry({
         targetRole: 'patient',
@@ -827,6 +882,30 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     setAppointments((prev) => [newApt, ...prev]);
 
+    // Create InAppNotification for the specific doctor
+    const walkInNotif: InAppNotification = {
+      id: `notif-walkin-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      recipientId: newApt.doctorId,
+      title: 'Walk-in Patient Checked In',
+      message: `Token #${nextToken}: ${newApt.patientName} has checked in as walk-in and is waiting in the lounge for ${formatDoctorName(newApt.doctorName)}.`,
+      type: 'checkin',
+      read: false,
+      createdAt: nowIso,
+      linkTab: 'doctor',
+    };
+
+    try {
+      getRepository<InAppNotification>('notifications').create(walkInNotif).catch(() => {});
+    } catch {
+      // ignore
+    }
+
+    broadcastRealtimeEvent({
+      type: 'PATIENT_CHECKED_IN',
+      appointment: newApt,
+      notification: walkInNotif,
+    });
+
     if (addAuditLogEntry) {
       addAuditLogEntry({
         targetRole: 'patient',
@@ -917,6 +996,30 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
 
     setAppointments((prev) => [newApt, ...prev]);
+
+    // Create InAppNotification for the specific doctor
+    const bookingNotif: InAppNotification = {
+      id: `notif-book-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      recipientId: newApt.doctorId,
+      title: 'New Online Booking',
+      message: `${newApt.patientName} booked a consultation for ${date} at ${time}. Reason: ${newApt.reasonForVisit || 'General Consultation'}`,
+      type: 'booking',
+      read: false,
+      createdAt: now.toISOString(),
+      linkTab: 'doctor',
+    };
+
+    try {
+      getRepository<InAppNotification>('notifications').create(bookingNotif).catch(() => {});
+    } catch {
+      // ignore
+    }
+
+    broadcastRealtimeEvent({
+      type: 'APPOINTMENT_BOOKED',
+      appointment: newApt,
+      notification: bookingNotif,
+    });
 
     if (addAuditLogEntry) {
       addAuditLogEntry({
@@ -1047,12 +1150,69 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.error('Unauthorized: only receptionists can check in patients.');
         return;
       }
+      const apt = appointments.find((a) => a.id === id);
+      if (apt && apt.status !== 'checked_in') {
+        const todayStr = formatLocalDate();
+        const nextToken = apt.tokenNumber > 0 ? apt.tokenNumber : getNextTokenNumberForDate(appointments, todayStr);
+        const checkedInApt: Appointment = {
+          ...apt,
+          status: 'checked_in',
+          tokenNumber: nextToken,
+          checkedInAt: apt.checkedInAt || new Date().toISOString(),
+          checkedInBy: apt.checkedInBy || (actor ? { id: actor.id, name: actor.name } : null),
+        };
+        const checkinNotif: InAppNotification = {
+          id: `notif-checkin-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          recipientId: apt.doctorId,
+          title: 'Patient Checked In',
+          message: `Token #${nextToken}: ${apt.patientName} has checked in and is waiting in the lounge for ${formatDoctorName(apt.doctorName)}.`,
+          type: 'checkin',
+          read: false,
+          createdAt: new Date().toISOString(),
+          linkTab: 'doctor',
+        };
+        try {
+          getRepository<InAppNotification>('notifications').create(checkinNotif).catch(() => {});
+        } catch {
+          // ignore
+        }
+        broadcastRealtimeEvent({
+          type: 'PATIENT_CHECKED_IN',
+          appointment: checkedInApt,
+          notification: checkinNotif,
+        });
+      }
     }
 
     if (status === 'completed') {
       const apt = appointments.find((a) => a.id === id);
       if (apt && apt.status !== 'completed') {
         const doc = doctors.find((d) => d.id === apt.doctorId);
+        const completedApt: Appointment = {
+          ...apt,
+          status: 'completed',
+        };
+        const completionNotif: InAppNotification = {
+          id: `notif-complete-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          recipientId: 'reception',
+          title: 'Consultation Completed',
+          message: `${formatDoctorName(doc?.name || apt.doctorName)} has completed consultation for ${apt.patientName} (Token #${apt.tokenNumber || '-'}). Patient is ready for checkout and billing.`,
+          type: 'completion',
+          read: false,
+          createdAt: new Date().toISOString(),
+          linkTab: 'receptionist',
+        };
+        try {
+          getRepository<InAppNotification>('notifications').create(completionNotif).catch(() => {});
+        } catch {
+          // ignore
+        }
+        broadcastRealtimeEvent({
+          type: 'CONSULTATION_COMPLETED',
+          appointment: completedApt,
+          notification: completionNotif,
+        });
+
         const repoInvoices = getRepository<any>('invoices');
         repoInvoices
           .list()
