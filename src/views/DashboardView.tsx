@@ -6,7 +6,6 @@ import { useBilling } from '@/context/BillingContext';
 import { useAttendance } from '@/context/AttendanceContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
 import { Select, SelectOption } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
@@ -545,8 +544,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     shifts,
     records: attendanceRecords,
     leaveRequests,
-    clockInUser,
-    clockOutUser,
   } = useAttendance();
 
   // Navigation tab state: "overview" or "daily_summary"
@@ -580,9 +577,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     };
   }, []);
 
-  // Clock Out confirm modal state
-  const [isClockOutModalOpen, setIsClockOutModalOpen] = useState(false);
-  const [attendanceMessage, setAttendanceMessage] = useState<string | null>(null);
 
   // View presentation mode for Graphs and Tables slide animation
   const [dashboardViewMode, setDashboardViewMode] = useState<'graphs' | 'tables'>(() => {
@@ -775,27 +769,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     );
   }, [isPatient, dailySummaryData]);
 
-  // Handlers for Clock In / Clock Out
-  const handleClockInAction = () => {
-    const res = clockInUser();
-    if (res.success) {
-      setAttendanceMessage('Clock in recorded successfully.');
-    } else {
-      setAttendanceMessage(res.error || 'Failed to record clock in.');
-    }
-    setTimeout(() => setAttendanceMessage(null), 4000);
-  };
-
-  const handleConfirmClockOut = () => {
-    setIsClockOutModalOpen(false);
-    const res = clockOutUser();
-    if (res.success) {
-      setAttendanceMessage('Clock out recorded successfully.');
-    } else {
-      setAttendanceMessage(res.error || 'Failed to record clock out.');
-    }
-    setTimeout(() => setAttendanceMessage(null), 4000);
-  };
 
   // CSV Export handler
   const handleExportCsv = () => {
@@ -992,102 +965,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </Card>
         )}
 
-        {/* List 3: Staff Presence Widget */}
-        {canViewWidget('staff_presence', currentUser, modules) && metrics1.staffPresence && (
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full flex flex-col justify-between">
-            <div>
-              <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
-                  Staff Presence
-                </h3>
-                <span className="text-fs-label text-slate-500 font-normal">Today</span>
-              </div>
-              <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                {metrics1.staffPresence.summaryText}
-              </div>
-              <div className="p-3 sm:p-0">
-                <Table stackBelow="md">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead kind="short" priority={1}>Name</TableHead>
-                      <TableHead kind="short" priority={3}>Shift Start</TableHead>
-                      <TableHead kind="short" priority={2}>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {metrics1.staffPresence.lateOrNotList.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="py-6 text-center text-slate-500">
-                          All scheduled staff have arrived on time.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      metrics1.staffPresence.lateOrNotList.map((st) => (
-                        <TableRow key={st.staffId}>
-                          <TableCell label="Name" kind="short" priority={1} className="font-medium text-slate-900 dark:text-slate-100">
-                            {st.name}
-                          </TableCell>
-                          <TableCell label="Shift Start" kind="short" priority={3} className="text-slate-600 dark:text-slate-300">
-                            {st.shiftStart}
-                          </TableCell>
-                          <TableCell label="Status" kind="short" priority={2} className="text-slate-600 dark:text-slate-300">
-                            {st.status}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* List 4: My Attendance Widget (Every Staff Account) */}
-        {!isPatient && metrics1.myAttendance && (
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between">
-            <div>
-              <div className="pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
-                  My Attendance
-                </h3>
-                <span className="text-fs-label text-slate-500 font-normal">Today</span>
-              </div>
-              <div className="py-4 space-y-2">
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {metrics1.myAttendance.statusText}
-                </p>
-                {metrics1.myAttendance.hasShiftToday && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Scheduled Shift: {metrics1.myAttendance.shiftStart} - {metrics1.myAttendance.shiftEnd}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
-              {!metrics1.myAttendance.isClockedIn ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClockInAction}
-                >
-                  Clock In
-                </Button>
-              ) : !metrics1.myAttendance.isClockedOut ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsClockOutModalOpen(true)}
-                >
-                  Clock Out
-                </Button>
-              ) : (
-                <span className="text-xs text-slate-500">Day duty completed</span>
-              )}
-            </div>
-          </Card>
-        )}
     </div>
   );
 
@@ -1260,12 +1137,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         )}
       </div>
 
-      {/* Attendance Notification Banner */}
-      {attendanceMessage && (
-        <div role="status" aria-live="polite" className="p-3 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl text-xs text-teal-800 dark:text-teal-300 no-print">
-          {attendanceMessage}
-        </div>
-      )}
 
       {/* Navigation Tabs: Overview & Daily Summary */}
       {qualifiesForDailySummary && (
@@ -1817,35 +1688,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* Clock Out Confirmation Modal */}
-      <Modal
-        isOpen={isClockOutModalOpen}
-        onClose={() => setIsClockOutModalOpen(false)}
-        title="Confirm Clock Out"
-        maxWidth="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-slate-600 dark:text-slate-300">
-            Are you sure you want to clock out for today? You will not be able to clock in again until tomorrow.
-          </p>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsClockOutModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleConfirmClockOut}
-            >
-              Confirm Clock Out
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };
