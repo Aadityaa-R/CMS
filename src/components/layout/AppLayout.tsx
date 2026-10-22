@@ -144,6 +144,10 @@ export const AppLayout: React.FC = () => {
     }
     setActiveTab(tab);
     setActiveSubTab(subTab);
+    const mainEl = document.getElementById('main-content');
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, behavior: 'instant' });
+    }
   };
 
   const handleNavigate = (tab: string, subTab?: string) => {
@@ -258,7 +262,7 @@ export const AppLayout: React.FC = () => {
             />
 
             {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
-            <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto w-full p-4 sm:p-6 outline-none">
+            <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-scroll [scrollbar-gutter:stable] w-full p-4 sm:p-6 outline-none">
               <ErrorBoundary>
                 <PageContainer>
                   {renderActiveView()}

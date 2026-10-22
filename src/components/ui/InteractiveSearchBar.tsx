@@ -141,7 +141,7 @@ export const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = ({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onScroll={handleScroll}
-          className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-8 py-2 text-xs leading-5 font-sans text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500"
+          className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-8 py-2 text-xs leading-5 min-h-[38px] font-sans text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500"
         />
 
         {/* Inline Ghost Text Completion */}

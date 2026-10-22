@@ -1141,14 +1141,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setSelectedTab(tab.id)}
+            onClick={() => {
+              setSelectedTab(tab.id);
+              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+            }}
             role="tab"
             aria-selected={selectedTab === tab.id}
             aria-current={selectedTab === tab.id ? 'page' : undefined}
-            className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap ${
+            className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors ${
               selectedTab === tab.id
-                ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'text-slate-900 dark:text-slate-100 border-teal-600'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             {tab.label}

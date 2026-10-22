@@ -1367,13 +1367,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           <div role="tablist" aria-label="Dashboard Tabs" className="flex space-x-6">
             <button
               type="button"
-              onClick={() => setActiveTab('overview')}
+              onClick={() => {
+                setActiveTab('overview');
+                document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+              }}
               role="tab"
               aria-selected={activeTab === 'overview'}
               aria-current={activeTab === 'overview' ? 'page' : undefined}
-              className={`py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-none cursor-pointer ${
+              className={`py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'overview'
-                  ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300 font-semibold'
+                  ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
@@ -1381,13 +1384,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('daily_summary')}
+              onClick={() => {
+                setActiveTab('daily_summary');
+                document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+              }}
               role="tab"
               aria-selected={activeTab === 'daily_summary'}
               aria-current={activeTab === 'daily_summary' ? 'page' : undefined}
-              className={`py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-none cursor-pointer ${
+              className={`py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'daily_summary'
-                  ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300 font-semibold'
+                  ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >

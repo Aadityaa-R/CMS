@@ -275,6 +275,15 @@ html.dark {
 }
 
 /* Custom Sleek Scrollbars across Webkit & Firefox */
+html {
+  scrollbar-gutter: stable;
+}
+
+#main-content {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f8fafc;

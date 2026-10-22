@@ -1132,11 +1132,12 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 setSelectedSubTab(tab.id);
                 setSelectedStaffId(null);
                 setSelectedModuleId(null);
+                document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
               }}
-              className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 ${
+              className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 ${
                 isActive
-                  ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? 'text-slate-900 dark:text-slate-100 border-teal-600'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               {tab.label}

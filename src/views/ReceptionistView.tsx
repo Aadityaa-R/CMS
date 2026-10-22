@@ -1182,13 +1182,16 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setSelectedTab(tab.id)}
+            onClick={() => {
+              setSelectedTab(tab.id);
+              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+            }}
             role="tab"
             aria-selected={selectedTab === tab.id}
             aria-current={selectedTab === tab.id ? 'page' : undefined}
-            className={`py-2 text-xs transition-none cursor-pointer whitespace-nowrap border-b-2 -mb-px ${
+            className={`py-2 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap border-b-2 -mb-px ${
               selectedTab === tab.id
-                ? 'border-teal-600 dark:border-teal-500 font-bold text-slate-900 dark:text-slate-100'
+                ? 'border-teal-600 dark:border-teal-500 text-slate-900 dark:text-slate-100'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >

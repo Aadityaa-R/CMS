@@ -468,14 +468,15 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
           onClick={() => {
             setActiveTab('invoices');
             setInvoicesPage(1);
+            document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
           }}
           role="tab"
           aria-selected={activeTab === 'invoices'}
           aria-current={activeTab === 'invoices' ? 'page' : undefined}
-          className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap ${
+          className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors ${
             activeTab === 'invoices'
-              ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'text-slate-900 dark:text-slate-100 border-teal-600'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           Invoices ({scopedInvoices.length})
@@ -485,14 +486,15 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
           onClick={() => {
             setActiveTab('payments');
             setPaymentsPage(1);
+            document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
           }}
           role="tab"
           aria-selected={activeTab === 'payments'}
           aria-current={activeTab === 'payments' ? 'page' : undefined}
-          className={`pb-2.5 pt-1 text-xs cursor-pointer whitespace-nowrap ${
+          className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors ${
             activeTab === 'payments'
-              ? 'font-bold text-slate-900 dark:text-slate-100 border-b-2 border-teal-600 -mb-px'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'text-slate-900 dark:text-slate-100 border-teal-600'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           Payments ({scopedPayments.length})
