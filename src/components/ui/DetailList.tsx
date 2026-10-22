@@ -12,7 +12,7 @@ export interface DetailListProps extends React.HTMLAttributes<HTMLDListElement> 
   children?: React.ReactNode;
   className?: string;
   dense?: boolean;
-  columns?: 1 | 2;
+  columns?: 1 | 2 | 3;
   paddingYRem?: number;
 }
 
@@ -78,6 +78,7 @@ export function calculateBalancedPadding(
 interface DetailListContextValue {
   dense: boolean;
   paddingYRem?: number;
+  columns?: 1 | 2 | 3;
 }
 
 const DetailListContext = createContext<DetailListContextValue>({ dense: false });
@@ -93,10 +94,12 @@ export const BalancedGridCardContext = createContext<BalancedGridCardContextValu
 export function useContainerWidth<T extends HTMLElement>(breakpointPx = 448) {
   const ref = useRef<T | null>(null);
   const [isWide, setIsWide] = useState<boolean>(true);
+  const [width, setWidth] = useState<number>(0);
 
   useEffect(() => {
     if (!ref.current || typeof ResizeObserver === 'undefined') return;
     const update = (w: number) => {
+      setWidth(w);
       setIsWide(w >= breakpointPx);
     };
     const ro = new ResizeObserver((entries) => {
@@ -109,7 +112,7 @@ export function useContainerWidth<T extends HTMLElement>(breakpointPx = 448) {
     return () => ro.disconnect();
   }, [breakpointPx]);
 
-  return [ref, isWide, setIsWide] as const;
+  return [ref, isWide, setIsWide, width] as const;
 }
 
 export const DetailItem: React.FC<DetailItemProps> = ({
@@ -133,7 +136,7 @@ export const DetailItem: React.FC<DetailItemProps> = ({
       : listContext.paddingYRem ?? cardContext.paddingYRem;
 
   const paddingStyle: React.CSSProperties = { ...style };
-  if (!isDense && activePaddingYRem !== undefined) {
+  if (activePaddingYRem !== undefined) {
     paddingStyle.paddingTop = `${activePaddingYRem}rem`;
     paddingStyle.paddingBottom = `${activePaddingYRem}rem`;
   }
@@ -152,17 +155,27 @@ export const DetailItem: React.FC<DetailItemProps> = ({
     (typeof rawValue === 'string' && rawValue.trim() === '');
   const valContent = isEmpty ? '—' : rawValue;
 
+  const isThreeCol = listContext.columns === 3;
+
   return (
     <div
       data-testid="detail-item"
       style={paddingStyle}
-      className={`grid grid-cols-[8rem_1fr] sm:grid-cols-[10rem_1fr] items-baseline gap-3 text-xs sm:text-sm text-left ${paddingClass} ${className}`}
+      className={`${
+        isThreeCol
+          ? 'flex items-baseline justify-between gap-2'
+          : 'grid grid-cols-[8rem_1fr] sm:grid-cols-[10rem_1fr] items-baseline gap-3'
+      } text-xs sm:text-sm text-left ${paddingClass} ${className}`}
       {...props}
     >
-      <dt className="text-slate-500 dark:text-slate-400 font-normal text-left select-none break-words">
+      <dt className="text-slate-500 dark:text-slate-400 font-normal text-left select-none break-words min-w-0">
         {label}
       </dt>
-      <dd className="text-slate-900 dark:text-slate-100 font-normal text-left break-words min-w-0">
+      <dd
+        className={`text-slate-900 dark:text-slate-100 font-normal ${
+          isThreeCol ? 'text-right shrink-0' : 'text-left'
+        } break-words min-w-0`}
+      >
         <div>{valContent}</div>
         {subtitle && (
           <span className="block text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
@@ -183,14 +196,25 @@ export const DetailList: React.FC<DetailListProps> = ({
   paddingYRem,
   ...props
 }) => {
-  const [containerRef, isWide] = useContainerWidth<HTMLDListElement>(448);
+  const [containerRef, isWide, , containerWidth] = useContainerWidth<HTMLDListElement>(448);
   const cardContext = useContext(BalancedGridCardContext);
   const effectivePaddingYRem = paddingYRem ?? cardContext.paddingYRem;
+
+  const [windowWidth, setWindowWidth] = useState<number>(
+    typeof window !== 'undefined' ? window.innerWidth : 1024
+  );
+
+  useEffect(() => {
+    if (columns !== 3 || typeof window === 'undefined') return;
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [columns]);
 
   // Single-column mode (default)
   if (columns === 1) {
     return (
-      <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem }}>
+      <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 1 }}>
         <dl
           ref={containerRef}
           className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container ${className}`}
@@ -213,6 +237,56 @@ export const DetailList: React.FC<DetailListProps> = ({
   }
 
   // Two-column paired mode (columns={2})
+  if (columns === 2) {
+    const elements = items
+      ? items.map((item, idx) => (
+          <DetailItem
+            key={item.key ?? idx}
+            label={item.label}
+            value={item.value}
+            subtitle={item.subtitle}
+            dense={dense}
+          />
+        ))
+      : React.Children.toArray(children);
+
+    const pairs: [React.ReactNode, React.ReactNode | null][] = [];
+    for (let i = 0; i < elements.length; i += 2) {
+      pairs.push([elements[i], elements[i + 1] || null]);
+    }
+
+    return (
+      <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 2 }}>
+        <dl
+          ref={containerRef}
+          data-testid="detail-list-two-col"
+          className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container ${className}`}
+          {...props}
+        >
+          {pairs.map(([first, second], pairIdx) => (
+            <div
+              key={pairIdx}
+              data-testid="detail-pair-row"
+              className={`detail-pair-row ${
+                isWide
+                  ? 'grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800'
+                  : 'grid grid-cols-1 divide-y divide-slate-100 dark:divide-slate-800'
+              }`}
+            >
+              <div className="w-full min-w-0">{first}</div>
+              {second ? (
+                <div className="w-full min-w-0">{second}</div>
+              ) : isWide ? (
+                <div className="w-full min-w-0" />
+              ) : null}
+            </div>
+          ))}
+        </dl>
+      </DetailListContext.Provider>
+    );
+  }
+
+  // Three-column responsive mode (columns={3}): 3 columns from 64rem, 2 from 40rem, 1 below
   const elements = items
     ? items.map((item, idx) => (
         <DetailItem
@@ -225,35 +299,57 @@ export const DetailList: React.FC<DetailListProps> = ({
       ))
     : React.Children.toArray(children);
 
-  const pairs: [React.ReactNode, React.ReactNode | null][] = [];
-  for (let i = 0; i < elements.length; i += 2) {
-    pairs.push([elements[i], elements[i + 1] || null]);
+  const remPx =
+    typeof window !== 'undefined'
+      ? parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+      : 16;
+  const bp64Rem = 64 * remPx; // 1024px
+  const bp40Rem = 40 * remPx; // 640px
+
+  const effW = Math.max(containerWidth || 0, windowWidth);
+  let activeCols: 1 | 2 | 3 = 1;
+  if (effW >= bp64Rem) {
+    activeCols = 3;
+  } else if (effW >= bp40Rem) {
+    activeCols = 2;
+  } else {
+    activeCols = 1;
+  }
+
+  const rows: (React.ReactNode | null)[][] = [];
+  for (let i = 0; i < elements.length; i += activeCols) {
+    const row: (React.ReactNode | null)[] = [];
+    for (let c = 0; c < activeCols; c++) {
+      row.push(elements[i + c] || null);
+    }
+    rows.push(row);
   }
 
   return (
-    <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem }}>
+    <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 3 }}>
       <dl
         ref={containerRef}
-        data-testid="detail-list-two-col"
+        data-testid="detail-list-three-col"
         className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container ${className}`}
         {...props}
       >
-        {pairs.map(([first, second], pairIdx) => (
+        {rows.map((row, rowIdx) => (
           <div
-            key={pairIdx}
-            data-testid="detail-pair-row"
-            className={`detail-pair-row ${
-              isWide
-                ? 'grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800'
-                : 'grid grid-cols-1 divide-y divide-slate-100 dark:divide-slate-800'
+            key={rowIdx}
+            data-testid="detail-three-col-row"
+            className={`detail-three-col-row grid ${
+              activeCols === 3
+                ? 'grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800'
+                : activeCols === 2
+                ? 'grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800'
+                : 'grid-cols-1'
             }`}
           >
-            <div className="w-full min-w-0">{first}</div>
-            {second ? (
-              <div className="w-full min-w-0">{second}</div>
-            ) : isWide ? (
-              <div className="w-full min-w-0" />
-            ) : null}
+            {row.map((cell, cellIdx) => (
+              <div key={cellIdx} className="w-full min-w-0">
+                {cell ? cell : activeCols > 1 ? <div className="w-full min-w-0" /> : null}
+              </div>
+            ))}
           </div>
         ))}
       </dl>
