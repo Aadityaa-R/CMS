@@ -450,18 +450,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Staff Time, Attendance, and Leave
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Shift scheduling, real-time check-ins, attendance sheet auditing, and leave administration.
-          </p>
-        </div>
-      </div>
-
       {/* Action Notification */}
       {actionMessage && (
         <div role="status" aria-live="polite"
@@ -475,37 +463,48 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <div role="tablist" aria-label="Attendance Tabs" className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
-        {[
-          { id: 'my_attendance', label: 'My Attendance' },
-          ...(canManage
-            ? [
-                { id: 'today', label: 'Today' },
-                { id: 'sheet', label: 'Attendance Sheet' },
-                { id: 'leaves', label: 'Leave Requests' },
-                { id: 'shifts', label: 'Shifts' },
-              ]
-            : []),
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveSubTab(tab.id);
-              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-            }}
-            role="tab"
-            aria-selected={activeSubTab === tab.id}
-            aria-current={activeSubTab === tab.id ? 'page' : undefined}
-            className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors ${
-              activeSubTab === tab.id
-                ? 'text-slate-900 dark:text-slate-100 border-teal-600'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Header & Tabs */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Staff Time, Attendance, and Leave
+            </h1>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div role="tablist" aria-label="Attendance Tabs" className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
+          {[
+            { id: 'my_attendance', label: 'My Attendance' },
+            ...(canManage
+              ? [
+                  { id: 'today', label: 'Today' },
+                  { id: 'sheet', label: 'Attendance Sheet' },
+                  { id: 'leaves', label: 'Leave Requests' },
+                  { id: 'shifts', label: 'Shifts' },
+                ]
+              : []),
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveSubTab(tab.id);
+                document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+              }}
+              role="tab"
+              aria-selected={activeSubTab === tab.id}
+              aria-current={activeSubTab === tab.id ? 'page' : undefined}
+              className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors ${
+                activeSubTab === tab.id
+                  ? 'text-slate-900 dark:text-slate-100 border-teal-600'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* TAB 1: MY ATTENDANCE */}
