@@ -64,6 +64,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     patientAssignments = [],
     modules = [],
     registerPatient,
+    updatePatient,
     checkInAppointment,
     checkInWalkIn,
     bookAppointment,
@@ -143,6 +144,21 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const [regEmergName, setRegEmergName] = useState('');
   const [regEmergPhone, setRegEmergPhone] = useState('');
   const [regError, setRegError] = useState('');
+
+  // Edit Patient Form State
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editDob, setEditDob] = useState('1990-01-01');
+  const [editGender, setEditGender] = useState<'male' | 'female' | 'other'>('other');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editEmergName, setEditEmergName] = useState('');
+  const [editEmergPhone, setEditEmergPhone] = useState('');
+  const [editEmergRel, setEditEmergRel] = useState('');
+  const [editError, setEditError] = useState('');
 
   // Book Appointment Form State
   const [bookPatientId, setBookPatientId] = useState<string>('');
@@ -412,23 +428,58 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     }
   };
 
-  const handleOpenWalkInForPatient = (p: Patient) => {
-    setWalkInMode('existing');
-    setWalkInPatientId(p.id);
-    setWalkInReason('');
-    setWalkInError('');
-    setIsWalkInOpen(true);
+  const handleOpenEditPatient = (p: Patient) => {
+    setEditingPatient(p);
+    setEditFirstName(p.firstName || '');
+    setEditLastName(p.lastName || '');
+    setEditDob(p.dob || '1990-01-01');
+    setEditGender(p.gender || 'other');
+    setEditPhone(p.phone || '');
+    setEditEmail(p.email || '');
+    setEditAddress(p.address || '');
+    setEditEmergName(p.emergencyContact?.name || '');
+    setEditEmergPhone(p.emergencyContact?.phone || '');
+    setEditEmergRel(p.emergencyContact?.relationship || 'Emergency Contact');
+    setEditError('');
+    setIsEditOpen(true);
   };
 
-  const handleOpenBookingForPatient = (p: Patient) => {
-    setBookPatientId(p.id);
-    const assignedDocId = getAssignedDoctorId(p.id, patientAssignments);
-    setBookDoctorId(assignedDocId || doctors[0]?.id || '');
-    setBookDate(todayStr);
-    setBookTime('09:30');
-    setBookReason('');
-    setBookError('');
-    setIsBookOpen(true);
+  const handleSubmitEditPatient = (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditError('');
+
+    if (!editingPatient) return;
+
+    if (!editFirstName.trim() || !editLastName.trim()) {
+      setEditError('Patient first and last name are required.');
+      return;
+    }
+    if (!editPhone.trim()) {
+      setEditError('Phone number is required.');
+      return;
+    }
+
+    const birthYear = parseInt(editDob.split('-')[0], 10);
+    const calcAge = isNaN(birthYear) ? editingPatient.age : Math.max(0, new Date().getFullYear() - birthYear);
+
+    updatePatient(editingPatient.id, {
+      firstName: editFirstName.trim(),
+      lastName: editLastName.trim(),
+      dob: editDob,
+      age: calcAge,
+      gender: editGender,
+      phone: editPhone.trim(),
+      email: editEmail.trim(),
+      address: editAddress.trim(),
+      emergencyContact: {
+        name: editEmergName.trim() || editingPatient.emergencyContact?.name || 'Primary Contact',
+        relationship: editEmergRel.trim() || editingPatient.emergencyContact?.relationship || 'Emergency Contact',
+        phone: editEmergPhone.trim() || editPhone.trim(),
+      },
+    });
+
+    setIsEditOpen(false);
+    showNotification(`Patient information updated for ${editFirstName.trim()} ${editLastName.trim()} (${editingPatient.mrn}).`);
   };
 
   // Submit Standalone Patient Registration
@@ -926,14 +977,9 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         <RowActions
           actions={[
             {
-              label: 'Check In',
-              onClick: () => handleOpenWalkInForPatient(p),
-              ariaLabel: `Check in ${p.firstName} ${p.lastName}`,
-            },
-            {
-              label: 'Book',
-              onClick: () => handleOpenBookingForPatient(p),
-              ariaLabel: `Book appointment for ${p.firstName} ${p.lastName}`,
+              label: 'Edit',
+              onClick: () => handleOpenEditPatient(p),
+              ariaLabel: `Edit information for ${p.firstName} ${p.lastName}`,
             },
           ]}
           subject={`${p.firstName} ${p.lastName}`}
@@ -1454,6 +1500,144 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
             </Button>
             <Button type="submit" variant="primary">
               Register Patient
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL: EDIT PATIENT INFORMATION */}
+      <Modal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        title={
+          editingPatient
+            ? `Edit Patient Information — ${editingPatient.firstName} ${editingPatient.lastName} (${editingPatient.mrn})`
+            : 'Edit Patient Information'
+        }
+      >
+        <form onSubmit={handleSubmitEditPatient} className="space-y-4">
+          {editError && (
+            <div className="p-2.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-rose-700 dark:text-rose-300">
+              {editError}
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                First Name
+              </label>
+              <Input
+                value={editFirstName}
+                onChange={(e) => setEditFirstName(e.target.value)}
+                placeholder="First name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Last Name
+              </label>
+              <Input
+                value={editLastName}
+                onChange={(e) => setEditLastName(e.target.value)}
+                placeholder="Last name"
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Date of Birth
+              </label>
+              <DatePicker value={editDob} onChange={setEditDob} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Gender
+              </label>
+              <Select
+                value={editGender}
+                onChange={(e) => setEditGender(e.target.value as any)}
+                options={[
+                  { value: 'male', label: 'Male' },
+                  { value: 'female', label: 'Female' },
+                  { value: 'other', label: 'Other' },
+                ]}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Phone
+              </label>
+              <Input
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="+1 (555) 000-0000"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Email
+              </label>
+              <Input
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="patient@example.com"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Residential Address
+            </label>
+            <Input
+              value={editAddress}
+              onChange={(e) => setEditAddress(e.target.value)}
+              placeholder="Address"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Emergency Contact Name
+              </label>
+              <Input
+                value={editEmergName}
+                onChange={(e) => setEditEmergName(e.target.value)}
+                placeholder="Contact person"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Relationship
+              </label>
+              <Input
+                value={editEmergRel}
+                onChange={(e) => setEditEmergRel(e.target.value)}
+                placeholder="Relationship"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Emergency Phone
+              </label>
+              <Input
+                value={editEmergPhone}
+                onChange={(e) => setEditEmergPhone(e.target.value)}
+                placeholder="Contact phone"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              Save Changes
             </Button>
           </div>
         </form>
