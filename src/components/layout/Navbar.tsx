@@ -142,7 +142,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
 
   return (
     <>
-      <header className="h-20 bg-slate-50 dark:bg-slate-950 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
+      <header className="h-20 bg-slate-900 text-slate-300 border-b border-slate-800 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
         {/* Brand / Clinic Title */}
         <div className="flex items-center gap-2 sm:gap-4">
           <button
@@ -151,8 +151,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
             onClick={onToggleSidebar || toggleSidebar}
             className={`w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] p-2.5 rounded-lg lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 ${
               isSidebarOpen
-                ? 'bg-slate-200 dark:bg-slate-800 text-teal-600 dark:text-teal-400'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-slate-800 text-teal-300'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
             title={isSidebarOpen ? 'Close menu' : 'Open menu'}
             aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
@@ -175,7 +175,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
               <Building2 className="w-6 h-6" />
             </div>
             <div className="min-w-0 text-left">
-              <h1 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base md:text-lg leading-tight tracking-tight truncate max-w-[190px] sm:max-w-none">
+              <h1 className="font-bold text-slate-100 text-sm sm:text-base md:text-lg leading-tight tracking-tight truncate max-w-[190px] sm:max-w-none">
                 Beacon Health Clinic
               </h1>
             </div>
@@ -190,13 +190,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
             <button
               type="button"
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer relative outline-none focus:outline-none focus:ring-0"
+              className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors cursor-pointer relative outline-none focus:outline-none focus:ring-0"
               aria-label={`Notifications (${unreadCount} unread)`}
               aria-expanded={isNotificationsOpen}
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full ring-2 ring-white dark:ring-slate-900" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full ring-2 ring-slate-900" />
               )}
             </button>
 
@@ -295,7 +295,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
           </div>
 
           {/* Profile Dropdown Container: only the profile icon */}
-          <div className="relative pl-3 border-l border-slate-200 dark:border-slate-800" ref={dropdownRef}>
+          <div className="relative pl-3 border-l border-slate-800" ref={dropdownRef}>
             <button
               ref={avatarButtonRef}
               id="user-menu-button"
