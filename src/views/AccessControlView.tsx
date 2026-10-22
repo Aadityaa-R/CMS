@@ -1150,7 +1150,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       {selectedSubTab === 'modules' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Role Governance & Selection Bar */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
+          <Card className="!overflow-visible p-5 sm:p-6">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="min-w-0">
                 <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
@@ -1203,7 +1203,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           {selectedModuleId ? (
             (() => {
@@ -1965,7 +1965,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           ) : (
             <>
               {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
+              <Card className="!overflow-visible p-5 sm:p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                   <div className="min-w-0">
                     <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
@@ -2007,7 +2007,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     </div>
                   </div>
                 </div>
-              </div>
+              </Card>
 
               {/* Main Role Sections Layout (Shows data first when role is chosen or search is active) */}
               {isRoleOrSearchActive && (

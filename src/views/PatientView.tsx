@@ -297,7 +297,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
       </div>
 
       {/* Patient Governance Bar: Side-by-Side Search & Filter */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs">
+      <Card className="!overflow-visible p-5 sm:p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="min-w-0">
             <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
@@ -336,7 +336,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Master Patient Records Directory Ledger Table */}
       <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">

@@ -1776,7 +1776,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <div className="order-3 lg:col-span-3 space-y-4">
               {/* MD Clinical Queue Inspector / Staff Doctor Station Governance Bar */}
               {isMD ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
+                <Card className="!overflow-visible p-5 sm:p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="min-w-0">
                       <span className="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block">
@@ -1825,10 +1825,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
                     </div>
                   </div>
-                </div>
+                </Card>
               ) : (
                 /* Doctor Clinical Queue Inspector */
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5">
+                <Card className="!overflow-visible p-5 sm:p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="min-w-0">
                       <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
@@ -1861,7 +1861,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
                     </div>
                   </div>
-                </div>
+                </Card>
               )}
 
               {/* Waiting Consultations Worklist (Table View with stackBelow="md") */}
