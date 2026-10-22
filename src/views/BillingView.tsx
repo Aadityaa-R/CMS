@@ -455,9 +455,6 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Billing
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Front desk cashiering, invoice oversight, and payment settlements.
-          </p>
         </div>
       </div>
 
