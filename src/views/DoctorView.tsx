@@ -75,8 +75,8 @@ const formatAppointmentStatus = (status: string) => {
   }
 };
 
-import { NORMAL_VITAL_RANGES, getVitalLabel } from '@/lib/vitals';
-export { NORMAL_VITAL_RANGES, getVitalLabel };
+import { NORMAL_VITAL_RANGES, getVitalLabel, getVitalMarker } from '@/lib/vitals';
+export { NORMAL_VITAL_RANGES, getVitalLabel, getVitalMarker };
 
 export const deduplicateList = (items?: (string | null | undefined)[]): string[] => {
   if (!items || !Array.isArray(items)) return [];
@@ -1394,83 +1394,302 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         )}
                       </div>
 
-                      {/* Clinical Triage Vitals: 5 cols in 1 row on desktop, 3 cols in 2 rows below 1024px */}
-                      <div ref={leftVitalsRef} className="space-y-2">
+                      {/* Clinical Triage Vitals: Vertical list (Milestone M10.12) */}
+                      <div ref={leftVitalsRef} className="space-y-3">
                         <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                           Clinical Triage Vitals
                         </span>
 
-                        <div className="grid grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
-                          <Input
-                            label={getVitalLabel('BP Systolic (mmHg)', vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp)}
-                            labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
-                            inputMode="numeric"
-                            placeholder="120"
-                            value={vitalsForm.systolicBp}
-                            onChange={(e) => handleVitalChange('systolicBp', e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                            disabled={isReadOnlyView}
-                            error={vitalErrors.systolicBp}
-                            className="text-sm py-1.5 font-medium"
-                          />
-                          <Input
-                            label={getVitalLabel('BP Diastolic (mmHg)', vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp)}
-                            labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
-                            inputMode="numeric"
-                            placeholder="80"
-                            value={vitalsForm.diastolicBp}
-                            onChange={(e) => handleVitalChange('diastolicBp', e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                            disabled={isReadOnlyView}
-                            error={vitalErrors.diastolicBp}
-                            className="text-sm py-1.5 font-medium"
-                          />
-                          <Input
-                            label={getVitalLabel('Heart Rate (bpm)', vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm)}
-                            labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
-                            inputMode="numeric"
-                            placeholder="72"
-                            value={vitalsForm.heartRateBpm}
-                            onChange={(e) => handleVitalChange('heartRateBpm', e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                            disabled={isReadOnlyView}
-                            error={vitalErrors.heartRateBpm}
-                            className="text-sm py-1.5 font-medium"
-                          />
-                          <Input
-                            label={getVitalLabel('O2 Saturation (%)', vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct)}
-                            labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
-                            inputMode="numeric"
-                            placeholder="98"
-                            value={vitalsForm.oxygenSaturationPct}
-                            onChange={(e) => handleVitalChange('oxygenSaturationPct', e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                            disabled={isReadOnlyView}
-                            error={vitalErrors.oxygenSaturationPct}
-                            className="text-sm py-1.5 font-medium"
-                          />
-                          <Input
-                            label={getVitalLabel('Temperature (°C)', vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius)}
-                            labelClassName="text-xs font-semibold text-slate-700 dark:text-slate-300"
-                            inputMode="decimal"
-                            placeholder="36.8"
-                            value={vitalsForm.temperatureCelsius}
-                            onChange={(e) => handleVitalChange('temperatureCelsius', e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                            disabled={isReadOnlyView}
-                            error={vitalErrors.temperatureCelsius}
-                            className="text-sm py-1.5 font-medium"
-                          />
-                        </div>
-                      </div>
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-100 dark:border-slate-800">
+                          {/* BP Systolic */}
+                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
+                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                              <label
+                                htmlFor="vital-systolicBp"
+                                className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
+                              >
+                                BP Systolic (mmHg)
+                              </label>
+                              <div className="min-[40rem]:hidden flex items-center gap-2">
+                                <Input
+                                  id="vital-systolicBp"
+                                  inputMode="numeric"
+                                  placeholder="120"
+                                  value={vitalsForm.systolicBp}
+                                  onChange={(e) => handleVitalChange('systolicBp', e.target.value)}
+                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                  disabled={isReadOnlyView}
+                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                />
+                              </div>
+                            </div>
+                            <div className="hidden min-[40rem]:block">
+                              <Input
+                                id="vital-systolicBp-desktop"
+                                inputMode="numeric"
+                                placeholder="120"
+                                value={vitalsForm.systolicBp}
+                                onChange={(e) => handleVitalChange('systolicBp', e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                disabled={isReadOnlyView}
+                                error={vitalErrors.systolicBp}
+                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                              <span>
+                                Last visit:{' '}
+                                {summaryPatient?.previousVitals?.systolicBp !== undefined
+                                  ? `${summaryPatient.previousVitals.systolicBp} mmHg`
+                                  : '—'}
+                              </span>
+                              {getVitalMarker(vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp) && (
+                                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                                  {getVitalMarker(vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-[40rem]:hidden w-full">
+                              {vitalErrors.systolicBp && (
+                                <p role="alert" className="text-xs text-rose-600">
+                                  {vitalErrors.systolicBp}
+                                </p>
+                              )}
+                            </div>
+                          </div>
 
-                      {/* Single Footer Row: Save Vitals on left, Actions on right */}
-                      {!isReadOnlyView && (
-                        <div
-                          ref={leftFooterRef}
-                          className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800"
-                        >
-                          <div className="flex items-center gap-3">
+                          {/* BP Diastolic */}
+                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
+                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                              <label
+                                htmlFor="vital-diastolicBp"
+                                className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
+                              >
+                                BP Diastolic (mmHg)
+                              </label>
+                              <div className="min-[40rem]:hidden flex items-center gap-2">
+                                <Input
+                                  id="vital-diastolicBp"
+                                  inputMode="numeric"
+                                  placeholder="80"
+                                  value={vitalsForm.diastolicBp}
+                                  onChange={(e) => handleVitalChange('diastolicBp', e.target.value)}
+                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                  disabled={isReadOnlyView}
+                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                />
+                              </div>
+                            </div>
+                            <div className="hidden min-[40rem]:block">
+                              <Input
+                                id="vital-diastolicBp-desktop"
+                                inputMode="numeric"
+                                placeholder="80"
+                                value={vitalsForm.diastolicBp}
+                                onChange={(e) => handleVitalChange('diastolicBp', e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                disabled={isReadOnlyView}
+                                error={vitalErrors.diastolicBp}
+                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                              <span>
+                                Last visit:{' '}
+                                {summaryPatient?.previousVitals?.diastolicBp !== undefined
+                                  ? `${summaryPatient.previousVitals.diastolicBp} mmHg`
+                                  : '—'}
+                              </span>
+                              {getVitalMarker(vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp) && (
+                                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                                  {getVitalMarker(vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-[40rem]:hidden w-full">
+                              {vitalErrors.diastolicBp && (
+                                <p role="alert" className="text-xs text-rose-600">
+                                  {vitalErrors.diastolicBp}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Heart Rate */}
+                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
+                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                              <label
+                                htmlFor="vital-heartRateBpm"
+                                className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
+                              >
+                                Heart Rate (bpm)
+                              </label>
+                              <div className="min-[40rem]:hidden flex items-center gap-2">
+                                <Input
+                                  id="vital-heartRateBpm"
+                                  inputMode="numeric"
+                                  placeholder="72"
+                                  value={vitalsForm.heartRateBpm}
+                                  onChange={(e) => handleVitalChange('heartRateBpm', e.target.value)}
+                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                  disabled={isReadOnlyView}
+                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                />
+                              </div>
+                            </div>
+                            <div className="hidden min-[40rem]:block">
+                              <Input
+                                id="vital-heartRateBpm-desktop"
+                                inputMode="numeric"
+                                placeholder="72"
+                                value={vitalsForm.heartRateBpm}
+                                onChange={(e) => handleVitalChange('heartRateBpm', e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                disabled={isReadOnlyView}
+                                error={vitalErrors.heartRateBpm}
+                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                              <span>
+                                Last visit:{' '}
+                                {summaryPatient?.previousVitals?.heartRateBpm !== undefined
+                                  ? `${summaryPatient.previousVitals.heartRateBpm} bpm`
+                                  : '—'}
+                              </span>
+                              {getVitalMarker(vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm) && (
+                                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                                  {getVitalMarker(vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-[40rem]:hidden w-full">
+                              {vitalErrors.heartRateBpm && (
+                                <p role="alert" className="text-xs text-rose-600">
+                                  {vitalErrors.heartRateBpm}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* O2 Saturation */}
+                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
+                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                              <label
+                                htmlFor="vital-oxygenSaturationPct"
+                                className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
+                              >
+                                O2 Saturation (%)
+                              </label>
+                              <div className="min-[40rem]:hidden flex items-center gap-2">
+                                <Input
+                                  id="vital-oxygenSaturationPct"
+                                  inputMode="numeric"
+                                  placeholder="98"
+                                  value={vitalsForm.oxygenSaturationPct}
+                                  onChange={(e) => handleVitalChange('oxygenSaturationPct', e.target.value)}
+                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                  disabled={isReadOnlyView}
+                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                />
+                              </div>
+                            </div>
+                            <div className="hidden min-[40rem]:block">
+                              <Input
+                                id="vital-oxygenSaturationPct-desktop"
+                                inputMode="numeric"
+                                placeholder="98"
+                                value={vitalsForm.oxygenSaturationPct}
+                                onChange={(e) => handleVitalChange('oxygenSaturationPct', e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                disabled={isReadOnlyView}
+                                error={vitalErrors.oxygenSaturationPct}
+                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                              <span>
+                                Last visit:{' '}
+                                {summaryPatient?.previousVitals?.oxygenSaturationPct !== undefined
+                                  ? `${summaryPatient.previousVitals.oxygenSaturationPct}%`
+                                  : '—'}
+                              </span>
+                              {getVitalMarker(vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct) && (
+                                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                                  {getVitalMarker(vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-[40rem]:hidden w-full">
+                              {vitalErrors.oxygenSaturationPct && (
+                                <p role="alert" className="text-xs text-rose-600">
+                                  {vitalErrors.oxygenSaturationPct}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Temperature */}
+                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
+                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                              <label
+                                htmlFor="vital-temperatureCelsius"
+                                className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
+                              >
+                                Temperature (C)
+                              </label>
+                              <div className="min-[40rem]:hidden flex items-center gap-2">
+                                <Input
+                                  id="vital-temperatureCelsius"
+                                  inputMode="decimal"
+                                  placeholder="36.8"
+                                  value={vitalsForm.temperatureCelsius}
+                                  onChange={(e) => handleVitalChange('temperatureCelsius', e.target.value)}
+                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                  disabled={isReadOnlyView}
+                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                />
+                              </div>
+                            </div>
+                            <div className="hidden min-[40rem]:block">
+                              <Input
+                                id="vital-temperatureCelsius-desktop"
+                                inputMode="decimal"
+                                placeholder="36.8"
+                                value={vitalsForm.temperatureCelsius}
+                                onChange={(e) => handleVitalChange('temperatureCelsius', e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
+                                disabled={isReadOnlyView}
+                                error={vitalErrors.temperatureCelsius}
+                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                              <span>
+                                Last visit:{' '}
+                                {summaryPatient?.previousVitals?.temperatureCelsius !== undefined
+                                  ? `${summaryPatient.previousVitals.temperatureCelsius} °C`
+                                  : '—'}
+                              </span>
+                              {getVitalMarker(vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius) && (
+                                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                                  {getVitalMarker(vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-[40rem]:hidden w-full">
+                              {vitalErrors.temperatureCelsius && (
+                                <p role="alert" className="text-xs text-rose-600">
+                                  {vitalErrors.temperatureCelsius}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Save Vitals under list */}
+                        {!isReadOnlyView && (
+                          <div className="pt-1">
                             <Button
                               size="sm"
                               variant="secondary"
@@ -1489,42 +1708,48 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               Save Vitals
                             </Button>
                             {vitalsSavedMessage && (
-                              <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                              <span className="ml-3 text-sm text-slate-600 dark:text-slate-400 font-medium">
                                 Vitals saved
                               </span>
                             )}
                           </div>
+                        )}
+                      </div>
 
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-xs sm:text-sm px-3.5 py-2 min-h-[2.25rem]"
-                              onClick={() => {
-                                setClinicalNotesText(activeAppointment.notes || '');
-                                setIsNotesModalOpen(true);
-                              }}
-                            >
-                              Record Consultation Notes
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-xs sm:text-sm px-3.5 py-2 min-h-[2.25rem]"
-                              disabled={!canPrescribe(currentUser, activePatient.id, patientAssignments, modules)}
-                              onClick={() => handleOpenPrescriptionModal(activePatient.id)}
-                            >
-                              Prescribe
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              className="text-xs sm:text-sm px-4 py-2 min-h-[2.25rem] font-semibold"
-                              onClick={() => setIsConcludeModalOpen(true)}
-                            >
-                              Conclude Visit
-                            </Button>
-                          </div>
+                      {/* Single Footer Row: Actions */}
+                      {!isReadOnlyView && (
+                        <div
+                          ref={leftFooterRef}
+                          className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-800"
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs sm:text-sm px-3.5 py-2 min-h-[2.25rem]"
+                            onClick={() => {
+                              setClinicalNotesText(activeAppointment.notes || '');
+                              setIsNotesModalOpen(true);
+                            }}
+                          >
+                            Record Consultation Notes
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs sm:text-sm px-3.5 py-2 min-h-[2.25rem]"
+                            disabled={!canPrescribe(currentUser, activePatient.id, patientAssignments, modules)}
+                            onClick={() => handleOpenPrescriptionModal(activePatient.id)}
+                          >
+                            Prescribe
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            className="text-xs sm:text-sm px-4 py-2 min-h-[2.25rem] font-semibold"
+                            onClick={() => setIsConcludeModalOpen(true)}
+                          >
+                            Conclude Visit
+                          </Button>
                         </div>
                       )}
                     </div>
