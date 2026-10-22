@@ -885,7 +885,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
               </CardHeader>
-              <CardContent className="p-0 flex-1 flex flex-col justify-between">
+              <CardContent className="p-0 flex-1 flex flex-col justify-start">
                 <DetailList className="flex-1">
                   <DetailItem label="Name" value={`${patient.firstName} ${patient.lastName}`} />
                   <DetailItem label="MRN" value={patient.mrn} />
@@ -917,7 +917,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <CardHeader>
                 <CardTitle>Medical Profile</CardTitle>
               </CardHeader>
-              <CardContent className="p-0 flex-1 flex flex-col justify-between">
+              <CardContent className="p-0 flex-1 flex flex-col justify-start">
                 <DetailList className="flex-1">
                   <DetailItem
                     label="Allergies"
@@ -949,7 +949,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <CardHeader>
                 <CardTitle>Latest Vitals</CardTitle>
               </CardHeader>
-              <CardContent className="p-0 flex-1 flex flex-col justify-between">
+              <CardContent className="p-0 flex-1 flex flex-col justify-start">
                 {patientVitalsRecord ? (
                   <DetailList columns={2} className="flex-1">
                     <DetailItem

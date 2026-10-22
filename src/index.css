@@ -425,3 +425,95 @@ tr.block .table-cell-truncate {
     border-left-width: 1px !important;
   }
 }
+
+/* Consultation Desk Card Container & Vitals Rows */
+.consultation-desk-card {
+  container-type: inline-size;
+}
+
+.vital-row {
+  display: grid;
+  grid-template-columns: 12rem 8rem 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 3rem;
+  max-height: 4.5rem;
+  flex: 1 1 auto;
+}
+
+.vital-label-col {
+  min-width: 0;
+}
+
+.vital-input-col {
+  width: 8rem;
+  min-width: 8rem;
+}
+
+.vital-last-visit-stacked {
+  display: none;
+}
+
+.vital-last-visit-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+@container (max-width: 40rem) {
+  .vital-row {
+    grid-template-columns: 1fr 8rem;
+    grid-template-rows: auto auto;
+    align-items: center;
+    max-height: none;
+    padding: 0.5rem 0.75rem;
+  }
+  .vital-label-col {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .vital-last-visit-stacked {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 0.125rem;
+  }
+  .vital-input-col {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    justify-self: end;
+  }
+  .vital-last-visit-inline {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .vital-row {
+    grid-template-columns: 12rem 8rem 1fr !important;
+    grid-template-rows: auto !important;
+    align-items: center !important;
+    max-height: 4.5rem !important;
+  }
+  .vital-label-col {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+  .vital-input-col {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    justify-self: start !important;
+  }
+  .vital-last-visit-stacked {
+    display: none !important;
+  }
+  .vital-last-visit-inline {
+    display: flex !important;
+  }
+}
+

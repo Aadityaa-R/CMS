@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -11,7 +11,7 @@ import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/Interact
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTruncate } from '@/components/ui/Table';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
-import { DetailList, DetailItem, calculateBalancedPadding } from '@/components/ui/DetailList';
+import { DetailList, DetailItem } from '@/components/ui/DetailList';
 import { formatLocalDate, parseLocalDateKey, formatDate, formatTime } from '@/lib/time';
 import {
   CheckCircle2,
@@ -353,158 +353,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     setIsEditingAllergies(false);
     showNotification(`Allergy record updated for ${activePatient.firstName} ${activePatient.lastName}.`);
   };
-
-  // M10.10: Active Consultation & Patient Summary equal height & balanced spacing
-  const leftCardRef = useRef<HTMLDivElement | null>(null);
-  const leftHeaderRef = useRef<HTMLDivElement | null>(null);
-  const leftContentRef = useRef<HTMLDivElement | null>(null);
-  const leftAllergiesRef = useRef<HTMLDivElement | null>(null);
-  const leftComplaintRef = useRef<HTMLDivElement | null>(null);
-  const leftVitalsRef = useRef<HTMLDivElement | null>(null);
-  const leftFooterRef = useRef<HTMLDivElement | null>(null);
-
-  const rightCardRef = useRef<HTMLDivElement | null>(null);
-  const rightHeaderRef = useRef<HTMLDivElement | null>(null);
-  const rightS1Ref = useRef<HTMLDivElement | null>(null);
-  const rightS2Ref = useRef<HTMLDivElement | null>(null);
-  const rightS3Ref = useRef<HTMLDivElement | null>(null);
-
-  const [consultationBalance, setConsultationBalance] = useState<{
-    leftGapRem: number;
-    leftBottomPx: number;
-    rightPaddingYRem?: number;
-    rightBottomPx: number;
-  }>({
-    leftGapRem: 1.0,
-    leftBottomPx: 0,
-    rightBottomPx: 0,
-  });
-
-  useEffect(() => {
-    if (!activePatient || !summaryPatient) {
-      setConsultationBalance({ leftGapRem: 1.0, leftBottomPx: 0, rightBottomPx: 0 });
-      return;
-    }
-
-    const measureAndBalance = () => {
-      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-        setConsultationBalance((prev) => {
-          if (
-            prev.leftGapRem === 1.0 &&
-            prev.leftBottomPx === 0 &&
-            prev.rightPaddingYRem === undefined &&
-            prev.rightBottomPx === 0
-          ) {
-            return prev;
-          }
-          return { leftGapRem: 1.0, leftBottomPx: 0, rightBottomPx: 0 };
-        });
-        return;
-      }
-
-      if (!leftCardRef.current || !rightCardRef.current) return;
-
-      const leftH = leftHeaderRef.current?.offsetHeight || 0;
-      const leftAllergies = leftAllergiesRef.current?.offsetHeight || 0;
-      const leftComplaint = leftComplaintRef.current?.offsetHeight || 0;
-      const leftVitals = leftVitalsRef.current?.offsetHeight || 0;
-      const leftFooter = leftFooterRef.current?.offsetHeight || 0;
-      const leftPadY = 40;
-      const leftNatural = leftH + leftAllergies + leftComplaint + leftVitals + leftFooter + (3 * 16) + leftPadY;
-
-      const rightH = rightHeaderRef.current?.offsetHeight || 0;
-      const rightS1 = rightS1Ref.current?.offsetHeight || 0;
-      const rightS2 = rightS2Ref.current?.offsetHeight || 0;
-      const rightS3 = rightS3Ref.current?.offsetHeight || 0;
-
-      const rightRows =
-        rightCardRef.current.querySelectorAll('.detail-pair-row, div[data-testid="detail-item"]').length || 7;
-
-      setConsultationBalance((prev) => {
-        const currentPaddingY = prev.rightPaddingYRem ?? 0.75;
-        const extraPerEdgePx = Math.max(0, (currentPaddingY - 0.75) * 16);
-        const totalExtraRowPx = rightRows * extraPerEdgePx * 2;
-        const rightNatural = rightH + rightS1 + rightS2 + rightS3 - totalExtraRowPx - prev.rightBottomPx;
-
-        if (rightNatural > leftNatural) {
-          const extraPx = rightNatural - leftNatural;
-          const extraPerGap = extraPx / 3;
-          const appliedPerGap = Math.min(8, extraPerGap);
-          const leftGapRem = Number((1.0 + appliedPerGap / 16).toFixed(3));
-          const totalAbsorbed = appliedPerGap * 3;
-          const leftBottomPx = Math.round(Math.max(0, extraPx - totalAbsorbed));
-
-          if (
-            Math.abs(prev.leftGapRem - leftGapRem) < 0.01 &&
-            Math.abs(prev.leftBottomPx - leftBottomPx) <= 1 &&
-            prev.rightPaddingYRem === undefined &&
-            prev.rightBottomPx === 0
-          ) {
-            return prev;
-          }
-
-          return {
-            leftGapRem,
-            leftBottomPx,
-            rightPaddingYRem: undefined,
-            rightBottomPx: 0,
-          };
-        } else if (leftNatural > rightNatural) {
-          const extraPx = leftNatural - rightNatural;
-          const res = calculateBalancedPadding(extraPx, rightRows, 0.75, 16);
-
-          if (
-            prev.leftGapRem === 1.0 &&
-            prev.leftBottomPx === 0 &&
-            prev.rightPaddingYRem !== undefined &&
-            Math.abs(prev.rightPaddingYRem - res.rowPaddingYRem) < 0.01 &&
-            Math.abs(prev.rightBottomPx - res.remainingBottomSpacePx) <= 1
-          ) {
-            return prev;
-          }
-
-          return {
-            leftGapRem: 1.0,
-            leftBottomPx: 0,
-            rightPaddingYRem: res.rowPaddingYRem,
-            rightBottomPx: res.remainingBottomSpacePx,
-          };
-        } else {
-          if (
-            prev.leftGapRem === 1.0 &&
-            prev.leftBottomPx === 0 &&
-            prev.rightPaddingYRem === undefined &&
-            prev.rightBottomPx === 0
-          ) {
-            return prev;
-          }
-          return {
-            leftGapRem: 1.0,
-            leftBottomPx: 0,
-            rightPaddingYRem: undefined,
-            rightBottomPx: 0,
-          };
-        }
-      });
-    };
-
-    measureAndBalance();
-
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined' && leftCardRef.current && rightCardRef.current) {
-      ro = new ResizeObserver(() => {
-        measureAndBalance();
-      });
-      ro.observe(leftCardRef.current);
-      ro.observe(rightCardRef.current);
-    }
-
-    window.addEventListener('resize', measureAndBalance);
-    return () => {
-      if (ro) ro.disconnect();
-      window.removeEventListener('resize', measureAndBalance);
-    };
-  }, [activePatient, summaryPatient, activeAppointment, vitalsForm, allergyInput, isEditingAllergies]);
 
   // Prescribe Form Constants
   const COMMON_DIAGNOSES = [
@@ -1288,13 +1136,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {selectedTab === 'overview' && (
         <div className="space-y-6">
-          <div className="flex flex-col lg:grid lg:grid-cols-3 items-stretch gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 items-stretch gap-6">
             {/* Active Patient Desk (Order 1 on mobile, 2 cols on desktop) */}
-            <div ref={leftCardRef} className="order-1 lg:col-span-2 flex flex-col h-full">
+            <div className="order-1 lg:col-span-2 flex flex-col h-auto lg:h-full">
               {activePatient && activeAppointment ? (
-                <Card className="h-full flex flex-col">
+                <Card className="h-full flex flex-col consultation-desk-card">
                   <CardHeader className="px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800/80">
-                    <div ref={leftHeaderRef} className="w-full">
+                    <div className="w-full">
                       <CardTitle className="text-xl font-bold tracking-tight">
                         Active Consultation Desk: {activePatient.firstName} {activePatient.lastName}
                       </CardTitle>
@@ -1303,19 +1151,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </CardDescription>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-5 sm:p-6 flex-1 flex flex-col">
-                    <div
-                      ref={leftContentRef}
-                      className="flex-1 flex flex-col"
-                      style={{
-                        gap: `${consultationBalance.leftGapRem}rem`,
-                        paddingBottom: consultationBalance.leftBottomPx > 0
-                          ? `${consultationBalance.leftBottomPx}px`
-                          : undefined,
-                      }}
-                    >
+                  <CardContent className="p-5 sm:p-6 flex-1 flex flex-col justify-start">
+                    <div className="flex-1 flex flex-col justify-start gap-4">
                       {/* Allergies */}
-                      <div ref={leftAllergiesRef}>
+                      <div className="flex-none">
                         {!isEditingAllergies ? (
                           <div className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
                             <span>
@@ -1380,7 +1219,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
 
                       {/* Consultation Chief Complaint */}
-                      <div ref={leftComplaintRef} className="space-y-1">
+                      <div className="space-y-1 flex-none">
                         <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
                           Chief Complaint & Reason for Visit
                         </span>
@@ -1395,37 +1234,38 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
 
                       {/* Clinical Triage Vitals: Vertical list (Milestone M10.12) */}
-                      <div ref={leftVitalsRef} className="space-y-3">
-                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
+                      <div className="space-y-2 flex-1 flex flex-col justify-start">
+                        <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block flex-none">
                           Clinical Triage Vitals
                         </span>
 
-                        <div className="divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-100 dark:border-slate-800">
+                        <div className="flex-1 flex flex-col justify-start divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-100 dark:border-slate-800">
                           {/* BP Systolic */}
-                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
-                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                          <div className="vital-row">
+                            <div className="vital-label-col">
                               <label
                                 htmlFor="vital-systolicBp"
                                 className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
                               >
                                 BP Systolic (mmHg)
                               </label>
-                              <div className="min-[40rem]:hidden flex items-center gap-2">
-                                <Input
-                                  id="vital-systolicBp"
-                                  inputMode="numeric"
-                                  placeholder="120"
-                                  value={vitalsForm.systolicBp}
-                                  onChange={(e) => handleVitalChange('systolicBp', e.target.value)}
-                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                                  disabled={isReadOnlyView}
-                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
-                                />
+                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                                <span>
+                                  Last visit:{' '}
+                                  {summaryPatient?.previousVitals?.systolicBp !== undefined
+                                    ? `${summaryPatient.previousVitals.systolicBp} mmHg`
+                                    : '—'}
+                                </span>
+                                {getVitalMarker(vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp) && (
+                                  <span className="font-semibold text-rose-600 dark:text-rose-400 ml-2">
+                                    {getVitalMarker(vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp)}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <div className="hidden min-[40rem]:block">
+                            <div className="vital-input-col">
                               <Input
-                                id="vital-systolicBp-desktop"
+                                id="vital-systolicBp"
                                 inputMode="numeric"
                                 placeholder="120"
                                 value={vitalsForm.systolicBp}
@@ -1433,10 +1273,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                                 disabled={isReadOnlyView}
                                 error={vitalErrors.systolicBp}
-                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.systolicBp !== undefined
@@ -1449,40 +1289,34 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 </span>
                               )}
                             </div>
-                            <div className="min-[40rem]:hidden w-full">
-                              {vitalErrors.systolicBp && (
-                                <p role="alert" className="text-xs text-rose-600">
-                                  {vitalErrors.systolicBp}
-                                </p>
-                              )}
-                            </div>
                           </div>
 
                           {/* BP Diastolic */}
-                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
-                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                          <div className="vital-row">
+                            <div className="vital-label-col">
                               <label
                                 htmlFor="vital-diastolicBp"
                                 className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
                               >
                                 BP Diastolic (mmHg)
                               </label>
-                              <div className="min-[40rem]:hidden flex items-center gap-2">
-                                <Input
-                                  id="vital-diastolicBp"
-                                  inputMode="numeric"
-                                  placeholder="80"
-                                  value={vitalsForm.diastolicBp}
-                                  onChange={(e) => handleVitalChange('diastolicBp', e.target.value)}
-                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                                  disabled={isReadOnlyView}
-                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
-                                />
+                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                                <span>
+                                  Last visit:{' '}
+                                  {summaryPatient?.previousVitals?.diastolicBp !== undefined
+                                    ? `${summaryPatient.previousVitals.diastolicBp} mmHg`
+                                    : '—'}
+                                </span>
+                                {getVitalMarker(vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp) && (
+                                  <span className="font-semibold text-rose-600 dark:text-rose-400 ml-2">
+                                    {getVitalMarker(vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp)}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <div className="hidden min-[40rem]:block">
+                            <div className="vital-input-col">
                               <Input
-                                id="vital-diastolicBp-desktop"
+                                id="vital-diastolicBp"
                                 inputMode="numeric"
                                 placeholder="80"
                                 value={vitalsForm.diastolicBp}
@@ -1490,10 +1324,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                                 disabled={isReadOnlyView}
                                 error={vitalErrors.diastolicBp}
-                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.diastolicBp !== undefined
@@ -1506,40 +1340,34 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 </span>
                               )}
                             </div>
-                            <div className="min-[40rem]:hidden w-full">
-                              {vitalErrors.diastolicBp && (
-                                <p role="alert" className="text-xs text-rose-600">
-                                  {vitalErrors.diastolicBp}
-                                </p>
-                              )}
-                            </div>
                           </div>
 
                           {/* Heart Rate */}
-                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
-                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                          <div className="vital-row">
+                            <div className="vital-label-col">
                               <label
                                 htmlFor="vital-heartRateBpm"
                                 className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
                               >
                                 Heart Rate (bpm)
                               </label>
-                              <div className="min-[40rem]:hidden flex items-center gap-2">
-                                <Input
-                                  id="vital-heartRateBpm"
-                                  inputMode="numeric"
-                                  placeholder="72"
-                                  value={vitalsForm.heartRateBpm}
-                                  onChange={(e) => handleVitalChange('heartRateBpm', e.target.value)}
-                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                                  disabled={isReadOnlyView}
-                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
-                                />
+                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                                <span>
+                                  Last visit:{' '}
+                                  {summaryPatient?.previousVitals?.heartRateBpm !== undefined
+                                    ? `${summaryPatient.previousVitals.heartRateBpm} bpm`
+                                    : '—'}
+                                </span>
+                                {getVitalMarker(vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm) && (
+                                  <span className="font-semibold text-rose-600 dark:text-rose-400 ml-2">
+                                    {getVitalMarker(vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm)}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <div className="hidden min-[40rem]:block">
+                            <div className="vital-input-col">
                               <Input
-                                id="vital-heartRateBpm-desktop"
+                                id="vital-heartRateBpm"
                                 inputMode="numeric"
                                 placeholder="72"
                                 value={vitalsForm.heartRateBpm}
@@ -1547,10 +1375,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                                 disabled={isReadOnlyView}
                                 error={vitalErrors.heartRateBpm}
-                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.heartRateBpm !== undefined
@@ -1563,40 +1391,34 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 </span>
                               )}
                             </div>
-                            <div className="min-[40rem]:hidden w-full">
-                              {vitalErrors.heartRateBpm && (
-                                <p role="alert" className="text-xs text-rose-600">
-                                  {vitalErrors.heartRateBpm}
-                                </p>
-                              )}
-                            </div>
                           </div>
 
                           {/* O2 Saturation */}
-                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
-                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                          <div className="vital-row">
+                            <div className="vital-label-col">
                               <label
                                 htmlFor="vital-oxygenSaturationPct"
                                 className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
                               >
                                 O2 Saturation (%)
                               </label>
-                              <div className="min-[40rem]:hidden flex items-center gap-2">
-                                <Input
-                                  id="vital-oxygenSaturationPct"
-                                  inputMode="numeric"
-                                  placeholder="98"
-                                  value={vitalsForm.oxygenSaturationPct}
-                                  onChange={(e) => handleVitalChange('oxygenSaturationPct', e.target.value)}
-                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                                  disabled={isReadOnlyView}
-                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
-                                />
+                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                                <span>
+                                  Last visit:{' '}
+                                  {summaryPatient?.previousVitals?.oxygenSaturationPct !== undefined
+                                    ? `${summaryPatient.previousVitals.oxygenSaturationPct}%`
+                                    : '—'}
+                                </span>
+                                {getVitalMarker(vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct) && (
+                                  <span className="font-semibold text-rose-600 dark:text-rose-400 ml-2">
+                                    {getVitalMarker(vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct)}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <div className="hidden min-[40rem]:block">
+                            <div className="vital-input-col">
                               <Input
-                                id="vital-oxygenSaturationPct-desktop"
+                                id="vital-oxygenSaturationPct"
                                 inputMode="numeric"
                                 placeholder="98"
                                 value={vitalsForm.oxygenSaturationPct}
@@ -1604,10 +1426,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                                 disabled={isReadOnlyView}
                                 error={vitalErrors.oxygenSaturationPct}
-                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.oxygenSaturationPct !== undefined
@@ -1620,40 +1442,34 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 </span>
                               )}
                             </div>
-                            <div className="min-[40rem]:hidden w-full">
-                              {vitalErrors.oxygenSaturationPct && (
-                                <p role="alert" className="text-xs text-rose-600">
-                                  {vitalErrors.oxygenSaturationPct}
-                                </p>
-                              )}
-                            </div>
                           </div>
 
                           {/* Temperature */}
-                          <div className="py-2.5 px-3 sm:px-4 flex flex-col min-[40rem]:grid min-[40rem]:grid-cols-[12rem_8rem_auto_auto] items-start min-[40rem]:items-center gap-2 min-[40rem]:gap-3">
-                            <div className="flex items-center justify-between w-full min-[40rem]:w-auto">
+                          <div className="vital-row">
+                            <div className="vital-label-col">
                               <label
                                 htmlFor="vital-temperatureCelsius"
                                 className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
                               >
                                 Temperature (C)
                               </label>
-                              <div className="min-[40rem]:hidden flex items-center gap-2">
-                                <Input
-                                  id="vital-temperatureCelsius"
-                                  inputMode="decimal"
-                                  placeholder="36.8"
-                                  value={vitalsForm.temperatureCelsius}
-                                  onChange={(e) => handleVitalChange('temperatureCelsius', e.target.value)}
-                                  onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
-                                  disabled={isReadOnlyView}
-                                  className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
-                                />
+                              <div className="vital-last-visit-stacked text-xs text-slate-500 dark:text-slate-400">
+                                <span>
+                                  Last visit:{' '}
+                                  {summaryPatient?.previousVitals?.temperatureCelsius !== undefined
+                                    ? `${summaryPatient.previousVitals.temperatureCelsius} °C`
+                                    : '—'}
+                                </span>
+                                {getVitalMarker(vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius) && (
+                                  <span className="font-semibold text-rose-600 dark:text-rose-400 ml-2">
+                                    {getVitalMarker(vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius)}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <div className="hidden min-[40rem]:block">
+                            <div className="vital-input-col">
                               <Input
-                                id="vital-temperatureCelsius-desktop"
+                                id="vital-temperatureCelsius"
                                 inputMode="decimal"
                                 placeholder="36.8"
                                 value={vitalsForm.temperatureCelsius}
@@ -1661,10 +1477,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 onKeyDown={(e) => e.key === 'Enter' && !hasVitalErrors && hasVitalsChanged && handleSaveVitals()}
                                 disabled={isReadOnlyView}
                                 error={vitalErrors.temperatureCelsius}
-                                className="w-[8rem] text-sm py-1.5 font-medium min-h-[44px]"
+                                className="w-[8rem] text-sm py-1 font-medium min-h-[44px]"
                               />
                             </div>
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="vital-last-visit-inline text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                               <span>
                                 Last visit:{' '}
                                 {summaryPatient?.previousVitals?.temperatureCelsius !== undefined
@@ -1677,19 +1493,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 </span>
                               )}
                             </div>
-                            <div className="min-[40rem]:hidden w-full">
-                              {vitalErrors.temperatureCelsius && (
-                                <p role="alert" className="text-xs text-rose-600">
-                                  {vitalErrors.temperatureCelsius}
-                                </p>
-                              )}
-                            </div>
                           </div>
                         </div>
 
                         {/* Save Vitals under list */}
                         {!isReadOnlyView && (
-                          <div className="pt-1">
+                          <div className="pt-1 flex items-center">
                             <Button
                               size="sm"
                               variant="secondary"
@@ -1718,10 +1527,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       {/* Single Footer Row: Actions */}
                       {!isReadOnlyView && (
-                        <div
-                          ref={leftFooterRef}
-                          className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-800"
-                        >
+                        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex-none">
                           <Button
                             size="sm"
                             variant="outline"
@@ -1765,30 +1571,23 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             </div>
 
             {/* Right Column / Order 2 on Mobile: Patient Summary Card */}
-            <div ref={rightCardRef} className="order-2 lg:col-span-1 flex flex-col h-full">
+            <div className="order-2 lg:col-span-1 flex flex-col h-auto lg:h-full">
               <Card className="h-full flex flex-col">
                 <CardHeader>
-                  <div ref={rightHeaderRef} className="w-full">
+                  <div className="w-full">
                     <CardTitle>Patient Summary</CardTitle>
                   </div>
                 </CardHeader>
-                <CardContent className="!p-0 p-0 flex-1 flex flex-col">
-                  <div
-                    className="flex-1 flex flex-col"
-                    style={{
-                      paddingBottom: consultationBalance.rightBottomPx > 0
-                        ? `${consultationBalance.rightBottomPx}px`
-                        : undefined,
-                    }}
-                  >
+                <CardContent className="!p-0 p-0 flex-1 flex flex-col justify-start">
+                  <div className="flex-1 flex flex-col justify-start">
                   {summaryPatient ? (
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                    <div className="flex-1 flex flex-col justify-start divide-y divide-slate-100 dark:divide-slate-800">
                       {/* Section 1: Previous Visit Record */}
-                      <div ref={rightS1Ref} className="px-3.5 sm:px-4 py-3 sm:py-3.5">
+                      <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
                         <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                           Previous Visit Record
                         </span>
-                        <DetailList columns={2} paddingYRem={consultationBalance.rightPaddingYRem}>
+                        <DetailList columns={2} className="flex-1">
                           <DetailItem
                             label="Last Visit"
                             className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
@@ -1835,8 +1634,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           )}
                         </DetailList>
                         <DetailList
-                          paddingYRem={consultationBalance.rightPaddingYRem}
-                          className={summaryPatient.previousVitals ? 'border-t border-slate-100 dark:border-slate-800' : ''}
+                          className={`flex-1 ${summaryPatient.previousVitals ? 'border-t border-slate-100 dark:border-slate-800' : ''}`}
                         >
                           {!summaryPatient.previousVitals && (
                             <DetailItem label="Vitals" value="None recorded" />
@@ -1849,11 +1647,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
 
                       {/* Section 2: Clinical Profile */}
-                      <div ref={rightS2Ref} className="px-3.5 sm:px-4 py-3 sm:py-3.5">
+                      <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
                         <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                           Clinical Profile
                         </span>
-                        <DetailList paddingYRem={consultationBalance.rightPaddingYRem}>
+                        <DetailList className="flex-1">
                           <DetailItem
                             label="Chronic Conditions"
                             value={
@@ -1874,11 +1672,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
 
                       {/* Section 3: Demographics & Primary Care */}
-                      <div ref={rightS3Ref} className="px-3.5 sm:px-4 py-3 sm:py-3.5">
+                      <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
                         <span className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                           Demographics & Primary Care
                         </span>
-                        <DetailList paddingYRem={consultationBalance.rightPaddingYRem}>
+                        <DetailList className="flex-1">
                           <DetailItem
                             label="Phone"
                             value={summaryPatient.phone || 'None recorded'}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -100,164 +100,6 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
     setNotification(msg);
     setTimeout(() => setNotification(null), 4500);
   };
-
-  // Spacing balance for two-column equal height layout
-  const leftColRef = useRef<HTMLDivElement | null>(null);
-  const rightColRef = useRef<HTMLDivElement | null>(null);
-  const leftCard1Ref = useRef<HTMLDivElement | null>(null);
-  const leftCard2Ref = useRef<HTMLDivElement | null>(null);
-  const rightCard1Ref = useRef<HTMLDivElement | null>(null);
-  const rightCard2Ref = useRef<HTMLDivElement | null>(null);
-
-  const [dataBalance, setDataBalance] = useState<{
-    leftCardGapRem: number;
-    rightCardGapRem: number;
-    rightCardPaddingRem: number;
-    rightStorageModeGapRem: number;
-    rightButtonGapRem: number;
-    rightBottomPx: number;
-    leftRecordItemPaddingYRem?: number;
-    leftBottomPx: number;
-  }>({
-    leftCardGapRem: 1.0,
-    rightCardGapRem: 1.0,
-    rightCardPaddingRem: 1.25,
-    rightStorageModeGapRem: 1.0,
-    rightButtonGapRem: 0.75,
-    rightBottomPx: 0,
-    leftBottomPx: 0,
-  });
-
-  useEffect(() => {
-    const measureAndBalance = () => {
-      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-        setDataBalance((prev) => {
-          if (
-            prev.leftCardGapRem === 1.0 &&
-            prev.rightCardGapRem === 1.0 &&
-            prev.rightCardPaddingRem === 1.25 &&
-            prev.rightStorageModeGapRem === 1.0 &&
-            prev.rightButtonGapRem === 0.75 &&
-            prev.rightBottomPx === 0 &&
-            prev.leftRecordItemPaddingYRem === undefined &&
-            prev.leftBottomPx === 0
-          ) {
-            return prev;
-          }
-          return {
-            leftCardGapRem: 1.0,
-            rightCardGapRem: 1.0,
-            rightCardPaddingRem: 1.25,
-            rightStorageModeGapRem: 1.0,
-            rightButtonGapRem: 0.75,
-            rightBottomPx: 0,
-            leftBottomPx: 0,
-          };
-        });
-        return;
-      }
-
-      if (!leftCard1Ref.current || !leftCard2Ref.current || !rightCard1Ref.current || !rightCard2Ref.current) {
-        return;
-      }
-
-      const hLeft1 = leftCard1Ref.current.offsetHeight;
-      const hLeft2 = leftCard2Ref.current.offsetHeight;
-      const hRight1 = rightCard1Ref.current.offsetHeight;
-      const hRight2 = rightCard2Ref.current.offsetHeight;
-
-      setDataBalance((prev) => {
-        const rightBaseSpacing = 148;
-        const currentRightFactor = prev.rightCardPaddingRem / 1.25;
-        const currentRightAbsorbedPx = (currentRightFactor - 1.0) * rightBaseSpacing;
-        const currentRightExtraTotal = currentRightAbsorbedPx + prev.rightBottomPx;
-
-        const currentLeftExtraTotal = prev.leftBottomPx;
-
-        const standardGapPx = 16;
-        const naturalLeft = (hLeft1 + standardGapPx + hLeft2) - currentLeftExtraTotal;
-        const naturalRight = (hRight1 + standardGapPx + hRight2) - currentRightExtraTotal;
-
-        if (naturalLeft > naturalRight) {
-          const extraPx = naturalLeft - naturalRight;
-          const maxAbsorbable = rightBaseSpacing * 0.5;
-          const absorbedPx = Math.min(extraPx, maxAbsorbable);
-          const rightFactor = Number((1.0 + absorbedPx / rightBaseSpacing).toFixed(3));
-          const remainderPx = Math.max(0, Math.round(extraPx - absorbedPx));
-
-          const newRightCardGapRem = Number((1.0 * rightFactor).toFixed(3));
-          const newRightCardPaddingRem = Number((1.25 * rightFactor).toFixed(3));
-          const newRightStorageModeGapRem = Number((1.0 * rightFactor).toFixed(3));
-          const newRightButtonGapRem = Number((0.75 * rightFactor).toFixed(3));
-
-          if (
-            Math.abs(prev.rightCardGapRem - newRightCardGapRem) < 0.01 &&
-            Math.abs(prev.rightCardPaddingRem - newRightCardPaddingRem) < 0.01 &&
-            Math.abs(prev.rightStorageModeGapRem - newRightStorageModeGapRem) < 0.01 &&
-            Math.abs(prev.rightButtonGapRem - newRightButtonGapRem) < 0.01 &&
-            Math.abs(prev.rightBottomPx - remainderPx) <= 1 &&
-            prev.leftBottomPx === 0 &&
-            prev.leftCardGapRem === 1.0
-          ) {
-            return prev;
-          }
-
-          return {
-            leftCardGapRem: 1.0,
-            rightCardGapRem: newRightCardGapRem,
-            rightCardPaddingRem: newRightCardPaddingRem,
-            rightStorageModeGapRem: newRightStorageModeGapRem,
-            rightButtonGapRem: newRightButtonGapRem,
-            rightBottomPx: remainderPx,
-            leftBottomPx: 0,
-          };
-        } else if (naturalRight > naturalLeft) {
-          const extraPx = naturalRight - naturalLeft;
-          const leftBaseSpacing = 160;
-          const maxAbsorbable = leftBaseSpacing * 0.5;
-          const absorbedPx = Math.min(extraPx, maxAbsorbable);
-          const leftFactor = Number((1.0 + absorbedPx / leftBaseSpacing).toFixed(3));
-          const remainderPx = Math.max(0, Math.round(extraPx - absorbedPx));
-
-          const newLeftCardGapRem = Number((1.0 * leftFactor).toFixed(3));
-
-          return {
-            leftCardGapRem: newLeftCardGapRem,
-            rightCardGapRem: 1.0,
-            rightCardPaddingRem: 1.25,
-            rightStorageModeGapRem: 1.0,
-            rightButtonGapRem: 0.75,
-            rightBottomPx: 0,
-            leftRecordItemPaddingYRem: Number((0.5 * leftFactor).toFixed(3)),
-            leftBottomPx: remainderPx,
-          };
-        } else {
-          return {
-            leftCardGapRem: 1.0,
-            rightCardGapRem: 1.0,
-            rightCardPaddingRem: 1.25,
-            rightStorageModeGapRem: 1.0,
-            rightButtonGapRem: 0.75,
-            rightBottomPx: 0,
-            leftBottomPx: 0,
-          };
-        }
-      });
-    };
-
-    measureAndBalance();
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined' && leftColRef.current && rightColRef.current) {
-      ro = new ResizeObserver(() => measureAndBalance());
-      ro.observe(leftColRef.current);
-      ro.observe(rightColRef.current);
-    }
-    window.addEventListener('resize', measureAndBalance);
-    return () => {
-      if (ro) ro.disconnect();
-      window.removeEventListener('resize', measureAndBalance);
-    };
-  }, [stats]);
 
   // 1. Storage Mode
   const handleModeChange = (newMode: 'browser' | 'memory') => {
@@ -424,12 +266,8 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
       {/* Storage Status & Management Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* Left Column: Storage Status */}
-        <div
-          ref={leftColRef}
-          className="lg:col-span-2 flex flex-col h-full"
-          style={{ gap: `${dataBalance.leftCardGapRem}rem` }}
-        >
-          <div ref={leftCard1Ref}>
+        <div className="lg:col-span-2 flex flex-col h-auto lg:h-full gap-4">
+          <div>
             <Card>
               <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
                 <CardTitle className="flex items-center gap-2">
@@ -458,145 +296,111 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
           </div>
 
           {/* Record Counts Table */}
-          <div ref={leftCard2Ref}>
-            <Card>
-              <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-teal-600" />
-                  <span>Collection Record Counts</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="!p-0">
-                <DetailList dense columns={3} paddingYRem={dataBalance.leftRecordItemPaddingYRem}>
-                  {stats?.counts &&
-                    Object.entries(stats.counts).map(([col, count]) => (
-                      <DetailItem
-                        key={col}
-                        label={formatCollectionLabel(col)}
-                        value={String(count)}
-                      />
-                    ))}
-                </DetailList>
-                {dataBalance.leftBottomPx > 0 && (
-                  <div style={{ height: `${dataBalance.leftBottomPx}px` }} aria-hidden="true" />
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="flex flex-col flex-1">
+            <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
+              <CardTitle className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-teal-600" />
+                <span>Collection Record Counts</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="!p-0 flex-1 flex flex-col justify-start">
+              <DetailList dense columns={3} className="flex-1">
+                {stats?.counts &&
+                  Object.entries(stats.counts).map(([col, count]) => (
+                    <DetailItem
+                      key={col}
+                      label={formatCollectionLabel(col)}
+                      value={String(count)}
+                    />
+                  ))}
+              </DetailList>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column: Actions and Configuration */}
-        <div
-          ref={rightColRef}
-          className="flex flex-col h-full"
-          style={{ gap: `${dataBalance.rightCardGapRem}rem` }}
-        >
+        <div className="flex flex-col h-auto lg:h-full gap-4">
           {/* Storage Configuration */}
-          <div ref={rightCard1Ref}>
-            <Card>
-              <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
-                <CardTitle>Storage Mode</CardTitle>
-              </CardHeader>
-              <CardContent className="!p-0">
-                <div
-                  style={{
-                    padding: `${dataBalance.rightCardPaddingRem}rem`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: `${dataBalance.rightStorageModeGapRem}rem`,
-                  }}
-                >
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                      Persistence Strategy
-                    </label>
-                    <Select
-                      value={stats?.mode || 'browser'}
-                      onChange={(e) => handleModeChange(e.target.value as any)}
-                      options={[
-                        { value: 'browser', label: 'Save data in this browser' },
-                        { value: 'memory', label: 'Do not save: data resets on reload' },
-                      ]}
-                    />
-                  </div>
-                  <p className="text-[0.6875rem] text-slate-500 leading-relaxed">
-                    When set to "Do not save", changes persist only during the active browser session and reset automatically upon page reload.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
+              <CardTitle>Storage Mode</CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  Persistence Strategy
+                </label>
+                <Select
+                  value={stats?.mode || 'browser'}
+                  onChange={(e) => handleModeChange(e.target.value as any)}
+                  options={[
+                    { value: 'browser', label: 'Save data in this browser' },
+                    { value: 'memory', label: 'Do not save: data resets on reload' },
+                  ]}
+                />
+              </div>
+              <p className="text-[0.6875rem] text-slate-500 leading-relaxed">
+                When set to "Do not save", changes persist only during the active browser session and reset automatically upon page reload.
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Backup & Restore Controls */}
-          <div ref={rightCard2Ref}>
-            <Card>
-              <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
-                <CardTitle>Backup and Restore</CardTitle>
-              </CardHeader>
-              <CardContent className="!p-0">
-                <div
-                  className="flex flex-col"
-                  style={{ padding: `${dataBalance.rightCardPaddingRem}rem` }}
+          <Card className="flex flex-col flex-1">
+            <CardHeader className="pb-3 border-b border-slate-200 dark:border-slate-800">
+              <CardTitle>Backup and Restore</CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 flex-1 flex flex-col justify-start">
+              <div className="flex flex-col gap-3">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-xs min-h-[44px]"
+                  icon={<Download className="w-4 h-4 text-teal-600" />}
+                  onClick={() => setIsExportModalOpen(true)}
                 >
-                  <div
-                    className="flex flex-col"
-                    style={{ gap: `${dataBalance.rightButtonGapRem}rem` }}
+                  Export backup (.json)
+                </Button>
+
+                <label className="w-full block cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    className="hidden"
+                    onChange={handleFileSelected}
+                  />
+                  <span className="inline-flex items-center gap-2 w-full px-3 py-2 border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md min-h-[44px]">
+                    <Upload className="w-4 h-4 text-teal-600" />
+                    <span>Import backup (.json)</span>
+                  </span>
+                </label>
+
+                {canUndo && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-xs min-h-[44px]"
+                    icon={<Undo2 className="w-4 h-4 text-slate-600" />}
+                    onClick={handleUndoRestore}
                   >
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-xs min-h-[44px]"
-                      icon={<Download className="w-4 h-4 text-teal-600" />}
-                      onClick={() => setIsExportModalOpen(true)}
-                    >
-                      Export backup (.json)
-                    </Button>
+                    Undo last restore
+                  </Button>
+                )}
 
-                    <label className="w-full block cursor-pointer">
-                      <input
-                        type="file"
-                        accept=".json,application/json"
-                        className="hidden"
-                        onChange={handleFileSelected}
-                      />
-                      <span className="inline-flex items-center gap-2 w-full px-3 py-2 border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md min-h-[44px]">
-                        <Upload className="w-4 h-4 text-teal-600" />
-                        <span>Import backup (.json)</span>
-                      </span>
-                    </label>
+                <div className="border-t border-slate-100 dark:border-slate-800" />
 
-                    {canUndo && (
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-xs min-h-[44px]"
-                        icon={<Undo2 className="w-4 h-4 text-slate-600" />}
-                        onClick={handleUndoRestore}
-                      >
-                        Undo last restore
-                      </Button>
-                    )}
-
-                    <div className="border-t border-slate-100 dark:border-slate-800" />
-
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-xs min-h-[44px] text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                      icon={<RotateCcw className="w-4 h-4 text-rose-600" />}
-                      onClick={() => {
-                        setResetConfirmText('');
-                        setIsResetModalOpen(true);
-                      }}
-                    >
-                      Reset demo data
-                    </Button>
-                  </div>
-
-                  {dataBalance.rightBottomPx > 0 && (
-                    <div style={{ height: `${dataBalance.rightBottomPx}px` }} aria-hidden="true" />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-xs min-h-[44px] text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                  icon={<RotateCcw className="w-4 h-4 text-rose-600" />}
+                  onClick={() => {
+                    setResetConfirmText('');
+                    setIsResetModalOpen(true);
+                  }}
+                >
+                  Reset demo data
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 

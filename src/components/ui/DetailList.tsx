@@ -165,7 +165,7 @@ export const DetailItem: React.FC<DetailItemProps> = ({
         isThreeCol
           ? 'flex items-baseline justify-between gap-2'
           : 'grid grid-cols-[8rem_1fr] sm:grid-cols-[10rem_1fr] items-baseline gap-3'
-      } text-xs sm:text-sm text-left ${paddingClass} ${className}`}
+      } text-xs sm:text-sm text-left flex-auto max-h-[4.5rem] ${paddingClass} ${className}`}
       {...props}
     >
       <dt className="text-slate-500 dark:text-slate-400 font-normal text-left select-none break-words min-w-0">
@@ -217,7 +217,7 @@ export const DetailList: React.FC<DetailListProps> = ({
       <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 1 }}>
         <dl
           ref={containerRef}
-          className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container ${className}`}
+          className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
           {...props}
         >
           {items
@@ -260,14 +260,14 @@ export const DetailList: React.FC<DetailListProps> = ({
         <dl
           ref={containerRef}
           data-testid="detail-list-two-col"
-          className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container ${className}`}
+          className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
           {...props}
         >
           {pairs.map(([first, second], pairIdx) => (
             <div
               key={pairIdx}
               data-testid="detail-pair-row"
-              className={`detail-pair-row ${
+              className={`detail-pair-row flex-auto max-h-[4.5rem] ${
                 isWide
                   ? 'grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800'
                   : 'grid grid-cols-1 divide-y divide-slate-100 dark:divide-slate-800'
@@ -330,14 +330,14 @@ export const DetailList: React.FC<DetailListProps> = ({
       <dl
         ref={containerRef}
         data-testid="detail-list-three-col"
-        className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container ${className}`}
+        className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
         {...props}
       >
         {rows.map((row, rowIdx) => (
           <div
             key={rowIdx}
             data-testid="detail-three-col-row"
-            className={`detail-three-col-row grid ${
+            className={`detail-three-col-row flex-auto max-h-[4.5rem] grid ${
               activeCols === 3
                 ? 'grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800'
                 : activeCols === 2
@@ -369,79 +369,10 @@ export const DetailGrid: React.FC<DetailGridProps> = ({
   balanced = false,
   ...props
 }) => {
-  const gridRef = useRef<HTMLDivElement | null>(null);
-  const [balanceState, setBalanceState] = useState<{
-    card1PaddingYRem?: number;
-    card3PaddingYRem?: number;
-    card1BottomSpacePx?: number;
-    card3BottomSpacePx?: number;
-    paddingFactor?: number;
-  }>({});
-
-  useEffect(() => {
-    if (!balanced || !gridRef.current) return;
-
-    const measureAndBalance = () => {
-      if (!gridRef.current) return;
-      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-        setBalanceState({ paddingFactor: 1.0 });
-        return;
-      }
-
-      const cards = Array.from(gridRef.current.children) as HTMLElement[];
-      if (cards.length < 3) return;
-
-      const card1 = cards[0]; // Left column (Personal Info)
-      const card2 = cards[1]; // Right column top (Medical Profile)
-      const card3 = cards[2]; // Right column bottom (Latest Vitals)
-
-      const card1Rows =
-        card1.querySelectorAll('div[data-testid="detail-item"], dl > div').length || 9;
-      const card3Rows =
-        card3.querySelectorAll('.detail-pair-row, div[data-testid="detail-item"]').length || 3;
-
-      const h1 = card1.offsetHeight;
-      const hRight = card2.offsetHeight + 24 + card3.offsetHeight; // 24px is gap-6 token
-
-      if (hRight > h1) {
-        const extra = hRight - h1;
-        const res = calculateBalancedPadding(extra, card1Rows);
-        setBalanceState({
-          card1PaddingYRem: res.rowPaddingYRem,
-          card1BottomSpacePx: res.remainingBottomSpacePx,
-          paddingFactor: res.paddingFactor,
-        });
-      } else if (h1 > hRight) {
-        const extra = h1 - hRight;
-        const res = calculateBalancedPadding(extra, card3Rows);
-        setBalanceState({
-          card3PaddingYRem: res.rowPaddingYRem,
-          card3BottomSpacePx: res.remainingBottomSpacePx,
-          paddingFactor: res.paddingFactor,
-        });
-      } else {
-        setBalanceState({ paddingFactor: 1.0 });
-      }
-    };
-
-    measureAndBalance();
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(() => measureAndBalance());
-      ro.observe(gridRef.current);
-    }
-    window.addEventListener('resize', measureAndBalance);
-    return () => {
-      if (ro) ro.disconnect();
-      window.removeEventListener('resize', measureAndBalance);
-    };
-  }, [balanced]);
-
   if (balanced) {
     const childrenArray = React.Children.toArray(children);
     return (
       <div
-        ref={gridRef}
         data-testid="detail-grid-balanced"
         className={`grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-[auto_auto] items-stretch gap-6 w-full ${className}`}
         {...props}
@@ -450,36 +381,18 @@ export const DetailGrid: React.FC<DetailGridProps> = ({
           if (!React.isValidElement(child)) return child;
 
           let posClass = '';
-          let cardContextValue: BalancedGridCardContextValue = {};
-
           if (idx === 0) {
             posClass = 'lg:row-span-2 lg:col-start-1 lg:row-start-1 flex flex-col h-full';
-            cardContextValue = {
-              paddingYRem: balanceState.card1PaddingYRem,
-              bottomSpacePx: balanceState.card1BottomSpacePx,
-              paddingFactor: balanceState.paddingFactor,
-            };
           } else if (idx === 1) {
             posClass = 'lg:col-start-2 lg:row-start-1 flex flex-col h-full';
-            cardContextValue = {
-              paddingFactor: balanceState.paddingFactor,
-            };
           } else if (idx === 2) {
             posClass = 'lg:col-start-2 lg:row-start-2 flex flex-col h-full';
-            cardContextValue = {
-              paddingYRem: balanceState.card3PaddingYRem,
-              bottomSpacePx: balanceState.card3BottomSpacePx,
-              paddingFactor: balanceState.paddingFactor,
-            };
           }
 
           return (
-            <BalancedGridCardContext.Provider key={idx} value={cardContextValue}>
+            <BalancedGridCardContext.Provider key={idx} value={{}}>
               {React.cloneElement(child, {
                 className: `${(child.props as any).className || ''} ${posClass}`,
-                ...(cardContextValue.paddingFactor
-                  ? { 'data-padding-factor': cardContextValue.paddingFactor }
-                  : {}),
               } as any)}
             </BalancedGridCardContext.Provider>
           );
@@ -490,7 +403,6 @@ export const DetailGrid: React.FC<DetailGridProps> = ({
 
   return (
     <div
-      ref={gridRef}
       className={`grid grid-cols-1 lg:grid-cols-2 gap-6 items-start w-full ${className}`}
       {...props}
     >
