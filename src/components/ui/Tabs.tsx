@@ -84,8 +84,9 @@ export const Tabs: React.FC<TabsProps> = ({
       onKeyDown={handleKeyDown}
       className={`flex items-center gap-[0.25rem] border-b border-slate-200 dark:border-slate-800 overflow-x-auto overflow-y-hidden scrollbar-none no-scrollbar [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-nowrap shrink-0 ${className}`}
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, idx) => {
         const isSelected = activeTab === tab.id;
+        const isFirst = idx === 0;
         return (
           <button
             key={tab.id}
@@ -104,10 +105,17 @@ export const Tabs: React.FC<TabsProps> = ({
                 onChange(tab.id);
               }
             }}
-            className={`relative inline-flex items-center justify-center whitespace-nowrap cursor-pointer transition-colors shrink-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 dark:focus-visible:outline-teal-400 focus-visible:-outline-offset-2 ${
+            style={isFirst ? { paddingInlineStart: 0 } : undefined}
+            className={`relative inline-flex items-center whitespace-nowrap cursor-pointer transition-colors shrink-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 dark:focus-visible:outline-teal-400 focus-visible:-outline-offset-2 ${
+              isFirst ? 'justify-start text-left pl-0 [padding-inline-start:0]' : 'justify-center'
+            } ${
               isSmall
-                ? 'text-[0.9375rem] min-h-[2rem] py-1.5 px-2.5'
-                : 'text-[1.0625rem] min-h-[2.75rem] py-[0.75rem] px-[1.125rem]'
+                ? isFirst
+                  ? 'text-[0.9375rem] min-h-[2rem] py-1.5 pr-2.5'
+                  : 'text-[0.9375rem] min-h-[2rem] py-1.5 px-2.5'
+                : isFirst
+                ? 'text-[1.0625rem] min-h-[44px] py-[0.75rem] pr-[1.125rem]'
+                : 'text-[1.0625rem] min-h-[44px] py-[0.75rem] px-[1.125rem]'
             } ${
               isSelected
                 ? 'font-bold text-[var(--text)] after:content-[""] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[0.1875rem] after:bg-teal-600 dark:after:bg-teal-400 after:rounded-full'
@@ -123,3 +131,4 @@ export const Tabs: React.FC<TabsProps> = ({
     </div>
   );
 };
+
