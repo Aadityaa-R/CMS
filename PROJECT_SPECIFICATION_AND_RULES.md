@@ -709,10 +709,13 @@ Executes the comprehensive release gate:
 
 ### 15.1 Page Container & Viewport Width Management
 - **Max Width Token**:
-  - Defined in `src/index.css` as `--page-max: 94rem;` (equivalent to ~1200px at 80% display scale, and 1504px at 100% scale).
+  - Defined in `src/index.css` as `--page-max: 94rem;` (equivalent to ~1354px at 90% display scale, and 1504px at 100% scale).
   - Centered horizontally (`mx-auto`) with responsive horizontal padding (`px-4 sm:px-6`).
   - Viewports narrower than the token expand to fill available width smoothly.
   - Header bar and side navigation bar span independently and are unaffected.
+- **Large-Screen Scale & Display Size Overrides**:
+  - Screens from 1280px up use 90% scale (`html { font-size: 90%; }`).
+  - Display size overrides: compact 80% (`html[data-display-size='compact']`), standard 100% (`html[data-display-size='standard']`), large 115% (`html[data-display-size='large']`).
 - **Component**:
   - `PageContainer` implemented in `src/components/layout/PageContainer.tsx` (re-exported from `src/components/ui/PageContainer.tsx`).
   - Integrated into `AppLayout.tsx` wrapping all active workstations and views.

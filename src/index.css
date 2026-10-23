@@ -27,19 +27,14 @@
   --fs-axis: 0.6875rem;
 }
 
-@media (min-width: 1536px) {
-  :root {
-    --fs-kpi: 1.5rem;
-    --fs-kpi-label: 0.8125rem;
-    --fs-title: 1rem;
-    --fs-body: 0.8125rem;
-    --fs-label: 0.6875rem;
-    --fs-th: 0.6875rem;
-    --fs-axis: 0.6875rem;
+@media (min-width: 1280px) {
+  html {
+    font-size: 90%;
   }
 }
 
 html[data-display-size='compact'] {
+  font-size: 80% !important;
   --fs-kpi: 1.5rem;
   --fs-kpi-label: 0.8125rem;
   --fs-title: 1rem;
@@ -49,8 +44,19 @@ html[data-display-size='compact'] {
   --fs-axis: 0.6875rem;
 }
 
-html[data-display-size='standard'],
+html[data-display-size='standard'] {
+  font-size: 100% !important;
+  --fs-kpi: 1.875rem;
+  --fs-kpi-label: 0.875rem;
+  --fs-title: 1.125rem;
+  --fs-body: 0.875rem;
+  --fs-label: 0.75rem;
+  --fs-th: 0.75rem;
+  --fs-axis: 0.6875rem;
+}
+
 html[data-display-size='large'] {
+  font-size: 115% !important;
   --fs-kpi: 1.875rem;
   --fs-kpi-label: 0.875rem;
   --fs-title: 1.125rem;
