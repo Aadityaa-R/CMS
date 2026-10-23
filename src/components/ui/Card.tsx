@@ -58,3 +58,42 @@ export const CardContent: React.FC<{
 }> = ({ children, className = '' }) => {
   return <div className={`p-5 ${className}`}>{children}</div>;
 };
+
+export interface KpiCardProps {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+  children?: React.ReactNode;
+}
+
+export const KpiCard: React.FC<KpiCardProps> = ({
+  label,
+  value,
+  className = '',
+  onClick,
+  children,
+}) => {
+  return (
+    <Card
+      onClick={onClick}
+      className={`border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col justify-between min-h-0 h-auto ${className}`}
+    >
+      <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
+        <span
+          className="font-medium text-fs-kpi-label leading-tight"
+          style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
+        >
+          {label}
+        </span>
+        <span
+          className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+          style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
+        >
+          {value}
+        </span>
+      </div>
+      {children}
+    </Card>
+  );
+};

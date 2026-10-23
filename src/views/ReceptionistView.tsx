@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent, KpiCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -1386,70 +1386,10 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         <div className="space-y-6">
           {/* Top Summary Strip: 4 Stat Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="min-h-0 h-auto">
-              <CardContent className="p-4 flex flex-col min-h-0 h-auto">
-                <div
-                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                >
-                  {totalCheckedIn}
-                </div>
-                <div
-                  className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                >
-                  Total Checked In
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="min-h-0 h-auto">
-              <CardContent className="p-4 flex flex-col min-h-0 h-auto">
-                <div
-                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                >
-                  {currentlyWaiting}
-                </div>
-                <div
-                  className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                >
-                  Currently Waiting
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="min-h-0 h-auto">
-              <CardContent className="p-4 flex flex-col min-h-0 h-auto">
-                <div
-                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                >
-                  {inConsultation}
-                </div>
-                <div
-                  className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                >
-                  In Consultation
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="min-h-0 h-auto">
-              <CardContent className="p-4 flex flex-col min-h-0 h-auto">
-                <div
-                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                >
-                  {completedToday}
-                </div>
-                <div
-                  className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                >
-                  Completed Today
-                </div>
-              </CardContent>
-            </Card>
+            <KpiCard label="Total Checked In" value={totalCheckedIn} />
+            <KpiCard label="Currently Waiting" value={currentlyWaiting} />
+            <KpiCard label="In Consultation" value={inConsultation} />
+            <KpiCard label="Completed Today" value={completedToday} />
           </div>
 
           {/* Waiting Queue Table */}

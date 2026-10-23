@@ -4,7 +4,7 @@ import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { useBilling } from '@/context/BillingContext';
 import { useAttendance } from '@/context/AttendanceContext';
-import { Card } from '@/components/ui/Card';
+import { Card, KpiCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select, SelectOption } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -1126,23 +1126,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
               {metrics1.summaryFigures.map((fig) => (
-                <Card
+                <KpiCard
                   key={fig.label}
-                  className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col justify-between min-h-0 h-auto"
-                >
-                  <span
-                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                  >
-                    {fig.formattedValue ?? fig.value}
-                  </span>
-                  <span
-                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                  >
-                    {fig.label}
-                  </span>
-                </Card>
+                  label={fig.label}
+                  value={fig.formattedValue ?? fig.value}
+                />
               ))}
             </div>
           )}
@@ -1157,61 +1145,61 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <span className="text-fs-label text-slate-500 font-normal">Operational Status</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="flex flex-col min-h-0 h-auto">
+                <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
+                  <p
+                    className="font-medium text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
+                  >
+                    Waiting
+                  </p>
                   <span
                     className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
                     style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
                   >
                     {metrics1.frontDeskToday.waiting}
                   </span>
-                  <p
-                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                  >
-                    Waiting
-                  </p>
                 </div>
-                <div className="flex flex-col min-h-0 h-auto">
+                <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
+                  <p
+                    className="font-medium text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
+                  >
+                    In Consultation
+                  </p>
                   <span
                     className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
                     style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
                   >
                     {metrics1.frontDeskToday.inConsultation}
                   </span>
-                  <p
-                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                  >
-                    In Consultation
-                  </p>
                 </div>
-                <div className="flex flex-col min-h-0 h-auto">
+                <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
+                  <p
+                    className="font-medium text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
+                  >
+                    Booked Today
+                  </p>
                   <span
                     className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
                     style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
                   >
                     {metrics1.frontDeskToday.bookedToday}
                   </span>
-                  <p
-                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                  >
-                    Booked Today
-                  </p>
                 </div>
-                <div className="flex flex-col min-h-0 h-auto">
+                <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
+                  <p
+                    className="font-medium text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
+                  >
+                    Checked In Today
+                  </p>
                   <span
                     className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
                     style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
                   >
                     {metrics1.frontDeskToday.checkedInToday}
                   </span>
-                  <p
-                    className="font-normal text-slate-500 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                  >
-                    Checked In Today
-                  </p>
                 </div>
               </div>
               {metrics1.frontDeskToday.outstandingNow && (

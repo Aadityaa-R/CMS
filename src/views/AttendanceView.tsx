@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
+  KpiCard,
 } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -778,62 +779,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
 
             return (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900 flex flex-col min-h-0 h-auto">
-                  <span
-                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                  >
-                    {onShiftCount}
-                  </span>
-                  <span
-                    className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                  >
-                    On Shift Today
-                  </span>
-                </div>
-                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900 flex flex-col min-h-0 h-auto">
-                  <span
-                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                  >
-                    {clockedInCount}
-                  </span>
-                  <span
-                    className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                  >
-                    Clocked In
-                  </span>
-                </div>
-                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900 flex flex-col min-h-0 h-auto">
-                  <span
-                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                  >
-                    {lateCount}
-                  </span>
-                  <span
-                    className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                  >
-                    Late Arrivals
-                  </span>
-                </div>
-                <div className="p-4 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900 flex flex-col min-h-0 h-auto">
-                  <span
-                    className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                  >
-                    {leaveCount}
-                  </span>
-                  <span
-                    className="font-normal text-slate-600 dark:text-slate-400 mt-1 text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                  >
-                    On Approved Leave
-                  </span>
-                </div>
+                <KpiCard label="On Shift Today" value={onShiftCount} />
+                <KpiCard label="Clocked In" value={clockedInCount} />
+                <KpiCard label="Late Arrivals" value={lateCount} />
+                <KpiCard label="On Approved Leave" value={leaveCount} />
               </div>
             );
           })()}

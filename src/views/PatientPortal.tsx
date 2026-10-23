@@ -31,7 +31,7 @@ import {
   balanceDue,
   deriveStatus,
 } from '@/lib/billing';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent, KpiCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -679,75 +679,26 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           </div>
           {/* Patient Summary Metric Cards: Separate individual cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 min-h-0 h-auto">
-              <div className="flex flex-col min-h-0 h-auto">
-                <span
-                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate text-fs-kpi leading-none"
-                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                >
-                  {upcomingAppointments.length > 0
-                    ? `${upcomingAppointments[0].dateTime.slice(0, 10)} ${upcomingAppointments[0].dateTime.slice(11, 16)}`
-                    : 'None scheduled'}
-                </span>
-                <span
-                  className="font-normal text-slate-600 dark:text-slate-300 mt-1 text-fs-kpi-label leading-tight"
-                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                >
-                  Next Appointment
-                </span>
-              </div>
-            </Card>
-
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 min-h-0 h-auto">
-              <div className="flex flex-col min-h-0 h-auto">
-                <span
-                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                >
-                  {formatCurrency(totalBalanceDue)}
-                </span>
-                <span
-                  className="font-normal text-slate-600 dark:text-slate-300 mt-1 text-fs-kpi-label leading-tight"
-                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                >
-                  Balance Due
-                </span>
-              </div>
-            </Card>
-
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 min-h-0 h-auto">
-              <div className="flex flex-col min-h-0 h-auto">
-                <span
-                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                >
-                  {activePrescriptionsCount}
-                </span>
-                <span
-                  className="font-normal text-slate-600 dark:text-slate-300 mt-1 text-fs-kpi-label leading-tight"
-                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                >
-                  Active Prescriptions
-                </span>
-              </div>
-            </Card>
-
-            <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 min-h-0 h-auto">
-              <div className="flex flex-col min-h-0 h-auto">
-                <span
-                  className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-                  style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-                >
-                  {visitsThisYear}
-                </span>
-                <span
-                  className="font-normal text-slate-600 dark:text-slate-300 mt-1 text-fs-kpi-label leading-tight"
-                  style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400 }}
-                >
-                  Visits this year
-                </span>
-              </div>
-            </Card>
+            <KpiCard
+              label="Next Appointment"
+              value={
+                upcomingAppointments.length > 0
+                  ? `${upcomingAppointments[0].dateTime.slice(0, 10)} ${upcomingAppointments[0].dateTime.slice(11, 16)}`
+                  : 'None scheduled'
+              }
+            />
+            <KpiCard
+              label="Balance Due"
+              value={formatCurrency(totalBalanceDue)}
+            />
+            <KpiCard
+              label="Active Prescriptions"
+              value={activePrescriptionsCount}
+            />
+            <KpiCard
+              label="Visits this year"
+              value={visitsThisYear}
+            />
           </div>
 
           {/* Upcoming Appointments Table */}

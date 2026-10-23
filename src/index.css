@@ -16,6 +16,7 @@
   --chart-grid: #94a3b8;
   --chart-pattern: #64748b;
   --focus-outline: #0d9488;
+  --text-muted: #64748b;
 
   /* Base Text Size Tokens (standard & large) */
   --fs-kpi: 1.875rem;
@@ -73,7 +74,8 @@ html[data-display-size='large'] {
 
 .text-fs-kpi-label {
   font-size: var(--fs-kpi-label);
-  font-weight: 400;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .text-fs-title {
@@ -582,6 +584,7 @@ html.dark,
 body.dark,
 .dark {
   color-scheme: dark;
+  --text-muted: #94a3b8;
 }
 
 .dark *,
