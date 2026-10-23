@@ -18,6 +18,11 @@ export const Pagination: React.FC<PaginationProps> = ({
 }) => {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
+  // Hide pagination bar entirely when there is only 1 page (or 0 items)
+  if (totalPages <= 1) {
+    return null;
+  }
+
   // Generate page numbers to display
   const getPageNumbers = () => {
     if (totalPages <= 5) {

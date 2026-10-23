@@ -2015,15 +2015,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <TableHeader>
                   <TableRow>
                     <TableHead kind="short" priority={1}>Patient Name</TableHead>
-                    <TableHead kind="short" priority={2}>MRN</TableHead>
-                    <TableHead kind="short" priority={6} hideBelow="xl">Demographics</TableHead>
-                    <TableHead kind="short" priority={3}>Today</TableHead>
-                    <TableHead kind="short" priority={5} hideBelow="sm">Phone</TableHead>
-                    <TableHead kind="short" priority={9} hideBelow="xl">Blood Group</TableHead>
-                    <TableHead kind="text" priority={7} hideBelow="sm">Allergies</TableHead>
-                    <TableHead kind="text" priority={8} hideBelow="lg">Chronic Conditions</TableHead>
-                    {isAdmin(currentUser) && <TableHead kind="short" priority={10} hideBelow="md">Assigned Doctor</TableHead>}
-                    <TableHead kind="short" priority={4} isActions className="text-right">Actions</TableHead>
+                    <TableHead kind="short" priority={2} className="whitespace-nowrap">MRN</TableHead>
+                    <TableHead kind="short" priority={6} hideBelow="lg" className="whitespace-nowrap">Age / Sex / Blood</TableHead>
+                    <TableHead kind="short" priority={7} hideBelow="xl" className="whitespace-nowrap">Phone</TableHead>
+                    <TableHead kind="short" priority={3} className="text-left">Allergies</TableHead>
+                    <TableHead kind="short" priority={8} hideBelow="lg" className="text-left">Chronic Conditions</TableHead>
+                    <TableHead kind="short" priority={4} className="whitespace-nowrap">Assigned Doctor</TableHead>
+                    <TableHead kind="short" priority={5} isActions className="text-right whitespace-nowrap min-w-[7rem]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -2055,30 +2053,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         ? [...patientTodayAppointments].sort((a, b) => (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99))[0]
                         : null;
 
-                      let todayText = 'No visit today';
-                      if (topApt) {
-                        switch (topApt.status) {
-                          case 'scheduled':
-                            todayText = 'Not checked in';
-                            break;
-                          case 'checked_in':
-                            todayText = 'Checked in';
-                            break;
-                          case 'in_consultation':
-                            todayText = 'In consultation';
-                            break;
-                          case 'completed':
-                            todayText = 'Completed';
-                            break;
-                          case 'cancelled':
-                            todayText = 'Cancelled';
-                            break;
-                          default:
-                            todayText = formatAppointmentStatus(topApt.status);
-                            break;
-                        }
-                      }
-
                       const isUnassigned = !assignedDocId;
                       const canTransfer = isUnassigned
                         ? isAdmin(currentUser)
@@ -2086,7 +2060,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       const patientActions: RowActionItem[] = [];
 
-                      // 1. Admit to Desk (first, when shown: only when Checked in or In consultation)
+                      // 1. Admit to Desk (only when Checked in or In consultation)
                       const canAdmitToday = Boolean(topApt && (topApt.status === 'checked_in' || topApt.status === 'in_consultation'));
                       if (!isReadOnlyView && canAdmitToday && topApt) {
                         patientActions.push({
@@ -2099,16 +2073,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         });
                       }
 
-                      // 2. Prescribe (second)
-                      if (!isReadOnlyView && canPrescribe(currentUser, pat.id, patientAssignments, modules)) {
-                        patientActions.push({
-                          label: 'Prescribe',
-                          onClick: () => handleOpenPrescriptionModal(pat.id),
-                          ariaLabel: `Prescribe for ${pat.firstName} ${pat.lastName}`,
-                        });
-                      }
-
-                      // 3. Transfer / Assign (third)
+                      // 2. Transfer / Assign (Prescribe button removed from Patients directory table)
                       if (canTransfer) {
                         patientActions.push({
                           label: isUnassigned ? 'Assign' : 'Transfer',
@@ -2117,47 +2082,66 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         });
                       }
 
+                      const genderFormatted = pat.gender
+                        ? pat.gender.charAt(0).toUpperCase() + pat.gender.slice(1).toLowerCase()
+                        : '';
+                      const ageSexBlood = [
+                        pat.age !== undefined && pat.age !== null ? `${pat.age} yrs` : '',
+                        genderFormatted,
+                        pat.bloodGroup,
+                      ]
+                        .filter(Boolean)
+                        .join(', ');
+
+                      const allergiesText =
+                        pat.allergies && pat.allergies.length > 0
+                          ? deduplicateList(pat.allergies).join(', ')
+                          : 'None recorded';
+
+                      const chronicText =
+                        pat.chronicConditions && pat.chronicConditions.length > 0
+                          ? deduplicateList(pat.chronicConditions).join(', ')
+                          : 'None recorded';
+
                       return (
                         <TableRow key={pat.id}>
                           <TableCell kind="short" priority={1} isPrimary label="Patient Name">
-                            <div className="font-bold text-slate-900 dark:text-slate-100">
+                            <div className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                               {pat.firstName} {pat.lastName}
                             </div>
-                            <div className="text-fs-label text-slate-500 dark:text-slate-400">
-                              <TableTruncate>{pat.email}</TableTruncate>
+                            <div
+                              className="text-fs-label text-slate-500 dark:text-slate-400 truncate max-w-[14rem] whitespace-nowrap"
+                              title={pat.email}
+                            >
+                              {pat.email}
                             </div>
                           </TableCell>
-                          <TableCell kind="short" priority={2} label="MRN" className="text-slate-700 dark:text-slate-300">
+                          <TableCell kind="short" priority={2} label="MRN" className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             <TableTruncate>{pat.mrn}</TableTruncate>
                           </TableCell>
-                          <TableCell kind="short" priority={6} label="Demographics" hideBelow="xl" className="text-slate-700 dark:text-slate-300 capitalize">
-                            {pat.age} yrs • {pat.gender}
+                          <TableCell kind="short" priority={6} label="Age / Sex / Blood" hideBelow="lg" className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {ageSexBlood}
                           </TableCell>
-                          <TableCell kind="short" priority={3} label="Today" id={`today-pat-${pat.id}`} className="text-slate-700 dark:text-slate-300 font-medium">
-                            {todayText}
-                          </TableCell>
-                          <TableCell kind="short" priority={5} label="Phone" hideBelow="sm" className="text-slate-700 dark:text-slate-300">
+                          <TableCell kind="short" priority={7} label="Phone" hideBelow="xl" className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             {pat.phone}
                           </TableCell>
-                          <TableCell kind="short" priority={9} label="Blood Group" hideBelow="xl" className="text-slate-700 dark:text-slate-300">
-                            {pat.bloodGroup}
+                          <TableCell kind="short" priority={3} label="Allergies" className="text-slate-600 dark:text-slate-400">
+                            <div className="line-clamp-2 break-words max-w-[12rem]" title={allergiesText}>
+                              {allergiesText}
+                            </div>
                           </TableCell>
-                          <TableCell kind="text" priority={7} label="Allergies" hideBelow="sm" className="text-slate-600 dark:text-slate-400 break-words">
-                            {pat.allergies && pat.allergies.length > 0 ? deduplicateList(pat.allergies).join(', ') : 'None recorded'}
+                          <TableCell kind="short" priority={8} label="Chronic Conditions" hideBelow="lg" className="text-slate-600 dark:text-slate-400">
+                            <div className="line-clamp-2 break-words max-w-[12rem]" title={chronicText}>
+                              {chronicText}
+                            </div>
                           </TableCell>
-                          <TableCell kind="text" priority={8} label="Chronic Conditions" hideBelow="lg" className="text-slate-600 dark:text-slate-400 break-words">
-                            {pat.chronicConditions && pat.chronicConditions.length > 0 ? deduplicateList(pat.chronicConditions).join(', ') : 'None recorded'}
+                          <TableCell kind="short" priority={4} label="Assigned Doctor" className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {assignedDoc ? formatDoctorName(assignedDoc.name) : <span className="italic text-slate-400">Unassigned</span>}
                           </TableCell>
-                          {isAdmin(currentUser) && (
-                            <TableCell kind="short" priority={10} label="Assigned Doctor" hideBelow="md" className="text-slate-700 dark:text-slate-300">
-                              {assignedDoc ? assignedDoc.name : <span className="italic text-slate-400">Unassigned</span>}
-                            </TableCell>
-                          )}
-                          <TableCell kind="short" priority={4} isActions label="Actions" fullWidthOnStack className="text-right">
+                          <TableCell kind="short" priority={5} isActions label="Actions" fullWidthOnStack className="text-right whitespace-nowrap min-w-[7rem]">
                             <RowActions
                               actions={patientActions}
                               subject={`${pat.firstName} ${pat.lastName}`}
-                              statusId={`today-pat-${pat.id}`}
                             />
                           </TableCell>
                         </TableRow>
@@ -2165,7 +2149,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={isAdmin(currentUser) ? 10 : 9} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                      <TableCell colSpan={8} className="py-8 text-center text-slate-500 dark:text-slate-400">
                         No patients found
                       </TableCell>
                     </TableRow>
