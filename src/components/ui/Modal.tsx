@@ -39,6 +39,12 @@ export const Modal: React.FC<ModalProps> = ({
       openerRef.current = document.activeElement as HTMLElement;
       document.body.style.overflow = 'hidden';
 
+      const mainContent = document.getElementById('main-content');
+      const prevMainOverflow = mainContent ? mainContent.style.overflow : '';
+      if (mainContent) {
+        mainContent.style.overflow = 'hidden';
+      }
+
       const timer = setTimeout(() => {
         if (modalRef.current) {
           // If focus is already inside modal (e.g. user focused or typed), do not steal it
@@ -97,6 +103,9 @@ export const Modal: React.FC<ModalProps> = ({
       return () => {
         clearTimeout(timer);
         document.body.style.overflow = 'unset';
+        if (mainContent) {
+          mainContent.style.overflow = prevMainOverflow;
+        }
         window.removeEventListener('keydown', handleKeyDown);
         if (openerRef.current) {
           focusIfKeyboard(openerRef.current);

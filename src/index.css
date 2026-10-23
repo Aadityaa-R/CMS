@@ -529,14 +529,29 @@ html.dark {
   }
 }
 
-/* Custom Sleek Scrollbars across Webkit & Firefox */
-html {
-  scrollbar-gutter: stable;
+/* App Shell & Scrollbar Architecture:
+   - Body & root fill viewport and do not scroll
+   - Zero root scrollbar gutter, so header spans full width to window edge
+   - Only #main-content scrolls with stable gutter and thin right-edge scrollbar
+*/
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 #main-content {
-  overflow-y: scroll;
+  overflow-y: auto;
   scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
 * {
