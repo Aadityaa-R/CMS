@@ -23,3 +23,4 @@ export const DISPLAY_SIZE_PERCENTAGES = {
 } as const;
 
 export type DisplaySize = keyof typeof DISPLAY_SIZE_SCALES;
+

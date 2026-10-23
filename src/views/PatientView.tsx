@@ -297,13 +297,13 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
       </div>
 
       {/* Patient Governance Bar: Side-by-Side Search & Filter */}
-      <Card className="!overflow-visible p-5 sm:p-6">
+      <Card className="!overflow-visible px-4 py-2.5 sm:px-5 sm:py-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="min-w-0">
-            <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
+            <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight block">
               Outpatient Directory Governance
             </span>
-            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
               Search by patient name or select filter to inspect medical profiles:
             </span>
           </div>

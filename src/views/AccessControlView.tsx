@@ -1150,10 +1150,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       {selectedSubTab === 'modules' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Role Governance & Selection Bar */}
-          <Card className="!overflow-visible p-5 sm:p-6">
+          <Card className="!overflow-visible px-4 py-2.5 sm:px-5 sm:py-3">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="min-w-0">
-                <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
+                <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight block">
                   Role Clearance Governance
                 </span>
               </div>
@@ -1965,10 +1965,10 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           ) : (
             <>
               {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
-              <Card className="!overflow-visible p-5 sm:p-6">
+              <Card className="!overflow-visible px-4 py-2.5 sm:px-5 sm:py-3">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="text-[0.625rem] uppercase font-bold text-slate-400 tracking-wider block">
+                    <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight block">
                       Clearance Governance
                     </span>
                   </div>
