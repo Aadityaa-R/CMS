@@ -1583,7 +1583,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 Beacon Clinic Outpatient Care
               </div>
-              <div className="text-slate-500 dark:text-slate-400 text-[0.6875rem]">
+              <div className="text-slate-500 dark:text-slate-400 text-xs">
                 Electronic Medical Prescription
               </div>
               <div className="font-semibold text-slate-800 dark:text-slate-200 mt-1">
@@ -1635,7 +1635,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                       {formatRegimen(it)}
                     </div>
                     {it.instructions && (
-                      <div className="text-slate-500 dark:text-slate-400 text-[0.6875rem] mt-0.5">
+                      <div className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
                         Instructions: {it.instructions}
                       </div>
                     )}
@@ -1872,7 +1872,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 {patientReceipt.clinicName}
               </div>
-              <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
+              <div className="text-xs text-slate-500 dark:text-slate-400">
                 Official Outpatient Payment Receipt
               </div>
               <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
@@ -1926,7 +1926,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               </span>
             </div>
 
-            <div className="text-center pt-2 text-[0.625rem] text-slate-500 dark:text-slate-400">
+            <div className="text-center pt-2 text-xs text-slate-500 dark:text-slate-400">
               Outpatient billing receipt.
               <br />
               No clinical diagnosis or prescription details are disclosed on receipts.

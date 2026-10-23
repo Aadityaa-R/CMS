@@ -1478,7 +1478,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 {viewingReceipt.clinicName}
               </div>
-              <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400">
+              <div className="text-xs text-slate-500 dark:text-slate-400">
                 Official Payment Receipt
               </div>
               <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
@@ -1507,7 +1507,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               </DetailList>
             </div>
 
-            <div className="text-center pt-2 text-[0.625rem] text-slate-500 dark:text-slate-400">
+            <div className="text-center pt-2 text-xs text-slate-500 dark:text-slate-400">
               Demographic and payment settlement record only.
               <br />
               No clinical diagnosis, prescription, or vitals are disclosed on receipts.

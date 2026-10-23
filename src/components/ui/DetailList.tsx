@@ -165,10 +165,10 @@ export const DetailItem: React.FC<DetailItemProps> = ({
 
   const labelClass = isReversed
     ? 'text-fs-body font-medium text-slate-900 dark:text-slate-100 text-left select-none break-words min-w-0'
-    : 'text-fs-label font-normal text-slate-500 dark:text-slate-400 text-left select-none break-words min-w-0';
+    : 'text-fs-body font-normal text-slate-500 dark:text-slate-400 text-left select-none break-words min-w-0';
 
   const valueClass = isReversed
-    ? `text-fs-label font-normal text-slate-500 dark:text-slate-400 ${
+    ? `text-fs-body font-normal text-slate-500 dark:text-slate-400 ${
         isThreeCol ? 'text-right shrink-0' : 'text-left'
       } break-words min-w-0`
     : `text-fs-body font-medium text-slate-900 dark:text-slate-100 ${
@@ -194,7 +194,7 @@ export const DetailItem: React.FC<DetailItemProps> = ({
       >
         <div>{valContent}</div>
         {subtitle && (
-          <span className="block text-fs-label text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+          <span className="block text-fs-body text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
             {subtitle}
           </span>
         )}

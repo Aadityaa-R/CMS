@@ -1754,7 +1754,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                   <div>
                                     {summaryPatient.emergencyContact.name} ({summaryPatient.emergencyContact.relationship || 'Contact'})
                                   </div>
-                                  <div className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                                  <div className="text-slate-500 dark:text-slate-400 text-fs-body mt-0.5">
                                     {summaryPatient.emergencyContact.phone}
                                   </div>
                                 </div>
@@ -3021,21 +3021,21 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           <div className="space-y-4 text-xs prescription-content">
             <div className="grid grid-cols-2 gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem]">Prescription Number</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-xs">Prescription Number</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{viewingPrescription.prescriptionNumber}</span>
               </div>
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem]">Issue Date</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-xs">Issue Date</span>
                 <span className="text-slate-900 dark:text-slate-100">{viewingPrescription.date}</span>
               </div>
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem]">Patient Name & MRN</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-xs">Patient Name & MRN</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
                   {viewingPrescription.patientName} {viewingPatient?.mrn ? `(${viewingPatient.mrn})` : ''}
                 </span>
               </div>
               <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem]">Issuing Physician</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-xs">Issuing Physician</span>
                 <span className="text-slate-900 dark:text-slate-100">{formatDoctorName(viewingPrescription.doctorName)}</span>
               </div>
             </div>

@@ -22,7 +22,7 @@
   --fs-kpi-label: 0.875rem;
   --fs-title: 1.125rem;
   --fs-body: 0.875rem;
-  --fs-label: 0.75rem;
+  --fs-label: 0.8125rem;
   --fs-th: 0.75rem;
   --fs-axis: 0.6875rem;
 }
@@ -39,7 +39,7 @@ html[data-display-size='compact'] {
   --fs-kpi-label: 0.8125rem;
   --fs-title: 1rem;
   --fs-body: 0.8125rem;
-  --fs-label: 0.6875rem;
+  --fs-label: 0.75rem;
   --fs-th: 0.6875rem;
   --fs-axis: 0.6875rem;
 }
@@ -50,7 +50,7 @@ html[data-display-size='standard'] {
   --fs-kpi-label: 0.875rem;
   --fs-title: 1.125rem;
   --fs-body: 0.875rem;
-  --fs-label: 0.75rem;
+  --fs-label: 0.8125rem;
   --fs-th: 0.75rem;
   --fs-axis: 0.6875rem;
 }
@@ -61,7 +61,7 @@ html[data-display-size='large'] {
   --fs-kpi-label: 0.875rem;
   --fs-title: 1.125rem;
   --fs-body: 0.875rem;
-  --fs-label: 0.75rem;
+  --fs-label: 0.8125rem;
   --fs-th: 0.75rem;
   --fs-axis: 0.6875rem;
 }
