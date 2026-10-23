@@ -25,9 +25,9 @@ import {
 } from 'lucide-react';
 import { Appointment, Patient } from '@/types';
 import {
-  Medicine,
   Prescription,
   PrescriptionItem,
+  MedicineForm,
   FrequencyOption,
   TimingOption,
   AllergyOverride,
@@ -48,6 +48,7 @@ import {
 } from '@/lib/selectors';
 import { resolveDoctorId, isSameStaff } from '@/lib/staffIds';
 import { isDoctorAvailable } from '@/lib/availability';
+import { focusIfKeyboard } from '@/lib/inputMode';
 import {
   formatRegimen,
   calculateQuantity,
@@ -577,6 +578,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   // Prescribe Form Modal State
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [prescPatientId, setPrescPatientId] = useState<string>('');
+  const [openedWithSpecificPatient, setOpenedWithSpecificPatient] = useState(false);
   const [diagnosisSelect, setDiagnosisSelect] = useState<string>('Essential Hypertension (Stage 1)');
   const [diagnosisCustom, setDiagnosisCustom] = useState<string>('');
   const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItem[]>([]);
@@ -657,38 +659,45 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     }
   };
 
-  // Default Item Factory
-  const createDefaultPrescriptionItem = (medList: Medicine[]): PrescriptionItem => {
-    const defaultMed = medList.find((m) => m.active) || medList[0];
-    const strength = defaultMed?.strengths?.[0] || '10 mg';
-    const form = defaultMed?.form || 'Tablet';
-    const route = defaultMed?.defaultRoute || 'Oral';
-    const doseUnit = form.toLowerCase();
-    const frequency: FrequencyOption = 'Once daily';
-    const duration = '30 days';
-    const quantity = calculateQuantity(1, frequency, duration);
-
+  // Empty Item Factory
+  const createEmptyPrescriptionItem = (): PrescriptionItem => {
     return {
       id: `it-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      medicineId: defaultMed?.id || '__other__',
-      customName: defaultMed ? undefined : '',
-      medicineName: defaultMed?.genericName || '',
-      strength,
-      form,
-      route,
-      dose: { amount: 1, unit: doseUnit },
-      frequency,
-      timing: 'Morning',
-      duration,
-      quantity,
+      medicineId: '',
+      customName: '',
+      medicineName: '',
+      strength: '',
+      form: 'Tablet' as MedicineForm,
+      route: '',
+      dose: { amount: 0, unit: '' },
+      frequency: '' as FrequencyOption,
+      timing: '' as TimingOption,
+      duration: '',
+      quantity: 0,
       refills: 0,
       instructions: '',
     };
   };
 
+  const isItemComplete = (item: PrescriptionItem) => {
+    const hasMed =
+      item.medicineId === '__other__'
+        ? Boolean(item.customName && item.customName.trim().length >= 2)
+        : Boolean(item.medicineId && item.medicineId.trim());
+    return Boolean(
+      hasMed &&
+      item.strength && item.strength.trim() &&
+      item.route && item.route.trim() &&
+      item.dose && Number(item.dose.amount) > 0 &&
+      item.dose.unit && item.dose.unit.trim() &&
+      item.frequency &&
+      item.duration && item.duration.trim()
+    );
+  };
+
   const prescPatient = useMemo(() => {
-    return patients.find((p) => p.id === prescPatientId) || activePatient || null;
-  }, [patients, prescPatientId, activePatient]);
+    return patients.find((p) => p.id === prescPatientId) || null;
+  }, [patients, prescPatientId]);
 
   const patientAllergies = useMemo(() => {
     return prescPatient?.allergies || [];
@@ -718,27 +727,43 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   }, [prescriptions, prescPatientId]);
 
   const handleOpenPrescriptionModal = (targetPatientId?: string) => {
-    const pId = targetPatientId || activePatient?.id || patients[0]?.id || '';
+    const isSpecificPatient = Boolean(targetPatientId && targetPatientId.trim());
+    const pId = isSpecificPatient ? targetPatientId! : '';
     setPrescPatientId(pId);
+    setOpenedWithSpecificPatient(isSpecificPatient);
     setDiagnosisSelect('Essential Hypertension (Stage 1)');
     setDiagnosisCustom('');
     setPrescriptionError('');
     setFormHasEdits(false);
     setAllergyOverrideReason('');
-    setPrescriptionItems([createDefaultPrescriptionItem(medicines)]);
+    setPrescriptionItems([createEmptyPrescriptionItem()]);
     setIsPrescriptionModalOpen(true);
   };
 
   const handleAddMedicationRow = () => {
     if (prescriptionItems.length >= 10) return;
     setFormHasEdits(true);
-    setPrescriptionItems((prev) => [...prev, createDefaultPrescriptionItem(medicines)]);
+    const newItem = createEmptyPrescriptionItem();
+    setPrescriptionItems((prev) => [...prev, newItem]);
+    setTimeout(() => {
+      const itemEl = document.getElementById(`rx-item-block-${newItem.id}`);
+      if (itemEl) {
+        itemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      const medInput = document.getElementById(`rx-item-${newItem.id}-medicine`);
+      if (medInput) {
+        focusIfKeyboard(medInput);
+      }
+    }, 50);
   };
 
   const handleRemoveMedicationRow = (index: number) => {
-    if (prescriptionItems.length <= 1) return;
     setFormHasEdits(true);
-    setPrescriptionItems((prev) => prev.filter((_, idx) => idx !== index));
+    if (prescriptionItems.length <= 1) {
+      setPrescriptionItems([createEmptyPrescriptionItem()]);
+    } else {
+      setPrescriptionItems((prev) => prev.filter((_, idx) => idx !== index));
+    }
   };
 
   const handleUpdateItem = (
@@ -752,13 +777,26 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       const cur = { ...copy[index], [field]: value };
 
       if (field === 'medicineId') {
-        if (value === '__other__') {
+        if (!value) {
+          cur.medicineId = '';
+          cur.customName = '';
+          cur.medicineName = '';
+          cur.strength = '';
+          cur.form = 'Tablet';
+          cur.route = '';
+          cur.dose = { amount: 0, unit: '' };
+          cur.refills = 0;
+        } else if (value === '__other__') {
           cur.customName = '';
           cur.medicineName = '';
           cur.strength = '';
           cur.form = 'Tablet';
           cur.route = 'Oral';
-          cur.dose = { amount: 1, unit: 'tablet' };
+          cur.dose = {
+            amount: cur.dose?.amount && cur.dose.amount > 0 ? cur.dose.amount : 1,
+            unit: 'tablet',
+          };
+          cur.refills = 0;
         } else {
           const med = medicines.find((m) => m.id === value);
           if (med) {
@@ -766,13 +804,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             cur.customName = undefined;
             cur.strength = med.strengths[0] || '';
             cur.form = med.form;
-            cur.route = med.defaultRoute;
-            cur.dose = { amount: cur.dose?.amount || 1, unit: med.form.toLowerCase() };
+            cur.route = med.defaultRoute || 'Oral';
+            cur.dose = {
+              amount: cur.dose?.amount && cur.dose.amount > 0 ? cur.dose.amount : 1,
+              unit: med.form.toLowerCase(),
+            };
+            cur.refills = 0;
           }
         }
       }
 
-      const doseAmt = cur.dose?.amount ?? 1;
+      const doseAmt = cur.dose?.amount ?? 0;
       cur.quantity = calculateQuantity(doseAmt, cur.frequency, cur.duration);
 
       copy[index] = cur;
@@ -782,7 +824,19 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   const handleUpdateDoseAmount = (index: number, amountStr: string) => {
     setFormHasEdits(true);
-    const parsed = Math.max(0.1, parseFloat(amountStr) || 1);
+    if (amountStr === '') {
+      setPrescriptionItems((prev) => {
+        const copy = [...prev];
+        const cur = { ...copy[index] };
+        cur.dose = { ...cur.dose, amount: 0 };
+        cur.quantity = 0;
+        copy[index] = cur;
+        return copy;
+      });
+      return;
+    }
+    const val = parseFloat(amountStr);
+    const parsed = isNaN(val) ? 0 : Math.max(0, val);
     setPrescriptionItems((prev) => {
       const copy = [...prev];
       const cur = { ...copy[index] };
@@ -2250,9 +2304,21 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         <Card>
           <CardHeader
             action={
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {filteredPrescriptions.length} Prescriptions
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {filteredPrescriptions.length} Prescriptions
+                </span>
+                {!isReadOnlyView && (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<FilePlus className="w-4 h-4" />}
+                    onClick={() => handleOpenPrescriptionModal()}
+                  >
+                    Issue Prescription
+                  </Button>
+                )}
+              </div>
             }
           >
             <CardTitle>e-Prescription Master Ledger</CardTitle>
@@ -2365,9 +2431,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         isOpen={isPrescriptionModalOpen}
         onClose={handleClosePrescribeModal}
         title="Issue Medical Prescription (e-Rx)"
-        description="Prescribed medications are immediately logged into the central dispensary."
         maxWidth="2xl"
         fullScreenOnMobile={true}
+        bodyClassName="!p-0 !overflow-hidden flex flex-col flex-1 min-h-0"
         footer={
           <div className="flex items-center justify-between w-full">
             <Button
@@ -2391,46 +2457,80 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           </div>
         }
       >
-        <form onSubmit={handleInitiateIssue} className="space-y-4" noValidate>
-          {/* Top Sticky Patient & Allergy Banner */}
-          <div className="sticky top-0 bg-white dark:bg-slate-900 z-10 pb-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
-            <div>
-              <span className="text-slate-500 dark:text-slate-400">Patient: </span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">
-                {prescPatient ? `${prescPatient.firstName} ${prescPatient.lastName} (${prescPatient.mrn})` : 'Select patient'}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-500 dark:text-slate-400">Allergies: </span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100">
-                {patientAllergies.length > 0 ? patientAllergies.join(', ') : 'None recorded'}
-              </span>
-            </div>
+        {/* Top Fixed Patient & Allergy Strip (does not scroll) */}
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs flex-none">
+          <div className="min-w-0">
+            <span className="text-slate-500 dark:text-slate-400">Patient: </span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">
+              {prescPatient ? `${prescPatient.firstName} ${prescPatient.lastName} (${prescPatient.mrn})` : 'Select patient'}
+            </span>
           </div>
+          <div className="min-w-0">
+            <span className="text-slate-500 dark:text-slate-400">Allergies: </span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">
+              {patientAllergies.length > 0 ? patientAllergies.join(', ') : 'None recorded'}
+            </span>
+          </div>
+        </div>
 
+        {/* Scrolling Form Area */}
+        <form onSubmit={handleInitiateIssue} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 min-h-0" noValidate>
           {prescriptionError && (
             <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
               {prescriptionError}
             </div>
           )}
 
-          {/* Patient Selection & Diagnosis */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Select
-              label="Select Patient"
-              searchable={true}
-              searchPlaceholder="Search patient by name or MRN..."
-              value={prescPatientId}
-              onChange={(e) => {
-                setFormHasEdits(true);
-                setPrescPatientId(e.target.value);
-                if (prescriptionError) setPrescriptionError('');
-              }}
-              options={patients.map((p) => ({
-                value: p.id,
-                label: `${p.firstName} ${p.lastName} (${p.mrn})`,
-              }))}
-            />
+          {/* Patient Selection (only when opened with no patient) & Diagnosis */}
+          {!openedWithSpecificPatient ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Select
+                label="Select Patient"
+                searchable={true}
+                searchPlaceholder="Search patient by name or MRN..."
+                value={prescPatientId}
+                onChange={(e) => {
+                  setFormHasEdits(true);
+                  setPrescPatientId(e.target.value);
+                  if (prescriptionError) setPrescriptionError('');
+                }}
+                options={patients.map((p) => ({
+                  value: p.id,
+                  label: `${p.firstName} ${p.lastName} (${p.mrn})`,
+                }))}
+              />
+              <div className="space-y-2">
+                <Select
+                  label="Clinical Diagnosis"
+                  searchable={true}
+                  searchPlaceholder="Search common diagnosis..."
+                  value={diagnosisSelect}
+                  onChange={(e) => {
+                    setFormHasEdits(true);
+                    setDiagnosisSelect(e.target.value);
+                    if (prescriptionError) setPrescriptionError('');
+                  }}
+                  options={[
+                    ...COMMON_DIAGNOSES.map((d) => ({ value: d, label: d })),
+                    { value: '__other__', label: 'Other (type diagnosis)' },
+                  ]}
+                />
+                {diagnosisSelect === '__other__' && (
+                  <Input
+                    label="Custom Diagnosis"
+                    value={diagnosisCustom}
+                    onChange={(e) => {
+                      setFormHasEdits(true);
+                      setDiagnosisCustom(e.target.value);
+                      if (prescriptionError) setPrescriptionError('');
+                    }}
+                    placeholder="Enter custom clinical diagnosis..."
+                    required
+                  />
+                )}
+              </div>
+            </div>
+          ) : (
             <div className="space-y-2">
               <Select
                 label="Clinical Diagnosis"
@@ -2461,7 +2561,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 />
               )}
             </div>
-          </div>
+          )}
 
           {/* Prescribed Medications Header */}
           <div className="space-y-3 pt-2">
@@ -2510,30 +2610,31 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 return (
                   <div
                     key={item.id}
+                    id={`rx-item-block-${item.id}`}
                     className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
                   >
                     <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-700">
                       <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                         Item #{idx + 1}
                       </span>
-                      {prescriptionItems.length > 1 && (
-                        <Button
-                          type="button"
-                          size="xs"
-                          variant="outline"
-                          icon={<Trash2 className="w-3.5 h-3.5" />}
-                          onClick={() => handleRemoveMedicationRow(idx)}
-                          aria-label={`Remove medication item ${idx + 1}`}
-                        >
-                          Remove
-                        </Button>
-                      )}
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="outline"
+                        icon={<Trash2 className="w-3.5 h-3.5" />}
+                        onClick={() => handleRemoveMedicationRow(idx)}
+                        aria-label={`Remove medication item ${idx + 1}`}
+                      >
+                        Remove
+                      </Button>
                     </div>
 
                     {/* Medicine selection & Custom input */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <Select
+                        id={`rx-item-${item.id}-medicine`}
                         label="Medicine"
+                        placeholder="Select medicine"
                         searchable={true}
                         searchPlaceholder="Type to filter generic medicines..."
                         value={item.medicineId}
@@ -2561,6 +2662,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       ) : (
                         <Select
                           label="Strength"
+                          placeholder="Select strength"
+                          disabled={!item.medicineId}
                           value={item.strength}
                           onChange={(e) => handleUpdateItem(idx, 'strength', e.target.value)}
                           options={strengthOptions}
@@ -2599,6 +2702,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <Select
                         label="Route"
+                        placeholder="Select route"
+                        disabled={!item.medicineId}
                         value={item.route}
                         onChange={(e) => handleUpdateItem(idx, 'route', e.target.value)}
                         options={ROUTE_OPTIONS.map((r) => ({ value: r, label: r }))}
@@ -2607,13 +2712,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         label="Dose Amount"
                         type="text"
                         inputMode="numeric"
-                        value={String(item.dose?.amount ?? 1)}
+                        value={item.dose?.amount && item.dose.amount > 0 ? String(item.dose.amount) : ''}
                         onChange={(e) => handleUpdateDoseAmount(idx, e.target.value)}
                         placeholder="1"
                       />
                       <Input
                         label="Dose Unit"
-                        value={item.dose?.unit || item.form.toLowerCase()}
+                        disabled={!item.medicineId}
+                        value={item.dose?.unit || ''}
                         onChange={(e) => handleUpdateDoseUnit(idx, e.target.value)}
                         placeholder="tablet, puff, mL..."
                       />
@@ -2623,25 +2729,32 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                       <Select
                         label="Frequency"
+                        required={true}
+                        placeholder="Select frequency"
                         value={item.frequency}
                         onChange={(e) => handleUpdateItem(idx, 'frequency', e.target.value as FrequencyOption)}
                         options={FREQUENCY_OPTIONS.map((f) => ({ value: f, label: f }))}
                       />
                       <Select
                         label="Timing"
+                        placeholder="Select timing"
                         value={item.timing}
                         onChange={(e) => handleUpdateItem(idx, 'timing', e.target.value as TimingOption)}
                         options={TIMING_OPTIONS.map((t) => ({ value: t, label: t }))}
                       />
                       <Select
                         label="Duration"
+                        required={true}
+                        placeholder="Select duration"
                         value={item.duration}
                         onChange={(e) => handleUpdateItem(idx, 'duration', e.target.value)}
                         options={DURATION_OPTIONS.map((d) => ({ value: d, label: d }))}
                       />
                       <Select
                         label="Refills"
-                        value={String(item.refills ?? 0)}
+                        disabled={!item.medicineId}
+                        placeholder="Select refills"
+                        value={item.medicineId ? String(item.refills ?? 0) : ''}
                         onChange={(e) => handleUpdateItem(idx, 'refills', parseInt(e.target.value, 10))}
                         options={REFILL_OPTIONS.map((r) => ({ value: r, label: `${r} refills` }))}
                       />
@@ -2661,9 +2774,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <div className="pt-1 text-xs text-slate-600 dark:text-slate-400">
                       Calculated Quantity:{' '}
                       <span className="font-semibold text-slate-900 dark:text-slate-100">
-                        {item.quantity} {item.dose?.unit || item.form.toLowerCase()}
+                        {isItemComplete(item)
+                          ? `${item.quantity} ${item.dose?.unit || item.form.toLowerCase()}`
+                          : '-'}
                       </span>
-                      {item.duration === 'Ongoing' && (
+                      {isItemComplete(item) && item.duration === 'Ongoing' && (
                         <span className="text-slate-500 ml-1.5">(30-day ongoing baseline)</span>
                       )}
                     </div>

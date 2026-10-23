@@ -157,6 +157,10 @@ export function calculateQuantity(
   frequency: FrequencyOption,
   duration: string
 ): number {
+  if (!frequency || !duration || Number(doseAmount) <= 0) {
+    return 0;
+  }
+
   const dosesPerDay: Record<FrequencyOption, number> = {
     'Once daily': 1,
     'Twice daily': 2,
@@ -200,8 +204,16 @@ export function validateItem(item: Partial<PrescriptionItem>): { valid: boolean;
     errors.push('Strength is required.');
   }
 
+  if (!item.route || !item.route.trim()) {
+    errors.push('Route is required.');
+  }
+
   if (!item.dose || item.dose.amount <= 0) {
     errors.push('Dose amount must be greater than zero.');
+  }
+
+  if (!item.dose?.unit || !item.dose.unit.trim()) {
+    errors.push('Dose unit is required.');
   }
 
   if (!item.frequency) {
