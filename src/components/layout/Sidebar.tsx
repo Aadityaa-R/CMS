@@ -202,7 +202,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }`}
       >
         {/* Brand / Role header & Single Console Toggle Control */}
-        <div className="pt-3 pb-1 px-1.5 flex items-center justify-between shrink-0">
+        <div className="h-[var(--nav-cell)] px-1.5 flex items-center justify-between shrink-0">
           <div className="flex items-center min-w-0 flex-1">
             {/* Sidebar Toggle Button with 44px minimum touch target */}
             <button
@@ -210,7 +210,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               data-sidebar-ignore-outside="true"
               onClick={toggle}
-              className={`w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0 transition-colors duration-200 ${
+              className={`w-[var(--nav-cell)] h-[var(--nav-cell)] flex items-center justify-center rounded-lg cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0 transition-colors duration-200 ${
                 isOpen
                   ? 'bg-slate-800 text-teal-300'
                   : 'text-teal-400 hover:text-teal-300 hover:bg-slate-800/70'
@@ -251,7 +251,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             data-sidebar-ignore-outside="true"
             onClick={close}
-            className="w-11 h-11 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 shrink-0 transition-colors duration-200"
+            className="w-[var(--nav-cell)] h-[var(--nav-cell)] flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 shrink-0 transition-colors duration-200"
             title="Close drawer"
             aria-label="Close drawer"
           >
@@ -277,7 +277,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={item.label}
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
-                className={`w-full h-11 min-h-[2.75rem] flex items-center px-2 rounded-lg text-xs font-medium cursor-pointer outline-none focus:outline-none focus:ring-0 transition-colors duration-200 ${
+                className={`${isOpen ? 'w-full px-2' : 'w-[var(--nav-cell)] justify-center'} h-[var(--nav-cell)] flex items-center rounded-lg text-xs font-medium cursor-pointer outline-none focus:outline-none focus:ring-0 transition-colors duration-200 ${
                   isActive
                     ? 'bg-teal-600 text-white'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'
