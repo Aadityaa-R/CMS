@@ -5,6 +5,7 @@ export interface DetailListItem {
   value: React.ReactNode;
   subtitle?: React.ReactNode;
   key?: string | number;
+  reversed?: boolean;
 }
 
 export interface DetailListProps extends React.HTMLAttributes<HTMLDListElement> {
@@ -14,6 +15,7 @@ export interface DetailListProps extends React.HTMLAttributes<HTMLDListElement> 
   dense?: boolean;
   columns?: 1 | 2 | 3;
   paddingYRem?: number;
+  reversed?: boolean;
 }
 
 export interface DetailItemProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -24,6 +26,7 @@ export interface DetailItemProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   dense?: boolean;
   paddingYRem?: number;
+  reversed?: boolean;
 }
 
 export interface BalanceResult {
@@ -79,9 +82,10 @@ interface DetailListContextValue {
   dense: boolean;
   paddingYRem?: number;
   columns?: 1 | 2 | 3;
+  reversed?: boolean;
 }
 
-const DetailListContext = createContext<DetailListContextValue>({ dense: false });
+const DetailListContext = createContext<DetailListContextValue>({ dense: false, reversed: false });
 
 export interface BalancedGridCardContextValue {
   paddingYRem?: number;
@@ -123,6 +127,7 @@ export const DetailItem: React.FC<DetailItemProps> = ({
   className = '',
   dense: propDense,
   paddingYRem: propPaddingY,
+  reversed: propReversed,
   style,
   ...props
 }) => {
@@ -130,6 +135,7 @@ export const DetailItem: React.FC<DetailItemProps> = ({
   const cardContext = useContext(BalancedGridCardContext);
 
   const isDense = propDense !== undefined ? propDense : listContext.dense;
+  const isReversed = propReversed !== undefined ? propReversed : !!listContext.reversed;
   const activePaddingYRem =
     propPaddingY !== undefined
       ? propPaddingY
@@ -157,6 +163,18 @@ export const DetailItem: React.FC<DetailItemProps> = ({
 
   const isThreeCol = listContext.columns === 3;
 
+  const labelClass = isReversed
+    ? 'text-fs-body font-medium text-slate-900 dark:text-slate-100 text-left select-none break-words min-w-0'
+    : 'text-fs-label font-normal text-slate-500 dark:text-slate-400 text-left select-none break-words min-w-0';
+
+  const valueClass = isReversed
+    ? `text-fs-label font-normal text-slate-500 dark:text-slate-400 ${
+        isThreeCol ? 'text-right shrink-0' : 'text-left'
+      } break-words min-w-0`
+    : `text-fs-body font-medium text-slate-900 dark:text-slate-100 ${
+        isThreeCol ? 'text-right shrink-0' : 'text-left'
+      } break-words min-w-0`;
+
   return (
     <div
       data-testid="detail-item"
@@ -168,13 +186,11 @@ export const DetailItem: React.FC<DetailItemProps> = ({
       } text-left flex-auto max-h-[4.5rem] ${paddingClass} ${className}`}
       {...props}
     >
-      <dt className="text-fs-label font-normal text-slate-500 dark:text-slate-400 text-left select-none break-words min-w-0">
+      <dt className={labelClass}>
         {label}
       </dt>
       <dd
-        className={`text-fs-body font-medium text-slate-900 dark:text-slate-100 ${
-          isThreeCol ? 'text-right shrink-0' : 'text-left'
-        } break-words min-w-0`}
+        className={valueClass}
       >
         <div>{valContent}</div>
         {subtitle && (
@@ -194,6 +210,7 @@ export const DetailList: React.FC<DetailListProps> = ({
   dense = false,
   columns = 1,
   paddingYRem,
+  reversed = false,
   ...props
 }) => {
   const [containerRef, isWide, , containerWidth] = useContainerWidth<HTMLDListElement>(448);
@@ -214,7 +231,7 @@ export const DetailList: React.FC<DetailListProps> = ({
   // Single-column mode (default)
   if (columns === 1) {
     return (
-      <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 1 }}>
+      <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 1, reversed }}>
         <dl
           ref={containerRef}
           className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
@@ -228,6 +245,7 @@ export const DetailList: React.FC<DetailListProps> = ({
                   value={item.value}
                   subtitle={item.subtitle}
                   dense={dense}
+                  reversed={item.reversed ?? reversed}
                 />
               ))
             : children}
@@ -246,6 +264,7 @@ export const DetailList: React.FC<DetailListProps> = ({
             value={item.value}
             subtitle={item.subtitle}
             dense={dense}
+            reversed={item.reversed ?? reversed}
           />
         ))
       : React.Children.toArray(children);
@@ -256,7 +275,7 @@ export const DetailList: React.FC<DetailListProps> = ({
     }
 
     return (
-      <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 2 }}>
+      <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 2, reversed }}>
         <dl
           ref={containerRef}
           data-testid="detail-list-two-col"
@@ -295,6 +314,7 @@ export const DetailList: React.FC<DetailListProps> = ({
           value={item.value}
           subtitle={item.subtitle}
           dense={dense}
+          reversed={item.reversed ?? reversed}
         />
       ))
     : React.Children.toArray(children);
@@ -326,7 +346,7 @@ export const DetailList: React.FC<DetailListProps> = ({
   }
 
   return (
-    <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 3 }}>
+    <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 3, reversed }}>
       <dl
         ref={containerRef}
         data-testid="detail-list-three-col"

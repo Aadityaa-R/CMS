@@ -145,7 +145,7 @@ export const AppLayout: React.FC = () => {
     setActiveTab(tab);
     setActiveSubTab(subTab);
     const mainEl = document.getElementById('main-content');
-    if (mainEl) {
+    if (mainEl && typeof mainEl.scrollTo === 'function') {
       mainEl.scrollTo({ top: 0, behavior: 'instant' });
     }
   };

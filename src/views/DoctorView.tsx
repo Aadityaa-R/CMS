@@ -1645,7 +1645,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                           Previous Visit Record
                         </span>
-                        <DetailList columns={2} className="flex-1">
+                        <DetailList columns={2} className="flex-1" reversed>
                           <DetailItem
                             label="Last Visit"
                             className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
@@ -1692,6 +1692,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           )}
                         </DetailList>
                         <DetailList
+                          reversed
                           className={`flex-1 ${summaryPatient.previousVitals ? 'border-t border-slate-100 dark:border-slate-800' : ''}`}
                         >
                           {!summaryPatient.previousVitals && (
@@ -1714,7 +1715,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                           Clinical Profile
                         </span>
-                        <DetailList className="flex-1">
+                        <DetailList className="flex-1" reversed>
                           <DetailItem
                             label="Chronic Conditions"
                             value={
@@ -1739,7 +1740,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                           Demographics & Primary Care
                         </span>
-                        <DetailList className="flex-1">
+                        <DetailList className="flex-1" reversed>
                           <DetailItem
                             label="Phone"
                             value={summaryPatient.phone || 'None recorded'}
