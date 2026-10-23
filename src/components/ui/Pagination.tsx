@@ -17,8 +17,6 @@ export const Pagination: React.FC<PaginationProps> = ({
   className = '',
 }) => {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
 
   // Generate page numbers to display
   const getPageNumbers = () => {
@@ -52,21 +50,15 @@ export const Pagination: React.FC<PaginationProps> = ({
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-600 dark:text-slate-400 select-none ${className}`}
     >
-      <div className="flex items-baseline gap-1">
-        <span>Showing</span>
+      <div className="text-xs text-slate-600 dark:text-slate-400">
+        Page{' '}
         <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
-          {startItem}–{endItem}
-        </span>
-        <span>of</span>
+          {currentPage}
+        </span>{' '}
+        of{' '}
         <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
-          {totalItems}
+          {totalPages}
         </span>
-        <span>records</span>
-        {totalPages > 1 && (
-          <span className="text-[0.6875rem] text-slate-500 dark:text-slate-400 ml-1">
-            (Page {currentPage} of {totalPages})
-          </span>
-        )}
       </div>
 
       {totalPages > 1 && (
