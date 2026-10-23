@@ -111,10 +111,167 @@ html.dark .shadow-modal {
   box-shadow: none !important;
 }
 
+@page {
+  margin: 0;
+}
+
+.no-print {
+  display: none !important;
+}
+
 @media print {
+  .no-print {
+    display: none !important;
+  }
+
   .shadow-card,
   .shadow-modal {
     box-shadow: none !important;
+  }
+
+  body.printing {
+    background: #fff !important;
+    color: #000 !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide everything except the modal while printing */
+  body.printing aside,
+  body.printing header,
+  body.printing nav,
+  body.printing footer,
+  body.printing #global-status-region,
+  body.printing a[href="#main-content"] {
+    display: none !important;
+  }
+
+  body.printing #root,
+  body.printing #root > div,
+  body.printing #root > div > div,
+  body.printing main {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+  }
+
+  /* Hide sibling view contents outside the modal when printing */
+  body.printing:has(.modal-wrapper) main > div > *:not(.modal-wrapper):not(:has(.modal-wrapper)),
+  body.printing:has([role="dialog"]) main > div > *:not(:has([role="dialog"])):not([role="dialog"]),
+  body.printing:has(.modal-wrapper) *:not(:has(.modal-wrapper)):not(.modal-wrapper):not(.modal-wrapper *) {
+    display: none !important;
+  }
+
+  /* Hide sibling view contents when printing daily summary */
+  body.printing:has(#daily-summary-print-area):not(:has(.modal-wrapper)) main *:not(:has(#daily-summary-print-area)):not(#daily-summary-print-area):not(#daily-summary-print-area *) {
+    display: none !important;
+  }
+
+  /* Make the modal overlay, wrapper and panel static with align-items flex-start, auto height and overflow visible */
+  .modal-overlay,
+  .modal-backdrop,
+  body.printing .modal-overlay,
+  body.printing .modal-backdrop {
+    position: static !important;
+    align-items: flex-start !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: none !important;
+  }
+
+  .modal-wrapper,
+  body.printing .modal-wrapper,
+  body.printing div:has(> .modal-panel) {
+    position: static !important;
+    display: block !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Remove border, radius, shadow and transform from the panel */
+  .modal-panel,
+  [role="dialog"],
+  body.printing .modal-panel,
+  body.printing [role="dialog"] {
+    position: static !important;
+    display: block !important;
+    align-items: flex-start !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Give prescription content, receipt, daily summary and any printable modal 15mm padding */
+  .prescription-content,
+  .receipt-content,
+  #daily-summary-print-area,
+  .daily-summary-content,
+  .printable-content,
+  body.printing .prescription-content,
+  body.printing .receipt-content,
+  body.printing #daily-summary-print-area,
+  body.printing .daily-summary-content,
+  body.printing .printable-content {
+    padding: 15mm !important;
+    box-sizing: border-box !important;
+  }
+
+  body.printing #daily-summary-print-area {
+    position: static !important;
+    display: block !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Remove border, radius, shadow from receipt card in print view */
+  .receipt-content,
+  .receipt-card,
+  body.printing .receipt-content,
+  body.printing .receipt-card,
+  body.printing .receipt-content > div {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  /* Hide close X, Print and Close buttons in print view */
+  body.printing .no-print,
+  body.printing button.no-print,
+  body.printing .modal-footer:has(.no-print) {
+    display: none !important;
   }
 }
 

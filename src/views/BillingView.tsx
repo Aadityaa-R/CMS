@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/Table';
 import { RowActions } from '@/components/ui/RowActions';
 import { Printer } from 'lucide-react';
+import { handlePrint } from '@/lib/print';
 
 export interface BillingViewProps {
   initialTab?: 'invoices' | 'payments';
@@ -437,7 +438,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
   };
 
   const handlePrintReceipt = () => {
-    window.print();
+    handlePrint();
   };
 
   return (
@@ -1448,11 +1449,13 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
           title="Payment Receipt"
           description={viewingReceipt.receiptNumber}
           maxWidth="sm"
+          bodyClassName="receipt-content"
           footer={
-            <div className="flex justify-between w-full">
+            <div className="flex justify-between w-full no-print">
               <Button
                 variant="outline"
                 size="sm"
+                className="no-print"
                 icon={<Printer className="w-3.5 h-3.5" />}
                 onClick={handlePrintReceipt}
               >
@@ -1461,6 +1464,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               <Button
                 variant="primary"
                 size="sm"
+                className="no-print"
                 onClick={() => setViewingReceipt(null)}
               >
                 Done
@@ -1469,7 +1473,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
           }
         >
           {/* Printable Receipt Card */}
-          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-xs">
+          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-xs receipt-content receipt-card">
             <div className="text-center pb-2 border-b border-slate-200 dark:border-slate-800">
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 {viewingReceipt.clinicName}

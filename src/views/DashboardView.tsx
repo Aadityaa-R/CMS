@@ -32,6 +32,7 @@ import {
   FeesAndPaymentsBucket,
 } from '@/lib/dashboardMetrics';
 import { CURRENCY_SYMBOL } from '@/lib/money';
+import { handlePrint as triggerPrint } from '@/lib/print';
 
 interface DashboardViewProps {
   onNavigate?: (tab: string, subTab?: string) => void;
@@ -746,7 +747,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   // Print handler
   const handlePrint = () => {
-    window.print();
+    triggerPrint();
   };
 
   // Paginated records
@@ -1044,32 +1045,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-3.5 pb-4">
-      {/* Print Stylesheet */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #daily-summary-print-area,
-          #daily-summary-print-area * {
-            visibility: visible;
-          }
-          #daily-summary-print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 24px;
-            background: white !important;
-            color: black !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
       {/* Header: Title & Date Range */}
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between no-print">
         <div>
@@ -1351,6 +1326,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <Button
                 variant="outline"
                 size="sm"
+                className="no-print"
                 onClick={handlePrint}
               >
                 Print
@@ -1358,6 +1334,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <Button
                 variant="outline"
                 size="sm"
+                className="no-print"
                 onClick={handleExportCsv}
               >
                 Export CSV
@@ -1366,7 +1343,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
 
           {/* Printable Container */}
-          <div id="daily-summary-print-area" className="space-y-6">
+          <div id="daily-summary-print-area" className="space-y-6 daily-summary-content printable-content">
             {/* Header for print / screen */}
             <div className="border-b border-slate-200 pb-3">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">

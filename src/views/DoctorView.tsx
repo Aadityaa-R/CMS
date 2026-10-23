@@ -55,6 +55,7 @@ import {
   activeMedications,
 } from '@/lib/prescribing';
 import { formatDoctorName } from '@/lib/doctorNames';
+import { handlePrint } from '@/lib/print';
 
 interface DoctorViewProps {
   activeTab?: string;
@@ -2803,11 +2804,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="no-print"
                   icon={<Printer className="w-3.5 h-3.5" />}
                   onClick={() => {
                     setViewingPrescription(lastIssuedRx);
                     setLastIssuedRx(null);
-                    setTimeout(() => window.print(), 100);
+                    setTimeout(() => handlePrint(), 100);
                   }}
                 >
                   Print
@@ -2817,6 +2819,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 type="button"
                 variant="outline"
                 size="sm"
+                className="no-print"
                 onClick={() => setLastIssuedRx(null)}
               >
                 Done
@@ -2990,20 +2993,23 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         title="Electronic Prescription Record"
         maxWidth="lg"
         fullScreenOnMobile={true}
+        bodyClassName="prescription-content"
         footer={
-          <div className="flex justify-between items-center w-full">
+          <div className="flex justify-between items-center w-full no-print">
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="no-print"
               icon={<Printer className="w-3.5 h-3.5" />}
-              onClick={() => window.print()}
+              onClick={handlePrint}
             >
               Print
             </Button>
             <Button
               variant="outline"
               size="sm"
+              className="no-print"
               onClick={() => setViewingPrescription(null)}
             >
               Close
@@ -3012,7 +3018,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         }
       >
         {viewingPrescription && (
-          <div className="space-y-4 text-xs">
+          <div className="space-y-4 text-xs prescription-content">
             <div className="grid grid-cols-2 gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <span className="text-slate-500 dark:text-slate-400 block text-[0.6875rem]">Prescription Number</span>

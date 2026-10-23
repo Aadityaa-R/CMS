@@ -50,6 +50,7 @@ import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { DetailList, DetailItem, DetailGrid } from '@/components/ui/DetailList';
 import { formatDate, formatTime } from '@/lib/time';
 import { Printer } from 'lucide-react';
+import { handlePrint } from '@/lib/print';
 
 interface PatientPortalProps {
   activeTab?: string;
@@ -1554,19 +1555,22 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           onClose={() => setViewingPrescription(null)}
           title="Prescription Details"
           maxWidth="md"
+          bodyClassName="prescription-content"
           footer={
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full no-print">
               <Button
                 variant="outline"
                 size="sm"
+                className="no-print"
                 icon={<Printer className="w-3.5 h-3.5" />}
-                onClick={() => window.print()}
+                onClick={handlePrint}
               >
                 Print Prescription
               </Button>
               <Button
                 variant="primary"
                 size="sm"
+                className="no-print"
                 onClick={() => setViewingPrescription(null)}
               >
                 Close
@@ -1574,7 +1578,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             </div>
           }
         >
-          <div className="space-y-4 text-xs">
+          <div className="space-y-4 text-xs prescription-content">
             <div className="border-b border-slate-200 dark:border-slate-800 pb-3 text-center">
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 Beacon Clinic Outpatient Care
@@ -1840,19 +1844,22 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           onClose={() => setPatientReceipt(null)}
           title="Official Payment Receipt"
           maxWidth="sm"
+          bodyClassName="receipt-content"
           footer={
-            <div className="flex justify-between w-full">
+            <div className="flex justify-between w-full no-print">
               <Button
                 variant="outline"
                 size="sm"
+                className="no-print"
                 icon={<Printer className="w-3.5 h-3.5" />}
-                onClick={() => window.print()}
+                onClick={handlePrint}
               >
                 Print Receipt
               </Button>
               <Button
                 variant="primary"
                 size="sm"
+                className="no-print"
                 onClick={() => setPatientReceipt(null)}
               >
                 Close
@@ -1860,7 +1867,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             </div>
           }
         >
-          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-xs">
+          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-xs receipt-content receipt-card">
             <div className="text-center pb-2 border-b border-slate-200 dark:border-slate-800">
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                 {patientReceipt.clinicName}
