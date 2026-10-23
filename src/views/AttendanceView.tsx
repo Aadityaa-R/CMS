@@ -26,6 +26,7 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { RowActions } from '@/components/ui/RowActions';
+import { Tabs } from '@/components/ui/Tabs';
 import {
   formatDate,
   dayOfWeek,
@@ -474,8 +475,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
         </div>
 
         {/* Navigation Tabs */}
-        <div role="tablist" aria-label="Attendance Tabs" className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
-          {[
+        <Tabs
+          ariaLabel="Attendance Tabs"
+          tabs={[
             { id: 'my_attendance', label: 'My Attendance' },
             ...(canManage
               ? [
@@ -485,26 +487,13 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                   { id: 'shifts', label: 'Shifts' },
                 ]
               : []),
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveSubTab(tab.id);
-                document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-              }}
-              role="tab"
-              aria-selected={activeSubTab === tab.id}
-              aria-current={activeSubTab === tab.id ? 'page' : undefined}
-              className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors ${
-                activeSubTab === tab.id
-                  ? 'text-slate-900 dark:text-slate-100 border-teal-600'
-                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          ]}
+          activeTab={activeSubTab}
+          onChange={(id) => {
+            setActiveSubTab(id);
+            document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+        />
       </div>
 
       {/* TAB 1: MY ATTENDANCE */}

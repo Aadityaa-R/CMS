@@ -135,7 +135,6 @@ export const DetailItem: React.FC<DetailItemProps> = ({
   const cardContext = useContext(BalancedGridCardContext);
 
   const isDense = propDense !== undefined ? propDense : listContext.dense;
-  const isReversed = propReversed !== undefined ? propReversed : !!listContext.reversed;
   const activePaddingYRem =
     propPaddingY !== undefined
       ? propPaddingY
@@ -163,17 +162,12 @@ export const DetailItem: React.FC<DetailItemProps> = ({
 
   const isThreeCol = listContext.columns === 3;
 
-  const labelClass = isReversed
-    ? 'text-fs-body font-medium text-slate-900 dark:text-slate-100 text-left select-none break-words min-w-0'
-    : 'text-fs-body font-normal text-slate-500 dark:text-slate-400 text-left select-none break-words min-w-0';
+  const labelClass =
+    'text-fs-body font-bold text-[var(--text)] text-left select-none break-words min-w-0';
 
-  const valueClass = isReversed
-    ? `text-fs-body font-normal text-slate-500 dark:text-slate-400 ${
-        isThreeCol ? 'text-right shrink-0' : 'text-left'
-      } break-words min-w-0`
-    : `text-fs-body font-medium text-slate-900 dark:text-slate-100 ${
-        isThreeCol ? 'text-right shrink-0' : 'text-left'
-      } break-words min-w-0`;
+  const valueClass = `text-fs-body font-semibold text-[var(--text-grey-strong)] ${
+    isThreeCol ? 'text-right shrink-0' : 'text-left'
+  } break-words min-w-0`;
 
   return (
     <div

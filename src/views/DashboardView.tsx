@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Select, SelectOption } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Tabs } from '@/components/ui/Tabs';
 import { Pagination } from '@/components/ui/Pagination';
 import { INITIAL_PENDING_APPROVALS, DEMO_USERS } from '@/data/mockData';
 import { getRepository } from '@/data/storage';
@@ -69,13 +70,18 @@ const formatStatusText = (status: string): string => {
 // Grouped bar chart component for Patients and Visits
 interface PatientsAndVisitsChartProps {
   buckets: PatientsAndVisitsBucket[];
+  activeBucket?: ChartBucketType;
+  onBucketChange?: (bucket: ChartBucketType) => void;
 }
 
 const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
   buckets,
+  activeBucket,
+  onBucketChange,
 }) => {
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState<number>(600);
+  const [formatMode, setFormatMode] = useState<'graph' | 'table'>('graph');
 
   useEffect(() => {
     if (!chartWrapperRef.current || typeof ResizeObserver === 'undefined') return;
@@ -128,9 +134,63 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
           <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
             Patients and Visits
           </h3>
+          <div className="flex items-center gap-3">
+            <Tabs
+              size="sm"
+              ariaLabel="Patients and visits format"
+              tabs={[
+                { id: 'graph', label: 'Graph' },
+                { id: 'table', label: 'Table' },
+              ]}
+              activeTab={formatMode}
+              onChange={(id) => setFormatMode(id as 'graph' | 'table')}
+            />
+            {onBucketChange && activeBucket && (
+              <Tabs
+                size="sm"
+                ariaLabel="Patients and visits aggregation"
+                tabs={[
+                  { id: 'day', label: 'Day' },
+                  { id: 'week', label: 'Week' },
+                  { id: 'month', label: 'Month' },
+                ]}
+                activeTab={activeBucket}
+                onChange={(id) => onBucketChange(id as ChartBucketType)}
+              />
+            )}
+          </div>
         </div>
 
-        <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
+        {formatMode === 'table' ? (
+          <div className="pt-4 h-56 sm:h-64 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-lg">
+            <table className="w-full text-left text-fs-body">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0 text-fs-th">
+                <tr>
+                  <th scope="col" className="px-3.5 py-2 font-semibold">Period</th>
+                  <th scope="col" className="px-3.5 py-2 font-semibold">New Patients</th>
+                  <th scope="col" className="px-3.5 py-2 font-semibold">Visits</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+                {buckets.map((b) => (
+                  <tr key={b.dateKey} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="px-3.5 py-2 font-medium">{b.label}</td>
+                    <td className="px-3.5 py-2">{b.newPatients}</td>
+                    <td className="px-3.5 py-2">{b.visits}</td>
+                  </tr>
+                ))}
+                {buckets.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-3.5 py-6 text-center text-slate-400">
+                      No records for this range
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
           <svg
             role="img"
             aria-label="Grouped bar chart showing new patients and visits"
@@ -237,6 +297,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
             )}
           </svg>
         </div>
+      )}
 
     {/* Visually hidden screen reader table */}
     <div className="sr-only">
@@ -282,13 +343,18 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
 // Line chart component for Fees and Payments
 interface FeesAndPaymentsChartProps {
   buckets: FeesAndPaymentsBucket[];
+  activeBucket?: ChartBucketType;
+  onBucketChange?: (bucket: ChartBucketType) => void;
 }
 
 const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
   buckets,
+  activeBucket,
+  onBucketChange,
 }) => {
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState<number>(600);
+  const [formatMode, setFormatMode] = useState<'graph' | 'table'>('graph');
 
   useEffect(() => {
     if (!chartWrapperRef.current || typeof ResizeObserver === 'undefined') return;
@@ -354,9 +420,63 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
           <h3 className="text-fs-title font-semibold text-slate-900 dark:text-slate-100">
             Fees and Payments
           </h3>
+          <div className="flex items-center gap-3">
+            <Tabs
+              size="sm"
+              ariaLabel="Fees and payments format"
+              tabs={[
+                { id: 'graph', label: 'Graph' },
+                { id: 'table', label: 'Table' },
+              ]}
+              activeTab={formatMode}
+              onChange={(id) => setFormatMode(id as 'graph' | 'table')}
+            />
+            {onBucketChange && activeBucket && (
+              <Tabs
+                size="sm"
+                ariaLabel="Fees and payments aggregation"
+                tabs={[
+                  { id: 'day', label: 'Day' },
+                  { id: 'week', label: 'Week' },
+                  { id: 'month', label: 'Month' },
+                ]}
+                activeTab={activeBucket}
+                onChange={(id) => onBucketChange(id as ChartBucketType)}
+              />
+            )}
+          </div>
         </div>
 
-        <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
+        {formatMode === 'table' ? (
+          <div className="pt-4 h-56 sm:h-64 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-lg">
+            <table className="w-full text-left text-fs-body">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 sticky top-0 text-fs-th">
+                <tr>
+                  <th scope="col" className="px-3.5 py-2 font-semibold">Period</th>
+                  <th scope="col" className="px-3.5 py-2 font-semibold">Billed</th>
+                  <th scope="col" className="px-3.5 py-2 font-semibold">Collected</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+                {buckets.map((b) => (
+                  <tr key={b.dateKey} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="px-3.5 py-2 font-medium">{b.label}</td>
+                    <td className="px-3.5 py-2">{formatCurrency(b.billed * 100)}</td>
+                    <td className="px-3.5 py-2">{formatCurrency(b.collected * 100)}</td>
+                  </tr>
+                ))}
+                {buckets.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-3.5 py-6 text-center text-slate-400">
+                      No fee records for this range
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div ref={chartWrapperRef} className="pt-4 overflow-hidden relative">
           <svg
                 role="img"
                 aria-label="Line chart showing fees billed and payments collected"
@@ -449,6 +569,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                 )}
               </svg>
         </div>
+      )}
       </div>
 
       {/* Visually hidden screen reader table */}
@@ -512,8 +633,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   // Overview date range & buckets
   const [dateRange, setDateRange] = useState<DateRangePreset>('this_month');
-  const [chartBucket1] = useState<ChartBucketType>('day');
-  const [chartBucket2] = useState<ChartBucketType>('day');
+  const [chartBucket1, setChartBucket1] = useState<ChartBucketType>('day');
+  const [chartBucket2, setChartBucket2] = useState<ChartBucketType>('day');
 
   // Daily Summary date picker
   const [dailySummaryDate, setDailySummaryDate] = useState<string>(() => toLocalDateKey(new Date()));
@@ -775,12 +896,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {(userIsAdmin || hasConsult) && (
         <PatientsAndVisitsChart
           buckets={metrics1.patientsAndVisits}
+          activeBucket={chartBucket1}
+          onBucketChange={setChartBucket1}
         />
       )}
 
       {hasBilling && (
         <FeesAndPaymentsChart
           buckets={metrics2.feesAndPayments || []}
+          activeBucket={chartBucket2}
+          onBucketChange={setChartBucket2}
         />
       )}
     </div>
@@ -1071,43 +1196,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
       {/* Navigation Tabs: Overview & Daily Summary */}
       {qualifiesForDailySummary && (
-        <div className="border-b border-slate-200 dark:border-slate-800 no-print">
-          <div role="tablist" aria-label="Dashboard Tabs" className="flex space-x-6">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('overview');
-                document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-              }}
-              role="tab"
-              aria-selected={activeTab === 'overview'}
-              aria-current={activeTab === 'overview' ? 'page' : undefined}
-              className={`py-1.5 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
-                activeTab === 'overview'
-                  ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('daily_summary');
-                document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-              }}
-              role="tab"
-              aria-selected={activeTab === 'daily_summary'}
-              aria-current={activeTab === 'daily_summary' ? 'page' : undefined}
-              className={`py-1.5 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
-                activeTab === 'daily_summary'
-                  ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-              }`}
-            >
-              Daily Summary
-            </button>
-          </div>
+        <div className="no-print">
+          <Tabs
+            ariaLabel="Dashboard Tabs"
+            tabs={[
+              { id: 'overview', label: 'Overview' },
+              { id: 'daily_summary', label: 'Daily Summary' },
+            ]}
+            activeTab={activeTab}
+            onChange={(id) => {
+              setActiveTab(id as 'overview' | 'daily_summary');
+              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+            }}
+          />
         </div>
       )}
 

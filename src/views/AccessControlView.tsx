@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTruncate } from '@/components/ui/Table';
+import { Tabs } from '@/components/ui/Tabs';
 import { RowActions } from '@/components/ui/RowActions';
 import { Filter, ArrowLeft, X } from 'lucide-react';
 import { User, UserRole, StaffAccessRecord, StaffPermission, AccessModule, StandardCapability } from '@/types';
@@ -1092,59 +1093,46 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       </div>
 
       {/* Sub-Workstation Navigation Tabs (scrollable on mobile) */}
-      <div role="tablist" aria-label="Administrative Tabs" className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto overflow-y-hidden no-scrollbar scrollbar-none flex-nowrap shrink-0">
-        {[
+      <Tabs
+        ariaLabel="Administrative Tabs"
+        tabs={[
           {
-            id: 'modules' as const,
+            id: 'modules',
             label: `Roles (${modules.length})`,
           },
           {
-            id: 'edit_users' as const,
+            id: 'edit_users',
             label: `Edit Users (${staffAccessList.length})`,
           },
           {
-            id: 'add_users' as const,
+            id: 'add_users',
             label: `Add New Users (${pendingApprovals.length} pending)`,
           },
           {
-            id: 'ledger' as const,
+            id: 'ledger',
             label: `Security Ledger (${accessAuditLog.length})`,
           },
           ...(hasCapability(currentUser, 'administrativeAccess')
             ? [
                 {
-                  id: 'formulary' as const,
+                  id: 'formulary',
                   label: `Formulary (${medicines.length})`,
                 },
                 {
-                  id: 'data' as const,
+                  id: 'data',
                   label: 'Data',
                 },
               ]
             : []),
-        ].map((tab) => {
-          const isActive = selectedSubTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                setSelectedSubTab(tab.id);
-                setSelectedStaffId(null);
-                setSelectedModuleId(null);
-                document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-              }}
-              className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-teal-600 ${
-                isActive
-                  ? 'text-slate-900 dark:text-slate-100 border-teal-600'
-                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+        ]}
+        activeTab={selectedSubTab}
+        onChange={(id) => {
+          setSelectedSubTab(id as any);
+          setSelectedStaffId(null);
+          setSelectedModuleId(null);
+          document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
 
       {/* SUB-MODULE 1: ROLES */}
       {selectedSubTab === 'modules' && (

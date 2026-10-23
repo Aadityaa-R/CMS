@@ -24,6 +24,7 @@ import {
 import { getScopedInvoices, getScopedPayments } from '@/lib/selectors';
 import { formatLocalDate, formatDate, formatTime } from '@/lib/time';
 import { DetailList, DetailItem } from '@/components/ui/DetailList';
+import { Tabs } from '@/components/ui/Tabs';
 import { Invoice, Payment, PaymentMethod, Receipt } from '@/types/billing';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -459,44 +460,24 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
         </div>
 
         {/* Sub-Workstation Navigation Tabs */}
-        <div role="tablist" aria-label="Billing Tabs" className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800">
-          <button
-            type="button"
-            onClick={() => {
+        <Tabs
+          ariaLabel="Billing Tabs"
+          tabs={[
+            { id: 'invoices', label: `Invoices (${scopedInvoices.length})` },
+            { id: 'payments', label: `Payments (${scopedPayments.length})` },
+          ]}
+          activeTab={activeTab}
+          onChange={(id) => {
+            if (id === 'invoices') {
               setActiveTab('invoices');
               setInvoicesPage(1);
-              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-            }}
-            role="tab"
-            aria-selected={activeTab === 'invoices'}
-            aria-current={activeTab === 'invoices' ? 'page' : undefined}
-            className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors ${
-              activeTab === 'invoices'
-                ? 'text-slate-900 dark:text-slate-100 border-teal-600'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            Invoices ({scopedInvoices.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => {
+            } else {
               setActiveTab('payments');
               setPaymentsPage(1);
-              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-            }}
-            role="tab"
-            aria-selected={activeTab === 'payments'}
-            aria-current={activeTab === 'payments' ? 'page' : undefined}
-            className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors ${
-              activeTab === 'payments'
-                ? 'text-slate-900 dark:text-slate-100 border-teal-600'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            Payments ({scopedPayments.length})
-          </button>
-        </div>
+            }
+            document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+        />
       </div>
 
       {/* Daily Collections Plain-Text Summary Card */}

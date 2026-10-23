@@ -16,7 +16,9 @@
   --chart-grid: #94a3b8;
   --chart-pattern: #64748b;
   --focus-outline: #0d9488;
+  --text: #0f172a;
   --text-muted: #64748b;
+  --text-grey-strong: #475569;
 
   /* Base Text Size Tokens (standard & large) */
   --fs-kpi: 1.875rem;
@@ -286,6 +288,9 @@ html.dark {
   --chart-grid: #475569;
   --chart-pattern: #cbd5e1;
   --focus-outline: #14b8a6;
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-grey-strong: #cbd5e1;
 }
 
 .chart-hatch-legend {
@@ -584,7 +589,9 @@ html.dark,
 body.dark,
 .dark {
   color-scheme: dark;
+  --text: #f8fafc;
   --text-muted: #94a3b8;
+  --text-grey-strong: #cbd5e1;
 }
 
 .dark *,

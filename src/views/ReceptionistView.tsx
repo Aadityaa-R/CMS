@@ -11,6 +11,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/InteractiveSearchBar';
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, ColumnDef } from '@/components/ui/Table';
+import { Tabs } from '@/components/ui/Tabs';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { Activity, Pill, Calendar } from 'lucide-react';
 import { useNotifications } from '@/context/NotificationContext';
@@ -1344,32 +1345,20 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       )}
 
       {/* Workstation Navigation Tabs */}
-      <div role="tablist" aria-label="Reception Tabs" className="flex items-center gap-4 overflow-x-auto border-b border-slate-200 dark:border-slate-800 no-scrollbar scrollbar-none">
-        {[
+      <Tabs
+        ariaLabel="Reception Tabs"
+        tabs={[
           { id: 'lounge', label: 'Waiting Lounge' },
           { id: 'appointments', label: 'Appointments' },
           { id: 'patients', label: 'Patient Directory' },
           { id: 'registry', label: 'Intake Registry' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setSelectedTab(tab.id);
-              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-            }}
-            role="tab"
-            aria-selected={selectedTab === tab.id}
-            aria-current={selectedTab === tab.id ? 'page' : undefined}
-            className={`py-2 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap border-b-2 -mb-px ${
-              selectedTab === tab.id
-                ? 'border-teal-600 dark:border-teal-500 text-slate-900 dark:text-slate-100'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        ]}
+        activeTab={selectedTab}
+        onChange={(id) => {
+          setSelectedTab(id);
+          document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
 
       {/* Interactive Search Bar across views */}
       <div className="max-w-md">

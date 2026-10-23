@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/Table';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { DetailList, DetailItem, DetailGrid } from '@/components/ui/DetailList';
+import { Tabs } from '@/components/ui/Tabs';
 import { formatDate, formatTime } from '@/lib/time';
 import { Printer } from 'lucide-react';
 import { handlePrint } from '@/lib/print';
@@ -645,6 +646,22 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           {getTabTitle()}
         </h1>
       </div>
+
+      {/* Navigation Tabs */}
+      <Tabs
+        ariaLabel="Portal Tabs"
+        tabs={[
+          { id: 'appointments', label: 'Appointments' },
+          { id: 'records', label: 'Records' },
+          { id: 'prescriptions', label: 'Prescriptions' },
+          { id: 'invoices', label: 'Invoices' },
+        ]}
+        activeTab={activeTab}
+        onChange={(id) => {
+          setActiveTab(id as PortalTab);
+          document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
 
       {/* TAB 1: APPOINTMENTS */}
       {activeTab === 'appointments' && (

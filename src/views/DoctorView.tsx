@@ -12,6 +12,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTruncate } from '@/components/ui/Table';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { DetailList, DetailItem } from '@/components/ui/DetailList';
+import { Tabs } from '@/components/ui/Tabs';
 import { formatLocalDate, parseLocalDateKey, formatDate, formatTime } from '@/lib/time';
 import {
   CheckCircle2,
@@ -1134,31 +1135,19 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       </div>
 
       {/* Sub-Workstation Navigation Tabs */}
-      <div role="tablist" aria-label="Consultation Tabs" className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800">
-        {[
+      <Tabs
+        ariaLabel="Consultation Tabs"
+        tabs={[
           { id: 'overview', label: 'Consultation Desk' },
           { id: 'patients', label: 'Patients' },
           { id: 'prescriptions', label: 'e-Prescriptions' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setSelectedTab(tab.id);
-              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-            }}
-            role="tab"
-            aria-selected={selectedTab === tab.id}
-            aria-current={selectedTab === tab.id ? 'page' : undefined}
-            className={`pb-2.5 pt-1 text-xs font-semibold cursor-pointer whitespace-nowrap border-b-2 -mb-px transition-colors ${
-              selectedTab === tab.id
-                ? 'text-slate-900 dark:text-slate-100 border-teal-600'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        ]}
+        activeTab={selectedTab}
+        onChange={(id) => {
+          setSelectedTab(id);
+          document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
 
       {/* Real-time Feedback Notification Banner */}
       {notification && (
