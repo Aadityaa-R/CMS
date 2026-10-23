@@ -2249,7 +2249,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                       {recordPatient.status || 'Active'}
                     </span>
                   </div>
-                  <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                  <div className="text-[11px] tabular-nums text-slate-500 dark:text-slate-400 mt-0.5">
                     MRN: <strong className="text-slate-700 dark:text-slate-200">{recordPatient.mrn}</strong> • Registered: {recordPatient.registeredDate || 'Enrolled'}
                   </div>
                 </div>
@@ -2282,7 +2282,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 </div>
                 <div>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Primary Phone</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
                     {recordPatient.phone}
                   </span>
                 </div>
@@ -2299,7 +2299,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Emergency Contact</span>
                   <span className="text-slate-800 dark:text-slate-200 font-medium">
                     {recordPatient.emergencyContact?.name || 'Emergency Contact'} ({recordPatient.emergencyContact?.relationship || 'Contact'}):{' '}
-                    <span className="font-mono">{recordPatient.emergencyContact?.phone || recordPatient.phone}</span>
+                    <span className="tabular-nums">{recordPatient.emergencyContact?.phone || recordPatient.phone}</span>
                   </span>
                 </div>
               </div>
@@ -2358,7 +2358,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                 {(() => {
                   const patVitals = vitals.find((v) => v.patientId === recordPatient.id);
                   return patVitals ? (
-                    <span className="text-[11px] text-slate-500 font-mono">
+                    <span className="text-[11px] text-slate-500 tabular-nums">
                       {patVitals.recordedAt.slice(0, 16).replace('T', ' ')} by {patVitals.recordedByName || 'Clinical Staff'}
                     </span>
                   ) : null;
@@ -2374,7 +2374,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                   );
                 }
                 return (
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1 font-mono text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1 tabular-nums text-xs">
                     <div>
                       <span className="text-[10px] text-slate-400 font-sans block">Blood Pressure</span>
                       <span className="font-bold text-slate-900 dark:text-slate-100">
@@ -2430,8 +2430,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                     {patientRxList.map((rx) => (
                       <div key={rx.id} className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs space-y-0.5">
                         <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-slate-100">
-                          <span className="font-mono text-teal-700 dark:text-teal-400">{rx.prescriptionNumber}</span>
-                          <span className="text-[10px] font-mono text-slate-500">{rx.date} • Dr. {rx.doctorName}</span>
+                          <span className="tabular-nums text-teal-700 dark:text-teal-400">{rx.prescriptionNumber}</span>
+                          <span className="text-[10px] tabular-nums text-slate-500">{rx.date} • Dr. {rx.doctorName}</span>
                         </div>
                         <div className="text-[11px] text-slate-700 dark:text-slate-300">
                           <strong>Diagnosis:</strong> {rx.diagnosis}
@@ -2467,7 +2467,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
                       <div key={a.id} className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs flex items-center justify-between gap-3">
                         <div>
                           <div className="font-semibold text-slate-900 dark:text-slate-100">
-                            Dr. {a.doctorName} • <span className="font-mono text-teal-600 dark:text-teal-400">Token #{a.tokenNumber}</span>
+                            Dr. {a.doctorName} • <span className="tabular-nums text-teal-600 dark:text-teal-400">Token #{a.tokenNumber}</span>
                           </div>
                           <div className="text-[11px] text-slate-500 dark:text-slate-400">
                             {a.dateTime ? a.dateTime.replace('T', ' ') : 'Date pending'} • {a.reasonForVisit || 'General Consultation'}

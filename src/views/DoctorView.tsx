@@ -1913,7 +1913,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 <TableCell kind="short" priority={4} label="Time" className="text-slate-700 dark:text-slate-300">
                                   {formatTime(apt.dateTime)}
                                 </TableCell>
-                                <TableCell kind="short" priority={6} label="Appt ID" hideBelow="md" className="font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                <TableCell kind="short" priority={6} label="Appt ID" hideBelow="md" className="tabular-nums text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                   {apt.appointmentNumber}
                                 </TableCell>
                                 <TableCell

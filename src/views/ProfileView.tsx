@@ -374,7 +374,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
                 <DetailItem label="Name" value={currentUser.name} />
                 <DetailItem
                   label="Staff ID"
-                  value={<span className="font-mono">{currentUser.badgeNumber || 'STAFF-100'}</span>}
+                  value={<span className="tabular-nums">{currentUser.badgeNumber || 'STAFF-100'}</span>}
                 />
                 <DetailItem label="Job title" value={currentUser.title || 'Staff Member'} />
                 <DetailItem label="Department" value={currentUser.department || 'Clinical Services'} />

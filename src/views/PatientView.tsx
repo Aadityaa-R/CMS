@@ -381,7 +381,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                               : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
                           }`}
                         >
-                          <TableCell label="MRN" kind="short" priority={2} className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                          <TableCell label="MRN" kind="short" priority={2} className="font-bold tabular-nums text-slate-900 dark:text-slate-100">
                             {pat.mrn}
                           </TableCell>
                           <TableCell label="Patient Name & Contact" isPrimary kind="short" priority={1}>
@@ -461,7 +461,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                       </span>
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                      MRN: <strong className="font-mono text-slate-700 dark:text-slate-300">{pat.mrn}</strong> • Registered: {pat.registeredDate} • Address: {pat.address}
+                                      MRN: <strong className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{pat.mrn}</strong> • Registered: {pat.registeredDate} • Address: {pat.address}
                                     </p>
                                   </div>
 
@@ -528,7 +528,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                         );
                                       }
                                       return (
-                                        <div className="grid grid-cols-2 gap-2 text-xs pt-1 font-mono">
+                                        <div className="grid grid-cols-2 gap-2 text-xs pt-1 tabular-nums">
                                           <div>
                                             <span className="text-[0.625rem] text-slate-400 block font-sans">BP</span>
                                             <span className="font-bold text-slate-800 dark:text-slate-200">
@@ -579,7 +579,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                             <div key={rx.id} className="text-xs border-b border-slate-100 dark:border-slate-800 pb-1.5 last:border-0">
                                               <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-slate-100">
                                                 <span>{rx.prescriptionNumber}</span>
-                                                <span className="text-[0.625rem] font-mono text-slate-500">{rx.date}</span>
+                                                <span className="text-[0.625rem] tabular-nums text-slate-500">{rx.date}</span>
                                               </div>
                                               <div className="text-[0.6875rem] text-slate-600 dark:text-slate-400">
                                                 Dx: {rx.diagnosis}
@@ -615,7 +615,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
                                             <div key={a.id} className="text-xs border-b border-slate-100 dark:border-slate-800 pb-1.5 last:border-0">
                                               <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-slate-100">
                                                 <span>{a.doctorName}</span>
-                                                <span className="text-[0.625rem] font-mono text-teal-600 dark:text-teal-400 font-bold">
+                                                <span className="text-[0.625rem] tabular-nums text-teal-600 dark:text-teal-400 font-bold">
                                                   Token #{a.tokenNumber}
                                                 </span>
                                               </div>

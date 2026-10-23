@@ -1478,7 +1478,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                                     <TableCell label="Staff Type" kind="short" priority={4} className="text-xs text-slate-700 dark:text-slate-300">
                                       {staffType}
                                     </TableCell>
-                                    <TableCell label="ID" kind="short" priority={5} className="text-xs text-slate-700 dark:text-slate-300 font-mono">
+                                    <TableCell label="ID" kind="short" priority={5} className="text-xs text-slate-700 dark:text-slate-300 tabular-nums">
                                       {badgeNumber}
                                     </TableCell>
                                     <TableCell label="Status" kind="short" priority={2} className="text-xs text-slate-700 dark:text-slate-300">
@@ -1682,7 +1682,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                       <span>Administrative Personnel Control</span>
                       <span>•</span>
-                      <span className="font-mono text-slate-700 dark:text-slate-300 font-medium">
+                      <span className="tabular-nums text-slate-700 dark:text-slate-300 font-medium">
                         {activeStaff.badgeNumber}
                       </span>
                     </div>
@@ -1714,7 +1714,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                             <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
                               Access Console: {activeStaff.staffName}
                             </CardTitle>
-                            <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                            <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
                               ({activeStaff.badgeNumber})
                             </span>
                             <span
@@ -2537,7 +2537,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Badge / MRN:</span>
-                <span className="font-mono text-slate-800 dark:text-slate-200">{deleteTarget.badgeNumber}</span>
+                <span className="tabular-nums text-slate-800 dark:text-slate-200">{deleteTarget.badgeNumber}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Department:</span>

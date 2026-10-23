@@ -307,6 +307,17 @@ html.dark {
     @apply bg-slate-50 text-slate-800 antialiased font-sans;
     font-size: var(--fs-body);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  .font-mono,
+  .tabular-nums {
+    font-variant-numeric: lining-nums tabular-nums;
+    vertical-align: baseline;
+  }
+
+  .font-mono {
+    font-family: inherit;
   }
 
   .dark body,

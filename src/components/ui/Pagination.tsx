@@ -52,13 +52,13 @@ export const Pagination: React.FC<PaginationProps> = ({
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-600 dark:text-slate-400 select-none ${className}`}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-baseline gap-1">
         <span>Showing</span>
-        <span className="font-semibold text-slate-900 dark:text-slate-100 font-mono">
+        <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
           {startItem}–{endItem}
         </span>
         <span>of</span>
-        <span className="font-semibold text-slate-900 dark:text-slate-100 font-mono">
+        <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
           {totalItems}
         </span>
         <span>records</span>
@@ -96,7 +96,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                   key={p}
                   type="button"
                   onClick={() => onPageChange(p)}
-                  className={`min-w-[28px] h-7 px-2 rounded-md text-xs font-mono font-medium cursor-pointer flex items-center justify-center ${
+                  className={`min-w-[28px] h-7 px-2 rounded-md text-xs font-medium tabular-nums cursor-pointer flex items-center justify-center ${
                     isActive
                       ? 'bg-teal-600 text-white font-bold'
                       : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
