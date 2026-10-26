@@ -9,6 +9,7 @@ import {
   AccessModule,
   InAppNotification,
   Medicine,
+  Visit,
 } from './index';
 import { Invoice, Payment } from './billing';
 import { Shift, AttendanceRecord, LeaveRequest } from './attendance';
@@ -69,7 +70,7 @@ export interface BackupCollections {
   patients: Patient[];
   assignments: PatientAssignment[];
   appointments: Appointment[];
-  visits: any[];
+  visits: Visit[];
   prescriptions: Prescription[];
   invoices: Invoice[];
   payments: Payment[];

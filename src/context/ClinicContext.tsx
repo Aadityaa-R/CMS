@@ -16,6 +16,7 @@ import {
   StandardCapability,
   AppointmentSource,
   InAppNotification,
+  Visit,
 } from '@/types';
 import { broadcastRealtimeEvent, subscribeRealtimeEvent } from '@/lib/realtime';
 import {
@@ -63,6 +64,7 @@ import { ACCESS_CATALOG, AccessItem, registerCustomAccess } from '@/data/accessC
 import { getRepository } from '@/data/storage';
 import { STORAGE_KEY_PREFIX } from '@/lib/authConstants';
 import { useAuth } from '@/context/AuthContext';
+import { migrateExistingVisits } from '@/lib/visits';
 
 export interface RegistrationResult {
   success: boolean;
@@ -107,6 +109,8 @@ interface ClinicContextType {
   patientAssignments: PatientAssignment[];
   modules: AccessModule[];
   medicines: Medicine[];
+  visits: Visit[];
+  addVisit: (data: Omit<Visit, 'id'> | Visit) => Visit;
 
   // Patient Actions
   addPatient: (
@@ -285,6 +289,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [patientAssignments, setPatientAssignments] = useState<PatientAssignment[]>(INITIAL_PATIENT_ASSIGNMENTS);
   const [modules, setModules] = useState<AccessModule[]>(INITIAL_MODULES);
   const [medicines, setMedicines] = useState<Medicine[]>(INITIAL_FORMULARY);
+  const [visits, setVisits] = useState<Visit[]>([]);
 
   // Load from repository on startup
   useEffect(() => {
@@ -297,8 +302,9 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const repoAssignments = getRepository<PatientAssignment>('assignments');
         const repoRoles = getRepository<AccessModule>('roles');
         const repoFormulary = getRepository<Medicine>('formulary');
+        const repoVisits = getRepository<Visit>('visits');
 
-        const [pats, apts, rxs, invs, asgns, rols, meds] = await Promise.all([
+        const [pats, apts, rxs, invs, asgns, rols, meds, vsts] = await Promise.all([
           repoPatients.list(),
           repoAppointments.list(),
           repoPrescriptions.list(),
@@ -306,6 +312,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           repoAssignments.list(),
           repoRoles.list(),
           repoFormulary.list(),
+          repoVisits.list(),
         ]);
 
         if (pats.length > 0) setPatients(pats);
@@ -315,6 +322,16 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (asgns.length > 0) setPatientAssignments(asgns);
         if (rols.length > 0) setModules(rols);
         if (meds.length > 0) setMedicines(meds);
+        if (vsts && vsts.length > 0) {
+          setVisits(vsts);
+        } else {
+          const migrated = migrateExistingVisits(
+            pats.length > 0 ? pats : INITIAL_PATIENTS,
+            apts.length > 0 ? apts : INITIAL_APPOINTMENTS
+          );
+          setVisits(migrated);
+          await repoVisits.replaceAll(migrated);
+        }
       } catch {
         // Fallback
       }
@@ -350,6 +367,11 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const repo = getRepository<AccessModule>('roles');
         (repo as any).invalidateCache?.();
         setModules(await repo.list());
+      }
+      if (e.key === `${STORAGE_KEY_PREFIX}visits`) {
+        const repo = getRepository<Visit>('visits');
+        (repo as any).invalidateCache?.();
+        setVisits(await repo.list());
       }
       if (e.key === `${STORAGE_KEY_PREFIX}formulary`) {
         const repo = getRepository<Medicine>('formulary');
@@ -414,6 +436,25 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       getRepository<Medicine>('formulary').replaceAll(medicines).catch(() => {});
     }
   }, [medicines]);
+
+  useEffect(() => {
+    if (visits.length > 0) {
+      getRepository<Visit>('visits').replaceAll(visits).catch(() => {});
+    }
+  }, [visits]);
+
+  const addVisit = (data: Omit<Visit, 'id'> | Visit): Visit => {
+    const id = 'id' in data && data.id ? data.id : `visit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const newVisit: Visit = { ...data, id };
+    setVisits((prev) => [newVisit, ...prev]);
+    getRepository<Visit>('visits').create(newVisit).catch(() => {});
+    broadcastRealtimeEvent({
+      type: 'appointment_update',
+      entity: 'visit',
+      data: { visitId: id, patientId: newVisit.patientId },
+    } as any);
+    return newVisit;
+  };
 
   useEffect(() => {
     if (modules.length > 0) {
@@ -2101,6 +2142,8 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         recordVitals,
         saveVitals,
         medicines,
+        visits,
+        addVisit,
         createPrescription,
         cancelPrescription,
         dispensePrescriptionItem,

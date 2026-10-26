@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -14,6 +14,9 @@ import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { DetailList, DetailItem } from '@/components/ui/DetailList';
 import { Tabs } from '@/components/ui/Tabs';
 import { DictationButton } from '@/components/ui/DictationButton';
+import { getScopedVisits } from '@/lib/visits';
+
+const CompareVisitsModal = React.lazy(() => import('@/components/visits/CompareVisitsModal'));
 import { formatLocalDate, parseLocalDateKey, formatDate, formatTime } from '@/lib/time';
 import {
   CheckCircle2,
@@ -126,6 +129,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     transferPatient,
     saveVitals,
     updatePatient,
+    visits = [],
+    addVisit,
   } = useClinic();
 
   const isMD = isAdmin(currentUser) || currentRole === 'md' || currentRole === 'admin';
@@ -213,14 +218,37 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     activePatient ||
     (consultationApt ? patients.find((p) => p.id === consultationApt.patientId) || null : null);
 
-  const lastCompletedApt = useMemo(() => {
-    if (!summaryPatient) return null;
-    return (
-      appointments
-        .filter((a) => a.patientId === summaryPatient.id && a.status === 'completed')
-        .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())[0] || null
-    );
-  }, [summaryPatient, appointments]);
+  const [selectedVisitId, setSelectedVisitId] = useState<string>('');
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState<boolean>(false);
+
+  const patientVisits = useMemo(() => {
+    if (!summaryPatient) return [];
+    const scoped = getScopedVisits(currentUser, visits, patientAssignments, modules);
+    return scoped
+      .filter((v) => v.patientId === summaryPatient.id)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [summaryPatient, currentUser, visits, patientAssignments, modules]);
+
+  useEffect(() => {
+    if (patientVisits.length > 0) {
+      if (!selectedVisitId || !patientVisits.some((v) => v.id === selectedVisitId)) {
+        setSelectedVisitId(patientVisits[0].id);
+      }
+    } else {
+      setSelectedVisitId('');
+    }
+  }, [patientVisits, selectedVisitId]);
+
+  const currentDisplayedVisit = useMemo(() => {
+    if (patientVisits.length === 0) return null;
+    return patientVisits.find((v) => v.id === selectedVisitId) || patientVisits[0];
+  }, [patientVisits, selectedVisitId]);
+
+  const getConsultingDoctorName = (doctorId: string) => {
+    const doc = doctors.find((d) => d.id === doctorId);
+    if (doc) return formatDoctorName(doc);
+    return doctorId || 'None recorded';
+  };
 
   // Clinical Triage Vitals Input State
   const [vitalsForm, setVitalsForm] = useState({
@@ -627,6 +655,25 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         .map((a) => a.trim())
         .filter((a) => a.length > 0 && a.toLowerCase() !== 'none');
       updatePatient(activePatient.id, { allergies });
+
+      // Conclude Visit writes a Visit. Notes stay doctor-only.
+      const currentVitals = {
+        systolicBp: vitalsForm.systolicBp ? Number(vitalsForm.systolicBp) : activePatient.previousVitals?.systolicBp,
+        diastolicBp: vitalsForm.diastolicBp ? Number(vitalsForm.diastolicBp) : activePatient.previousVitals?.diastolicBp,
+        heartRateBpm: vitalsForm.heartRateBpm ? Number(vitalsForm.heartRateBpm) : activePatient.previousVitals?.heartRateBpm,
+        oxygenSaturationPct: vitalsForm.oxygenSaturationPct ? Number(vitalsForm.oxygenSaturationPct) : activePatient.previousVitals?.oxygenSaturationPct,
+        temperatureCelsius: vitalsForm.temperatureCelsius ? Number(vitalsForm.temperatureCelsius) : activePatient.previousVitals?.temperatureCelsius,
+      };
+
+      addVisit({
+        patientId: activePatient.id,
+        appointmentId: aptId,
+        doctorId: activeAppointment?.doctorId || currentUser.id,
+        date: new Date().toISOString(),
+        reason: activeAppointment?.reasonForVisit || 'Consultation',
+        vitals: currentVitals,
+        notes: clinicalNotesText || activeAppointment?.notes || '',
+      });
     }
     updateAppointmentStatus(aptId, 'completed');
 
@@ -1772,60 +1819,101 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     <div className="flex-1 flex flex-col justify-start divide-y divide-slate-100 dark:divide-slate-800">
                       {/* Section 1: Previous Visit Record */}
                       <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
-                        <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
-                          Previous Visit Record
-                        </span>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
+                            Previous Visit Record
+                          </span>
+                          {currentUser.role !== 'patient' && patientVisits.length > 0 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsCompareModalOpen(true)}
+                              className="text-xs h-7 min-h-0 px-2 py-0.5"
+                            >
+                              Compare visits
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Visit Select */}
+                        <div className="mb-2.5">
+                          {patientVisits.length > 0 ? (
+                            <Select
+                              id="select-patient-visit"
+                              label="Visit"
+                              value={currentDisplayedVisit?.id || ''}
+                              onChange={(e) => setSelectedVisitId(e.target.value)}
+                              options={patientVisits.map((v) => {
+                                const doc = doctors.find((d) => d.id === v.doctorId);
+                                const docName = doc ? formatDoctorName(doc) : v.doctorId;
+                                const shortReason = v.reason.length > 26 ? `${v.reason.slice(0, 26)}...` : v.reason;
+                                return {
+                                  value: v.id,
+                                  label: `${formatDate(v.date)}, ${docName}, ${shortReason}`,
+                                };
+                              })}
+                            />
+                          ) : (
+                            <div className="text-xs text-slate-500 dark:text-slate-400 py-1">
+                              No previous visits
+                            </div>
+                          )}
+                        </div>
+
                         <DetailList columns={2} className="flex-1" reversed>
                           <DetailItem
                             label="Last Visit"
                             className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
                             value={
-                              lastCompletedApt?.dateTime
-                                ? formatDate(lastCompletedApt.dateTime)
-                                : summaryPatient.lastVisitDate
-                                ? formatDate(summaryPatient.lastVisitDate)
+                              currentDisplayedVisit
+                                ? formatDate(currentDisplayedVisit.date)
                                 : 'None recorded'
                             }
                           />
                           <DetailItem
                             label="Consulting Doctor"
                             className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                            value={lastCompletedApt?.doctorName || 'None recorded'}
+                            value={
+                              currentDisplayedVisit
+                                ? getConsultingDoctorName(currentDisplayedVisit.doctorId)
+                                : 'None recorded'
+                            }
                           />
-                          {summaryPatient.previousVitals && (
+                          {currentDisplayedVisit?.vitals && (
                             <DetailItem
                               label="Blood Pressure"
                               className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                              value={`${summaryPatient.previousVitals.systolicBp ?? '--'}/${summaryPatient.previousVitals.diastolicBp ?? '--'} mmHg`}
+                              value={`${currentDisplayedVisit.vitals.systolicBp ?? '--'}/${currentDisplayedVisit.vitals.diastolicBp ?? '--'} mmHg`}
                             />
                           )}
-                          {summaryPatient.previousVitals && (
+                          {currentDisplayedVisit?.vitals && (
                             <DetailItem
                               label="Heart Rate"
                               className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                              value={`${summaryPatient.previousVitals.heartRateBpm ?? '--'} bpm`}
+                              value={`${currentDisplayedVisit.vitals.heartRateBpm ?? '--'} bpm`}
                             />
                           )}
-                          {summaryPatient.previousVitals && (
+                          {currentDisplayedVisit?.vitals && (
                             <DetailItem
                               label="SpO2"
                               className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                              value={`${summaryPatient.previousVitals.oxygenSaturationPct ?? '--'}%`}
+                              value={`${currentDisplayedVisit.vitals.oxygenSaturationPct ?? '--'}%`}
                             />
                           )}
-                          {summaryPatient.previousVitals && (
+                          {currentDisplayedVisit?.vitals && (
                             <DetailItem
                               label="Temperature"
                               className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                              value={`${summaryPatient.previousVitals.temperatureCelsius ?? '--'} °C`}
+                              value={`${currentDisplayedVisit.vitals.temperatureCelsius ?? '--'} °C`}
                             />
                           )}
                         </DetailList>
                         <DetailList
                           reversed
-                          className={`flex-1 ${summaryPatient.previousVitals ? 'border-t border-slate-100 dark:border-slate-800' : ''}`}
+                          className={`flex-1 ${currentDisplayedVisit?.vitals ? 'border-t border-slate-100 dark:border-slate-800' : ''}`}
                         >
-                          {!summaryPatient.previousVitals && (
+                          {!currentDisplayedVisit?.vitals && (
                             <DetailItem
                               label="Vitals"
                               className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
@@ -1835,7 +1923,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           <DetailItem
                             label="Last Reason"
                             className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                            value={lastCompletedApt?.reasonForVisit || 'None recorded'}
+                            value={currentDisplayedVisit?.reason || 'None recorded'}
                           />
                         </DetailList>
                       </div>
@@ -3404,6 +3492,28 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             </div>
           </div>
         </Modal>
+      )}
+      {summaryPatient && isCompareModalOpen && (
+        <Suspense fallback={null}>
+          <CompareVisitsModal
+            isOpen={isCompareModalOpen}
+            onClose={() => setIsCompareModalOpen(false)}
+            patient={summaryPatient}
+            visits={patientVisits}
+            doctors={doctors}
+          />
+        </Suspense>
+      )}
+      {summaryPatient && isCompareModalOpen && (
+        <Suspense fallback={null}>
+          <CompareVisitsModal
+            isOpen={isCompareModalOpen}
+            onClose={() => setIsCompareModalOpen(false)}
+            patient={summaryPatient}
+            visits={patientVisits}
+            doctors={doctors}
+          />
+        </Suspense>
       )}
     </div>
   );

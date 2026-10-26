@@ -1,5 +1,6 @@
 import {
   Patient,
+  Visit,
   Doctor,
   Appointment,
   InAppNotification,
@@ -33,6 +34,7 @@ export interface DemoScenarioData {
   shifts: Shift[];
   attendanceRecords: AttendanceRecord[];
   notifications: InAppNotification[];
+  visits: Visit[];
   formulary: Medicine[];
   ledger: AccessAuditLogEntry[];
 }
@@ -1030,6 +1032,72 @@ export function generateDemoScenario(now: Date = new Date()): DemoScenarioData {
     },
   ];
 
+  // Generate 2 to 5 demo visits per patient with realistic changing vitals
+  const visits: Visit[] = [];
+  const completedApts = appointments.filter((a) => a.status === 'completed');
+  for (const apt of completedApts) {
+    visits.push({
+      id: `visit-apt-${apt.id}`,
+      patientId: apt.patientId,
+      appointmentId: apt.id,
+      doctorId: apt.doctorId,
+      date: apt.dateTime,
+      reason: apt.reasonForVisit || 'Routine Clinical Consultation',
+      vitals: {
+        systolicBp: 122 + ((visits.length * 3) % 20),
+        diastolicBp: 80 + ((visits.length * 2) % 12),
+        heartRateBpm: 68 + ((visits.length * 5) % 22),
+        oxygenSaturationPct: 98 - (visits.length % 2),
+        temperatureCelsius: Number((36.6 + (visits.length % 5) * 0.1).toFixed(1)),
+      },
+      notes: apt.notes || 'Consultation concluded. Vitals within clinical review standards.',
+    });
+  }
+
+  patients.forEach((p, pIdx) => {
+    const existing = visits.filter((v) => v.patientId === p.id);
+    const targetCount = 2 + (pIdx % 4); // 2, 3, 4, 5
+    const needed = Math.max(0, targetCount - existing.length);
+
+    const reasons = [
+      p.chronicConditions?.[0] ? `Follow-up for ${p.chronicConditions[0]}` : 'General Examination',
+      'Blood pressure screening and clinical review',
+      'Seasonal allergy and respiratory evaluation',
+      'Medication efficacy review and refill consultation',
+      'Preventative clinical checkup',
+    ];
+
+    const baseSys = p.previousVitals?.systolicBp ?? 124;
+    const baseDia = p.previousVitals?.diastolicBp ?? 82;
+    const baseHr = p.previousVitals?.heartRateBpm ?? 72;
+    const baseSpo2 = p.previousVitals?.oxygenSaturationPct ?? 98;
+    const baseTemp = p.previousVitals?.temperatureCelsius ?? 36.8;
+
+    for (let i = 0; i < needed; i++) {
+      const daysAgo = 18 * (i + 1) + 8 + (pIdx % 6);
+      const visitDate = offsetIso(-daysAgo, 9 + ((i + pIdx) % 5), 15);
+      const sysDelta = (i % 2 === 0 ? 1 : -1) * (4 + i * 2);
+      const diaDelta = (i % 2 === 0 ? 1 : -1) * (2 + i * 2);
+      const hrDelta = i % 2 === 0 ? 4 : -3;
+
+      visits.push({
+        id: `visit-demo-${p.id}-${i + 1}`,
+        patientId: p.id,
+        doctorId: patientAssignments.find((a) => a.patientId === p.id)?.doctorId || (i % 2 === 0 ? 'doc-1' : 'doc-2'),
+        date: visitDate,
+        reason: reasons[i % reasons.length],
+        vitals: {
+          systolicBp: Math.max(98, Math.min(150, baseSys + sysDelta)),
+          diastolicBp: Math.max(62, Math.min(94, baseDia + diaDelta)),
+          heartRateBpm: Math.max(62, Math.min(98, baseHr + hrDelta)),
+          oxygenSaturationPct: Math.min(100, Math.max(95, baseSpo2 - (i % 2))),
+          temperatureCelsius: Number((baseTemp + (i % 2 === 0 ? 0.2 : -0.2)).toFixed(1)),
+        },
+        notes: `Clinical evaluation for ${p.firstName} ${p.lastName}. Vitals reviewed and treatment plan updated.`,
+      });
+    }
+  });
+
   return {
     accounts,
     staff,
@@ -1049,5 +1117,6 @@ export function generateDemoScenario(now: Date = new Date()): DemoScenarioData {
     notifications,
     formulary: INITIAL_FORMULARY,
     ledger,
+    visits,
   };
 }

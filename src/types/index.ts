@@ -158,6 +158,25 @@ export interface VitalSigns {
   bmi: number;
 }
 
+export interface VisitVitals {
+  systolicBp?: number;
+  diastolicBp?: number;
+  heartRateBpm?: number;
+  oxygenSaturationPct?: number;
+  temperatureCelsius?: number;
+}
+
+export interface Visit {
+  id: string;
+  patientId: string;
+  appointmentId?: string;
+  doctorId: string;
+  date: string;
+  reason: string;
+  vitals: VisitVitals;
+  notes?: string;
+}
+
 export * from './prescribing';
 
 export type LabTestStatus =

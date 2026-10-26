@@ -438,7 +438,7 @@ export async function seedInitialData(force = false): Promise<void> {
   await repoLeave.replaceAll(scenario.leaveRequests);
   await repoShifts.replaceAll(scenario.shifts);
   await repoLedger.replaceAll(scenario.ledger);
-  await repoVisits.replaceAll([]);
+  await repoVisits.replaceAll(scenario.visits);
   await repoPayments.replaceAll(scenario.payments);
   await repoNotifications.replaceAll(scenario.notifications);
   await repoFormulary.replaceAll(scenario.formulary);
