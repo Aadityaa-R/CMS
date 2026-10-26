@@ -1128,62 +1128,6 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       {/* SUB-MODULE 1: ROLES */}
       {selectedSubTab === 'modules' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Role Governance & Selection Bar */}
-          <Card className="!overflow-visible px-4 py-2.5 sm:px-5 sm:py-3">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-              <div className="min-w-0">
-                <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight block">
-                  Role Clearance Governance
-                </span>
-              </div>
-
-              {/* Selection Menu container */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
-                {/* Search Option */}
-                <div className="relative w-full sm:w-80">
-                  <InteractiveSearchBar
-                    value={roleSearchTerm}
-                    onChange={(val) => {
-                      setRoleSearchTerm(val);
-                      const matchingMod = modules.find(
-                        (m) => m.name.toLowerCase() === val.trim().toLowerCase()
-                      );
-                      if (matchingMod) {
-                        setSelectedModuleId(matchingMod.id);
-                        setModuleMembersPage(1);
-                      }
-                    }}
-                    suggestions={roleSearchSuggestions}
-                    placeholder="Search roles, accesses, or personnel"
-                  />
-                </div>
-
-                {/* Drop Down Selection Option */}
-                <div className="w-full sm:w-64 shrink-0">
-                  <Select
-                    icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
-                    searchable={true}
-                    searchPlaceholder="Search roles..."
-                    value={selectedModuleId || ''}
-                    placeholder="All Roles (Directory)"
-                    onChange={(e) => {
-                      const newId = e.target.value;
-                      setSelectedModuleId(newId ? newId : null);
-                      setModuleMembersPage(1);
-                    }}
-                    options={[
-                      { value: '', label: `All Roles (${modules.length})` },
-                      ...modules.map((m) => ({
-                        value: m.id,
-                        label: `${m.name} (${m.memberIds.length} members)`,
-                      })),
-                    ]}
-                  />
-                </div>
-              </div>
-            </div>
-          </Card>
-
           {selectedModuleId ? (
             (() => {
               const currentModule = modules.find((m) => m.id === selectedModuleId);
@@ -1509,46 +1453,87 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
             })()
           ) : (
             /* Roles Directory Table View */
-            <Card className="border border-slate-200 dark:border-slate-800 w-full">
-              <CardHeader
-                action={
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setNewAccessName('');
-                        setNewAccessDesc('');
-                        setNewAccessError('');
-                        setIsCreateAccessModalOpen(true);
+            <Card className="border border-slate-200 dark:border-slate-800 w-full !overflow-visible">
+              <div className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800">
+                {/* Search box and roles filter on the left */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
+                  <div className="relative w-full sm:w-80">
+                    <InteractiveSearchBar
+                      value={roleSearchTerm}
+                      onChange={(val) => {
+                        setRoleSearchTerm(val);
+                        const matchingMod = modules.find(
+                          (m) => m.name.toLowerCase() === val.trim().toLowerCase()
+                        );
+                        if (matchingMod) {
+                          setSelectedModuleId(matchingMod.id);
+                          setModuleMembersPage(1);
+                        }
                       }}
-                    >
-                      Add New Access
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => {
-                        setCreateModuleName('');
-                        setCreateModuleDesc('');
-                        setCreateModuleSelectedAccesses([]);
-                        setCreateModuleError('');
-                        setIsCreateModuleModalOpen(true);
-                      }}
-                    >
-                      Create Role
-                    </Button>
+                      suggestions={roleSearchSuggestions}
+                      placeholder="Search roles, accesses, or personnel"
+                    />
                   </div>
-                }
-              >
-                {filteredRolesList.length < modules.length ? (
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    Showing {filteredRolesList.length} of {modules.length}
-                  </span>
-                ) : (
-                  <div />
-                )}
-              </CardHeader>
+
+                  <div className="w-full sm:w-64 shrink-0">
+                    <Select
+                      icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                      searchable={true}
+                      searchPlaceholder="Search roles..."
+                      value={selectedModuleId || ''}
+                      placeholder="All Roles (Directory)"
+                      onChange={(e) => {
+                        const newId = e.target.value;
+                        setSelectedModuleId(newId ? newId : null);
+                        setModuleMembersPage(1);
+                      }}
+                      options={[
+                        { value: '', label: `All Roles (${modules.length})` },
+                        ...modules.map((m) => ({
+                          value: m.id,
+                          label: `${m.name} (${m.memberIds.length} members)`,
+                        })),
+                      ]}
+                    />
+                  </div>
+
+                  {filteredRolesList.length < modules.length && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap">
+                      Showing {filteredRolesList.length} of {modules.length}
+                    </span>
+                  )}
+                </div>
+
+                {/* Action buttons on the right */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setNewAccessName('');
+                      setNewAccessDesc('');
+                      setNewAccessError('');
+                      setIsCreateAccessModalOpen(true);
+                    }}
+                  >
+                    Add New Access
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setCreateModuleName('');
+                      setCreateModuleDesc('');
+                      setCreateModuleSelectedAccesses([]);
+                      setCreateModuleError('');
+                      setIsCreateModuleModalOpen(true);
+                    }}
+                  >
+                    Create Role
+                  </Button>
+                </div>
+              </div>
+
               <CardContent className="p-0">
                 <div className="overflow-x-auto overflow-y-hidden max-w-full">
                   <Table stackBelow="lg">
