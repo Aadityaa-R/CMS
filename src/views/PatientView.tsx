@@ -270,32 +270,6 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
         </div>
       )}
 
-      {/* Executive Workstation Header */}
-      <div className="bg-slate-900 rounded-xl p-5 border border-slate-800 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="text-xs text-teal-300 font-medium">
-            Central Medical Records & EHR Governance
-          </div>
-          <h2 className="text-xl font-bold mt-1 text-slate-100 tracking-tight">
-            Patients Medical Directory & Health Records Governance
-          </h2>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0">
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={() => {
-              resetRegisterForm();
-              setIsRegisterOpen(true);
-            }}
-          >
-            Register Outpatient
-          </Button>
-        </div>
-      </div>
-
       {/* Patient Governance Bar: Side-by-Side Search & Filter */}
       <Card className="!overflow-visible px-4 py-2.5 sm:px-5 sm:py-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
