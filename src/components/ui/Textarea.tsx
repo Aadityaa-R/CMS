@@ -1,12 +1,12 @@
 import React from 'react';
 
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   helperText?: string;
 }
 
-export const Textarea: React.FC<TextareaProps> = ({
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({
   label,
   error,
   helperText,
@@ -14,7 +14,7 @@ export const Textarea: React.FC<TextareaProps> = ({
   id,
   rows = 3,
   ...props
-}) => {
+}, ref) => {
   const autoId = React.useId();
   const textareaId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : `textarea-${autoId}`);
   const errorId = `${textareaId}-error`;
@@ -31,6 +31,7 @@ export const Textarea: React.FC<TextareaProps> = ({
         </label>
       )}
       <textarea
+        ref={ref}
         id={textareaId}
         rows={rows}
         className={`w-full rounded-xl border bg-white dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-teal-500 disabled:bg-slate-50 dark:disabled:bg-slate-800 disabled:text-slate-500 resize-y ${
@@ -48,5 +49,6 @@ export const Textarea: React.FC<TextareaProps> = ({
       )}
     </div>
   );
-};
+});
 
+Textarea.displayName = 'Textarea';

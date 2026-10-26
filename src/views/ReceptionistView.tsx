@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useClinic } from '@/context/ClinicContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent, KpiCard } from '@/components/ui/Card';
@@ -12,6 +12,7 @@ import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/Interact
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, ColumnDef } from '@/components/ui/Table';
 import { Tabs } from '@/components/ui/Tabs';
+import { DictationButton } from '@/components/ui/DictationButton';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { Activity, Pill, Calendar } from 'lucide-react';
 import { useNotifications } from '@/context/NotificationContext';
@@ -173,6 +174,7 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const [bookDate, setBookDate] = useState<string>(todayStr);
   const [bookTime, setBookTime] = useState<string>('09:30');
   const [bookReason, setBookReason] = useState<string>('');
+  const bookReasonInputRef = useRef<HTMLInputElement | null>(null);
   const [bookError, setBookError] = useState<string>('');
 
   // Patient Record Modal State
@@ -2076,10 +2078,16 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Reason for Visit</label>
             <Input
+              ref={bookReasonInputRef}
               value={bookReason}
               onChange={(e) => setBookReason(e.target.value)}
               placeholder="Consultation reason"
               required
+            />
+            <DictationButton
+              targetRef={bookReasonInputRef}
+              value={bookReason}
+              onChange={(val) => setBookReason(val)}
             />
           </div>
 

@@ -49,6 +49,7 @@ import {
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { DetailList, DetailItem, DetailGrid } from '@/components/ui/DetailList';
 import { Tabs } from '@/components/ui/Tabs';
+import { DictationButton } from '@/components/ui/DictationButton';
 import { formatDate, formatTime } from '@/lib/time';
 import { Printer } from 'lucide-react';
 import { handlePrint } from '@/lib/print';
@@ -237,6 +238,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
   const [bookingDate, setBookingDate] = useState(formatTodayDateString());
   const [bookingSlot, setBookingSlot] = useState('');
   const [bookingReason, setBookingReason] = useState('');
+  const bookingReasonInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [bookingError, setBookingError] = useState('');
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
 
@@ -1355,6 +1357,13 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-teal-500"
                 required
                 aria-required="true"
+                ref={bookingReasonInputRef}
+              />
+              <DictationButton
+                targetRef={bookingReasonInputRef}
+                value={bookingReason}
+                onChange={(val) => setBookingReason(val.slice(0, 300))}
+                maxLength={300}
               />
             </div>
 

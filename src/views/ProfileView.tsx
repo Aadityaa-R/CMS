@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import { DetailList, DetailItem, DetailGrid } from '@/components/ui/DetailList';
 import { Eye, EyeOff } from 'lucide-react';
 import { getRepository } from '@/data/storage';
@@ -15,6 +16,11 @@ import {
   getSessionSecurityText,
   validatePasswordPolicy,
 } from '@/lib/auth';
+import {
+  DICTATION_LANGUAGES,
+  getDefaultDictationLanguage,
+  saveDictationLanguage,
+} from '@/lib/dictation';
 
 interface ProfileViewProps {
   onNavigate?: (tab: string, subTab?: string) => void;
@@ -108,6 +114,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
   const [contactError, setContactError] = useState('');
   const [contactSuccess, setContactSuccess] = useState('');
   const [isSavingContact, setIsSavingContact] = useState(false);
+  const [dictationLanguage, setDictationLanguage] = useState<string>(() => getDefaultDictationLanguage());
 
   // Sync state if initialValues change from external update
   useEffect(() => {
@@ -661,6 +668,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Card: Dictation Preferences */}
+        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+          <CardHeader className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
+            <CardTitle className="text-lg font-bold">Dictation Preferences</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 flex-1 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div>
+                <Select
+                  label="Dictation language"
+                  value={dictationLanguage}
+                  onChange={(e) => {
+                    const newLang = e.target.value;
+                    setDictationLanguage(newLang);
+                    saveDictationLanguage(newLang);
+                  }}
+                  options={DICTATION_LANGUAGES}
+                />
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  Select your preferred language for voice dictation in consultation notes, prescriptions, and appointment booking reasons.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </DetailGrid>

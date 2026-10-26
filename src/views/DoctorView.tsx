@@ -13,6 +13,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTru
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { DetailList, DetailItem } from '@/components/ui/DetailList';
 import { Tabs } from '@/components/ui/Tabs';
+import { DictationButton } from '@/components/ui/DictationButton';
 import { formatLocalDate, parseLocalDateKey, formatDate, formatTime } from '@/lib/time';
 import {
   CheckCircle2,
@@ -606,6 +607,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [clinicalNotesText, setClinicalNotesText] = useState('');
   const [notesError, setNotesError] = useState('');
+  const clinicalNotesRef = useRef<HTMLTextAreaElement | null>(null);
+  const instructionsRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const getInstructionTargetRef = (idx: number): React.RefObject<HTMLInputElement | null> => {
+    return { current: instructionsRefs.current[idx] || null };
+  };
 
   // Handlers
   const handleStartConsultation = (apt: Appointment) => {
@@ -2767,6 +2773,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         value={item.instructions || ''}
                         onChange={(e) => handleUpdateItem(idx, 'instructions', e.target.value.slice(0, 200))}
                         placeholder="e.g. Take after breakfast with water"
+                        ref={(el) => { instructionsRefs.current[idx] = el; }}
+                        maxLength={200}
+                      />
+                      <DictationButton
+                        targetRef={getInstructionTargetRef(idx)}
+                        value={item.instructions || ''}
+                        onChange={(val) => handleUpdateItem(idx, 'instructions', val.slice(0, 200))}
+                        maxLength={200}
                       />
                     </div>
 
@@ -3111,6 +3125,15 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             placeholder="Document physical examination findings, treatment response, and follow-up plan..."
             rows={4}
             error={!clinicalNotesText.trim() && notesError ? 'Notes are required' : undefined}
+            ref={clinicalNotesRef}
+          />
+          <DictationButton
+            targetRef={clinicalNotesRef}
+            value={clinicalNotesText}
+            onChange={(val) => {
+              setClinicalNotesText(val);
+              if (notesError) setNotesError('');
+            }}
           />
         </form>
       </Modal>
