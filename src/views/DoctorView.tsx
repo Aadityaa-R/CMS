@@ -1865,17 +1865,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {selectedTab === 'patients' && (
         <Card>
-          <CardHeader
-            action={
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {filteredPatients.length} Patients in Care
-              </span>
-            }
-          >
-            <CardTitle>Patients Medical Directory</CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-3.5">
-            <div className="mb-3.5">
+          <CardContent className="p-5">
+            <div className="mb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="w-full sm:w-80">
                 <InteractiveSearchBar
                   value={patientSearchTerm}
@@ -1884,6 +1875,11 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                   placeholder="Search patients"
                 />
               </div>
+              {filteredPatients.length < doctorPatients.length && (
+                <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap">
+                  Showing {filteredPatients.length} of {doctorPatients.length}
+                </span>
+              )}
             </div>
             <div className="overflow-x-auto overflow-y-hidden max-w-full">
               <Table stackBelow="lg">
@@ -2048,12 +2044,22 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* ========================================================================= */}
       {selectedTab === 'prescriptions' && (
         <Card>
-          <CardHeader
-            action={
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {filteredPrescriptions.length} Prescriptions
-                </span>
+          <CardContent className="p-5">
+            <div className="mb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="w-full sm:w-80">
+                <InteractiveSearchBar
+                  value={prescriptionSearchTerm}
+                  onChange={handlePrescriptionSearchChange}
+                  suggestions={prescriptionSearchSuggestions}
+                  placeholder="Search prescriptions"
+                />
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                {filteredPrescriptions.length < doctorPrescriptions.length && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap">
+                    Showing {filteredPrescriptions.length} of {doctorPrescriptions.length}
+                  </span>
+                )}
                 {!isReadOnlyView && (
                   <Button
                     size="sm"
@@ -2064,20 +2070,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                     Issue Prescription
                   </Button>
                 )}
-              </div>
-            }
-          >
-            <CardTitle>e-Prescription Master Ledger</CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-3.5">
-            <div className="mb-3.5">
-              <div className="w-full sm:w-80">
-                <InteractiveSearchBar
-                  value={prescriptionSearchTerm}
-                  onChange={handlePrescriptionSearchChange}
-                  suggestions={prescriptionSearchSuggestions}
-                  placeholder="Search prescriptions"
-                />
               </div>
             </div>
             <div className="overflow-x-auto overflow-y-hidden max-w-full">

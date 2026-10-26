@@ -1541,11 +1541,13 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                   </div>
                 }
               >
-                <div>
-                  <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    Roles ({filteredRolesList.length})
-                  </CardTitle>
-                </div>
+                {filteredRolesList.length < modules.length ? (
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    Showing {filteredRolesList.length} of {modules.length}
+                  </span>
+                ) : (
+                  <div />
+                )}
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto overflow-y-hidden max-w-full">
@@ -2362,16 +2364,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         <div className="animate-fadeIn">
           {/* Managing Director Security Audit Ledger */}
           <Card>
-            <CardHeader
-              action={
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {filteredAuditLog.length} {filteredAuditLog.length === 1 ? 'Entry' : 'Entries'}
-                </span>
-              }
-            >
-              <CardTitle>Managing Director Security Audit Ledger</CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 pt-3.5">
+            <CardContent className="p-5">
               <div className="mb-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                 <div className="relative w-full sm:w-80">
                   <InteractiveSearchBar
@@ -2391,6 +2384,11 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
                     options={actionFilterOptions}
                   />
                 </div>
+                {filteredAuditLog.length < accessAuditLog.length && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap sm:ml-auto">
+                    Showing {filteredAuditLog.length} of {accessAuditLog.length}
+                  </span>
+                )}
               </div>
               <div className="overflow-x-auto overflow-y-hidden max-w-full">
                 <Table stackBelow="lg">

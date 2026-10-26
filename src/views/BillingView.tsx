@@ -26,7 +26,7 @@ import { formatLocalDate, formatDate, formatTime } from '@/lib/time';
 import { DetailList, DetailItem } from '@/components/ui/DetailList';
 import { Tabs } from '@/components/ui/Tabs';
 import { Invoice, Payment, PaymentMethod, Receipt } from '@/types/billing';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -502,18 +502,9 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
       <ErrorBoundary key="invoices-tab">
         {activeTab === 'invoices' && (
         <Card>
-          <CardHeader
-            action={
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {filteredInvoices.length} Invoices Listed
-              </span>
-            }
-          >
-            <CardTitle>Invoices</CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-3.5 space-y-4">
+          <CardContent className="p-5 space-y-4">
             {/* Filter controls */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex-1">
                 <InteractiveSearchBar
                   value={invoiceSearchTerm}
@@ -528,12 +519,13 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               <div className="w-full sm:w-56">
                 <Select
                   value={invoiceStatusFilter}
+                  placeholder="All statuses"
                   onChange={(e) => {
                     setInvoiceStatusFilter(e.target.value);
                     setInvoicesPage(1);
                   }}
                   options={[
-                    { value: '', label: 'All Statuses' },
+                    { value: '', label: 'All statuses' },
                     { value: 'unpaid', label: 'Unpaid' },
                     { value: 'partially_paid', label: 'Partially Paid' },
                     { value: 'paid', label: 'Paid' },
@@ -541,6 +533,11 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                   ]}
                 />
               </div>
+              {filteredInvoices.length < scopedInvoices.length && (
+                <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap">
+                  Showing {filteredInvoices.length} of {scopedInvoices.length}
+                </span>
+              )}
             </div>
 
             {/* Invoices Table */}
@@ -678,18 +675,9 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
       <ErrorBoundary key="payments-tab">
         {activeTab === 'payments' && (
         <Card>
-          <CardHeader
-            action={
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {filteredPayments.length} Payments Recorded
-              </span>
-            }
-          >
-            <CardTitle>Payments</CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-3.5 space-y-4">
+          <CardContent className="p-5 space-y-4">
             {/* Filter controls */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="w-full sm:w-60">
                 <DatePicker
                   value={paymentDateFilter}
@@ -703,12 +691,13 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
               <div className="w-full sm:w-56">
                 <Select
                   value={paymentMethodFilter}
+                  placeholder="All methods"
                   onChange={(e) => {
                     setPaymentMethodFilter(e.target.value);
                     setPaymentsPage(1);
                   }}
                   options={[
-                    { value: '', label: 'All Methods' },
+                    { value: '', label: 'All methods' },
                     { value: 'cash', label: 'Cash' },
                     { value: 'card', label: 'Card' },
                     { value: 'upi', label: 'UPI' },
@@ -726,6 +715,11 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
                     Clear Date
                   </Button>
                 </div>
+              )}
+              {filteredPayments.length < scopedPayments.length && (
+                <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap sm:ml-auto">
+                  Showing {filteredPayments.length} of {scopedPayments.length}
+                </span>
               )}
             </div>
 

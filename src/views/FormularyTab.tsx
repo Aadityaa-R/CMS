@@ -251,43 +251,42 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
 
       {/* Main Formulary Management Card */}
       <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <CardTitle>Formulary ({medicines.length})</CardTitle>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Approved clinical medication registry for outpatient electronic prescribing.
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={handleOpenAddModal}
-            className="mt-3.5"
-          >
-            Add Medicine
-          </Button>
-        </CardHeader>
-
         <CardContent className="p-4 sm:p-6 space-y-4">
-          {/* Search and Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Search by generic or brand name..."
-            />
-            <Select
-              value={selectedClass}
-              onChange={(e) => {
-                setSelectedClass(e.target.value);
-                setCurrentPage(1);
-              }}
-              options={DRUG_CLASS_OPTIONS}
-            />
+          {/* Search, Filters, and Actions */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search by generic or brand name..."
+              />
+              <Select
+                value={selectedClass}
+                onChange={(e) => {
+                  setSelectedClass(e.target.value);
+                  setCurrentPage(1);
+                }}
+                options={DRUG_CLASS_OPTIONS}
+              />
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {filteredMedicines.length < medicines.length && (
+                <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap">
+                  Showing {filteredMedicines.length} of {medicines.length}
+                </span>
+              )}
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus className="w-4 h-4" />}
+                onClick={handleOpenAddModal}
+              >
+                Add Medicine
+              </Button>
+            </div>
           </div>
 
           {/* Medicines Table */}

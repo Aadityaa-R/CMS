@@ -1020,9 +1020,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       {activeTab === 'prescriptions' && (
         <div className="space-y-6">
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle>Prescriptions</CardTitle>
-            </CardHeader>
             <div className="p-3 sm:p-0">
               <Table stackBelow="lg">
                 <TableHeader>
@@ -1112,9 +1109,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           </div>
 
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle>Invoices</CardTitle>
-            </CardHeader>
             <div className="p-3 sm:p-0">
               <Table stackBelow="lg">
                 <TableHeader>
@@ -1122,9 +1116,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                     <TableHead kind="short" priority={1}>Invoice #</TableHead>
                     <TableHead kind="short" priority={8}>Date</TableHead>
                     <TableHead kind="short" priority={7}>Doctor</TableHead>
-                    <TableHead kind="short" priority={5}>Total</TableHead>
-                    <TableHead kind="short" priority={6}>Paid</TableHead>
-                    <TableHead kind="short" priority={2}>Balance</TableHead>
+                    <TableHead kind="short" priority={5} className="text-right">Total</TableHead>
+                    <TableHead kind="short" priority={6} className="text-right">Paid</TableHead>
+                    <TableHead kind="short" priority={2} className="text-right">Balance</TableHead>
                     <TableHead kind="short" priority={4}>Status</TableHead>
                     <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
                   </TableRow>
@@ -1163,13 +1157,13 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                           <TableCell kind="short" priority={7} label="Doctor" className="text-slate-600 dark:text-slate-300">
                             {inv.doctorName || 'Consulting Physician'}
                           </TableCell>
-                          <TableCell kind="short" priority={5} label="Total" className="text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={5} label="Total" className="text-right text-slate-900 dark:text-slate-100">
                             {formatCurrency(total)}
                           </TableCell>
-                          <TableCell kind="short" priority={6} label="Paid" className="text-teal-600 dark:text-teal-400">
+                          <TableCell kind="short" priority={6} label="Paid" className="text-right text-teal-600 dark:text-teal-400">
                             {formatCurrency(paid)}
                           </TableCell>
-                          <TableCell kind="short" priority={2} label="Balance" className="font-semibold text-slate-900 dark:text-slate-100">
+                          <TableCell kind="short" priority={2} label="Balance" className="text-right font-semibold text-slate-900 dark:text-slate-100">
                             {formatCurrency(balance)}
                           </TableCell>
                           <TableCell kind="short" priority={4} label="Status" className="text-slate-600 dark:text-slate-300">
