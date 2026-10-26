@@ -230,7 +230,7 @@ export const AppLayout: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className={`h-screen flex flex-col font-sans antialiased overflow-hidden ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+      <div className={`h-screen flex flex-col font-sans antialiased overflow-hidden ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-[#fafafa] text-slate-800'}`}>
         {/* Skip to main content link for keyboard users */}
         <a
           href="#main-content"

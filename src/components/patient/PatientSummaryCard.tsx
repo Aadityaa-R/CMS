@@ -75,12 +75,12 @@ export const PatientSummaryCard = React.memo<PatientSummaryCardProps>(({
       <CardContent className="!p-0 p-0 flex-1 flex flex-col justify-start">
         <div className="flex-1 flex flex-col justify-start">
           {summaryPatient ? (
-            <div className="flex-1 flex flex-col justify-start divide-y divide-slate-100 dark:divide-slate-800 gap-4">
+            <div className="flex-1 flex flex-col justify-start gap-4">
               {/* Section 1: Previous Visit Record */}
               <div className="py-2.5 flex flex-col">
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
-                    Previous Visit Record
+                  <span className="text-fs-label font-semibold text-slate-500 dark:text-slate-400 block">
+                    Previous visit record
                   </span>
                   {!isPatientRole && patientVisits.length > 0 && (
                     <Button
@@ -190,8 +190,8 @@ export const PatientSummaryCard = React.memo<PatientSummaryCardProps>(({
 
               {/* Section 2: Clinical Profile */}
               <div className="py-2.5 flex flex-col">
-                <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
-                  Clinical Profile
+                <span className="text-fs-label font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">
+                  Clinical profile
                 </span>
                 <DetailList className="flex-1" reversed>
                   <DetailItem
@@ -215,8 +215,8 @@ export const PatientSummaryCard = React.memo<PatientSummaryCardProps>(({
 
               {/* Section 3: Demographics & Primary Care */}
               <div className="py-2.5 flex flex-col">
-                <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
-                  Demographics & Primary Care
+                <span className="text-fs-label font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">
+                  Demographics & primary care
                 </span>
                 <DetailList className="flex-1" reversed>
                   <DetailItem

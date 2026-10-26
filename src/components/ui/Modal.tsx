@@ -131,8 +131,8 @@ export const Modal: React.FC<ModalProps> = ({
 
   const containerPadding = fullScreenOnMobile ? 'p-0 sm:p-6' : 'p-4 sm:p-6';
   const dialogLayout = fullScreenOnMobile
-    ? `w-full h-full sm:h-auto rounded-none sm:rounded-xl my-0 sm:my-8 max-h-screen sm:max-h-[90vh] ${effectiveMinHeight} flex flex-col`
-    : `rounded-xl my-8 ${effectiveMinHeight} max-h-[88vh] flex flex-col`.trim();
+    ? `w-full h-full sm:h-auto rounded-none sm:rounded-lg my-0 sm:my-8 max-h-screen sm:max-h-[90vh] ${effectiveMinHeight} flex flex-col`
+    : `rounded-lg my-8 ${effectiveMinHeight} max-h-[88vh] flex flex-col`.trim();
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center ${containerPadding} overflow-y-auto modal-wrapper`}>
@@ -154,7 +154,7 @@ export const Modal: React.FC<ModalProps> = ({
         } z-10 modal-panel`}
       >
         <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 modal-header ${
-          overflowVisible ? 'rounded-t-xl' : ''
+          overflowVisible ? 'rounded-t-lg' : ''
         }`}>
           <div>
             <h3 id="modal-title" className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>

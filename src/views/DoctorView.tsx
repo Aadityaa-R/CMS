@@ -1374,15 +1374,15 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
       {/* Real-time Feedback Notification Banner */}
       {notification && (
-        <div role="status" aria-live="polite" className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 transition-all animate-fadeIn">
+        <div role="status" aria-live="polite" className="p-3.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between gap-3 transition-all animate-fadeIn">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
-            <span className="font-semibold text-teal-950 dark:text-teal-100">Consultation Desk:</span>
+            <CheckCircle2 className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+            <span className="font-semibold text-slate-900 dark:text-slate-100">Consultation Desk:</span>
             <span>{notification}</span>
           </div>
           <button
             onClick={() => setNotification(null)}
-            className="text-teal-700 dark:text-teal-400 hover:text-teal-900 dark:hover:text-teal-200 text-xs font-semibold cursor-pointer"
+            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 text-xs font-semibold cursor-pointer"
           >
             Dismiss
           </button>
@@ -1479,8 +1479,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
                       {/* Consultation Chief Complaint */}
                       <div className="space-y-1 flex-none">
-                        <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
-                          Chief Complaint & Reason for Visit
+                        <span className="text-fs-label font-semibold text-slate-500 dark:text-slate-400 block">
+                          Chief complaint & reason for visit
                         </span>
                         <p className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug">
                           {activeAppointment.reasonForVisit}
@@ -1502,8 +1502,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         }}
                       >
                         <div className="flex items-center justify-between gap-3 flex-none">
-                          <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
-                            Clinical Triage Vitals
+                          <span className="text-fs-label font-semibold text-slate-500 dark:text-slate-400 block">
+                            Clinical triage vitals
                           </span>
                           <div
                             role="status"
@@ -1514,7 +1514,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           </div>
                         </div>
 
-                        <div className="flex-1 flex flex-col justify-start divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-100 dark:border-slate-800">
+                        <div className="flex-1 flex flex-col justify-start space-y-1">
                           <VitalRow
                             id="vital-systolicBp"
                             label="BP Systolic (mmHg)"

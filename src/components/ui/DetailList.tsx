@@ -163,9 +163,9 @@ export const DetailItem = React.memo<DetailItemProps>(({
   const isThreeCol = listContext.columns === 3;
 
   const labelClass =
-    'text-fs-body font-bold text-[var(--text)] text-left select-none break-words min-w-0';
+    'text-fs-body font-semibold text-[var(--text)] text-left select-none break-words min-w-0';
 
-  const valueClass = `text-fs-body font-semibold text-[var(--text-grey-strong)] ${
+  const valueClass = `text-fs-body font-normal text-[var(--text-grey-strong)] ${
     isThreeCol ? 'text-right shrink-0' : 'text-left'
   } break-words min-w-0`;
 
@@ -230,7 +230,7 @@ export const DetailList: React.FC<DetailListProps> = ({
       <DetailListContext.Provider value={{ dense, paddingYRem: effectivePaddingYRem, columns: 1, reversed }}>
         <dl
           ref={containerRef}
-          className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
+          className={`space-y-1 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
           {...props}
         >
           {items
@@ -275,7 +275,7 @@ export const DetailList: React.FC<DetailListProps> = ({
         <dl
           ref={containerRef}
           data-testid="detail-list-two-col"
-          className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
+          className={`space-y-1 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
           {...props}
         >
           {pairs.map(([first, second], pairIdx) => (
@@ -284,8 +284,8 @@ export const DetailList: React.FC<DetailListProps> = ({
               data-testid="detail-pair-row"
               className={`detail-pair-row flex-auto max-h-[4.5rem] ${
                 isWide
-                  ? 'grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800'
-                  : 'grid grid-cols-1 divide-y divide-slate-100 dark:divide-slate-800'
+                  ? 'grid grid-cols-2 gap-4'
+                  : 'grid grid-cols-1 space-y-1'
               }`}
             >
               <div className="w-full min-w-0">{first}</div>
@@ -346,18 +346,18 @@ export const DetailList: React.FC<DetailListProps> = ({
       <dl
         ref={containerRef}
         data-testid="detail-list-three-col"
-        className={`divide-y divide-slate-100 dark:divide-slate-800 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
+        className={`space-y-1 text-left w-full detail-list-container flex-1 flex flex-col justify-start ${className}`}
         {...props}
       >
         {rows.map((row, rowIdx) => (
           <div
             key={rowIdx}
             data-testid="detail-three-col-row"
-            className={`detail-three-col-row flex-auto max-h-[4.5rem] grid ${
+            className={`detail-three-col-row flex-auto max-h-[4.5rem] grid gap-4 ${
               activeCols === 3
-                ? 'grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800'
+                ? 'grid-cols-3'
                 : activeCols === 2
-                ? 'grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800'
+                ? 'grid-cols-2'
                 : 'grid-cols-1'
             }`}
           >

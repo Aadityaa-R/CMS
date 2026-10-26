@@ -413,7 +413,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
                   </div>
                 )}
                 {contactSuccess && (
-                  <div className="p-3 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 text-xs rounded-lg">
+                  <div className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs rounded-lg">
                     {contactSuccess}
                   </div>
                 )}
@@ -565,7 +565,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
                 </div>
               )}
               {passwordSuccess && (
-                <div className="p-3 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 text-xs rounded-lg">
+                <div className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs rounded-lg">
                   {passwordSuccess}
                 </div>
               )}

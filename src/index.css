@@ -5,9 +5,10 @@
 
 /* Light-Mode Elevation Tokens (Milestone M10 Section 1) */
 :root {
+  --radius: 0.5rem;
   --nav-cell: 2.75rem;
   --page-max: 94rem;
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05);
   --shadow-modal: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
   --chart-primary: #0d9488;
   --chart-secondary: #475569;
@@ -20,10 +21,10 @@
   --text-muted: #64748b;
   --text-grey-strong: #475569;
 
-  /* Spacing Tokens (Milestone M11) */
-  --space-card: 1.25rem;
-  --space-section-gap: 1rem;
-  --space-card-gap: 1rem;
+  /* Spacing Tokens (Milestone M13) */
+  --space-card: 1.5rem;
+  --space-section-gap: 1.25rem;
+  --space-card-gap: 1.5rem;
   --space-row: 0.625rem;
   --space-modal: 1.5rem;
   --space-btn: 0.5rem 1rem;
@@ -80,12 +81,12 @@ html[data-display-size='large'] {
 
 .text-fs-kpi {
   font-size: var(--fs-kpi);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .text-fs-kpi-label {
   font-size: var(--fs-kpi-label);
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text-muted);
 }
 
@@ -320,10 +321,15 @@ html.dark {
   }
 
   body {
-    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+    background-color: #fafafa;
+    @apply text-slate-800 antialiased font-sans;
     font-size: var(--fs-body);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
   }
 
   .font-mono,

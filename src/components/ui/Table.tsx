@@ -309,7 +309,7 @@ export const TableHeader: React.FC<React.HTMLAttributes<HTMLTableSectionElement>
   const stackClass = stackBelow ? stackHeaderClasses[stackBelow] : '';
   return (
     <thead
-      className={`bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-fs-th tracking-wider whitespace-nowrap ${stackClass} ${className}`}
+      className={`bg-slate-50/90 dark:bg-slate-800/90 border-b border-[#eef0f3] dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold text-fs-th whitespace-nowrap ${stackClass} ${className}`}
       {...props}
     >
       {children}
@@ -332,7 +332,7 @@ export const TableBody: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> 
   const stackClass = stackBelow ? stackBodyClasses[stackBelow] : '';
   return (
     <tbody
-      className={`divide-y divide-slate-100 dark:divide-slate-800 ${stackClass} ${className}`}
+      className={`divide-y divide-[#eef0f3] dark:divide-slate-800 ${stackClass} ${className}`}
       {...props}
     >
       {children}
@@ -341,9 +341,9 @@ export const TableBody: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> 
 };
 
 const stackRowClasses: Record<StackBreakpoint, string> = {
-  sm: 'block sm:table-row bg-white dark:bg-slate-900 py-3.5 px-3 sm:p-0 border-b border-slate-100 dark:border-slate-800 last:border-b-0 space-y-2 sm:space-y-0',
-  md: 'block md:table-row bg-white dark:bg-slate-900 py-3.5 px-3 md:p-0 border-b border-slate-100 dark:border-slate-800 last:border-b-0 space-y-2 md:space-y-0',
-  lg: 'block lg:table-row bg-white dark:bg-slate-900 py-3.5 px-3 lg:p-0 border-b border-slate-100 dark:border-slate-800 last:border-b-0 space-y-2 lg:space-y-0',
+  sm: 'block sm:table-row bg-white dark:bg-slate-900 py-3.5 px-3 sm:p-0 border-b border-[#eef0f3] dark:border-slate-800 last:border-b-0 space-y-2 sm:space-y-0',
+  md: 'block md:table-row bg-white dark:bg-slate-900 py-3.5 px-3 md:p-0 border-b border-[#eef0f3] dark:border-slate-800 last:border-b-0 space-y-2 md:space-y-0',
+  lg: 'block lg:table-row bg-white dark:bg-slate-900 py-3.5 px-3 lg:p-0 border-b border-[#eef0f3] dark:border-slate-800 last:border-b-0 space-y-2 lg:space-y-0',
 };
 
 export const TableRow: React.FC<React.HTMLAttributes<HTMLTableRowElement>> = ({

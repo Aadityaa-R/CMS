@@ -1,9 +1,10 @@
 /**
- * Milestone M11 Spacing Tokens
- * 1. Spacing tokens in one place:
- *    - card padding 1.25rem
- *    - gap between sections 1rem
- *    - gap between stacked cards 1rem
+ * Milestone M13 Spacing & Shape Tokens
+ * 1. Shape and space:
+ *    - radius 0.5rem (cards, inputs, buttons, modals)
+ *    - card padding 1.5rem
+ *    - gap between cards 1.5rem
+ *    - gap between sections 1.25rem
  *    - detail and table row padding 0.625rem
  *    - modal padding 1.5rem
  *    - button padding 0.5rem 1rem
@@ -11,9 +12,10 @@
  */
 
 export const SPACING = {
-  cardPadding: '1.25rem',
-  sectionGap: '1rem',
-  cardGap: '1rem',
+  radius: '0.5rem',
+  cardPadding: '1.5rem',
+  sectionGap: '1.25rem',
+  cardGap: '1.5rem',
   rowPadding: '0.625rem',
   modalPadding: '1.5rem',
   buttonPaddingY: '0.5rem',
@@ -22,4 +24,3 @@ export const SPACING = {
 } as const;
 
 export default SPACING;
-

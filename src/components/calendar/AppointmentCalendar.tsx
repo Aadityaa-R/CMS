@@ -439,7 +439,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
                       key={dStr}
                       className={`p-2 text-xs font-semibold border-r border-slate-200 dark:border-slate-700 ${
                         isDayToday
-                          ? 'text-teal-700 dark:text-teal-400 bg-teal-50/50 dark:bg-teal-950/20'
+                          ? 'text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800'
                           : 'text-slate-700 dark:text-slate-200'
                       }`}
                     >
@@ -752,7 +752,7 @@ const CellContent: React.FC<CellContentProps> = ({
       <button
         type="button"
         onClick={() => onBookSlot(cell.doctorId, cell.date, cell.slotTime)}
-        className="w-full text-left p-1.5 rounded-lg border border-teal-200 dark:border-teal-800/60 bg-teal-50/50 dark:bg-teal-950/20 hover:bg-teal-100 dark:hover:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-[var(--fs-label)] font-medium transition-colors"
+        className="w-full text-left p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-[var(--fs-label)] font-normal transition-colors"
       >
         Free
       </button>

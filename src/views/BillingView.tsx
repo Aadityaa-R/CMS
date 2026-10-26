@@ -446,7 +446,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
     <div className="space-y-6">
       {/* Toast Notification */}
       {notification && (
-        <div role="status" aria-live="polite" className="p-3.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 text-xs flex items-center justify-between gap-3 transition-all animate-fadeIn">
+        <div role="status" aria-live="polite" className="p-3.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between gap-3 transition-all animate-fadeIn">
           {notification}
         </div>
       )}
