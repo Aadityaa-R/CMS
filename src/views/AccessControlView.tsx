@@ -16,6 +16,7 @@ import { Filter, ArrowLeft, X } from 'lucide-react';
 import { User, UserRole, StaffAccessRecord, StaffPermission, AccessModule, StandardCapability } from '@/types';
 import { PendingStaffApproval, INITIAL_PENDING_APPROVALS } from '@/data/mockData';
 import { getAccessItem } from '@/data/accessCatalog';
+import { formatDoctorName } from '@/lib/doctorNames';
 import {
   isAdmin,
   hasCapability,
@@ -296,6 +297,74 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     return list;
   }, [modules, staffAccessList]);
 
+  const getMemberDisplayName = React.useCallback(
+    (mid: string): string => {
+      const staff = staffAccessList.find(
+        (s) => s.id === mid || s.badgeNumber === mid || s.staffName === mid
+      );
+      if (staff) {
+        if (
+          staff.role === 'doctor' ||
+          staff.staffTitle?.toLowerCase().includes('physician') ||
+          staff.staffTitle?.toLowerCase().includes('doctor') ||
+          staff.staffName.toLowerCase().startsWith('dr.')
+        ) {
+          return formatDoctorName(staff.staffName);
+        }
+        return staff.staffName;
+      }
+      const doc = doctors.find((d) => d.id === mid || d.name === mid);
+      if (doc) return formatDoctorName(doc.name);
+      if (mid.toLowerCase().startsWith('dr.') || mid.toLowerCase().startsWith('dr ')) {
+        return formatDoctorName(mid);
+      }
+      return mid;
+    },
+    [staffAccessList, doctors]
+  );
+
+  const renderAccessesList = (accessIds: StandardCapability[]) => {
+    if (!accessIds || accessIds.length === 0) {
+      return <span className="text-xs text-slate-400 dark:text-slate-500 italic">No accesses</span>;
+    }
+    const labels = accessIds.map((aid) => getAccessItem(aid)?.label || aid);
+    const fullText = labels.join(', ');
+    const displayText =
+      labels.length > 4
+        ? `${labels.slice(0, 3).join(', ')}, +${labels.length - 3} more`
+        : fullText;
+
+    return (
+      <div
+        className="line-clamp-3 text-xs text-slate-700 dark:text-slate-300 break-words"
+        title={fullText}
+      >
+        {displayText}
+      </div>
+    );
+  };
+
+  const renderMembersList = (memberIds: string[]) => {
+    if (!memberIds || memberIds.length === 0) {
+      return <span className="text-xs text-slate-400 dark:text-slate-500 italic">No members</span>;
+    }
+    const names = memberIds.map((mid) => getMemberDisplayName(mid));
+    const fullText = names.join(', ');
+    const displayText =
+      names.length > 4
+        ? `${names.slice(0, 3).join(', ')}, +${names.length - 3} more`
+        : fullText;
+
+    return (
+      <div
+        className="line-clamp-3 text-xs text-slate-700 dark:text-slate-300 break-words"
+        title={fullText}
+      >
+        {displayText}
+      </div>
+    );
+  };
+
   const filteredRolesList = React.useMemo(() => {
     const query = roleSearchTerm.trim().toLowerCase();
     if (!query) return modules;
@@ -304,17 +373,24 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       const descMatch = mod.description?.toLowerCase().includes(query);
       const accessMatch = mod.accessIds.some((aid) => {
         const item = getAccessItem(aid);
-        return aid.toLowerCase().includes(query) || (item && item.label.toLowerCase().includes(query));
+        const label = item?.label || aid;
+        return aid.toLowerCase().includes(query) || label.toLowerCase().includes(query);
       });
       const memberMatch = mod.memberIds.some((mid) => {
+        const memberDisplayName = getMemberDisplayName(mid);
         const staff = staffAccessList.find(
           (s) => s.id === mid || s.badgeNumber === mid || s.staffName === mid
         );
-        return staff?.staffName.toLowerCase().includes(query) || mid.toLowerCase().includes(query);
+        return (
+          mid.toLowerCase().includes(query) ||
+          memberDisplayName.toLowerCase().includes(query) ||
+          (staff?.staffName && staff.staffName.toLowerCase().includes(query)) ||
+          (staff?.badgeNumber && staff.badgeNumber.toLowerCase().includes(query))
+        );
       });
       return Boolean(nameMatch || descMatch || accessMatch || memberMatch);
     });
-  }, [modules, roleSearchTerm, staffAccessList]);
+  }, [modules, roleSearchTerm, staffAccessList, getMemberDisplayName]);
 
   // Active role filter: '' (unselected) | 'doc' | 'receptionist' | 'patient'
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('');
@@ -1536,42 +1612,50 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
               <CardContent className="p-0">
                 <div className="overflow-x-auto overflow-y-hidden max-w-full">
-                  <Table stackBelow="lg">
+                  <Table stackBelow="md">
                     <TableHeader>
                       <TableRow>
-                        <TableHead kind="short" priority={1} className="w-5/12">Role</TableHead>
-                        <TableHead kind="short" priority={4} className="w-2/12">Accesses</TableHead>
-                        <TableHead kind="short" priority={2} className="w-2/12">Members</TableHead>
-                        <TableHead kind="short" priority={3} isActions className="w-3/12 text-right">Actions</TableHead>
+                        <TableHead kind="text" priority={1} className="w-1/3 min-w-[14rem] !p-4 !align-top text-left">
+                          Role
+                        </TableHead>
+                        <TableHead kind="text" priority={4} className="w-1/3 min-w-[14rem] !p-4 !align-top text-left">
+                          Accesses
+                        </TableHead>
+                        <TableHead kind="text" priority={2} className="w-1/3 min-w-[14rem] !p-4 !align-top text-left">
+                          Members
+                        </TableHead>
+                        <TableHead isActions priority={3} width="fit" className="w-px whitespace-nowrap !p-4 !align-top text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredRolesList.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="py-6 text-center text-xs text-slate-500">
+                          <TableCell colSpan={4} className="!p-4 py-8 text-center text-xs text-slate-500">
                             No roles found matching query.
                           </TableCell>
                         </TableRow>
                       ) : (
                         filteredRolesList.slice((modulesPage - 1) * 10, modulesPage * 10).map((mod) => (
                           <TableRow key={mod.id}>
-                            <TableCell label="Role" isPrimary kind="short" priority={1} className="w-5/12">
-                              <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                            <TableCell label="Role" isPrimary kind="text" priority={1} className="w-1/3 min-w-[14rem] !p-4 !align-top">
+                              <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                                 {mod.name}
                               </div>
                               {mod.description && (
-                                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5 max-w-xl">
+                                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-1 break-words">
                                   {mod.description}
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell label="Accesses" kind="short" priority={4} className="w-2/12 text-xs text-slate-700 dark:text-slate-300">
-                              {mod.accessIds.length} {mod.accessIds.length === 1 ? 'access' : 'accesses'}
+                            <TableCell label="Accesses" kind="text" priority={4} className="w-1/3 min-w-[14rem] !p-4 !align-top">
+                              {renderAccessesList(mod.accessIds)}
                             </TableCell>
-                            <TableCell label="Members" kind="short" priority={2} className="w-2/12 text-xs text-slate-700 dark:text-slate-300">
-                              {mod.memberIds.length} {mod.memberIds.length === 1 ? 'member' : 'members'}
+                            <TableCell label="Members" kind="text" priority={2} className="w-1/3 min-w-[14rem] !p-4 !align-top">
+                              {renderMembersList(mod.memberIds)}
                             </TableCell>
-                            <TableCell label="Actions" isActions fullWidthOnStack kind="short" priority={3} className="w-3/12 text-right">
+                            <TableCell label="Actions" isActions fullWidthOnStack priority={3} width="fit" className="w-px whitespace-nowrap !p-4 !align-top text-right">
                               <RowActions
                                 actions={[
                                   {
