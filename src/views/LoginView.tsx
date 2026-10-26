@@ -484,7 +484,7 @@ export const LoginView: React.FC = () => {
         {/* Crossfaded Section Below Header (reserves minimum height to prevent layout pop) */}
         <div
           data-testid="content-below-logo"
-          className={`mt-8 sm:mx-auto sm:w-full sm:max-w-5xl z-10 px-4 sm:px-0 min-h-[460px] ${
+          className={`mt-8 sm:mx-auto sm:w-full sm:max-w-xl z-10 px-4 sm:px-0 min-h-[460px] ${
             isIntroActive ? (isCardVisible ? 'login-intro-card' : 'opacity-0') : ''
           }`}
           inert={isIntroActive && !isCardInteractive ? '' : undefined}

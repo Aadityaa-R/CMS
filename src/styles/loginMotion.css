@@ -164,7 +164,7 @@
   will-change: transform, opacity;
 }
 
-/* ECG Horizontal Gradient Mask across central card column (card max-w-5xl 1024px + 24px each side = 1072px) */
+/* ECG Horizontal Gradient Mask across central card column (card max-w-xl 576px + 24px each side = 624px) */
 .ecg-background-container {
   position: absolute;
   top: 0;
@@ -178,19 +178,19 @@
   mask-image: linear-gradient(
     to right,
     black 0%,
-    black calc(50% - 536px),
-    transparent calc(50% - 512px),
-    transparent calc(50% + 512px),
-    black calc(50% + 536px),
+    black calc(50% - 312px),
+    transparent calc(50% - 288px),
+    transparent calc(50% + 288px),
+    black calc(50% + 312px),
     black 100%
   );
   -webkit-mask-image: linear-gradient(
     to right,
     black 0%,
-    black calc(50% - 536px),
-    transparent calc(50% - 512px),
-    transparent calc(50% + 512px),
-    black calc(50% + 536px),
+    black calc(50% - 312px),
+    transparent calc(50% - 288px),
+    transparent calc(50% + 288px),
+    black calc(50% + 312px),
     black 100%
   );
 }
