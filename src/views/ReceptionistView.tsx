@@ -1344,15 +1344,42 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
 
   return (
     <div className="space-y-6">
-      {/* Header and Quick Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Front Desk and Patient Reception Workstation
-          </h1>
+      {/* Notification Banner */}
+      {notification && (
+        <div role="status" aria-live="polite" className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100">
+          {notification}
         </div>
+      )}
+
+      {/* Navigation Tabs and Quick Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <Tabs
+          ariaLabel="Reception Tabs"
+          tabs={[
+            { id: 'lounge', label: 'Waiting Lounge' },
+            { id: 'appointments', label: 'Appointments' },
+            { id: 'calendar', label: 'Calendar' },
+            { id: 'patients', label: 'Patient Directory' },
+            { id: 'registry', label: 'Intake Registry' },
+          ]}
+          activeTab={selectedTab}
+          onChange={(id) => {
+            setSelectedTab(id);
+            try {
+              const url = new URL(window.location.href);
+              if (id === 'calendar') {
+                url.searchParams.set('tab', 'calendar');
+              } else {
+                url.searchParams.set('tab', 'receptionist');
+                url.searchParams.set('subtab', id);
+              }
+              window.history.replaceState(null, '', url.toString());
+            } catch {}
+            document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+        />
         {!isMD && (
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 shrink-0">
             <Button
               size="sm"
               variant="outline"
@@ -1379,40 +1406,6 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           </div>
         )}
       </div>
-
-      {/* Notification Banner */}
-      {notification && (
-        <div role="status" aria-live="polite" className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100">
-          {notification}
-        </div>
-      )}
-
-      {/* Workstation Navigation Tabs */}
-      <Tabs
-        ariaLabel="Reception Tabs"
-        tabs={[
-          { id: 'lounge', label: 'Waiting Lounge' },
-          { id: 'appointments', label: 'Appointments' },
-          { id: 'calendar', label: 'Calendar' },
-          { id: 'patients', label: 'Patient Directory' },
-          { id: 'registry', label: 'Intake Registry' },
-        ]}
-        activeTab={selectedTab}
-        onChange={(id) => {
-          setSelectedTab(id);
-          try {
-            const url = new URL(window.location.href);
-            if (id === 'calendar') {
-              url.searchParams.set('tab', 'calendar');
-            } else {
-              url.searchParams.set('tab', 'receptionist');
-              url.searchParams.set('subtab', id);
-            }
-            window.history.replaceState(null, '', url.toString());
-          } catch {}
-          document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-        }}
-      />
 
       {/* Interactive Search Bar across views */}
       <div className="max-w-md">

@@ -464,17 +464,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
         </div>
       )}
 
-      {/* Header & Tabs */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Staff Time, Attendance, and Leave
-            </h1>
-          </div>
-        </div>
-
-        {/* Navigation Tabs */}
+      {/* Navigation Tabs */}
         <Tabs
           ariaLabel="Attendance Tabs"
           tabs={[
@@ -494,7 +484,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
             document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
           }}
         />
-      </div>
 
       {/* TAB 1: MY ATTENDANCE */}
       {activeSubTab === 'my_attendance' && (

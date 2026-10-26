@@ -1090,13 +1090,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-3.5 pb-4">
-      {/* Header: Title & Date Range */}
+      {/* Controls: Navigation Tabs & Date Range */}
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between no-print">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            Dashboard
-          </h1>
-        </div>
+        {qualifiesForDailySummary ? (
+          <Tabs
+            ariaLabel="Dashboard Tabs"
+            tabs={[
+              { id: 'overview', label: 'Overview' },
+              { id: 'daily_summary', label: 'Daily Summary' },
+            ]}
+            activeTab={activeTab}
+            onChange={(id) => {
+              setActiveTab(id as 'overview' | 'daily_summary');
+              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+            }}
+          />
+        ) : <div />}
 
         {/* Date Range Selector (Overview tab only) */}
         {activeTab === 'overview' && !isPatient && (
@@ -1112,25 +1121,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
         )}
       </div>
-
-
-      {/* Navigation Tabs: Overview & Daily Summary */}
-      {qualifiesForDailySummary && (
-        <div className="no-print">
-          <Tabs
-            ariaLabel="Dashboard Tabs"
-            tabs={[
-              { id: 'overview', label: 'Overview' },
-              { id: 'daily_summary', label: 'Daily Summary' },
-            ]}
-            activeTab={activeTab}
-            onChange={(id) => {
-              setActiveTab(id as 'overview' | 'daily_summary');
-              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-            }}
-          />
-        </div>
-      )}
 
       {/* ============================================================== */}
       {/* TAB 1: OVERVIEW                                                */}

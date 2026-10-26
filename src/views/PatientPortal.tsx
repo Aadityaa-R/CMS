@@ -612,21 +612,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
     );
   }
 
-  const getTabTitle = (): string => {
-    switch (activeTab) {
-      case 'appointments':
-        return 'My Health Portal';
-      case 'records':
-        return 'My Records';
-      case 'prescriptions':
-        return 'My Prescriptions';
-      case 'invoices':
-        return 'My Invoices';
-      default:
-        return 'My Health Portal';
-    }
-  };
-
   return (
     <div className="space-y-6 pb-12">
       {notice && (
@@ -642,12 +627,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
         </div>
       )}
 
-      {/* Page Title */}
-      <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-        <h1 id="portal-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
-          {getTabTitle()}
-        </h1>
-      </div>
+
 
       {/* Navigation Tabs */}
       <Tabs

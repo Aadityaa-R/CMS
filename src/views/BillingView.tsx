@@ -451,15 +451,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
         </div>
       )}
 
-      {/* Header & Tabs */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Billing
-          </h1>
-        </div>
-
-        {/* Sub-Workstation Navigation Tabs */}
+      {/* Sub-Workstation Navigation Tabs */}
         <Tabs
           ariaLabel="Billing Tabs"
           tabs={[
@@ -478,7 +470,6 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'invoices
             document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
           }}
         />
-      </div>
 
       {/* Daily Collections Plain-Text Summary Card */}
       <Card>
