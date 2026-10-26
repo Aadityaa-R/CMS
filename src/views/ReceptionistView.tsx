@@ -15,6 +15,7 @@ import { Tabs } from '@/components/ui/Tabs';
 import { DictationButton } from '@/components/ui/DictationButton';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { AppointmentCalendar } from '@/components/calendar/AppointmentCalendar';
+import { WalkInSheet } from '@/components/calendar/WalkInSheet';
 import { Activity, Pill, Calendar } from 'lucide-react';
 import { useNotifications } from '@/context/NotificationContext';
 import { Appointment, Patient, AccessAuditLogEntry } from '@/types';
@@ -1522,9 +1523,12 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           )}
 
           {calendarSubTab === 'walk_in_sheet' && (
-            <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
-              Walk-in Sheet
-            </div>
+            <WalkInSheet
+              appointments={rawAppointments}
+              doctors={doctors}
+              todayStr={todayStr}
+              onOpenWalkInModal={() => setIsWalkInOpen(true)}
+            />
           )}
         </div>
       )}
