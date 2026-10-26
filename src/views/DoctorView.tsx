@@ -42,6 +42,7 @@ import {
   getAssignedDoctorId,
   hasCapability,
   isAdmin,
+  canPrescribe,
   canCancelPrescription,
   isDoctorStaff,
 } from '@/lib/permissions';
@@ -1572,6 +1573,61 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           />
                         </div>
                       </div>
+
+                      {/* Consultation Desk Actions Footer */}
+                      {!isReadOnlyView && (
+                        <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-[#eef0f3] dark:border-slate-800 flex-none">
+                          {activeAppointment.status === 'checked_in' && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={async () => {
+                                await flushSave();
+                                handleStartConsultation(activeAppointment);
+                              }}
+                            >
+                              Start Consultation
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={async () => {
+                              await flushSave();
+                              setClinicalNotesText(activeAppointment.notes || '');
+                              setIsNotesModalOpen(true);
+                            }}
+                          >
+                            Record Consultation Notes
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={!canPrescribe(currentUser, activePatient.id, patientAssignments, modules)}
+                            onClick={async () => {
+                              await flushSave();
+                              handleOpenPrescriptionModal(activePatient.id);
+                            }}
+                          >
+                            Prescribe
+                          </Button>
+                          {activeAppointment.status !== 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              disabled={vitalsStatus === 'saving' || vitalsStatus === 'invalid'}
+                              onClick={async () => {
+                                const ok = await flushSave();
+                                if (ok) {
+                                  setIsConcludeModalOpen(true);
+                                }
+                              }}
+                            >
+                              Conclude Visit
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
