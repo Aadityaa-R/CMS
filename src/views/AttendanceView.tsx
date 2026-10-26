@@ -767,14 +767,12 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
             const leaveCount = todayStaff.filter((s) => s.onLeave).length;
 
             return (
-              <Card className="p-6">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                  <KpiCard label="On Shift Today" value={onShiftCount} />
-                  <KpiCard label="Clocked In" value={clockedInCount} />
-                  <KpiCard label="Late Arrivals" value={lateCount} />
-                  <KpiCard label="On Approved Leave" value={leaveCount} />
-                </div>
-              </Card>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <KpiCard label="On Shift Today" value={onShiftCount} />
+                <KpiCard label="Clocked In" value={clockedInCount} />
+                <KpiCard label="Late Arrivals" value={lateCount} />
+                <KpiCard label="On Approved Leave" value={leaveCount} />
+              </div>
             );
           })()}
 

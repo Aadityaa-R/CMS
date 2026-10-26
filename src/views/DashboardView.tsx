@@ -1225,17 +1225,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </p>
             </Card>
           ) : (
-            <Card className="p-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                {metrics1.summaryFigures.map((fig) => (
-                  <KpiCard
-                    key={fig.label}
-                    label={fig.label}
-                    value={fig.formattedValue ?? fig.value}
-                  />
-                ))}
-              </div>
-            </Card>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {metrics1.summaryFigures.map((fig) => (
+                <KpiCard
+                  key={fig.label}
+                  label={fig.label}
+                  value={fig.formattedValue ?? fig.value}
+                />
+              ))}
+            </div>
           )}
 
           {/* Front Desk Today Operational Widget */}

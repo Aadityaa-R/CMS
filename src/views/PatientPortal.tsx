@@ -697,8 +697,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             )}
           </div>
           {/* Patient Summary Metric Cards: Separate individual cards */}
-          <Card className="p-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
               label="Next Appointment"
               value={
@@ -719,8 +718,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               label="Visits this year"
               value={visitsThisYear}
             />
-            </div>
-          </Card>
+          </div>
 
           {/* Upcoming Appointments Table */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
