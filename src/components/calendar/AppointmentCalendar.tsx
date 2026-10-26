@@ -32,6 +32,8 @@ export interface AppointmentCalendarProps {
   onCheckIn: (apt: Appointment) => void;
   onCancel: (apt: Appointment, reason: string) => boolean;
   onReschedule: (apt: Appointment, newDate: string, newTime: string) => boolean;
+  externalSelectedAppointment?: Appointment | null;
+  onCloseExternalAppointment?: () => void;
 }
 
 function getStartOfWeek(dateStr: string): string {
@@ -56,6 +58,8 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   onCheckIn,
   onCancel,
   onReschedule,
+  externalSelectedAppointment,
+  onCloseExternalAppointment,
 }) => {
   // Real-time minute ticker (updates current time line without animation)
   const [now, setNow] = useState(() => new Date());
@@ -179,6 +183,18 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const [cancelReasonInput, setCancelReasonInput] = useState<string>('');
   const [cancelError, setCancelError] = useState<string>('');
 
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedAppointment(null);
+    onCloseExternalAppointment?.();
+  };
+
+  useEffect(() => {
+    if (externalSelectedAppointment) {
+      handleOpenBookedCell(externalSelectedAppointment);
+    }
+  }, [externalSelectedAppointment]);
+
   const handleOpenBookedCell = (apt: Appointment) => {
     setSelectedAppointment(apt);
     setIsRescheduling(false);
@@ -237,7 +253,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const handlePerformCheckIn = () => {
     if (!selectedAppointment) return;
     onCheckIn(selectedAppointment);
-    setIsDetailModalOpen(false);
+    handleCloseDetailModal();
   };
 
   const handleConfirmCancel = () => {
@@ -248,7 +264,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     }
     const success = onCancel(selectedAppointment, cancelReasonInput.trim());
     if (success) {
-      setIsDetailModalOpen(false);
+      handleCloseDetailModal();
     }
   };
 
@@ -260,7 +276,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     }
     const success = onReschedule(selectedAppointment, rescheduleDate, rescheduleTime);
     if (success) {
-      setIsDetailModalOpen(false);
+      handleCloseDetailModal();
     }
   };
 
@@ -556,7 +572,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       {selectedAppointment && isDetailModalOpen && (
         <Modal
           isOpen={isDetailModalOpen}
-          onClose={() => setIsDetailModalOpen(false)}
+          onClose={handleCloseDetailModal}
           title="Appointment Details"
         >
           <div className="space-y-4">
@@ -723,7 +739,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsDetailModalOpen(false)}
+                  onClick={handleCloseDetailModal}
                 >
                   Close
                 </Button>

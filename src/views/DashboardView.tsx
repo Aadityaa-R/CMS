@@ -17,7 +17,18 @@ import { ClaimRequest } from '@/types/storage';
 import {
   isAdmin,
   hasCapability,
+  canRegisterPatient,
+  canCheckIn,
+  canBookAppointment,
 } from '@/lib/permissions';
+import { getWalkInWaitMinutes } from '@/lib/calendar';
+import { formatDoctorName } from '@/lib/doctorNames';
+import { balanceDue } from '@/lib/billing';
+import {
+  RegisterPatientModal,
+  WalkInCheckInModal,
+  BookAppointmentModal,
+} from '@/components/calendar/FrontDeskModals';
 import {
   canViewWidget,
   getDashboardLayout,
@@ -546,6 +557,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     updateAppointmentStatus,
     cancelAppointmentAction,
     rescheduleAppointmentAction,
+    registerPatient,
+    checkInWalkIn,
+    bookAppointment,
   } = useClinic();
   const { invoices: billingInvoices, payments: billingPayments } = useBilling();
   const {
@@ -570,13 +584,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   const [calendarSubTab, setCalendarSubTab] = useState<'appointments' | 'walk_ins'>('appointments');
 
+  // Minute ticker for front desk live updates
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Front desk modal states
+  const [isWalkInOpen, setIsWalkInOpen] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isBookOpen, setIsBookOpen] = useState(false);
+  const [bookPrefill, setBookPrefill] = useState<{ doctorId?: string; date?: string; time?: string }>({});
+  const [selectedWaitingApt, setSelectedWaitingApt] = useState<Appointment | null>(null);
+
+  // Access checks
+  const canUserCheckIn = useMemo(() => canCheckIn(currentUser, modules) || isAdmin(currentUser, modules), [currentUser, modules]);
+  const canUserRegister = useMemo(() => canRegisterPatient(currentUser, modules) || isAdmin(currentUser, modules), [currentUser, modules]);
+  const canUserBook = useMemo(() => canBookAppointment(currentUser, modules) || isAdmin(currentUser, modules), [currentUser, modules]);
+  const hasPaymentRec = useMemo(() => hasCapability(currentUser, 'paymentRecording', modules), [currentUser, modules]);
+  const hasBillingOrAdmin = useMemo(() => hasPaymentRec || isAdmin(currentUser, modules), [hasPaymentRec, currentUser, modules]);
+
   useEffect(() => {
     if (dashboardLayout === 'front_desk_only') {
       setActiveTab('front_desk');
     }
   }, [dashboardLayout]);
 
-  const handleBookSlotFromCalendar = (_docId: string, _date: string, _time: string) => {};
+  const handleBookSlotFromCalendar = (docId: string, date: string, time: string) => {
+    setBookPrefill({ doctorId: docId, date, time });
+    setIsBookOpen(true);
+  };
 
   const handleCheckInFromCalendar = (apt: Appointment) => {
     updateAppointmentStatus(apt.id, 'checked_in');
@@ -597,6 +637,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       return res.success;
     }
     return true;
+  };
+
+  const handleOpenWaitingDetails = (apt: Appointment) => {
+    setCalendarSubTab('appointments');
+    setSelectedWaitingApt({ ...apt });
   };
 
   // Overview date range & buckets
@@ -709,9 +754,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       modules,
       dateRange,
       chartBucket: chartBucket1,
-      now: new Date(),
+      now,
     });
   }, [
+    now,
     patients,
     appointments,
     billingInvoices,
@@ -728,6 +774,80 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     dateRange,
     chartBucket1,
   ]);
+
+  // Front Desk Summary line text from existing selectors
+  const frontDeskSummaryText = useMemo(() => {
+    const fd = metrics1.frontDeskToday;
+    const waiting = fd?.waiting ?? 0;
+    const inConsultation = fd?.inConsultation ?? 0;
+    const bookedToday = fd?.bookedToday ?? 0;
+    const checkedInToday = fd?.checkedInToday ?? 0;
+    let text = `${waiting} waiting, ${inConsultation} in consultation, ${bookedToday} booked today, ${checkedInToday} checked in`;
+    if (hasPaymentRec && fd?.outstandingNow) {
+      text += `, Outstanding: ${fd.outstandingNow}`;
+    }
+    return text;
+  }, [metrics1.frontDeskToday, hasPaymentRec]);
+
+  // Front Desk Waiting now patients (checked-in not yet in consultation, ordered by token)
+  const waitingNowPatients = useMemo(() => {
+    return appointments
+      .filter((a) => {
+        if (a.status !== 'checked_in') return false;
+        const checkInDate = a.checkedInAt ? a.checkedInAt.slice(0, 10) : '';
+        const aptDate = a.dateTime ? a.dateTime.slice(0, 10) : '';
+        return checkInDate === todayStr || aptDate === todayStr;
+      })
+      .sort((a, b) => (a.tokenNumber || 0) - (b.tokenNumber || 0));
+  }, [appointments, todayStr]);
+
+  // Front Desk Needs attention items
+  const frontDeskNeedsAttentionItems = useMemo(() => {
+    const items: Array<{ id: string; label: string; count: number; onReview: () => void }> = [];
+
+    const needsRescheduleCount = appointments.filter(
+      (a) => a.needsReschedule === true && a.status !== 'cancelled' && a.status !== 'completed'
+    ).length;
+    if (needsRescheduleCount > 0) {
+      items.push({
+        id: 'reschedule',
+        label: 'Needs rescheduling',
+        count: needsRescheduleCount,
+        onReview: () => onNavigate?.('role_receptionist', 'appointments'),
+      });
+    }
+
+    const pendingClaimsCount = claimRequests.filter((c) => c.status === 'pending').length;
+    if (pendingClaimsCount > 0) {
+      items.push({
+        id: 'claims',
+        label: 'Account link requests',
+        count: pendingClaimsCount,
+        onReview: () => onNavigate?.('role_receptionist', 'registry'),
+      });
+    }
+
+    if (hasBillingOrAdmin) {
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const unpaid30Count = billingInvoices.filter((inv) => {
+        if (inv.status === 'void' || inv.status === 'paid') return false;
+        const dStr = inv.issuedAt || '';
+        const d = new Date(dStr.length === 10 ? `${dStr}T12:00:00` : dStr);
+        return !isNaN(d.getTime()) && d.getTime() < thirtyDaysAgo.getTime() && balanceDue(inv, billingPayments) > 0;
+      }).length;
+
+      if (unpaid30Count > 0) {
+        items.push({
+          id: 'unpaid_30',
+          label: 'Unpaid invoices over 30 days',
+          count: unpaid30Count,
+          onReview: () => onNavigate?.('admin_billing', 'invoices'),
+        });
+      }
+    }
+
+    return items;
+  }, [appointments, claimRequests, hasBillingOrAdmin, now, billingInvoices, billingPayments, onNavigate]);
 
   // Compute metrics for Chart 2
   const metrics2 = useMemo(() => {
@@ -1195,18 +1315,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           {/* Summary line and actions row on top */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              <span id="front-desk-summary-line">Front Desk Operations</span>
+              <span id="front-desk-summary-line">{frontDeskSummaryText}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="primary">
-                Walk-in Check-In
-              </Button>
-              <Button size="sm" variant="outline">
-                Register Patient
-              </Button>
-              <Button size="sm" variant="outline">
-                Book Appointment
-              </Button>
+              {canUserCheckIn && (
+                <Button size="sm" variant="primary" onClick={() => setIsWalkInOpen(true)}>
+                  Walk-in Check-In
+                </Button>
+              )}
+              {canUserRegister && (
+                <Button size="sm" variant="outline" onClick={() => setIsRegisterOpen(true)}>
+                  Register Patient
+                </Button>
+              )}
+              {canUserBook && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setBookPrefill({});
+                    setIsBookOpen(true);
+                  }}
+                >
+                  Book Appointment
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1227,7 +1360,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
 
               <div className="p-4 flex-1 min-h-0 overflow-y-auto">
-                {calendarSubTab === 'appointments' ? (
+                <div className={calendarSubTab === 'appointments' ? '' : 'hidden'}>
                   <AppointmentCalendar
                     doctors={doctors}
                     appointments={appointments}
@@ -1241,15 +1374,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     onCheckIn={handleCheckInFromCalendar}
                     onCancel={handleCancelFromCalendar}
                     onReschedule={handleRescheduleFromCalendar}
+                    externalSelectedAppointment={selectedWaitingApt}
+                    onCloseExternalAppointment={() => setSelectedWaitingApt(null)}
                   />
-                ) : (
+                </div>
+                <div className={calendarSubTab === 'walk_ins' ? '' : 'hidden'}>
                   <WalkInSheet
                     appointments={appointments}
                     doctors={doctors}
                     todayStr={todayStr}
-                    onOpenWalkInModal={() => {}}
+                    onOpenWalkInModal={() => setIsWalkInOpen(true)}
                   />
-                )}
+                </div>
               </div>
             </Card>
 
@@ -1260,7 +1396,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   Waiting now
                 </h3>
                 <div id="waiting-now-list" className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
-                  <div className="py-4 text-center text-slate-400 italic">No patients waiting</div>
+                  {waitingNowPatients.length === 0 ? (
+                    <div className="py-2 text-center text-slate-400 italic">No patients waiting</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {waitingNowPatients.slice(0, 6).map((apt) => {
+                        const waitMin = getWalkInWaitMinutes(apt, now);
+                        return (
+                          <div
+                            key={apt.id}
+                            className="text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between"
+                          >
+                            <div className="truncate">
+                              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                #{apt.tokenNumber || '—'}{' '}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenWaitingDetails(apt)}
+                                className="font-semibold text-slate-900 dark:text-slate-100 hover:text-teal-600 dark:hover:text-teal-400 underline underline-offset-2 cursor-pointer"
+                              >
+                                {apt.patientName}
+                              </button>
+                              <span>
+                                , {formatDoctorName(apt.doctorName || 'Assigned Physician')}, {waitMin} min
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => onNavigate?.('role_receptionist', 'checkin')}
+                          className="text-xs text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
+                        >
+                          View all
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
 
@@ -1269,11 +1444,67 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   Needs attention
                 </h3>
                 <div id="needs-attention-list" className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
-                  <div className="py-4 text-center text-slate-400 italic">Nothing needs attention.</div>
+                  {frontDeskNeedsAttentionItems.length === 0 ? (
+                    <div className="py-2 text-center text-slate-400 italic">Nothing needs attention.</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {frontDeskNeedsAttentionItems.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between text-xs py-1">
+                          <span className="text-slate-700 dark:text-slate-300">
+                            <strong className="text-slate-900 dark:text-slate-100 font-semibold">{item.count}</strong> {item.label}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={item.onReview}
+                            className="text-xs text-teal-600 dark:text-teal-400 hover:underline font-medium cursor-pointer"
+                          >
+                            Review
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Card>
             </div>
           </div>
+
+          {/* Front Desk Modals */}
+          <RegisterPatientModal
+            isOpen={isRegisterOpen}
+            onClose={() => setIsRegisterOpen(false)}
+            currentUser={currentUser}
+            registerPatient={registerPatient}
+          />
+          <WalkInCheckInModal
+            isOpen={isWalkInOpen}
+            onClose={() => setIsWalkInOpen(false)}
+            patients={patients}
+            doctors={doctors}
+            patientAssignments={patientAssignments}
+            billingInvoices={billingInvoices}
+            billingPayments={billingPayments}
+            todayStr={todayStr}
+            currentUser={currentUser}
+            registerPatient={registerPatient}
+            checkInWalkIn={checkInWalkIn}
+          />
+          <BookAppointmentModal
+            isOpen={isBookOpen}
+            onClose={() => setIsBookOpen(false)}
+            initialDoctorId={bookPrefill.doctorId}
+            initialDate={bookPrefill.date}
+            initialTime={bookPrefill.time}
+            patients={patients}
+            doctors={doctors}
+            patientAssignments={patientAssignments}
+            appointments={appointments}
+            shifts={shifts}
+            leaves={leaveRequests}
+            todayStr={todayStr}
+            currentUser={currentUser}
+            bookAppointment={bookAppointment}
+          />
         </div>
       )}
 
