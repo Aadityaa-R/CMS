@@ -4,6 +4,7 @@ import { useClinic } from '@/context/ClinicContext';
 import { useSidebar } from '@/context/SidebarContext';
 import { shouldCloseSidebarOnClick } from '@/lib/sidebarOutsideClick';
 import { hasCapability, canViewBilling } from '@/lib/permissions';
+import { hasDashboardAccess } from '@/lib/navigation';
 import {
   LayoutDashboard,
   UserCheck,
@@ -145,9 +146,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ];
     }
 
-    const items: NavItem[] = [
-      { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    ];
+    const items: NavItem[] = [];
+
+    if (hasDashboardAccess(currentRole, currentUser, modules)) {
+      items.push({ id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> });
+    }
 
     if (hasCapability(currentUser, 'consultationWorkstation', modules)) {
       items.push({ id: 'doctor', label: 'Consultation Desk', icon: <Stethoscope className="w-4 h-4" /> });
@@ -264,8 +267,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {navItems.map((item) => {
             const isActive =
               activeTab === item.id ||
-              (item.id === 'overview' && activeTab === 'appointments') ||
-              (item.id === 'billing' && activeTab === 'invoices');
+              (item.id === 'overview' && (activeTab === 'appointments' || activeTab === 'dashboard')) ||
+              (item.id === 'billing' && activeTab === 'invoices') ||
+              (item.id === 'dashboard' && (activeTab === 'dashboard' || !activeTab));
             return (
               <button
                 key={item.id}

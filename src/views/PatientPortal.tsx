@@ -614,6 +614,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
 
   return (
     <div className="space-y-6 pb-12">
+      <h1 id="portal-heading" tabIndex={-1} className="sr-only">
+        My Health Portal
+      </h1>
       {notice && (
         <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between gap-3">
           <span>{notice}</span>

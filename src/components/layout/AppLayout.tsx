@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Navbar } from './Navbar';
@@ -19,6 +19,15 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isAdmin, hasCapability, canViewBilling } from '@/lib/permissions';
+import { UserRole } from '@/types';
+import { focusIfKeyboard } from '@/lib/inputMode';
+import {
+  hasExistingValidSession,
+  clearRememberedLastPage,
+  getAllowedNavItems,
+  isTabAllowed,
+  getPageTitle,
+} from '@/lib/navigation';
 import { useClinic } from '@/context/ClinicContext';
 
 import { PageContainer } from './PageContainer';
@@ -34,7 +43,7 @@ export const AppLayout: React.FC = () => {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
       if (tabParam === 'profile') return 'profile';
-      if (tabParam) return tabParam;
+      if (hasExistingValidSession() && tabParam) return tabParam;
       return currentRole === 'patient' ? 'overview' : 'dashboard';
     } catch {
       return currentRole === 'patient' ? 'overview' : 'dashboard';
@@ -50,6 +59,85 @@ export const AppLayout: React.FC = () => {
   });
   const [isProfileDirty, setIsProfileDirty] = useState<boolean>(false);
   const [pendingNav, setPendingNav] = useState<{ tab: string; subTab?: string } | null>(null);
+
+  const prevAuthRef = useRef<boolean>(isAuthenticated);
+  const hasValidatedInitialSessionRef = useRef<boolean>(false);
+  const prevRoleRef = useRef<UserRole>(currentRole);
+
+  // Sync activeTab on auth state transition and session initial load
+  useEffect(() => {
+    if (!isAuthenticated) {
+      hasValidatedInitialSessionRef.current = false;
+      prevAuthRef.current = false;
+      return;
+    }
+
+    const targetAudience = currentRole === 'patient' ? 'patient' : 'staff';
+    const allowed = getAllowedNavItems(currentRole, currentUser, modules);
+    const hasDashboard = currentRole === 'patient' || allowed.some((item) => item.id === 'dashboard');
+    const defaultLandingTab = currentRole === 'patient'
+      ? 'dashboard'
+      : (hasDashboard ? 'dashboard' : (allowed[0]?.id || 'dashboard'));
+
+    // 1. Fresh sign-in: set active page to Dashboard, clear remembered last page, keep only ?as=<audience>&tab=dashboard
+    if (!prevAuthRef.current) {
+      prevAuthRef.current = true;
+      hasValidatedInitialSessionRef.current = true;
+      clearRememberedLastPage();
+      setActiveTab(defaultLandingTab);
+      setActiveSubTab(undefined);
+      try {
+        const pathname = window.location.pathname.startsWith('/profile') ? '/' : window.location.pathname;
+        window.history.replaceState(
+          {},
+          '',
+          `${pathname}?as=${targetAudience}&tab=dashboard`
+        );
+      } catch {}
+      return;
+    }
+
+    // Role switch while authenticated
+    if (prevRoleRef.current !== currentRole) {
+      prevRoleRef.current = currentRole;
+      clearRememberedLastPage();
+      setActiveTab(defaultLandingTab);
+      setActiveSubTab(undefined);
+      try {
+        const pathname = window.location.pathname.startsWith('/profile') ? '/' : window.location.pathname;
+        window.history.replaceState(
+          {},
+          '',
+          `${pathname}?as=${targetAudience}&tab=dashboard`
+        );
+      } catch {}
+      return;
+    }
+
+    // 2. Existing valid session on initial load / refresh
+    if (!hasValidatedInitialSessionRef.current) {
+      hasValidatedInitialSessionRef.current = true;
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+
+      if (tabParam && isTabAllowed(tabParam, currentRole, currentUser, modules)) {
+        // Keep the page named in ?tab= if allowed (refresh stays on the same page)
+        setActiveTab(tabParam);
+      } else {
+        // When there is no ?tab= or it is not allowed, open the Dashboard
+        setActiveTab(defaultLandingTab);
+        setActiveSubTab(undefined);
+        try {
+          const pathname = window.location.pathname.startsWith('/profile') ? '/' : window.location.pathname;
+          window.history.replaceState(
+            {},
+            '',
+            `${pathname}?as=${targetAudience}&tab=dashboard`
+          );
+        } catch {}
+      }
+    }
+  }, [isAuthenticated, currentRole, currentUser, modules]);
 
   // Sync URL history state on popstate
   useEffect(() => {
@@ -68,22 +156,46 @@ export const AppLayout: React.FC = () => {
           setActiveSubTab(undefined);
           return;
         }
-        setActiveTab(tabParam || (currentRole === 'patient' ? 'overview' : 'dashboard'));
+        if (tabParam && isTabAllowed(tabParam, currentRole, currentUser, modules)) {
+          setActiveTab(tabParam);
+        } else {
+          setActiveTab(currentRole === 'patient' ? 'overview' : 'dashboard');
+        }
         setActiveSubTab(params.get('subtab') || undefined);
       } catch {}
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [currentRole]);
+  }, [currentRole, currentUser, modules]);
 
-  // Whenever the active role changes upon login, reset the active module tab to default landing tab
+  // Sync document page title
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.get('tab')) {
-      setActiveTab(currentRole === 'patient' ? 'overview' : 'dashboard');
-      setActiveSubTab(undefined);
+    if (!isAuthenticated) {
+      document.title = 'Clinic Management System (CMS)';
+      return;
     }
-  }, [currentRole]);
+    const title = getPageTitle(activeTab, currentRole);
+    document.title = `${title} | Clinic Management System (CMS)`;
+  }, [activeTab, currentRole, isAuthenticated]);
+
+  // Heading focus following normal navigation rules (focusIfKeyboard)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const timer = setTimeout(() => {
+      const mainEl = document.getElementById('main-content');
+      const heading =
+        document.getElementById(`${activeTab}-heading`) ||
+        document.getElementById('portal-heading') ||
+        document.getElementById('dashboard-heading') ||
+        document.getElementById('profile-heading') ||
+        document.querySelector('main h1, main h2, main [role="heading"]') ||
+        mainEl;
+      if (heading) {
+        focusIfKeyboard(heading as HTMLElement);
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [activeTab, isAuthenticated]);
 
   // If a user was viewing access_control and their admin capability was revoked, return immediately to dashboard
   useEffect(() => {
@@ -148,6 +260,18 @@ export const AppLayout: React.FC = () => {
     if (mainEl && typeof mainEl.scrollTo === 'function') {
       mainEl.scrollTo({ top: 0, behavior: 'instant' });
     }
+    setTimeout(() => {
+      const heading =
+        document.getElementById(`${tab}-heading`) ||
+        document.getElementById('portal-heading') ||
+        document.getElementById('dashboard-heading') ||
+        document.getElementById('profile-heading') ||
+        document.querySelector('main h1, main h2, main [role="heading"]') ||
+        mainEl;
+      if (heading) {
+        focusIfKeyboard(heading as HTMLElement);
+      }
+    }, 50);
   };
 
   const handleNavigate = (tab: string, subTab?: string) => {

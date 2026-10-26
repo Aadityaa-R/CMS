@@ -1090,6 +1090,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-3.5 pb-4">
+      <h1 id="dashboard-heading" tabIndex={-1} className="sr-only">
+        Dashboard
+      </h1>
       {/* Controls: Navigation Tabs & Date Range */}
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between no-print">
         {qualifiesForDailySummary ? (

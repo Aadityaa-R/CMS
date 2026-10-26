@@ -29,6 +29,7 @@ import { STORAGE_KEY_PREFIX, SESSION_STORAGE_KEY } from '@/lib/authConstants';
 import { Patient } from '@/types';
 import { formatLocalDate } from '@/lib/time';
 import { login as authServiceLogin, audienceOf, AuthService, type AuthAudience, type LoginResultCode, type LoginResult } from '@/services/authService';
+import { clearRememberedLastPage } from '@/lib/navigation';
 export { audienceOf, AuthService, type AuthAudience, type LoginResultCode, type LoginResult };
 import { PendingStaffApproval } from '@/data/mockData';
 
@@ -166,11 +167,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (params.get('view') === 'signup' || params.get('view') === 'login' || params.get('demo') !== null) {
         return false;
       }
-      if (params.get('tab') || (params.get('role') && params.get('role') !== 'staff')) return true;
+      if (sessionStorage.getItem('cms_authenticated') === 'true') {
+        return true;
+      }
+      const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (isSessionValid(session).valid) {
+          return true;
+        }
+      }
+      if (params.get('role') && params.get('role') !== 'staff' && DEMO_USERS[params.get('role')!]) {
+        return true;
+      }
     } catch {
       // fallback
     }
-    return sessionStorage.getItem('cms_authenticated') === 'true';
+    return false;
   });
 
   // Staff Access Records state
@@ -569,6 +582,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (result.success) {
       const completeNavigation = () => {
+        const targetAudience = audienceOf(result.matchedRole || audience);
+        clearRememberedLastPage();
+        try {
+          const pathname = window.location.pathname.startsWith('/profile') ? '/' : window.location.pathname;
+          window.history.replaceState(
+            {},
+            '',
+            `${pathname}?as=${targetAudience}&tab=dashboard`
+          );
+        } catch {}
         setIsAuthenticated(true);
       };
       if (!options?.deferAuth) {
@@ -948,6 +971,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isRoleSuspended(targetRole)) {
         return;
       }
+      const targetAudience = targetRole === 'patient' ? 'patient' : 'staff';
+      clearRememberedLastPage();
+      try {
+        const pathname = window.location.pathname.startsWith('/profile') ? '/' : window.location.pathname;
+        window.history.replaceState(
+          {},
+          '',
+          `${pathname}?as=${targetAudience}&tab=dashboard`
+        );
+      } catch {}
       setCurrentRole(targetRole);
       setActiveUserKey(targetRole);
       sessionStorage.setItem('cms_auth_user_key', targetRole);
@@ -961,6 +994,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = (notice?: string) => {
     setIsAuthenticated(false);
+    clearRememberedLastPage();
     try {
       localStorage.removeItem(SESSION_STORAGE_KEY);
       if (notice) {
