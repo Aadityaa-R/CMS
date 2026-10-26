@@ -16,6 +16,30 @@ export interface ModalProps {
   bodyClassName?: string;
 }
 
+let modalScrollLockCount = 0;
+
+const lockScroll = () => {
+  modalScrollLockCount++;
+  if (modalScrollLockCount === 1) {
+    document.body.style.overflow = 'hidden';
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+      mainContent.style.overflow = 'hidden';
+    }
+  }
+};
+
+const unlockScroll = () => {
+  modalScrollLockCount = Math.max(0, modalScrollLockCount - 1);
+  if (modalScrollLockCount === 0) {
+    document.body.style.overflow = '';
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+      mainContent.style.overflow = '';
+    }
+  }
+};
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -37,13 +61,7 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       openerRef.current = document.activeElement as HTMLElement;
-      document.body.style.overflow = 'hidden';
-
-      const mainContent = document.getElementById('main-content');
-      const prevMainOverflow = mainContent ? mainContent.style.overflow : '';
-      if (mainContent) {
-        mainContent.style.overflow = 'hidden';
-      }
+      lockScroll();
 
       const timer = setTimeout(() => {
         if (modalRef.current) {
@@ -102,10 +120,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       return () => {
         clearTimeout(timer);
-        document.body.style.overflow = 'unset';
-        if (mainContent) {
-          mainContent.style.overflow = prevMainOverflow;
-        }
+        unlockScroll();
         window.removeEventListener('keydown', handleKeyDown);
         if (openerRef.current) {
           focusIfKeyboard(openerRef.current);

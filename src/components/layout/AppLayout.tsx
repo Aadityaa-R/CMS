@@ -248,7 +248,7 @@ export const AppLayout: React.FC = () => {
           className="sr-only"
         />
 
-        <div className="flex-1 flex overflow-hidden h-full">
+        <div className="flex-1 flex overflow-hidden h-full min-h-0">
           {/* Dynamic Role-specific Sidebar: strictly provides only this role's modules */}
           <Sidebar
             activeTab={activeTab}
@@ -256,7 +256,7 @@ export const AppLayout: React.FC = () => {
           />
 
           {/* Content Shell */}
-          <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
             {/* Header with profile & logout - pinned at top */}
             <Navbar
               activeTab={activeTab}
@@ -264,7 +264,7 @@ export const AppLayout: React.FC = () => {
             />
 
             {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
-            <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto [scrollbar-gutter:stable] w-full p-3 sm:px-6 sm:pt-3.5 sm:pb-6 outline-none">
+            <main id="main-content" tabIndex={-1} className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] w-full p-3 sm:px-6 sm:pt-3.5 sm:pb-6 outline-none">
               <ErrorBoundary>
                 <PageContainer>
                   {renderActiveView()}
