@@ -14,6 +14,7 @@ import { Table, ColumnDef } from '@/components/ui/Table';
 import { Tabs } from '@/components/ui/Tabs';
 import { DictationButton } from '@/components/ui/DictationButton';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
+import { AppointmentCalendar } from '@/components/calendar/AppointmentCalendar';
 import { Activity, Pill, Calendar } from 'lucide-react';
 import { useNotifications } from '@/context/NotificationContext';
 import { Appointment, Patient, AccessAuditLogEntry } from '@/types';
@@ -49,12 +50,15 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   const normalizeTab = (tabId: string): string => {
     if (tabId === 'overview' || tabId === 'lounge') return 'lounge';
     if (tabId === 'checkin' || tabId === 'appointments') return 'appointments';
+    if (tabId === 'calendar') return 'calendar';
     if (tabId === 'registration' || tabId === 'patients') return 'patients';
     if (tabId === 'intake' || tabId === 'registry') return 'registry';
     return tabId;
   };
 
   const [selectedTab, setSelectedTab] = useState<string>(normalizeTab(activeTab));
+  const [calendarSubTab, setCalendarSubTab] = useState<'appointment_calendar' | 'walk_in_sheet'>('appointment_calendar');
+  const attendanceData = useMemo(() => getStoredAttendanceData(), []);
 
   useEffect(() => {
     if (activeTab) {
@@ -77,6 +81,8 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     checkInWalkIn,
     bookAppointment,
     updateAppointmentStatus,
+    cancelAppointmentAction,
+    rescheduleAppointmentAction,
   } = useClinic();
   const { invoices: billingInvoices, payments: billingPayments } = useBilling();
 
@@ -97,6 +103,40 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
     setTimeout(() => {
       setNotification(null);
     }, 4500);
+  };
+
+  const handleBookSlotFromCalendar = (docId: string, date: string, time: string) => {
+    setBookDoctorId(docId);
+    setBookDate(date);
+    setBookTime(time);
+    setBookError('');
+    setIsBookOpen(true);
+  };
+
+  const handleCheckInFromCalendar = (apt: Appointment) => {
+    handleCheckInBooked(apt);
+  };
+
+  const handleCancelFromCalendar = (apt: Appointment, reason: string): boolean => {
+    const res = cancelAppointmentAction(apt.id, currentUser, reason);
+    if (res.success) {
+      showNotification(`Appointment cancelled: ${reason}`);
+      return true;
+    } else {
+      showNotification(res.error || 'Failed to cancel appointment.');
+      return false;
+    }
+  };
+
+  const handleRescheduleFromCalendar = (apt: Appointment, newDate: string, newTime: string): boolean => {
+    const res = rescheduleAppointmentAction(apt.id, newDate, newTime, currentUser);
+    if (res.success) {
+      showNotification(`Appointment rescheduled to ${newDate} at ${newTime}.`);
+      return true;
+    } else {
+      showNotification(res.error || 'Failed to reschedule appointment.');
+      return false;
+    }
   };
 
   // Search and Filter State
@@ -1352,12 +1392,23 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         tabs={[
           { id: 'lounge', label: 'Waiting Lounge' },
           { id: 'appointments', label: 'Appointments' },
+          { id: 'calendar', label: 'Calendar' },
           { id: 'patients', label: 'Patient Directory' },
           { id: 'registry', label: 'Intake Registry' },
         ]}
         activeTab={selectedTab}
         onChange={(id) => {
           setSelectedTab(id);
+          try {
+            const url = new URL(window.location.href);
+            if (id === 'calendar') {
+              url.searchParams.set('tab', 'calendar');
+            } else {
+              url.searchParams.set('tab', 'receptionist');
+              url.searchParams.set('subtab', id);
+            }
+            window.history.replaceState(null, '', url.toString());
+          } catch {}
           document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
         }}
       />
@@ -1435,6 +1486,46 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
               />
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* TAB: CALENDAR */}
+      {selectedTab === 'calendar' && (
+        <div className="space-y-4">
+          <div className="border-b border-slate-200 dark:border-slate-800">
+            <Tabs
+              ariaLabel="Calendar Subtabs"
+              tabs={[
+                { id: 'appointment_calendar', label: 'Appointment Calendar' },
+                { id: 'walk_in_sheet', label: 'Walk-in Sheet' },
+              ]}
+              activeTab={calendarSubTab}
+              onChange={(id) => setCalendarSubTab(id as 'appointment_calendar' | 'walk_in_sheet')}
+            />
+          </div>
+
+          {calendarSubTab === 'appointment_calendar' && (
+            <AppointmentCalendar
+              doctors={doctors}
+              appointments={rawAppointments}
+              shifts={attendanceData.shifts}
+              leaves={attendanceData.leaves}
+              attendanceRecords={attendanceData.records}
+              currentUser={currentUser}
+              modules={modules}
+              todayStr={todayStr}
+              onBookSlot={handleBookSlotFromCalendar}
+              onCheckIn={handleCheckInFromCalendar}
+              onCancel={handleCancelFromCalendar}
+              onReschedule={handleRescheduleFromCalendar}
+            />
+          )}
+
+          {calendarSubTab === 'walk_in_sheet' && (
+            <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+              Walk-in Sheet
+            </div>
+          )}
         </div>
       )}
 

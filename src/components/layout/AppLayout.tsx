@@ -190,13 +190,15 @@ export const AppLayout: React.FC = () => {
       return <DashboardView onNavigate={handleNavigate} />;
     }
 
-    if (activeTab === 'role_receptionist' || activeTab === 'receptionist') {
+    if (activeTab === 'role_receptionist' || activeTab === 'receptionist' || activeTab === 'calendar') {
       if (
         hasCapability(currentUser, 'patientRegistration', modules) ||
         hasCapability(currentUser, 'patientCheckIn', modules) ||
-        hasCapability(currentUser, 'paymentRecording', modules)
+        hasCapability(currentUser, 'booking', modules) ||
+        hasCapability(currentUser, 'paymentRecording', modules) ||
+        isAdmin(currentUser, modules)
       ) {
-        return <ReceptionistView activeTab={activeSubTab || 'overview'} />;
+        return <ReceptionistView activeTab={activeTab === 'calendar' ? 'calendar' : (activeSubTab || 'overview')} />;
       }
       return <DashboardView onNavigate={handleNavigate} />;
     }
