@@ -9,7 +9,8 @@ export type DashboardWidgetId =
   | 'needs_attention'
   | 'staff_presence'
   | 'my_attendance'
-  | 'front_desk_today';
+  | 'front_desk_today'
+  | 'front_desk';
 
 export interface DashboardWidgetDef {
   id: DashboardWidgetId;
@@ -93,6 +94,12 @@ export const DASHBOARD_WIDGET_REGISTRY: DashboardWidgetDef[] = [
     requiredAccesses: [], // Available to all staff accounts
     description: "Personal daily clock-in/out status, duty hours worked, and shift time tracker.",
   },
+  {
+    id: 'front_desk',
+    title: 'Front Desk',
+    requiredAccesses: ['patientCheckIn', 'patientRegistration'],
+    description: 'Front desk calendar dashboard with appointment calendar, walk-in sheet, and queue summaries.',
+  },
 ];
 
 /**
@@ -133,4 +140,32 @@ export function getVisibleWidgets(
 ): DashboardWidgetDef[] {
   if (!user || user.role === 'patient') return [];
   return DASHBOARD_WIDGET_REGISTRY.filter((w) => canViewWidget(w.id, user, modules));
+}
+
+export type DashboardLayoutMode = 'front_desk_only' | 'standard_with_front_desk' | 'standard';
+
+export function getDashboardLayout(
+  user: User | null | undefined,
+  modules?: AccessModule[]
+): DashboardLayoutMode {
+  if (!user || user.role === 'patient') return 'standard';
+
+  const hasFrontDeskAccess =
+    hasCapability(user, 'patientCheckIn', modules) ||
+    hasCapability(user, 'patientRegistration', modules);
+
+  const hasAdminOrClinical =
+    isAdmin(user, modules) ||
+    hasCapability(user, 'administrativeAccess', modules) ||
+    hasCapability(user, 'consultationWorkstation', modules);
+
+  if (hasFrontDeskAccess && !hasAdminOrClinical) {
+    return 'front_desk_only';
+  }
+
+  if (hasFrontDeskAccess) {
+    return 'standard_with_front_desk';
+  }
+
+  return 'standard';
 }

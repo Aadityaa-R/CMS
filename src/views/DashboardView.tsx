@@ -20,7 +20,11 @@ import {
 } from '@/lib/permissions';
 import {
   canViewWidget,
+  getDashboardLayout,
 } from '@/lib/dashboardWidgets';
+import { AppointmentCalendar } from '@/components/calendar/AppointmentCalendar';
+import { WalkInSheet } from '@/components/calendar/WalkInSheet';
+import { Appointment } from '@/types';
 import {
   calculateDashboardMetrics,
   calculateDailySummary,
@@ -540,6 +544,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     patientAssignments = [],
     modules,
     updateAppointmentStatus,
+    cancelAppointmentAction,
+    rescheduleAppointmentAction,
   } = useClinic();
   const { invoices: billingInvoices, payments: billingPayments } = useBilling();
   const {
@@ -548,8 +554,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     leaveRequests,
   } = useAttendance();
 
-  // Navigation tab state: "overview" or "daily_summary"
-  const [activeTab, setActiveTab] = useState<'overview' | 'daily_summary'>('overview');
+  const todayStr = useMemo(() => toLocalDateKey(new Date()), []);
+
+  const dashboardLayout = useMemo(() => {
+    return getDashboardLayout(currentUser, modules);
+  }, [currentUser, modules]);
+
+  // Navigation tab state: "front_desk" | "overview" | "daily_summary"
+  const [activeTab, setActiveTab] = useState<'front_desk' | 'overview' | 'daily_summary'>(() => {
+    const layout = getDashboardLayout(currentUser, modules);
+    return layout === 'front_desk_only' || layout === 'standard_with_front_desk'
+      ? 'front_desk'
+      : 'overview';
+  });
+
+  const [calendarSubTab, setCalendarSubTab] = useState<'appointments' | 'walk_ins'>('appointments');
+
+  useEffect(() => {
+    if (dashboardLayout === 'front_desk_only') {
+      setActiveTab('front_desk');
+    }
+  }, [dashboardLayout]);
+
+  const handleBookSlotFromCalendar = (_docId: string, _date: string, _time: string) => {};
+
+  const handleCheckInFromCalendar = (apt: Appointment) => {
+    updateAppointmentStatus(apt.id, 'checked_in');
+  };
+
+  const handleCancelFromCalendar = (apt: Appointment, reason: string): boolean => {
+    if (cancelAppointmentAction) {
+      const res = cancelAppointmentAction(apt.id, currentUser, reason);
+      return res.success;
+    }
+    updateAppointmentStatus(apt.id, 'cancelled');
+    return true;
+  };
+
+  const handleRescheduleFromCalendar = (apt: Appointment, newDate: string, newTime: string): boolean => {
+    if (rescheduleAppointmentAction) {
+      const res = rescheduleAppointmentAction(apt.id, newDate, newTime, currentUser);
+      return res.success;
+    }
+    return true;
+  };
 
   // Overview date range & buckets
   const [dateRange, setDateRange] = useState<DateRangePreset>('this_month');
@@ -1095,7 +1143,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       </h1>
       {/* Controls: Navigation Tabs & Date Range */}
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between no-print">
-        {qualifiesForDailySummary ? (
+        {dashboardLayout === 'standard_with_front_desk' ? (
+          <Tabs
+            ariaLabel="Dashboard Tabs"
+            tabs={[
+              { id: 'front_desk', label: 'Front Desk' },
+              { id: 'overview', label: 'Overview' },
+              ...(qualifiesForDailySummary ? [{ id: 'daily_summary', label: 'Daily Summary' }] : []),
+            ]}
+            activeTab={activeTab}
+            onChange={(id) => {
+              setActiveTab(id as 'front_desk' | 'overview' | 'daily_summary');
+              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+            }}
+          />
+        ) : dashboardLayout === 'standard' && qualifiesForDailySummary ? (
           <Tabs
             ariaLabel="Dashboard Tabs"
             tabs={[
@@ -1104,7 +1166,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             ]}
             activeTab={activeTab}
             onChange={(id) => {
-              setActiveTab(id as 'overview' | 'daily_summary');
+              setActiveTab(id as 'front_desk' | 'overview' | 'daily_summary');
               document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
             }}
           />
@@ -1124,6 +1186,96 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
         )}
       </div>
+
+      {/* ============================================================== */}
+      {/* TAB: FRONT DESK LAYOUT                                         */}
+      {/* ============================================================== */}
+      {activeTab === 'front_desk' && (
+        <div className="space-y-4">
+          {/* Summary line and actions row on top */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              <span id="front-desk-summary-line">Front Desk Operations</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="primary">
+                Walk-in Check-In
+              </Button>
+              <Button size="sm" variant="outline">
+                Register Patient
+              </Button>
+              <Button size="sm" variant="outline">
+                Book Appointment
+              </Button>
+            </div>
+          </div>
+
+          {/* Main Calendar Card + 20rem Right Column from 80rem up (xl) */}
+          <div className="flex flex-col xl:flex-row gap-4 items-start">
+            {/* Calendar card taking the main column */}
+            <Card className="flex-1 min-w-0 w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl overflow-hidden flex flex-col min-h-[32rem]">
+              <div className="border-b border-slate-200 dark:border-slate-800 px-4 pt-2">
+                <Tabs
+                  ariaLabel="Front Desk Calendar Subtabs"
+                  tabs={[
+                    { id: 'appointments', label: 'Appointments' },
+                    { id: 'walk_ins', label: 'Walk-ins' },
+                  ]}
+                  activeTab={calendarSubTab}
+                  onChange={(id) => setCalendarSubTab(id as 'appointments' | 'walk_ins')}
+                />
+              </div>
+
+              <div className="p-4 flex-1 min-h-0 overflow-y-auto">
+                {calendarSubTab === 'appointments' ? (
+                  <AppointmentCalendar
+                    doctors={doctors}
+                    appointments={appointments}
+                    shifts={shifts}
+                    leaves={leaveRequests}
+                    attendanceRecords={attendanceRecords}
+                    currentUser={currentUser}
+                    modules={modules}
+                    todayStr={todayStr}
+                    onBookSlot={handleBookSlotFromCalendar}
+                    onCheckIn={handleCheckInFromCalendar}
+                    onCancel={handleCancelFromCalendar}
+                    onReschedule={handleRescheduleFromCalendar}
+                  />
+                ) : (
+                  <WalkInSheet
+                    appointments={appointments}
+                    doctors={doctors}
+                    todayStr={todayStr}
+                    onOpenWalkInModal={() => {}}
+                  />
+                )}
+              </div>
+            </Card>
+
+            {/* Right Column: 20rem from 80rem up, moves below calendar below 80rem */}
+            <div className="w-full xl:w-[20rem] shrink-0 space-y-4">
+              <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-3">
+                  Waiting now
+                </h3>
+                <div id="waiting-now-list" className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                  <div className="py-4 text-center text-slate-400 italic">No patients waiting</div>
+                </div>
+              </Card>
+
+              <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-3">
+                  Needs attention
+                </h3>
+                <div id="needs-attention-list" className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                  <div className="py-4 text-center text-slate-400 italic">Nothing needs attention.</div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ============================================================== */}
       {/* TAB 1: OVERVIEW                                                */}
