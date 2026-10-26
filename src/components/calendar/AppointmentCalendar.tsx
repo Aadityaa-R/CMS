@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Appointment, Doctor, User, AccessModule } from '@/types';
 import { Shift, LeaveRequest, AttendanceRecord } from '@/types/attendance';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +18,7 @@ import { formatLocalDate, formatDate } from '@/lib/time';
 import { formatDoctorName } from '@/lib/doctorNames';
 import { isDoctorAvailable } from '@/lib/availability';
 import { hasCapability, isAdmin } from '@/lib/permissions';
+import { getLastInputType } from '@/lib/inputMode';
 
 export interface AppointmentCalendarProps {
   doctors: Doctor[];
@@ -299,6 +300,32 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const isSelectedDateToday = selectedDate === todayStr;
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
+  // Auto-scroll on initial open so current time row sits near the top
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const hasAutoScrolled = useRef(false);
+
+  useEffect(() => {
+    if (hasAutoScrolled.current) return;
+    if (viewMode !== 'day' || !isSelectedDateToday || dayGrid.rows.length === 0) return;
+
+    const timer = setTimeout(() => {
+      const container = gridContainerRef.current;
+      const rowEl = container?.querySelector('[data-current-time-row="true"]') as HTMLElement | null;
+      if (!rowEl || !container) return;
+
+      hasAutoScrolled.current = true;
+      const isKeyboard = getLastInputType() === 'keyboard';
+
+      if (!isKeyboard) {
+        rowEl.scrollIntoView({ block: 'start', behavior: 'instant' });
+      } else {
+        container.scrollTop = Math.max(0, rowEl.offsetTop - 36);
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [viewMode, isSelectedDateToday, dayGrid.rows]);
+
   return (
     <div className="space-y-4">
       {/* TOOLBAR */}
@@ -363,7 +390,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       </div>
 
       {/* DESKTOP/TABLET GRID VIEW (screens >= 40rem / 640px) */}
-      <div className="hidden sm:block overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-sm max-h-[70vh] overflow-y-auto relative">
+      <div ref={gridContainerRef} className="hidden sm:block overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-sm max-h-[70vh] overflow-y-auto relative">
         {viewMode === 'day' ? (
           /* DAY VIEW GRID */
           <table className="w-full border-collapse table-fixed text-left">
@@ -395,8 +422,18 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
                   ? (nowMin - row.startMinutes) / (row.endMinutes - row.startMinutes)
                   : 0;
 
+                const isTargetCurrentTimeRow =
+                  isCurrentTimeSlot ||
+                  row.slotTime ===
+                    (dayGrid.rows.find((r) => nowMin >= r.startMinutes && nowMin < r.endMinutes) ||
+                      dayGrid.rows[0])?.slotTime;
+
                 return (
-                  <tr key={row.slotTime} className="min-h-[2.75rem] h-[2.75rem] relative">
+                  <tr
+                    key={row.slotTime}
+                    data-current-time-row={isTargetCurrentTimeRow ? 'true' : undefined}
+                    className="min-h-[2.75rem] h-[2.75rem] relative"
+                  >
                     <td className="sticky left-0 bg-white dark:bg-slate-900 z-10 w-24 p-2 text-xs font-medium text-slate-500 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700 whitespace-nowrap">
                       {row.slotTime}
                       {isCurrentTimeSlot && (
