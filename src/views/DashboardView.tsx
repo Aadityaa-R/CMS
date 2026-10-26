@@ -1383,7 +1383,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     appointments={appointments}
                     doctors={doctors}
                     todayStr={todayStr}
-                    onOpenWalkInModal={() => setIsWalkInOpen(true)}
+                    hideCheckInButton
                   />
                 </div>
               </div>

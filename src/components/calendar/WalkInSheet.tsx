@@ -12,7 +12,8 @@ export interface WalkInSheetProps {
   appointments: Appointment[];
   doctors: Doctor[];
   todayStr: string;
-  onOpenWalkInModal: () => void;
+  onOpenWalkInModal?: () => void;
+  hideCheckInButton?: boolean;
 }
 
 export const WalkInSheet: React.FC<WalkInSheetProps> = ({
@@ -20,6 +21,7 @@ export const WalkInSheet: React.FC<WalkInSheetProps> = ({
   doctors,
   todayStr,
   onOpenWalkInModal,
+  hideCheckInButton = false,
 }) => {
   // Real-time ticker so wait times for patients still waiting increment live without animation
   const [now, setNow] = useState(() => new Date());
@@ -190,9 +192,11 @@ export const WalkInSheet: React.FC<WalkInSheetProps> = ({
       {/* HEADER TOOLBAR */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="primary" onClick={onOpenWalkInModal}>
-            Walk-in Check-In
-          </Button>
+          {!hideCheckInButton && onOpenWalkInModal && (
+            <Button variant="primary" onClick={onOpenWalkInModal}>
+              Walk-in Check-In
+            </Button>
+          )}
           <div className="w-44">
             <DatePicker
               value={sheetDate}
