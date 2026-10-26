@@ -15,8 +15,6 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  KeyRound,
-  RotateCcw,
 } from 'lucide-react';
 
 const DevCredentialsDirectory = React.lazy(() => import('./DevCredentialsDirectory'));
@@ -712,7 +710,6 @@ export const LoginView: React.FC = () => {
                             onClick={() => setShowCredentialsGuide(!showCredentialsGuide)}
                             className="font-medium text-teal-600 hover:text-teal-800 flex items-center gap-1 min-h-[44px] cursor-pointer"
                           >
-                            <KeyRound className="w-3.5 h-3.5" />
                             <span>{showCredentialsGuide ? 'Hide Credentials' : 'Show Role Credentials'}</span>
                           </button>
                           <button
@@ -720,7 +717,6 @@ export const LoginView: React.FC = () => {
                             onClick={() => setIsResetModalOpen(true)}
                             className="font-medium text-slate-600 hover:text-slate-800 flex items-center gap-1 min-h-[44px] cursor-pointer"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
                             <span>Reset demo data</span>
                           </button>
                         </div>

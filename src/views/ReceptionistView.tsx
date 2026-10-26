@@ -1427,13 +1427,15 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       {/* TAB 1: WAITING LOUNGE */}
       {selectedTab === 'lounge' && (
         <div className="space-y-6">
-          {/* Top Summary Strip: 4 Stat Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KpiCard label="Total Checked In" value={totalCheckedIn} />
-            <KpiCard label="Currently Waiting" value={currentlyWaiting} />
-            <KpiCard label="In Consultation" value={inConsultation} />
-            <KpiCard label="Completed Today" value={completedToday} />
-          </div>
+          {/* Top Summary Strip: 4 Figures in One Card */}
+          <Card className="p-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <KpiCard label="Total Checked In" value={totalCheckedIn} />
+              <KpiCard label="Currently Waiting" value={currentlyWaiting} />
+              <KpiCard label="In Consultation" value={inConsultation} />
+              <KpiCard label="Completed Today" value={completedToday} />
+            </div>
+          </Card>
 
           {/* Waiting Queue Table */}
           <Card>

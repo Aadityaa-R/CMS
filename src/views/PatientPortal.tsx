@@ -697,7 +697,8 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             )}
           </div>
           {/* Patient Summary Metric Cards: Separate individual cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             <KpiCard
               label="Next Appointment"
               value={
@@ -718,7 +719,8 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               label="Visits this year"
               value={visitsThisYear}
             />
-          </div>
+            </div>
+          </Card>
 
           {/* Upcoming Appointments Table */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -1665,12 +1667,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
               </div>
             )}
 
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-200 text-xs">
-              <div className="font-semibold mb-1">Simulated Payment Environment</div>
-              <p>
-                No real card charges or gateway transactions will occur. You can also settle invoices at the front desk cashier.
-              </p>
-            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Simulated payment environment: No real card charges or gateway transactions will occur.
+            </p>
 
             <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
               <div className="flex justify-between">

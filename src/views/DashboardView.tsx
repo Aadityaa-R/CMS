@@ -100,7 +100,7 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
 
   const maxVal = Math.max(1, ...buckets.map((b) => Math.max(b.newPatients, b.visits)));
   const yCeiling = maxVal <= 4 ? 4 : maxVal <= 8 ? 8 : maxVal <= 12 ? 12 : Math.ceil(maxVal / 5) * 5;
-  const gridTicks = [0, yCeiling * 0.25, yCeiling * 0.5, yCeiling * 0.75, yCeiling];
+  const gridTicks = [0, Math.round(yCeiling / 3), Math.round((yCeiling * 2) / 3), yCeiling];
 
   const n = buckets.length;
   const slotWidth = n > 0 ? 520 / n : 520;
@@ -222,13 +222,13 @@ const PatientsAndVisitsChart: React.FC<PatientsAndVisitsChartProps> = ({
                     y2={y}
                     stroke="currentColor"
                     className="text-slate-200 dark:text-slate-800"
-                    strokeDasharray="3,3"
+                    strokeDasharray={tick === 0 ? undefined : "3,3"}
                   />
                   <text
                     x={38}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-fs-axis fill-slate-500 dark:fill-slate-400"
+                    className="text-fs-axis font-normal fill-slate-500 dark:fill-slate-400"
                     style={{ fontSize: 'var(--fs-axis)' }}
                   >
                     {tick}
@@ -382,7 +382,7 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
       : maxVal <= 2500
       ? 2500
       : Math.ceil(maxVal / 500) * 500;
-  const gridTicks = [0, yCeiling * 0.25, yCeiling * 0.5, yCeiling * 0.75, yCeiling];
+  const gridTicks = [0, Math.round(yCeiling / 3), Math.round((yCeiling * 2) / 3), yCeiling];
 
   const n = buckets.length;
   const plotWidth = 515;
@@ -495,13 +495,13 @@ const FeesAndPaymentsChart: React.FC<FeesAndPaymentsChartProps> = ({
                         y2={y}
                         stroke="currentColor"
                         className="text-slate-200 dark:text-slate-800"
-                        strokeDasharray="3,3"
+                        strokeDasharray={tick === 0 ? undefined : "3,3"}
                       />
                       <text
                         x={48}
                         y={y + 3}
                         textAnchor="end"
-                        className="text-fs-axis fill-slate-500 dark:fill-slate-400"
+                        className="text-fs-axis font-normal fill-slate-500 dark:fill-slate-400"
                         style={{ fontSize: 'var(--fs-axis)' }}
                       >
                         {CURRENCY_SYMBOL}{tick}
@@ -1225,15 +1225,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-              {metrics1.summaryFigures.map((fig) => (
-                <KpiCard
-                  key={fig.label}
-                  label={fig.label}
-                  value={fig.formattedValue ?? fig.value}
-                />
-              ))}
-            </div>
+            <Card className="p-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                {metrics1.summaryFigures.map((fig) => (
+                  <KpiCard
+                    key={fig.label}
+                    label={fig.label}
+                    value={fig.formattedValue ?? fig.value}
+                  />
+                ))}
+              </div>
+            </Card>
           )}
 
           {/* Front Desk Today Operational Widget */}

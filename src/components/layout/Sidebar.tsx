@@ -195,7 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         aria-label="Sidebar Navigation"
         inert={!isOpen && isMobile ? '' : undefined}
         aria-hidden={!isOpen && isMobile ? 'true' : undefined}
-        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-slate-900 text-slate-300 flex flex-col overflow-hidden shrink-0 select-none h-full border-r border-slate-800 transition-all duration-300 ease-in-out motion-reduce:transition-none will-change-[width,transform] ${
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 flex flex-col overflow-hidden shrink-0 select-none h-full border-r border-[#eef0f3] dark:border-slate-800 transition-all duration-300 ease-in-out motion-reduce:transition-none will-change-[width,transform] ${
           isOpen
             ? 'w-[15rem] lg:w-[15rem] translate-x-0 shadow-2xl lg:shadow-none'
             : 'w-[15rem] -translate-x-full lg:translate-x-0 lg:w-[3.5rem]'
@@ -212,8 +212,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={toggle}
               className={`w-[var(--nav-cell)] h-[var(--nav-cell)] flex items-center justify-center rounded-lg cursor-pointer shrink-0 outline-none focus:outline-none focus:ring-0 transition-colors duration-200 ${
                 isOpen
-                  ? 'bg-slate-800 text-teal-300'
-                  : 'text-teal-400 hover:text-teal-300 hover:bg-slate-800/70'
+                  ? 'text-teal-600 dark:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
               title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
               aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
@@ -221,9 +221,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               aria-controls="sidebar-navigation"
             >
               {isOpen ? (
-                <PanelLeftClose className="w-4 h-4 text-teal-300" />
+                <PanelLeftClose className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               ) : (
-                <PanelLeftOpen className="w-4 h-4 text-teal-400" />
+                <PanelLeftOpen className="w-4 h-4 text-slate-400 dark:text-slate-500" />
               )}
             </button>
 
@@ -233,10 +233,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 isOpen ? 'max-w-[170px] opacity-100 ml-2.5' : 'lg:max-w-0 lg:opacity-0 lg:ml-0 max-w-[170px] opacity-100 ml-2.5'
               }`}
             >
-              <div className="text-xs font-bold text-teal-400 tracking-wide uppercase">
+              <div className="text-xs font-bold text-teal-600 dark:text-teal-400 tracking-wide uppercase">
                 Clinic Operations
               </div>
-              <div className="text-xs font-semibold text-slate-300 capitalize truncate mt-0.5">
+              <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 capitalize truncate mt-0.5">
                 {currentRole === 'md' || currentRole === 'admin'
                   ? 'MD'
                   : currentRole === 'doctor'
@@ -251,7 +251,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             data-sidebar-ignore-outside="true"
             onClick={close}
-            className="w-[var(--nav-cell)] h-[var(--nav-cell)] flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 shrink-0 transition-colors duration-200"
+            className="w-[var(--nav-cell)] h-[var(--nav-cell)] flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 lg:hidden cursor-pointer outline-none focus:outline-none focus:ring-0 shrink-0 transition-colors duration-200"
             title="Close drawer"
             aria-label="Close drawer"
           >
@@ -279,14 +279,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 aria-current={isActive ? 'page' : undefined}
                 className={`${isOpen ? 'w-full px-2' : 'w-[var(--nav-cell)] justify-center'} h-[var(--nav-cell)] flex items-center rounded-lg text-xs font-medium cursor-pointer outline-none focus:outline-none focus:ring-0 transition-colors duration-200 ${
                   isActive
-                    ? 'bg-teal-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'
+                    ? 'bg-transparent text-teal-600 dark:text-teal-400 font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 <span
                   title={item.label}
                   aria-label={item.label}
-                  className={`w-7 h-7 flex items-center justify-center shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`}
+                  className={`w-7 h-7 flex items-center justify-center shrink-0 ${isActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'}`}
                 >
                   {item.icon}
                 </span>

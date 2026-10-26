@@ -9,7 +9,6 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/Table';
-import { KeyRound } from 'lucide-react';
 import { audienceOf, AuthAudience } from '@/services/authService';
 
 interface DevCredentialsDirectoryProps {
@@ -54,7 +53,6 @@ export const DevCredentialsDirectory: React.FC<DevCredentialsDirectoryProps> = (
     <div className="mt-8 pt-6 border-t border-slate-200">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-          <KeyRound className="w-3.5 h-3.5 text-teal-600" />
           <span>
             Authorized Credentials Directory ({credentialsList.length} {audienceLabel})
           </span>

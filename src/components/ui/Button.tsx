@@ -18,28 +18,28 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   ...props
 }, ref) => {
   const baseClasses =
-    'inline-flex items-center justify-center font-medium outline-none focus:outline-none focus:ring-0 disabled:opacity-50 disabled:pointer-events-none rounded-lg cursor-pointer select-none';
+    'inline-flex items-center justify-center font-medium outline-none focus:outline-none focus-visible:outline-2 focus-visible:outline-teal-600 focus-visible:outline-offset-[-2px] disabled:opacity-50 disabled:pointer-events-none rounded-lg cursor-pointer select-none';
 
   const sizeClasses = {
-    xs: 'text-[0.6875rem] px-2 py-1 gap-1',
-    sm: 'text-xs px-2.5 py-1.5 gap-1.5',
-    md: 'text-sm px-4 py-2 gap-2',
-    lg: 'text-base px-5 py-2.5 gap-2.5',
+    xs: 'text-[0.6875rem] px-2 py-1 gap-1 min-h-[44px]',
+    sm: 'text-xs px-2.5 py-1.5 gap-1.5 min-h-[44px]',
+    md: 'text-sm px-4 py-2 gap-2 min-h-[44px]',
+    lg: 'text-base px-5 py-2.5 gap-2.5 min-h-[44px]',
   };
 
   const variantClasses = {
     primary:
-      'bg-teal-600 text-white hover:bg-teal-700 border border-transparent',
+      'bg-teal-600 text-white hover:bg-teal-700 border border-transparent shadow-sm',
     secondary:
-      'bg-slate-800 text-white hover:bg-slate-900 border border-transparent',
+      'bg-transparent text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 border-none shadow-none',
     outline:
-      'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400',
+      'bg-transparent text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 border-none shadow-none',
     danger:
-      'bg-rose-600 text-white hover:bg-rose-700 border border-transparent',
+      'bg-transparent text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 border-none shadow-none',
     ghost:
-      'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent',
+      'bg-transparent text-slate-600 hover:text-slate-900 border-none shadow-none',
     soft:
-      'bg-teal-50 text-teal-700 hover:bg-teal-100 hover:border-teal-300 border border-teal-200/60',
+      'bg-transparent text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 border-none shadow-none',
   };
 
   return (
@@ -52,7 +52,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
       {isLoading ? (
         <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
       ) : (
-        icon && <span className="inline-flex shrink-0">{icon}</span>
+        !children && icon ? <span className="inline-flex shrink-0">{icon}</span> : null
       )}
       {children && <span>{children}</span>}
     </button>

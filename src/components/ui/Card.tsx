@@ -75,25 +75,24 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   children,
 }) => {
   return (
-    <Card
+    <div
       onClick={onClick}
-      className={`border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col justify-between min-h-0 h-auto ${className}`}
+      className={`flex flex-col min-w-0 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      style={{ gap: '0.25rem' }}
     >
-      <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
-        <span
-          className="font-medium text-fs-kpi-label leading-tight"
-          style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
-        >
-          {label}
-        </span>
-        <span
-          className="font-bold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
-          style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
-        >
-          {value}
-        </span>
-      </div>
+      <span
+        className="font-normal text-fs-kpi-label leading-tight text-slate-500 dark:text-slate-400 truncate"
+        style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400, color: 'var(--text-muted)' }}
+      >
+        {label}
+      </span>
+      <span
+        className="font-semibold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none truncate"
+        style={{ fontSize: 'var(--fs-kpi)', fontWeight: 600 }}
+      >
+        {value}
+      </span>
       {children}
-    </Card>
+    </div>
   );
 };
