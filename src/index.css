@@ -20,6 +20,15 @@
   --text-muted: #64748b;
   --text-grey-strong: #475569;
 
+  /* Spacing Tokens (Milestone M11) */
+  --space-card: 1.25rem;
+  --space-section-gap: 1rem;
+  --space-card-gap: 1rem;
+  --space-row: 0.625rem;
+  --space-modal: 1.5rem;
+  --space-btn: 0.5rem 1rem;
+  --space-input-h: 2.75rem;
+
   /* Base Text Size Tokens (standard & large) */
   --fs-kpi: 1.875rem;
   --fs-kpi-label: 0.875rem;

@@ -119,7 +119,7 @@ export function useContainerWidth<T extends HTMLElement>(breakpointPx = 448) {
   return [ref, isWide, setIsWide, width] as const;
 }
 
-export const DetailItem: React.FC<DetailItemProps> = ({
+export const DetailItem = React.memo<DetailItemProps>(({
   label,
   value,
   subtitle,
@@ -150,7 +150,7 @@ export const DetailItem: React.FC<DetailItemProps> = ({
     ? 'py-2 px-3 sm:px-4'
     : activePaddingYRem !== undefined
     ? 'px-3 sm:px-4'
-    : 'py-3 px-3 sm:px-4';
+    : 'py-[0.625rem] px-3 sm:px-4';
 
   const rawValue = value !== undefined ? value : children;
   const isEmpty =
@@ -195,7 +195,9 @@ export const DetailItem: React.FC<DetailItemProps> = ({
       </dd>
     </div>
   );
-};
+});
+
+DetailItem.displayName = 'DetailItem';
 
 export const DetailList: React.FC<DetailListProps> = ({
   items,

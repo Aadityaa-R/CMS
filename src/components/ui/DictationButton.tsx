@@ -268,3 +268,4 @@ export const DictationButton: React.FC<DictationButtonProps> = ({
     </div>
   );
 };
+

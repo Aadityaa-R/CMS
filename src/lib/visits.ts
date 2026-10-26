@@ -121,3 +121,4 @@ export function formatDelta(current: number | undefined, prev: number | undefine
   if (diff < 0) return `${diff}`;
   return '0';
 }
+

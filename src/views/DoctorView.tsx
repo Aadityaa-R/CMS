@@ -11,9 +11,10 @@ import { InteractiveSearchBar, SearchSuggestion } from '@/components/ui/Interact
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableTruncate } from '@/components/ui/Table';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
-import { DetailList, DetailItem } from '@/components/ui/DetailList';
 import { Tabs } from '@/components/ui/Tabs';
 import { DictationButton } from '@/components/ui/DictationButton';
+import { VitalRow } from '@/components/vitals/VitalRow';
+import { PatientSummaryCard } from '@/components/patient/PatientSummaryCard';
 import { getScopedVisits } from '@/lib/visits';
 
 const CompareVisitsModal = React.lazy(() => import('@/components/visits/CompareVisitsModal'));
@@ -41,7 +42,6 @@ import {
   getAssignedDoctorId,
   hasCapability,
   isAdmin,
-  canPrescribe,
   canCancelPrescription,
   isDoctorStaff,
 } from '@/lib/permissions';
@@ -59,7 +59,6 @@ import {
   validatePrescription,
   checkAllergies,
   checkDuplicates,
-  activeMedications,
 } from '@/lib/prescribing';
 import { formatDoctorName } from '@/lib/doctorNames';
 import { handlePrint } from '@/lib/print';
@@ -218,7 +217,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     activePatient ||
     (consultationApt ? patients.find((p) => p.id === consultationApt.patientId) || null : null);
 
-  const [selectedVisitId, setSelectedVisitId] = useState<string>('');
   const [isCompareModalOpen, setIsCompareModalOpen] = useState<boolean>(false);
 
   const patientVisits = useMemo(() => {
@@ -228,27 +226,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       .filter((v) => v.patientId === summaryPatient.id)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [summaryPatient, currentUser, visits, patientAssignments, modules]);
-
-  useEffect(() => {
-    if (patientVisits.length > 0) {
-      if (!selectedVisitId || !patientVisits.some((v) => v.id === selectedVisitId)) {
-        setSelectedVisitId(patientVisits[0].id);
-      }
-    } else {
-      setSelectedVisitId('');
-    }
-  }, [patientVisits, selectedVisitId]);
-
-  const currentDisplayedVisit = useMemo(() => {
-    if (patientVisits.length === 0) return null;
-    return patientVisits.find((v) => v.id === selectedVisitId) || patientVisits[0];
-  }, [patientVisits, selectedVisitId]);
-
-  const getConsultingDoctorName = (doctorId: string) => {
-    const doc = doctors.find((d) => d.id === doctorId);
-    if (doc) return formatDoctorName(doc);
-    return doctorId || 'None recorded';
-  };
 
   // Clinical Triage Vitals Input State
   const [vitalsForm, setVitalsForm] = useState({
@@ -1417,13 +1394,13 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       {/* SUB-MODULE 1: CONSULTATION DESK (`overview`)                              */}
       {/* ========================================================================= */}
       {selectedTab === 'overview' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 items-stretch gap-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 items-stretch gap-4">
             {/* Active Patient Desk (Order 1 on mobile, 2 cols on desktop) */}
             <div className="order-1 lg:col-span-2 flex flex-col h-auto lg:h-full">
               {activePatient && activeAppointment ? (
                 <Card className="h-full flex flex-col consultation-desk-card">
-                  <CardHeader className="px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800/80">
+                  <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800/80">
                     <div className="w-full">
                       <CardTitle className="text-xl font-bold tracking-tight">
                         Active Consultation Desk: {activePatient.firstName} {activePatient.lastName}
@@ -1433,7 +1410,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </CardDescription>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-5 sm:p-6 flex-1 flex flex-col justify-start">
+                  <CardContent className="p-5 flex-1 flex flex-col justify-start">
                     <div className="flex-1 flex flex-col justify-start gap-4">
                       {/* Allergies */}
                       <div className="flex-none">
@@ -1538,266 +1515,68 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         </div>
 
                         <div className="flex-1 flex flex-col justify-start divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-100 dark:border-slate-800">
-                          {/* BP Systolic */}
-                          <div className="py-2 px-3 sm:px-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <label
-                                  htmlFor="vital-systolicBp"
-                                  className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
-                                >
-                                  BP Systolic (mmHg)
-                                </label>
-                                {getVitalMarker(vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp) && (
-                                  <span className="font-semibold text-rose-600 dark:text-rose-400 text-xs">
-                                    {getVitalMarker(vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp)}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="w-[8rem] shrink-0">
-                                <Input
-                                  id="vital-systolicBp"
-                                  inputMode="numeric"
-                                  placeholder="120"
-                                  value={vitalsForm.systolicBp}
-                                  onChange={(e) => handleVitalChange('systolicBp', e.target.value)}
-                                  disabled={isVitalsReadOnly}
-                                  className={`w-[8rem] text-sm py-1 font-medium text-right min-h-[44px] ${
-                                    (hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.systolicBp
-                                      ? '!border-rose-500 dark:!border-rose-500'
-                                      : ''
-                                  }`}
-                                />
-                              </div>
-                            </div>
-                            {(hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.systolicBp && (
-                              <p role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1">
-                                {vitalErrors.systolicBp}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* BP Diastolic */}
-                          <div className="py-2 px-3 sm:px-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <label
-                                  htmlFor="vital-diastolicBp"
-                                  className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
-                                >
-                                  BP Diastolic (mmHg)
-                                </label>
-                                {getVitalMarker(vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp) && (
-                                  <span className="font-semibold text-rose-600 dark:text-rose-400 text-xs">
-                                    {getVitalMarker(vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp)}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="w-[8rem] shrink-0">
-                                <Input
-                                  id="vital-diastolicBp"
-                                  inputMode="numeric"
-                                  placeholder="80"
-                                  value={vitalsForm.diastolicBp}
-                                  onChange={(e) => handleVitalChange('diastolicBp', e.target.value)}
-                                  disabled={isVitalsReadOnly}
-                                  className={`w-[8rem] text-sm py-1 font-medium text-right min-h-[44px] ${
-                                    (hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.diastolicBp
-                                      ? '!border-rose-500 dark:!border-rose-500'
-                                      : ''
-                                  }`}
-                                />
-                              </div>
-                            </div>
-                            {(hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.diastolicBp && (
-                              <p role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1">
-                                {vitalErrors.diastolicBp}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Heart Rate */}
-                          <div className="py-2 px-3 sm:px-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <label
-                                  htmlFor="vital-heartRateBpm"
-                                  className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
-                                >
-                                  Heart Rate (bpm)
-                                </label>
-                                {getVitalMarker(vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm) && (
-                                  <span className="font-semibold text-rose-600 dark:text-rose-400 text-xs">
-                                    {getVitalMarker(vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm)}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="w-[8rem] shrink-0">
-                                <Input
-                                  id="vital-heartRateBpm"
-                                  inputMode="numeric"
-                                  placeholder="72"
-                                  value={vitalsForm.heartRateBpm}
-                                  onChange={(e) => handleVitalChange('heartRateBpm', e.target.value)}
-                                  disabled={isVitalsReadOnly}
-                                  className={`w-[8rem] text-sm py-1 font-medium text-right min-h-[44px] ${
-                                    (hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.heartRateBpm
-                                      ? '!border-rose-500 dark:!border-rose-500'
-                                      : ''
-                                  }`}
-                                />
-                              </div>
-                            </div>
-                            {(hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.heartRateBpm && (
-                              <p role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1">
-                                {vitalErrors.heartRateBpm}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* O2 Saturation */}
-                          <div className="py-2 px-3 sm:px-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <label
-                                  htmlFor="vital-oxygenSaturationPct"
-                                  className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
-                                >
-                                  O2 Saturation (%)
-                                </label>
-                                {getVitalMarker(vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct) && (
-                                  <span className="font-semibold text-rose-600 dark:text-rose-400 text-xs">
-                                    {getVitalMarker(vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct)}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="w-[8rem] shrink-0">
-                                <Input
-                                  id="vital-oxygenSaturationPct"
-                                  inputMode="numeric"
-                                  placeholder="98"
-                                  value={vitalsForm.oxygenSaturationPct}
-                                  onChange={(e) => handleVitalChange('oxygenSaturationPct', e.target.value)}
-                                  disabled={isVitalsReadOnly}
-                                  className={`w-[8rem] text-sm py-1 font-medium text-right min-h-[44px] ${
-                                    (hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.oxygenSaturationPct
-                                      ? '!border-rose-500 dark:!border-rose-500'
-                                      : ''
-                                  }`}
-                                />
-                              </div>
-                            </div>
-                            {(hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.oxygenSaturationPct && (
-                              <p role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1">
-                                {vitalErrors.oxygenSaturationPct}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Temperature */}
-                          <div className="py-2 px-3 sm:px-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <label
-                                  htmlFor="vital-temperatureCelsius"
-                                  className="text-xs sm:text-sm font-normal text-slate-700 dark:text-slate-300"
-                                >
-                                  Temperature (°C)
-                                </label>
-                                {getVitalMarker(vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius) && (
-                                  <span className="font-semibold text-rose-600 dark:text-rose-400 text-xs">
-                                    {getVitalMarker(vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius)}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="w-[8rem] shrink-0">
-                                <Input
-                                  id="vital-temperatureCelsius"
-                                  inputMode="decimal"
-                                  placeholder="36.8"
-                                  value={vitalsForm.temperatureCelsius}
-                                  onChange={(e) => handleVitalChange('temperatureCelsius', e.target.value)}
-                                  disabled={isVitalsReadOnly}
-                                  className={`w-[8rem] text-sm py-1 font-medium text-right min-h-[44px] ${
-                                    (hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.temperatureCelsius
-                                      ? '!border-rose-500 dark:!border-rose-500'
-                                      : ''
-                                  }`}
-                                />
-                              </div>
-                            </div>
-                            {(hasUserEditedVitals || vitalsStatus === 'invalid') && vitalErrors.temperatureCelsius && (
-                              <p role="alert" className="text-xs text-rose-600 dark:text-rose-400 mt-1">
-                                {vitalErrors.temperatureCelsius}
-                              </p>
-                            )}
-                          </div>
+                          <VitalRow
+                            id="vital-systolicBp"
+                            label="BP Systolic (mmHg)"
+                            value={vitalsForm.systolicBp}
+                            placeholder="120"
+                            onChange={(val) => handleVitalChange('systolicBp', val)}
+                            disabled={isVitalsReadOnly}
+                            error={vitalErrors.systolicBp}
+                            showError={hasUserEditedVitals || vitalsStatus === 'invalid'}
+                            marker={getVitalMarker(vitalsForm.systolicBp, NORMAL_VITAL_RANGES.systolicBp)}
+                          />
+                          <VitalRow
+                            id="vital-diastolicBp"
+                            label="BP Diastolic (mmHg)"
+                            value={vitalsForm.diastolicBp}
+                            placeholder="80"
+                            onChange={(val) => handleVitalChange('diastolicBp', val)}
+                            disabled={isVitalsReadOnly}
+                            error={vitalErrors.diastolicBp}
+                            showError={hasUserEditedVitals || vitalsStatus === 'invalid'}
+                            marker={getVitalMarker(vitalsForm.diastolicBp, NORMAL_VITAL_RANGES.diastolicBp)}
+                          />
+                          <VitalRow
+                            id="vital-heartRateBpm"
+                            label="Heart Rate (bpm)"
+                            value={vitalsForm.heartRateBpm}
+                            placeholder="72"
+                            onChange={(val) => handleVitalChange('heartRateBpm', val)}
+                            disabled={isVitalsReadOnly}
+                            error={vitalErrors.heartRateBpm}
+                            showError={hasUserEditedVitals || vitalsStatus === 'invalid'}
+                            marker={getVitalMarker(vitalsForm.heartRateBpm, NORMAL_VITAL_RANGES.heartRateBpm)}
+                          />
+                          <VitalRow
+                            id="vital-oxygenSaturationPct"
+                            label="SpO2 (%)"
+                            value={vitalsForm.oxygenSaturationPct}
+                            placeholder="98"
+                            onChange={(val) => handleVitalChange('oxygenSaturationPct', val)}
+                            disabled={isVitalsReadOnly}
+                            error={vitalErrors.oxygenSaturationPct}
+                            showError={hasUserEditedVitals || vitalsStatus === 'invalid'}
+                            marker={getVitalMarker(vitalsForm.oxygenSaturationPct, NORMAL_VITAL_RANGES.oxygenSaturationPct)}
+                          />
+                          <VitalRow
+                            id="vital-temperatureCelsius"
+                            label="Temperature (°C)"
+                            value={vitalsForm.temperatureCelsius}
+                            placeholder="36.8"
+                            onChange={(val) => handleVitalChange('temperatureCelsius', val)}
+                            disabled={isVitalsReadOnly}
+                            error={vitalErrors.temperatureCelsius}
+                            showError={hasUserEditedVitals || vitalsStatus === 'invalid'}
+                            marker={getVitalMarker(vitalsForm.temperatureCelsius, NORMAL_VITAL_RANGES.temperatureCelsius)}
+                          />
                         </div>
                       </div>
-
-                      {/* Single Footer Row: Actions */}
-                      {!isReadOnlyView && (
-                        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 pt-3 flex-none">
-                          {activeAppointment.status === 'checked_in' && (
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              className="text-xs sm:text-sm px-4 py-2 min-h-[2.25rem] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
-                              onClick={async () => {
-                                await flushSave();
-                                handleStartConsultation(activeAppointment);
-                              }}
-                            >
-                              Start Consultation
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs sm:text-sm px-3.5 py-2 min-h-[2.25rem]"
-                            onClick={async () => {
-                              await flushSave();
-                              setClinicalNotesText(activeAppointment.notes || '');
-                              setIsNotesModalOpen(true);
-                            }}
-                          >
-                            Record Consultation Notes
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs sm:text-sm px-3.5 py-2 min-h-[2.25rem]"
-                            disabled={!canPrescribe(currentUser, activePatient.id, patientAssignments, modules)}
-                            onClick={async () => {
-                              await flushSave();
-                              handleOpenPrescriptionModal(activePatient.id);
-                            }}
-                          >
-                            Prescribe
-                          </Button>
-                          {activeAppointment.status !== 'completed' && (
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              className="text-xs sm:text-sm px-4 py-2 min-h-[2.25rem] font-semibold"
-                              disabled={vitalsStatus === 'saving' || vitalsStatus === 'invalid'}
-                              onClick={async () => {
-                                const ok = await flushSave();
-                                if (ok) {
-                                  setIsConcludeModalOpen(true);
-                                }
-                              }}
-                            >
-                              Conclude Visit
-                            </Button>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
               ) : (
-                <Card className="h-full flex flex-col">
+                <Card className="h-full flex flex-col p-5">
                   <CardContent className="p-12 text-center text-slate-500 dark:text-slate-400 text-xs flex-1 flex items-center justify-center">
                     No active consultation selected. Choose a patient from the queue below.
                   </CardContent>
@@ -1807,188 +1586,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
             {/* Right Column / Order 2 on Mobile: Patient Summary Card */}
             <div className="order-2 lg:col-span-1 flex flex-col h-auto lg:h-full">
-              <Card className="h-full flex flex-col">
-                <CardHeader>
-                  <div className="w-full">
-                    <CardTitle>Patient Summary</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="!p-0 p-0 flex-1 flex flex-col justify-start">
-                  <div className="flex-1 flex flex-col justify-start">
-                  {summaryPatient ? (
-                    <div className="flex-1 flex flex-col justify-start divide-y divide-slate-100 dark:divide-slate-800">
-                      {/* Section 1: Previous Visit Record */}
-                      <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block">
-                            Previous Visit Record
-                          </span>
-                          {currentUser.role !== 'patient' && patientVisits.length > 0 && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setIsCompareModalOpen(true)}
-                              className="text-xs h-7 min-h-0 px-2 py-0.5"
-                            >
-                              Compare visits
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Visit Select */}
-                        <div className="mb-2.5">
-                          {patientVisits.length > 0 ? (
-                            <Select
-                              id="select-patient-visit"
-                              label="Visit"
-                              value={currentDisplayedVisit?.id || ''}
-                              onChange={(e) => setSelectedVisitId(e.target.value)}
-                              options={patientVisits.map((v) => {
-                                const doc = doctors.find((d) => d.id === v.doctorId);
-                                const docName = doc ? formatDoctorName(doc) : v.doctorId;
-                                const shortReason = v.reason.length > 26 ? `${v.reason.slice(0, 26)}...` : v.reason;
-                                return {
-                                  value: v.id,
-                                  label: `${formatDate(v.date)}, ${docName}, ${shortReason}`,
-                                };
-                              })}
-                            />
-                          ) : (
-                            <div className="text-xs text-slate-500 dark:text-slate-400 py-1">
-                              No previous visits
-                            </div>
-                          )}
-                        </div>
-
-                        <DetailList columns={2} className="flex-1" reversed>
-                          <DetailItem
-                            label="Last Visit"
-                            className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                            value={
-                              currentDisplayedVisit
-                                ? formatDate(currentDisplayedVisit.date)
-                                : 'None recorded'
-                            }
-                          />
-                          <DetailItem
-                            label="Consulting Doctor"
-                            className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                            value={
-                              currentDisplayedVisit
-                                ? getConsultingDoctorName(currentDisplayedVisit.doctorId)
-                                : 'None recorded'
-                            }
-                          />
-                          {currentDisplayedVisit?.vitals && (
-                            <DetailItem
-                              label="Blood Pressure"
-                              className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                              value={`${currentDisplayedVisit.vitals.systolicBp ?? '--'}/${currentDisplayedVisit.vitals.diastolicBp ?? '--'} mmHg`}
-                            />
-                          )}
-                          {currentDisplayedVisit?.vitals && (
-                            <DetailItem
-                              label="Heart Rate"
-                              className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                              value={`${currentDisplayedVisit.vitals.heartRateBpm ?? '--'} bpm`}
-                            />
-                          )}
-                          {currentDisplayedVisit?.vitals && (
-                            <DetailItem
-                              label="SpO2"
-                              className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                              value={`${currentDisplayedVisit.vitals.oxygenSaturationPct ?? '--'}%`}
-                            />
-                          )}
-                          {currentDisplayedVisit?.vitals && (
-                            <DetailItem
-                              label="Temperature"
-                              className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                              value={`${currentDisplayedVisit.vitals.temperatureCelsius ?? '--'} °C`}
-                            />
-                          )}
-                        </DetailList>
-                        <DetailList
-                          reversed
-                          className={`flex-1 ${currentDisplayedVisit?.vitals ? 'border-t border-slate-100 dark:border-slate-800' : ''}`}
-                        >
-                          {!currentDisplayedVisit?.vitals && (
-                            <DetailItem
-                              label="Vitals"
-                              className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                              value="None recorded"
-                            />
-                          )}
-                          <DetailItem
-                            label="Last Reason"
-                            className="!grid-cols-[auto_1fr] sm:!grid-cols-[auto_1fr] !px-2.5 gap-2"
-                            value={currentDisplayedVisit?.reason || 'None recorded'}
-                          />
-                        </DetailList>
-                      </div>
-
-                      {/* Section 2: Clinical Profile */}
-                      <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
-                        <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
-                          Clinical Profile
-                        </span>
-                        <DetailList className="flex-1" reversed>
-                          <DetailItem
-                            label="Chronic Conditions"
-                            value={
-                              summaryPatient.chronicConditions && summaryPatient.chronicConditions.length > 0
-                                ? deduplicateList(summaryPatient.chronicConditions).join(', ')
-                                : 'None recorded'
-                            }
-                          />
-                          <DetailItem
-                            label="Current Medications"
-                            value={(() => {
-                              const activeMeds = activeMedications(summaryPatient.id, prescriptions, new Date());
-                              if (activeMeds.length > 0) return activeMeds.join(', ');
-                              return 'None recorded';
-                            })()}
-                          />
-                        </DetailList>
-                      </div>
-
-                      {/* Section 3: Demographics & Primary Care */}
-                      <div className="px-3.5 sm:px-4 py-3 sm:py-3.5 flex flex-col">
-                        <span className="text-fs-label uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
-                          Demographics & Primary Care
-                        </span>
-                        <DetailList className="flex-1" reversed>
-                          <DetailItem
-                            label="Phone"
-                            value={summaryPatient.phone || 'None recorded'}
-                          />
-                          {summaryPatient.emergencyContact && summaryPatient.emergencyContact.name && (
-                            <DetailItem
-                              label="Emergency Contact"
-                              value={
-                                <div>
-                                  <div>
-                                    {summaryPatient.emergencyContact.name} ({summaryPatient.emergencyContact.relationship || 'Contact'})
-                                  </div>
-                                  <div className="text-slate-500 dark:text-slate-400 text-fs-body mt-0.5">
-                                    {summaryPatient.emergencyContact.phone}
-                                  </div>
-                                </div>
-                              }
-                            />
-                          )}
-                        </DetailList>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center p-6 text-center text-slate-500 dark:text-slate-400 text-sm">
-                      No active consultation
-                    </div>
-                  )}
-                  </div>
-                </CardContent>
-              </Card>
+              <PatientSummaryCard
+                summaryPatient={summaryPatient}
+                patientVisits={patientVisits}
+                doctors={doctors}
+                prescriptions={prescriptions}
+                onCompareVisits={() => setIsCompareModalOpen(true)}
+                isPatientRole={currentUser.role === 'patient'}
+              />
             </div>
 
             {/* Order 3 / Below Consultation and Summary: Queue Inspector & Worklist */}
@@ -2568,7 +2173,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         </div>
 
         {/* Scrolling Form Area */}
-        <form onSubmit={handleInitiateIssue} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 min-h-0" noValidate>
+        <form onSubmit={handleInitiateIssue} className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0" noValidate>
           {prescriptionError && (
             <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs rounded-lg">
               {prescriptionError}
@@ -3080,7 +2685,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   className="no-print"
                   icon={<Printer className="w-3.5 h-3.5" />}
                   onClick={() => {
@@ -3095,7 +2699,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 className="no-print"
                 onClick={() => setLastIssuedRx(null)}
               >
@@ -3280,7 +2883,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <Button
               type="button"
               variant="outline"
-              size="sm"
               className="no-print"
               icon={<Printer className="w-3.5 h-3.5" />}
               onClick={handlePrint}
@@ -3289,7 +2891,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             </Button>
             <Button
               variant="outline"
-              size="sm"
               className="no-print"
               onClick={() => setViewingPrescription(null)}
             >
@@ -3504,17 +3105,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           />
         </Suspense>
       )}
-      {summaryPatient && isCompareModalOpen && (
-        <Suspense fallback={null}>
-          <CompareVisitsModal
-            isOpen={isCompareModalOpen}
-            onClose={() => setIsCompareModalOpen(false)}
-            patient={summaryPatient}
-            visits={patientVisits}
-            doctors={doctors}
-          />
-        </Suspense>
-      )}
+      
     </div>
   );
 };

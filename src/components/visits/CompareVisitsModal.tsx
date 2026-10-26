@@ -314,3 +314,4 @@ export const CompareVisitsModal: React.FC<CompareVisitsModalProps> = ({
 };
 
 export default CompareVisitsModal;
+

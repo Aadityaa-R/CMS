@@ -173,7 +173,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         <div
-          className={`px-4 sm:px-6 py-4 sm:py-5 ${
+          className={`p-6 ${
             overflowVisible
               ? 'overflow-visible'
               : 'overflow-y-auto max-h-[75vh]'

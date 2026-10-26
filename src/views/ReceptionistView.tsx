@@ -2092,13 +2092,14 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
           </div>
 
           <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
-            <Button type="button" variant="outline" onClick={() => setIsBookOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsBookOpen(false)} className="py-2 px-4 min-h-[44px]">
               Cancel
             </Button>
             <Button
               type="submit"
               variant="primary"
               disabled={availableDoctorsOnBookDate.length === 0}
+              className="py-2 px-4 min-h-[44px]"
             >
               Confirm Booking
             </Button>
