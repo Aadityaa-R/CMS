@@ -81,14 +81,14 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     >
       <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
         <span
-          className="font-bold text-fs-kpi-label leading-tight text-slate-900 dark:text-slate-100 truncate"
-          style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 700 }}
+          className="font-normal text-fs-kpi-label leading-tight text-slate-500 dark:text-slate-400 truncate"
+          style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 400, color: 'var(--text-muted)' }}
         >
           {label}
         </span>
         <span
-          className="font-bold tracking-tight text-slate-500 dark:text-slate-400 text-fs-kpi leading-none truncate"
-          style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700, color: 'var(--text-muted)' }}
+          className="font-semibold tracking-tight text-slate-900 dark:text-slate-100 text-fs-kpi leading-none truncate"
+          style={{ fontSize: 'var(--fs-kpi)', fontWeight: 600 }}
         >
           {value}
         </span>

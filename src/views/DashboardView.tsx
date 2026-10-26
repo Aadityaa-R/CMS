@@ -1248,56 +1248,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
                   <p
-                    className="font-bold text-fs-kpi-label leading-tight text-slate-900 dark:text-slate-100"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 700 }}
+                    className="font-medium text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
                   >
                     Waiting
                   </p>
                   <span
-                    className="font-bold text-slate-500 dark:text-slate-400 text-fs-kpi leading-none"
-                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700, color: 'var(--text-muted)' }}
+                    className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
                   >
                     {metrics1.frontDeskToday.waiting}
                   </span>
                 </div>
                 <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
                   <p
-                    className="font-bold text-fs-kpi-label leading-tight text-slate-900 dark:text-slate-100"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 700 }}
+                    className="font-medium text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
                   >
                     In Consultation
                   </p>
                   <span
-                    className="font-bold text-slate-500 dark:text-slate-400 text-fs-kpi leading-none"
-                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700, color: 'var(--text-muted)' }}
+                    className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
                   >
                     {metrics1.frontDeskToday.inConsultation}
                   </span>
                 </div>
                 <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
                   <p
-                    className="font-bold text-fs-kpi-label leading-tight text-slate-900 dark:text-slate-100"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 700 }}
+                    className="font-medium text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
                   >
                     Booked Today
                   </p>
                   <span
-                    className="font-bold text-slate-500 dark:text-slate-400 text-fs-kpi leading-none"
-                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700, color: 'var(--text-muted)' }}
+                    className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
                   >
                     {metrics1.frontDeskToday.bookedToday}
                   </span>
                 </div>
                 <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
                   <p
-                    className="font-bold text-fs-kpi-label leading-tight text-slate-900 dark:text-slate-100"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 700 }}
+                    className="font-medium text-fs-kpi-label leading-tight"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
                   >
                     Checked In Today
                   </p>
                   <span
-                    className="font-bold text-slate-500 dark:text-slate-400 text-fs-kpi leading-none"
-                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700, color: 'var(--text-muted)' }}
+                    className="font-bold text-slate-900 dark:text-slate-100 text-fs-kpi leading-none"
+                    style={{ fontSize: 'var(--fs-kpi)', fontWeight: 700 }}
                   >
                     {metrics1.frontDeskToday.checkedInToday}
                   </span>
