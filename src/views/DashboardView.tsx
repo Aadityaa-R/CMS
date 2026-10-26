@@ -1248,8 +1248,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
                   <p
-                    className="font-medium text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
+                    className="font-semibold text-fs-kpi-label leading-tight text-slate-900 dark:text-slate-100"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 600 }}
                   >
                     Waiting
                   </p>
@@ -1262,8 +1262,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
                 <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
                   <p
-                    className="font-medium text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
+                    className="font-semibold text-fs-kpi-label leading-tight text-slate-900 dark:text-slate-100"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 600 }}
                   >
                     In Consultation
                   </p>
@@ -1276,8 +1276,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
                 <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
                   <p
-                    className="font-medium text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
+                    className="font-semibold text-fs-kpi-label leading-tight text-slate-900 dark:text-slate-100"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 600 }}
                   >
                     Booked Today
                   </p>
@@ -1290,8 +1290,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
                 <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
                   <p
-                    className="font-medium text-fs-kpi-label leading-tight"
-                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 500, color: 'var(--text-muted)' }}
+                    className="font-semibold text-fs-kpi-label leading-tight text-slate-900 dark:text-slate-100"
+                    style={{ fontSize: 'var(--fs-kpi-label)', fontWeight: 600 }}
                   >
                     Checked In Today
                   </p>
