@@ -20,6 +20,7 @@ import { formatRegimen, activeMedications } from '@/lib/prescribing';
 import { getAssignedDoctorId } from '@/lib/permissions';
 import { Appointment, Prescription } from '@/types';
 import { formatDoctorName } from '@/lib/doctorNames';
+import { PrescriptionPrintDocument } from '@/components/prescriptions/PrescriptionPrintDocument';
 import {
   Invoice as BillingInvoice,
   Receipt as BillingReceipt,
@@ -1525,9 +1526,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
         <Modal
           isOpen={Boolean(viewingPrescription)}
           onClose={() => setViewingPrescription(null)}
-          title="Prescription Details"
-          maxWidth="md"
-          bodyClassName="prescription-content"
+          title="Electronic Prescription Record"
+          maxWidth="lg"
+          bodyClassName="prescription-content !p-0"
           footer={
             <div className="flex items-center justify-between w-full no-print">
               <Button
@@ -1550,77 +1551,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
             </div>
           }
         >
-          <div className="space-y-4 text-xs prescription-content">
-            <div className="border-b border-slate-200 dark:border-slate-800 pb-3 text-center">
-              <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                Beacon Clinic Outpatient Care
-              </div>
-              <div className="text-slate-500 dark:text-slate-400 text-xs">
-                Electronic Medical Prescription
-              </div>
-              <div className="font-semibold text-slate-800 dark:text-slate-200 mt-1">
-                {viewingPrescription.prescriptionNumber}
-              </div>
-            </div>
-
-            <div className="space-y-1.5 text-slate-600 dark:text-slate-400">
-              <div className="flex justify-between">
-                <span>Date:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {viewingPrescription.date}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Doctor:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {formatDoctorName(viewingPrescription.doctorName)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Patient:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {viewingPrescription.patientName} ({patient.mrn})
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Diagnosis:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {viewingPrescription.diagnosis}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Status:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {viewingPrescription.status === 'cancelled' ? 'Cancelled by the clinic' : 'Active'}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 mb-2 uppercase tracking-wider text-[0.6875rem]">
-                Prescribed Regimen
-              </div>
-              <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2.5">
-                {viewingPrescription.items.map((it) => (
-                  <div key={it.id} className="text-slate-700 dark:text-slate-300 pb-2 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
-                    <div className="font-medium text-slate-900 dark:text-slate-100">
-                      {formatRegimen(it)}
-                    </div>
-                    {it.instructions && (
-                      <div className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
-                        Instructions: {it.instructions}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-2 text-right text-xs text-slate-600 dark:text-slate-400">
-              <span className="font-medium text-slate-900 dark:text-slate-100">
-                Signed: {formatDoctorName(viewingPrescription.doctorName)}
-              </span>
-            </div>
+          <div className="prescription-content">
+            <PrescriptionPrintDocument
+              prescription={viewingPrescription}
+              patient={patient}
+              vitals={patientVitalsRecord}
+            />
           </div>
         </Modal>
       )}

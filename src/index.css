@@ -202,6 +202,11 @@ html.dark .shadow-modal {
     display: none !important;
   }
 
+  /* When printing, hide any non-prescription modal if a printable prescription exists */
+  body.printing:has(.prescription-content) .modal-wrapper:not(:has(.prescription-content)) {
+    display: none !important;
+  }
+
   .modal-wrapper,
   body.printing .modal-wrapper,
   body.printing div:has(> .modal-panel) {

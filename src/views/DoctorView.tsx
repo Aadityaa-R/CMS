@@ -27,6 +27,7 @@ import {
   Printer,
   Trash2,
   RotateCcw,
+  Save,
 } from 'lucide-react';
 import { Appointment, Patient } from '@/types';
 import {
@@ -62,6 +63,7 @@ import {
   checkDuplicates,
 } from '@/lib/prescribing';
 import { formatDoctorName } from '@/lib/doctorNames';
+import { PrescriptionPrintDocument } from '@/components/prescriptions/PrescriptionPrintDocument';
 import { handlePrint } from '@/lib/print';
 
 interface DoctorViewProps {
@@ -914,6 +916,71 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     });
   }, [effectiveDiagnosis, prescriptionItems, prescPatientId, activeDoctor.id]);
 
+  const handleSavePrescription = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!prescriptionValidation.valid) {
+      setPrescriptionError(prescriptionValidation.errors.join(' '));
+      return;
+    }
+    const targetPatient = prescPatient || (prescPatientId ? patients.find((p) => p.id === prescPatientId) : null);
+    if (!targetPatient) {
+      setPrescriptionError('Please select a valid patient.');
+      return;
+    }
+    if (currentAllergyMatches.length > 0) {
+      setPrescriptionError('');
+      setAllergyOverrideReason('');
+      setIsConfirmIssueOpen(true);
+      return;
+    }
+
+    setIsSubmittingPrescription(true);
+    const result = createPrescription({
+      patientId: targetPatient.id,
+      patientName: `${targetPatient.firstName} ${targetPatient.lastName}`,
+      doctorId: activeDoctor.id,
+      doctorName: activeDoctor.name,
+      appointmentId: activeAppointment?.id,
+      diagnosis: effectiveDiagnosis,
+      items: prescriptionItems,
+      allergyOverrides: [],
+    });
+    setIsSubmittingPrescription(false);
+
+    if (!result.success || !result.prescription) {
+      setPrescriptionError(result.error || 'Failed to save prescription.');
+      return;
+    }
+
+    setIsConfirmIssueOpen(false);
+    setIsPrescriptionModalOpen(false);
+    setFormHasEdits(false);
+    setLastIssuedRx(result.prescription);
+    showNotification(`e-Prescription #${result.prescription.prescriptionNumber} saved and issued successfully.`);
+  };
+
+  const handlePrintDraft = () => {
+    if (prescriptionItems.length === 0) {
+      setPrescriptionError('Add at least one medicine item to print prescription.');
+      return;
+    }
+    const targetPatient = prescPatient || (prescPatientId ? patients.find((p) => p.id === prescPatientId) : null);
+    const draftRx: Prescription = {
+      id: 'draft-rx',
+      prescriptionNumber: `RX-DRAFT-${new Date().getFullYear()}`,
+      patientId: targetPatient ? targetPatient.id : 'unknown',
+      patientName: targetPatient ? `${targetPatient.firstName} ${targetPatient.lastName}` : 'Demo Patient',
+      doctorId: activeDoctor.id,
+      doctorName: activeDoctor.name,
+      date: formatLocalDate(),
+      diagnosis: effectiveDiagnosis || 'Clinical Assessment',
+      items: prescriptionItems,
+      status: 'active',
+    };
+    setViewingPrescription(draftRx);
+    setTimeout(() => handlePrint(), 120);
+  };
+
   const handleInitiateIssue = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prescriptionValidation.valid) {
@@ -1293,6 +1360,18 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   const viewingPatient = viewingPrescription
     ? patients.find((p) => p.id === viewingPrescription.patientId) || null
     : null;
+  const viewingVitals = viewingPrescription
+    ? vitals.find((v) => v.patientId === viewingPrescription.patientId) ||
+      (prescPatient && prescPatient.id === viewingPrescription.patientId
+        ? {
+            systolicBp: vitalsForm.systolicBp || 120,
+            diastolicBp: vitalsForm.diastolicBp || 80,
+            temperatureCelsius: vitalsForm.temperatureCelsius || 36.8,
+            heartRateBpm: vitalsForm.heartRateBpm || 72,
+            oxygenSaturationPct: vitalsForm.oxygenSaturationPct || 98,
+          }
+        : null)
+    : null;
 
   // Pagination State (10 records per page)
   const [worklistPage, setWorklistPage] = useState(1);
@@ -1354,6 +1433,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   return (
     <div className="space-y-6">
+      <h1 className="sr-only">Consultation Desk</h1>
       {/* Sub-Workstation Navigation Tabs */}
       <Tabs
         ariaLabel="Consultation Tabs"
@@ -1363,8 +1443,8 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           { id: 'prescriptions', label: 'e-Prescriptions' },
         ]}
         activeTab={selectedTab}
-        onChange={async (id) => {
-          await flushSave();
+        onChange={(id) => { setSelectedTab(id);
+          flushSave().catch(() => {});
           setSelectedTab(id);
           document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
         }}
@@ -1578,7 +1658,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                               size="sm"
                               variant="secondary"
                               onClick={async () => {
-                                await flushSave();
+                                flushSave().catch(() => {});
                                 handleStartConsultation(activeAppointment);
                               }}
                             >
@@ -1589,7 +1669,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             size="sm"
                             variant="secondary"
                             onClick={async () => {
-                              await flushSave();
+                              flushSave().catch(() => {});
                               setClinicalNotesText(activeAppointment.notes || '');
                               setIsNotesModalOpen(true);
                             }}
@@ -1601,7 +1681,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             variant="secondary"
                             disabled={!canPrescribe(currentUser, activePatient.id, patientAssignments, modules, activeAppointment?.doctorId) && !isMD}
                             onClick={async () => {
-                              await flushSave();
+                              flushSave().catch(() => {});
                               handleOpenPrescriptionModal(activePatient.id);
                             }}
                           >
@@ -1779,7 +1859,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                         {
                                           label: 'View File',
                                           onClick: async () => {
-                                            await flushSave();
+                                            flushSave().catch(() => {});
                                             setSelectedAppointmentId(apt.id);
                                           },
                                           ariaLabel: `View file for ${apt.patientName}`,
@@ -1789,7 +1869,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                               {
                                                 label: 'Start Consultation',
                                                 onClick: async () => {
-                                                  await flushSave();
+                                                  flushSave().catch(() => {});
                                                   handleStartConsultation(apt);
                                                 },
                                                 ariaLabel: `Start consultation for ${apt.patientName}`,
@@ -1908,7 +1988,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                         patientActions.push({
                           label: 'Admit to Desk',
                           onClick: async () => {
-                            await flushSave();
+                            flushSave().catch(() => {});
                             setSelectedAppointmentId(topApt.id);
                             setSelectedTab('overview');
                           },
@@ -2151,6 +2231,32 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         maxWidth="2xl"
         fullScreenOnMobile={true}
         bodyClassName="!p-0 !overflow-hidden flex flex-col flex-1 min-h-0"
+        headerActions={
+          <div className="flex items-center gap-2 mr-2 no-print">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              icon={<Printer className="w-3.5 h-3.5" />}
+              disabled={prescriptionItems.length === 0}
+              onClick={handlePrintDraft}
+              title="Print prescription slip"
+            >
+              Print
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              icon={<Save className="w-4 h-4" />}
+              disabled={!prescriptionValidation.valid || isSubmittingPrescription}
+              onClick={handleSavePrescription}
+              title="Save prescription"
+            >
+              Save Prescription
+            </Button>
+          </div>
+        }
         footer={
           <div className="flex items-center justify-between w-full no-print">
             <Button
@@ -2168,7 +2274,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 size="sm"
                 icon={<Printer className="w-3.5 h-3.5" />}
                 disabled={prescriptionItems.length === 0}
-                onClick={handlePrint}
+                onClick={handlePrintDraft}
               >
                 Print
               </Button>
@@ -2176,29 +2282,55 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 type="button"
                 variant="primary"
                 size="sm"
-                icon={<FilePlus className="w-4 h-4" />}
+                icon={<Save className="w-4 h-4" />}
                 disabled={!prescriptionValidation.valid || isSubmittingPrescription}
-                onClick={handleInitiateIssue}
+                onClick={handleSavePrescription}
               >
-                Issue Prescription
+                Save Prescription
               </Button>
             </div>
           </div>
         }
       >
         {/* Top Fixed Patient & Allergy Strip (does not scroll) */}
-        <div className="p-3 bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs flex-none">
-          <div className="min-w-0">
-            <span className="text-slate-500 dark:text-slate-400">Patient: </span>
-            <span className="font-semibold text-slate-900 dark:text-slate-100">
-              {prescPatient ? `${prescPatient.firstName} ${prescPatient.lastName} (${prescPatient.mrn})` : 'Select patient'}
-            </span>
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs flex-none">
+          <div className="flex items-center flex-wrap gap-4 min-w-0">
+            <div className="min-w-0">
+              <span className="text-slate-500 dark:text-slate-400">Patient: </span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {prescPatient ? `${prescPatient.firstName} ${prescPatient.lastName} (${prescPatient.mrn})` : 'Select patient'}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <span className="text-slate-500 dark:text-slate-400">Allergies: </span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {patientAllergies.length > 0 ? patientAllergies.join(', ') : 'None recorded'}
+              </span>
+            </div>
           </div>
-          <div className="min-w-0">
-            <span className="text-slate-500 dark:text-slate-400">Allergies: </span>
-            <span className="font-semibold text-slate-900 dark:text-slate-100">
-              {patientAllergies.length > 0 ? patientAllergies.join(', ') : 'None recorded'}
-            </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              icon={<Printer className="w-3 h-3" />}
+              disabled={prescriptionItems.length === 0}
+              onClick={handlePrintDraft}
+              title="Print prescription slip"
+            >
+              Print
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="xs"
+              icon={<Save className="w-3 h-3" />}
+              disabled={!prescriptionValidation.valid || isSubmittingPrescription}
+              onClick={handleSavePrescription}
+              title="Save prescription"
+            >
+              Save Prescription
+            </Button>
           </div>
         </div>
 
@@ -2930,78 +3062,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         }
       >
         {viewingPrescription && (
-          <div className="space-y-4 text-xs prescription-content">
-            <div className="grid grid-cols-2 gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-xs">Prescription Number</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{viewingPrescription.prescriptionNumber}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-xs">Issue Date</span>
-                <span className="text-slate-900 dark:text-slate-100">{viewingPrescription.date}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-xs">Patient Name & MRN</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {viewingPrescription.patientName} {viewingPatient?.mrn ? `(${viewingPatient.mrn})` : ''}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-xs">Issuing Physician</span>
-                <span className="text-slate-900 dark:text-slate-100">{formatDoctorName(viewingPrescription.doctorName)}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex justify-between items-baseline gap-2">
-                <span className="text-slate-500 dark:text-slate-400 shrink-0">Diagnosis:</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100 text-right">{viewingPrescription.diagnosis}</span>
-              </div>
-              <div className="flex justify-between items-baseline gap-2">
-                <span className="text-slate-500 dark:text-slate-400 shrink-0">Allergies:</span>
-                <span className="text-slate-700 dark:text-slate-300 text-right">
-                  {viewingPatient?.allergies && viewingPatient.allergies.length > 0
-                    ? deduplicateList(viewingPatient.allergies).join(', ')
-                    : 'None recorded'}
-                </span>
-              </div>
-            </div>
-
-            {viewingPrescription.status === 'cancelled' && (
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-                <div className="font-semibold text-slate-900 dark:text-slate-100">Prescription Cancelled</div>
-                <div className="text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Cancelled by {viewingPrescription.cancelledBy?.name || 'Clinic Staff'}{viewingPrescription.cancelledAt ? ` on ${viewingPrescription.cancelledAt.slice(0, 10)}` : ''}. Reason: {viewingPrescription.cancelReason || 'Not specified'}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-2 text-xs">
-                Prescribed Regimen
-              </span>
-              <div className="space-y-2.5">
-                {viewingPrescription.items.map((item, idx) => (
-                  <div key={item.id || idx} className="text-slate-700 dark:text-slate-300 pb-2 border-b border-slate-50 dark:border-slate-800/50 last:border-b-0">
-                    <div className="font-medium text-slate-900 dark:text-slate-100">
-                      {formatRegimen(item)}
-                    </div>
-                    {item.instructions && (
-                      <div className="text-slate-500 dark:text-slate-400 text-[0.6875rem] mt-0.5">
-                        Instructions: {item.instructions}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs text-slate-600 dark:text-slate-400">
-              <span>Status: {viewingPrescription.status === 'cancelled' ? 'Cancelled' : 'Active'}</span>
-              <span className="font-medium text-slate-900 dark:text-slate-100">
-                Signed: {formatDoctorName(viewingPrescription.doctorName)}
-              </span>
-            </div>
+          <div className="prescription-content">
+            <PrescriptionPrintDocument
+              prescription={viewingPrescription}
+              patient={viewingPatient}
+              vitals={viewingVitals}
+            />
           </div>
         )}
       </Modal>

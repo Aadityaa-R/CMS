@@ -14,6 +14,7 @@ export interface ModalProps {
   fullScreenOnMobile?: boolean;
   overflowVisible?: boolean;
   bodyClassName?: string;
+  headerActions?: React.ReactNode;
 }
 
 let modalScrollLockCount = 0;
@@ -52,6 +53,7 @@ export const Modal: React.FC<ModalProps> = ({
   fullScreenOnMobile = false,
   overflowVisible = false,
   bodyClassName = '',
+  headerActions,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -144,10 +146,10 @@ export const Modal: React.FC<ModalProps> = ({
   const defaultMinHeight = '';
   const effectiveMinHeight = minHeight !== undefined ? minHeight : defaultMinHeight;
 
-  const containerPadding = fullScreenOnMobile ? 'p-0 sm:p-6' : 'p-4 sm:p-6';
+  const containerPadding = fullScreenOnMobile ? 'p-0 sm:p-4 md:p-6' : 'p-3 sm:p-4 md:p-6';
   const dialogLayout = fullScreenOnMobile
-    ? `w-full h-full sm:h-auto rounded-none sm:rounded-lg my-0 sm:my-8 max-h-screen sm:max-h-[90vh] ${effectiveMinHeight} flex flex-col`
-    : `rounded-lg my-8 ${effectiveMinHeight} max-h-[88vh] flex flex-col`.trim();
+    ? `w-full h-full sm:h-auto rounded-none sm:rounded-lg my-0 sm:my-auto max-h-screen sm:max-h-[calc(100vh-2.5rem)] ${effectiveMinHeight} flex flex-col`
+    : `rounded-lg my-auto ${effectiveMinHeight} max-h-[calc(100vh-2.5rem)] flex flex-col`.trim();
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center ${containerPadding} overflow-y-auto modal-wrapper`}>
@@ -177,21 +179,22 @@ export const Modal: React.FC<ModalProps> = ({
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => onCloseRef.current()}
-            aria-label="Close dialog"
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-0 no-print"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {headerActions}
+            <button
+              type="button"
+              onClick={() => onCloseRef.current()}
+              aria-label="Close dialog"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-0 no-print"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div
           className={`p-6 ${
-            overflowVisible
-              ? 'overflow-visible'
-              : 'overflow-y-auto max-h-[75vh]'
+            overflowVisible ? 'overflow-visible' : 'overflow-y-auto flex-1 min-h-0'
           } text-slate-800 dark:text-slate-200 modal-body ${bodyClassName}`}
         >
           {children}

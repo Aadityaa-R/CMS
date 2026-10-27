@@ -316,7 +316,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       hasAutoScrolled.current = true;
       const isKeyboard = getLastInputType() === 'keyboard';
 
-      if (!isKeyboard) {
+      if (!isKeyboard && typeof rowEl.scrollIntoView === 'function') {
         rowEl.scrollIntoView({ block: 'start', behavior: 'instant' });
       } else {
         container.scrollTop = Math.max(0, rowEl.offsetTop - 36);

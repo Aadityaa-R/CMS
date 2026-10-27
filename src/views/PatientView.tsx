@@ -35,8 +35,7 @@ import {
 } from 'lucide-react';
 import { BloodGroup, Prescription } from '@/types';
 import { handlePrint } from '@/lib/print';
-import { formatRegimen } from '@/lib/prescribing';
-import { formatDoctorName } from '@/lib/doctorNames';
+import { PrescriptionPrintDocument } from '@/components/prescriptions/PrescriptionPrintDocument';
 import { PatientPortal } from './PatientPortal';
 
 interface PatientViewProps {
@@ -84,6 +83,8 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
 
   // Viewing Prescription State for Print & Review
   const [viewingPrescription, setViewingPrescription] = useState<Prescription | null>(null);
+  const viewingVitals = viewingPrescription ? vitals.find((v) => v.patientId === viewingPrescription.patientId) || null : null;
+  const viewingPatient = viewingPrescription ? patients.find((p) => p.id === viewingPrescription.patientId) || null : null;
 
   // Notification State
   const [notification, setNotification] = useState<string | null>(null);
@@ -821,7 +822,7 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
           title="Electronic Prescription Record"
           maxWidth="lg"
           fullScreenOnMobile={true}
-          bodyClassName="prescription-content"
+          bodyClassName="prescription-content !p-0"
           footer={
             <div className="flex justify-between items-center w-full no-print">
               <Button
@@ -843,64 +844,12 @@ export const PatientView: React.FC<PatientViewProps> = ({ activeTab: _activeTab 
             </div>
           }
         >
-          <div className="space-y-4 text-xs prescription-content">
-            <div className="border-b border-slate-200 dark:border-slate-800 pb-3 text-center">
-              <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                Beacon Health Clinic
-              </div>
-              <div className="text-slate-500 dark:text-slate-400 text-xs">
-                Electronic Medical Prescription
-              </div>
-              <div className="font-semibold text-slate-800 dark:text-slate-200 mt-1">
-                {viewingPrescription.prescriptionNumber}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-xs">Issue Date</span>
-                <span className="text-slate-900 dark:text-slate-100">{viewingPrescription.date}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-xs">Patient</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{viewingPrescription.patientName}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-xs">Doctor</span>
-                <span className="text-slate-900 dark:text-slate-100">{formatDoctorName(viewingPrescription.doctorName)}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 dark:text-slate-400 block text-xs">Diagnosis</span>
-                <span className="text-slate-900 dark:text-slate-100">{viewingPrescription.diagnosis}</span>
-              </div>
-            </div>
-
-            <div>
-              <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-2 text-xs">
-                Prescribed Regimen
-              </span>
-              <div className="space-y-2.5">
-                {viewingPrescription.items.map((item, idx) => (
-                  <div key={item.id || idx} className="text-slate-700 dark:text-slate-300 pb-2 border-b border-slate-50 dark:border-slate-800/50 last:border-b-0">
-                    <div className="font-medium text-slate-900 dark:text-slate-100">
-                      {formatRegimen(item)}
-                    </div>
-                    {item.instructions && (
-                      <div className="text-slate-500 dark:text-slate-400 text-[0.6875rem] mt-0.5">
-                        Instructions: {item.instructions}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs text-slate-600 dark:text-slate-400">
-              <span>Status: {viewingPrescription.status === 'cancelled' ? 'Cancelled' : 'Active'}</span>
-              <span className="font-medium text-slate-900 dark:text-slate-100">
-                Signed: {formatDoctorName(viewingPrescription.doctorName)}
-              </span>
-            </div>
+          <div className="prescription-content">
+            <PrescriptionPrintDocument
+              prescription={viewingPrescription}
+              patient={viewingPatient}
+              vitals={viewingVitals}
+            />
           </div>
         </Modal>
       )}

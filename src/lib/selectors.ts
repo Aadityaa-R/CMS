@@ -180,10 +180,6 @@ export function getScopedPrescriptions(
     );
   }
 
-  // 2. Receptionist view: can view patient prescriptions for medical records
-  if (currentUser.role === 'receptionist') {
-    return prescriptions;
-  }
 
   // 3. Staff without EMR Records Access: strictly forbidden
   if (!hasCapability(currentUser, 'emrRecordsAccess', modules)) {

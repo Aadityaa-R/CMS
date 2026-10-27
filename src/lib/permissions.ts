@@ -495,7 +495,6 @@ export function canViewVisit(
   }
 
   if (isAdmin(user, modules)) return true;
-  if (user.role === 'receptionist') return true;
 
   // Front desk staff without EMR Records Access view appointment scheduling metadata
   if (!hasCapability(user, 'emrRecordsAccess', modules)) {
@@ -537,7 +536,6 @@ export function canViewPrescription(
   }
 
   if (isAdmin(user, modules)) return true;
-  if (user.role === 'receptionist') return true;
 
   // Staff without EMR access never view prescriptions
   if (!hasCapability(user, 'emrRecordsAccess', modules)) {
@@ -624,7 +622,6 @@ export function canTransferPatient(
 ): boolean {
   if (!user) return false;
   if (isAdmin(user, modules)) return true;
-  if (user.role === 'receptionist') return true;
 
   const assignedDocId = getAssignedDoctorId(patientId, assignments);
   if (!assignedDocId) return false;
