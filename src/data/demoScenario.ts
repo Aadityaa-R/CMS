@@ -16,6 +16,7 @@ import { Shift, AttendanceRecord, LeaveRequest } from '../types/attendance';
 import { PendingStaffApproval } from './mockData';
 import { formatLocalDate } from '../lib/time';
 import { INITIAL_FORMULARY } from './formularySeed';
+import { generateInitialAttendanceRecords } from './attendanceSeed';
 
 export interface DemoScenarioData {
   accounts: Account[];
@@ -877,8 +878,28 @@ export function generateDemoScenario(now: Date = new Date()): DemoScenarioData {
     },
   ];
 
-  // 11. Leave Requests (exactly 1 pending request)
+  // 11. Leave Requests
+  const dayOfWeekNow = now.getDay();
+  const daysSinceCurrentWeekMonday = (dayOfWeekNow + 6) % 7;
+  const lastWeekMondayOffset = -(daysSinceCurrentWeekMonday + 7);
+  const reedLeaveStartOffset = lastWeekMondayOffset + 1;
+  const reedLeaveEndOffset = lastWeekMondayOffset + 3;
+
   const leaveRequests: LeaveRequest[] = [
+    {
+      id: 'leave-approved-reed',
+      staffId: 'acc-doc-3',
+      staffName: 'Dr. Sophia Reed',
+      type: 'Sick',
+      fromDate: offsetLocal(reedLeaveStartOffset),
+      toDate: offsetLocal(reedLeaveEndOffset),
+      reason: 'Acute respiratory infection with physician rest order',
+      status: 'approved',
+      requestedAt: offsetIso(reedLeaveStartOffset - 1, 8, 30),
+      decidedBy: 'Dr. Marcus Vance (Managing Director)',
+      decidedAt: offsetIso(reedLeaveStartOffset - 1, 9, 15),
+      decisionNote: 'Approved. Clinic cross-coverage arranged with Dr. Nathan Hayes.',
+    },
     {
       id: 'leave-pending-1',
       staffId: 'acc-rec-1',
@@ -892,6 +913,20 @@ export function generateDemoScenario(now: Date = new Date()): DemoScenarioData {
       decidedBy: null,
       decidedAt: null,
       decisionNote: null,
+    },
+    {
+      id: 'leave-approved-doc-next-week',
+      staffId: 'acc-doc-2',
+      staffName: 'Dr. Nathan Hayes',
+      type: 'Other',
+      fromDate: offsetLocal(7),
+      toDate: offsetLocal(9),
+      reason: 'Medical symposium on respiratory clinical protocols',
+      status: 'approved',
+      requestedAt: offsetIso(-3, 10, 0),
+      decidedBy: 'Dr. Marcus Vance (Managing Director)',
+      decidedAt: offsetIso(-3, 11, 0),
+      decisionNote: 'Approved.',
     },
   ];
 
@@ -960,41 +995,8 @@ export function generateDemoScenario(now: Date = new Date()): DemoScenarioData {
     },
   ];
 
-  // 14. Attendance Records for Today
-  const attendanceRecords: AttendanceRecord[] = [
-    {
-      id: `att-doc-1-${todayStr}`,
-      staffId: 'acc-doc-1',
-      staffName: 'Dr. Marcus Vance',
-      date: todayStr,
-      clockIn: `${todayStr}T08:55:00.000Z`,
-      clockOut: null,
-    },
-    {
-      id: `att-doc-2-${todayStr}`,
-      staffId: 'acc-doc-2',
-      staffName: 'Dr. Nathan Hayes',
-      date: todayStr,
-      clockIn: `${todayStr}T08:58:00.000Z`,
-      clockOut: null,
-    },
-    {
-      id: `att-rec-1-${todayStr}`,
-      staffId: 'acc-rec-1',
-      staffName: 'Priya Sharma',
-      date: todayStr,
-      clockIn: `${todayStr}T08:25:00.000Z`,
-      clockOut: null,
-    },
-    {
-      id: `att-rec-2-${todayStr}`,
-      staffId: 'acc-rec-2',
-      staffName: 'David Kim',
-      date: todayStr,
-      clockIn: `${todayStr}T08:28:00.000Z`,
-      clockOut: null,
-    },
-  ];
+  // 14. Attendance Records
+  const attendanceRecords: AttendanceRecord[] = generateInitialAttendanceRecords(now, shifts, leaveRequests);
 
   // 15. In-App Notifications
   const notifications: InAppNotification[] = [

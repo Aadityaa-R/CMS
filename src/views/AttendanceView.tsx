@@ -37,6 +37,7 @@ import {
   missingClockOut,
   isOnLeave,
   monthlySummary,
+  timeToMinutes,
 } from '@/lib/attendance';
 import { Shift, AttendanceRecord, LeaveRequest, LeaveType, DayOfWeek } from '@/types/attendance';
 import { Appointment } from '@/types';
@@ -444,7 +445,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
     }
     const early = earlyMinutes(rec, shift);
     if (early > 0) {
-      return `Left early ${early} min`;
+      return `Left early ${formatDuration(early)}`;
     }
     return 'On time';
   };
@@ -544,7 +545,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                       ? 'Shift Completed'
                       : todayRecord?.clockIn
                       ? 'Clocked In'
-                      : 'Not Clocked In'}
+                      : userShift && (new Date().getHours() * 60 + new Date().getMinutes() < timeToMinutes(userShift.start))
+                      ? 'Shift not started'
+                      : 'Not clocked in'}
                   </span>
                 </div>
                 <div className="p-3 border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900">
@@ -825,13 +828,21 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                               const onLeave = isOnLeave(shift.staffId, todayStr, leaveRequests);
                               const isScheduled = shift.days.includes(dayOfWeek(todayStr));
                               const late = rec ? lateMinutes(rec, shift) : 0;
+                              const now = new Date();
+                              const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                              const startMinutes = timeToMinutes(shift.start);
+                              const hasShiftStarted = currentMinutes >= startMinutes;
 
-                              let statusText = 'Not Clocked In';
+                              let statusText = 'Not clocked in';
                               if (onLeave) statusText = 'Approved Leave';
                               else if (!isScheduled) statusText = 'Scheduled Off';
                               else if (rec?.clockOut) statusText = 'Clocked Out';
                               else if (rec?.clockIn) {
                                 statusText = late > 0 ? `Clocked In (Late ${formatDuration(late)})` : 'Clocked In (On Time)';
+                              } else if (!hasShiftStarted) {
+                                statusText = 'Shift not started';
+                              } else {
+                                statusText = 'Not clocked in';
                               }
 
                               return (
