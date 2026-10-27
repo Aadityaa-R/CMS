@@ -42,10 +42,19 @@ import { Shift, AttendanceRecord, LeaveRequest, LeaveType, DayOfWeek } from '@/t
 import { Appointment } from '@/types';
 import { appointmentsAffectedByLeave } from '@/lib/scheduling';
 import { useNotifications } from '@/context/NotificationContext';
-import { formatTime } from '@/lib/time';
+import { formatTime, formatDate as formatDisplayDate } from '@/lib/time';
 
 interface AttendanceViewProps {
   activeTab?: string;
+}
+
+
+export function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0 && m > 0) return `${h} h ${m} min`;
+  if (h > 0) return `${h} h`;
+  return `${m} min`;
 }
 
 export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => {
@@ -431,7 +440,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
     }
     const late = lateMinutes(rec, shift);
     if (late > 0) {
-      return `Late ${late} min`;
+      return `Late ${formatDuration(late)}`;
     }
     const early = earlyMinutes(rec, shift);
     if (early > 0) {
@@ -770,7 +779,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <CardTitle>Daily Staff Roster: {todayStr}</CardTitle>
+                  <CardTitle>Daily Staff Roster: {formatDisplayDate(new Date())}</CardTitle>
                 </div>
                 <div className="w-full sm:w-64">
                   <Input
@@ -822,7 +831,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
                               else if (!isScheduled) statusText = 'Scheduled Off';
                               else if (rec?.clockOut) statusText = 'Clocked Out';
                               else if (rec?.clockIn) {
-                                statusText = late > 0 ? `Clocked In (Late ${late}m)` : 'Clocked In (On Time)';
+                                statusText = late > 0 ? `Clocked In (Late ${formatDuration(late)})` : 'Clocked In (On Time)';
                               }
 
                               return (

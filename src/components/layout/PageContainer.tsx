@@ -12,7 +12,8 @@ export const PageContainer: React.FC<PageContainerProps> = ({
 }) => {
   return (
     <div
-      className={`w-full max-w-[var(--page-max,94rem)] mx-auto ${className}`}
+      className={`w-full ${className}`.trim()}
+      style={{ maxWidth: 'var(--page-max)', marginInline: 'auto' }}
       {...props}
     >
       {children}

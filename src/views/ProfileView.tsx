@@ -346,7 +346,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-[var(--card-gap)]">
       {/* Polite Live Region */}
       <div role="status" aria-live="polite" className="sr-only">
         {liveMessage}

@@ -579,7 +579,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
   // Check account waiting to be linked (M5 / M10.2)
   if (isUnlinked) {
     return (
-      <div className="space-y-6 pb-12">
+      <div className="space-y-[var(--card-gap)]">
         <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
           <h1 id="portal-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
             My Health Portal
@@ -617,7 +617,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       <h1 id="portal-heading" tabIndex={-1} className="sr-only">
         My Health Portal
       </h1>
-      <div className="space-y-6 pb-12">
+      <div className="space-y-[var(--card-gap)]">
       {notice && (
         <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between gap-3">
           <span>{notice}</span>

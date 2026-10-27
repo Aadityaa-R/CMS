@@ -7,7 +7,11 @@
 :root {
   --radius: 0.5rem;
   --nav-cell: 2.75rem;
-  --page-max: 100%;
+  --page-pad: 1rem;
+  --page-max: 150rem;
+  --card-pad: 1.5rem;
+  --card-gap: 1.5rem;
+  --section-gap: 1.25rem;
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05);
   --shadow-modal: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
   --chart-primary: #0d9488;
@@ -22,9 +26,9 @@
   --text-grey-strong: #475569;
 
   /* Spacing Tokens (Milestone M13) */
-  --space-card: 1.5rem;
-  --space-section-gap: 1.25rem;
-  --space-card-gap: 1.5rem;
+  --space-card: var(--card-pad);
+  --space-section-gap: var(--section-gap);
+  --space-card-gap: var(--card-gap);
   --space-row: 0.625rem;
   --space-modal: 1.5rem;
   --space-btn: 0.5rem 1rem;

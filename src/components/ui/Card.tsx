@@ -3,12 +3,18 @@ import React from 'react';
 export const Card: React.FC<{
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
   onClick?: () => void;
-}> = ({ children, className = '', onClick }) => {
+}> = ({ children, className = '', style, onClick }) => {
+  const hasPadding = /\bp-[0-8]\b/.test(className);
   return (
     <div
       onClick={onClick}
-      className={`bg-white dark:bg-slate-900 rounded-[var(--radius,0.5rem)] shadow-card dark:shadow-none print:shadow-none overflow-hidden ${className}`}
+      style={{
+        ...(hasPadding ? { padding: 'var(--card-pad)' } : {}),
+        ...style,
+      }}
+      className={`bg-white dark:bg-slate-900 rounded-[var(--radius,0.5rem)] shadow-card dark:shadow-none print:shadow-none overflow-hidden ${className.replace(/\b(p-[0-8]|sm:p-[0-8])\b/g, '')}`}
     >
       {children}
     </div>
@@ -22,7 +28,8 @@ export const CardHeader: React.FC<{
 }> = ({ children, className = '', action }) => {
   return (
     <div
-      className={`p-6 pb-2 flex items-center justify-between ${className}`}
+      style={{ padding: 'var(--card-pad)', paddingBottom: '0.5rem' }}
+      className={`flex items-center justify-between ${className}`}
     >
       <div>{children}</div>
       {action && <div>{action}</div>}
@@ -56,7 +63,11 @@ export const CardContent: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ children, className = '' }) => {
-  return <div className={`p-6 ${className}`}>{children}</div>;
+  return (
+    <div style={{ padding: 'var(--card-pad)' }} className={className}>
+      {children}
+    </div>
+  );
 };
 
 export interface KpiCardProps {
@@ -77,7 +88,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   return (
     <Card
       onClick={onClick}
-      className={`p-5 flex flex-col justify-between min-h-0 h-auto ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      style={{ padding: 'var(--card-pad)' }}
+      className={`flex flex-col justify-between min-h-0 h-auto ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       <div className="flex flex-col min-h-0 h-auto" style={{ gap: '0.25rem' }}>
         <span

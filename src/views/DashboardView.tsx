@@ -1243,7 +1243,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   );
 
   return (
-    <div className="space-y-3.5 pb-4">
+    <div className="space-y-[var(--card-gap)]">
       <h1 id="dashboard-heading" tabIndex={-1} className="sr-only">
         Dashboard
       </h1>

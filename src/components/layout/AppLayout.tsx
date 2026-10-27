@@ -388,7 +388,7 @@ export const AppLayout: React.FC = () => {
             />
 
             {/* Main View Area - dedicated scrollable container extending full width flush against panels */}
-            <main id="main-content" tabIndex={-1} className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] w-full p-3 pb-6 outline-none">
+            <main id="main-content" tabIndex={-1} className="flex-1 min-h-0 overflow-y-auto w-full outline-none [scrollbar-gutter:stable]" style={{ padding: 'var(--page-pad)', scrollbarGutter: 'stable' }}>
               <ErrorBoundary>
                 <PageContainer>
                   {renderActiveView()}

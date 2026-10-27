@@ -142,7 +142,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
 
   return (
     <>
-      <header className="h-[var(--nav-cell)] w-full bg-[#fafafa] dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-b border-[#eef0f3] dark:border-slate-800 px-3 flex items-center justify-between sticky top-0 z-20 shrink-0 transition-colors">
+      <header className="h-[var(--nav-cell)] w-full bg-[#fafafa] dark:bg-slate-950 text-slate-700 dark:text-slate-200 border-b border-[#eef0f3] dark:border-slate-800  flex items-center justify-between sticky top-0 z-20 shrink-0 transition-colors" style={{ paddingLeft: 'var(--page-pad)', paddingRight: 'var(--page-pad)' }}>
         {/* Brand / Clinic Title */}
         <div className="flex items-center gap-2 sm:gap-4">
           <button
