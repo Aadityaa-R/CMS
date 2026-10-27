@@ -27,7 +27,9 @@ import {
   canRemoveAccess,
   canRemoveMember,
   getEffectiveAccesses,
+  canRegisterPatient,
 } from '@/lib/permissions';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { getRepository } from '@/data/storage';
 import { Account } from '@/types/storage';
 import { CURRENCY_SYMBOL } from '@/lib/money';
@@ -37,8 +39,6 @@ import { FormularyTab } from './FormularyTab';
 interface AccessControlViewProps {
   activeTab?: 'add_users' | 'edit_users' | 'modules' | 'ledger' | 'data' | 'formulary' | string;
 }
-
-type RoleFilterKey = '' | 'doc' | 'receptionist' | 'patient';
 
 const getInitials = (name: string): string => {
   const clean = name.replace(/^Dr\.\s+/i, '').trim();
@@ -60,42 +60,6 @@ const getRoleAvatarStyles = (role: UserRole) => {
   }
 };
 
-interface RoleSectionMeta {
-  key: 'doc' | 'receptionist' | 'patient';
-  role: UserRole;
-  title: string;
-  badgeLabel: string;
-  shortLabel: string;
-  description: string;
-}
-
-const ROLE_SECTIONS: RoleSectionMeta[] = [
-  {
-    key: 'doc',
-    role: 'doctor',
-    title: 'Doctor / Physician Access',
-    badgeLabel: 'Staff Physicians',
-    shortLabel: 'Doctors',
-    description: 'Staff consulting physicians operating outpatient desks under Managing Director clinical governance.',
-  },
-  {
-    key: 'receptionist',
-    role: 'receptionist',
-    title: 'Receptionist Workstation',
-    badgeLabel: 'Front Desk',
-    shortLabel: 'Receptionists',
-    description: 'Front desk admissions, patient check-in, token dispatch, and consultation scheduling clearance.',
-  },
-  {
-    key: 'patient',
-    role: 'patient',
-    title: 'Patient Portal Access',
-    badgeLabel: 'Outpatient Accounts',
-    shortLabel: 'Patients',
-    description: 'Verified outpatient self-service accounts, personal EMR access clearance, and digital self-service authorities.',
-  },
-];
-
 const DEFAULT_DOCTOR_PERMISSIONS: StaffPermission[] = [
   { id: 'perm-admin', name: 'Administrative Access', description: 'Promote to clinic administrator with staff management and security ledger authority', enabled: false },
   { id: 'perm-consult', name: 'Consultation Workstation', description: 'Conduct patient visits and clinical assessments', enabled: true },
@@ -108,6 +72,14 @@ const DEFAULT_RECEPTIONIST_PERMISSIONS: StaffPermission[] = [
   { id: 'perm-register', name: 'Patient Registration', description: 'Enroll new outpatients and generate medical record numbers', enabled: true },
   { id: 'perm-checkin', name: 'Patient Check-in', description: 'Check in waiting patients and issue queue tokens', enabled: true },
   { id: 'perm-payment', name: 'Payment Recording', description: 'Record patient billing payments and issue settlement receipts', enabled: true },
+];
+
+const DEFAULT_PATIENT_PERMISSIONS: StaffPermission[] = [
+  { id: 'perm-pat-emr', name: 'Personal Health Records & Vitals', description: 'Authorize outpatient to view personal medical history, diagnosis summary, and vital signs', enabled: true },
+  { id: 'perm-pat-booking', name: 'Self-Service Visit Scheduling', description: 'Authorize outpatient to book, reschedule, or cancel consultations with attending doctors', enabled: true },
+  { id: 'perm-pat-rx', name: 'E-Prescription Repository & Refills', description: 'Authorize outpatient to access, download active prescriptions, and request medication refills', enabled: true },
+  { id: 'perm-pat-billing', name: 'Invoicing & Payment Receipts', description: 'Authorize outpatient to review fee breakdowns, insurance copays, and certified payment receipts', enabled: true },
+  { id: 'perm-pat-reports', name: 'Diagnostic Reports Access', description: 'Authorize outpatient to inspect certified laboratory tests, panel reports, and physician comments', enabled: true },
 ];
 
 const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
@@ -163,6 +135,8 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     addDoctor,
     doctors = [],
     medicines = [],
+    patients = [],
+    registerPatient,
   } = useClinic();
 
   // Module / Role management state
@@ -392,9 +366,6 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     });
   }, [modules, roleSearchTerm, staffAccessList, getMemberDisplayName]);
 
-  // Active role filter: '' (unselected) | 'doc' | 'receptionist' | 'patient'
-  const [selectedRoleFilter, setSelectedRoleFilter] = useState<RoleFilterKey>('');
-
   // Search filter
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -463,6 +434,62 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     setAddFormError('');
     setAddFormTouched({});
   };
+
+  // Unified Add User Modal & Steps
+  const [addUserStep, setAddUserStep] = useState<'select_type' | 'doctor' | 'receptionist' | 'patient'>('select_type');
+
+  // Patient Registration Form State
+  const [regFirstName, setRegFirstName] = useState('');
+  const [regLastName, setRegLastName] = useState('');
+  const [regDob, setRegDob] = useState('1990-01-01');
+  const [regGender, setRegGender] = useState<'female' | 'male' | 'other'>('female');
+  const [regPhone, setRegPhone] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regAddress, setRegAddress] = useState('');
+  const [regEmergName, setRegEmergName] = useState('');
+  const [regEmergPhone, setRegEmergPhone] = useState('');
+  const [regError, setRegError] = useState('');
+
+  const resetPatientForm = () => {
+    setRegFirstName('');
+    setRegLastName('');
+    setRegDob('1990-01-01');
+    setRegGender('female');
+    setRegPhone('');
+    setRegEmail('');
+    setRegAddress('');
+    setRegEmergName('');
+    setRegEmergPhone('');
+    setRegError('');
+  };
+
+  // Edit Users Unified Table & Pagination State
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const p = parseInt(urlParams.get('page') || '1', 10);
+      return isNaN(p) || p < 1 ? 1 : p;
+    }
+    return 1;
+  });
+  const [pendingNewPersonId, setPendingNewPersonId] = useState<string | null>(null);
+
+  const updatePage = (newPage: number) => {
+    setCurrentPage(newPage);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (newPage > 1) {
+        url.searchParams.set('page', String(newPage));
+      } else {
+        url.searchParams.delete('page');
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
+  const canAddStaff = isAdmin(currentUser, modules) || hasCapability(currentUser, 'administrativeAccess', modules);
+  const canAddPatient = canRegisterPatient(currentUser, modules);
 
   // State to track which person has their control panel open
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
@@ -947,7 +974,11 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
       });
     }
 
+    setPendingNewPersonId(newRecord.id);
+    setSearchTerm('');
+    setSelectedTypeFilter('all');
     setIsAddModalOpen(false);
+    setAddUserStep('select_type');
     resetAddForm();
     showNotification({
       type: 'success',
@@ -955,39 +986,162 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
     });
   };
 
-  // Counts for role options
-  const docCount = staffAccessList.filter((s) => s.role === 'doctor').length;
-  const receptionistCount = staffAccessList.filter((s) => s.role === 'receptionist').length;
-  const patientCount = staffAccessList.filter((s) => s.role === 'patient').length;
+  const handleSubmitPatientRegistration = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setRegError('');
 
-  // Filter staff by search query (name, ID and MRN)
-  const filteredStaff = staffAccessList.filter((staff) => {
-    const query = searchTerm.toLowerCase().trim();
-    if (!query) return true;
-    return (
-      staff.staffName.toLowerCase().includes(query) ||
-      staff.badgeNumber.toLowerCase().includes(query) ||
-      staff.id.toLowerCase().includes(query)
+    if (!canRegisterPatient(currentUser, modules)) {
+      setRegError('Unauthorized: Patient registration capability required.');
+      return;
+    }
+
+    if (!regFirstName.trim() || !regLastName.trim()) {
+      setRegError('Patient first and last name are required.');
+      return;
+    }
+    if (!regPhone.trim()) {
+      setRegError('Phone number is required.');
+      return;
+    }
+
+    const duplicate = patients.some(
+      (p) =>
+        p.firstName.toLowerCase() === regFirstName.trim().toLowerCase() &&
+        p.lastName.toLowerCase() === regLastName.trim().toLowerCase() &&
+        p.phone.replace(/\D/g, '') === regPhone.replace(/\D/g, '')
     );
-  });
+    if (duplicate) {
+      setRegError('A patient with this name and phone number is already registered.');
+      return;
+    }
 
-  // Helper to get staff for a specific role
-  const getStaffForRole = (role: UserRole) => {
-    return filteredStaff.filter((s) => s.role === role);
+    const birthYear = parseInt(regDob.split('-')[0], 10);
+    const calcAge = isNaN(birthYear) ? 30 : Math.max(0, new Date().getFullYear() - birthYear);
+
+    const regResult = registerPatient(
+      {
+        firstName: regFirstName.trim(),
+        lastName: regLastName.trim(),
+        dob: regDob,
+        age: calcAge,
+        gender: regGender,
+        phone: regPhone.trim(),
+        email: regEmail.trim(),
+        address: regAddress.trim() || 'Outpatient Address',
+        allergies: [],
+        chronicConditions: [],
+        emergencyContact: {
+          name: regEmergName.trim() || 'Primary Contact',
+          relationship: 'Emergency Contact',
+          phone: regEmergPhone.trim() || regPhone.trim(),
+        },
+      },
+      currentUser
+    );
+
+    if (!regResult.success || !regResult.patient) {
+      setRegError(regResult.error || 'Could not register patient.');
+      return;
+    }
+
+    const createdPat = regResult.patient;
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+    const fullName = `${createdPat.firstName} ${createdPat.lastName}`;
+
+    const newRecord: StaffAccessRecord = {
+      id: `acc-pat-${Date.now()}`,
+      role: 'patient',
+      staffName: fullName,
+      staffTitle: 'Registered Patient Portal',
+      department: 'Outpatient Care',
+      badgeNumber: createdPat.mrn,
+      status: 'granted',
+      lastUpdated: timestamp,
+      updatedBy: currentUser?.name || 'Reception Staff',
+      reason: 'Verified outpatient medical record and portal credentials',
+      permissions: DEFAULT_PATIENT_PERMISSIONS,
+    };
+
+    addStaffAccount(
+      newRecord,
+      `Enrolled outpatient ${fullName} (${createdPat.mrn}) into patient portal directory.`
+    );
+
+    setPendingNewPersonId(newRecord.id);
+    setSearchTerm('');
+    setSelectedTypeFilter('all');
+    setIsAddModalOpen(false);
+    setAddUserStep('select_type');
+    resetPatientForm();
+
+    showNotification({
+      type: 'success',
+      message: `Patient registered: ${createdPat.firstName} ${createdPat.lastName} (${createdPat.mrn}).`,
+    });
   };
 
-  // Candidate sections: filter strictly if role chosen, otherwise display all role sections
-  const candidateSections = selectedRoleFilter
-    ? ROLE_SECTIONS.filter((s) => s.key === selectedRoleFilter)
-    : ROLE_SECTIONS;
+  const sortedAndFilteredPeople = React.useMemo(() => {
+    const query = searchTerm.toLowerCase().trim();
 
-  // Hide a section that has no matches
-  const displayedSections = candidateSections.filter((section) => {
-    const staffInRole = getStaffForRole(section.role);
-    return staffInRole.length > 0;
-  });
+    return staffAccessList
+      .filter((person) => {
+        if (selectedTypeFilter === 'doctor' && person.role !== 'doctor') return false;
+        if (selectedTypeFilter === 'receptionist' && person.role !== 'receptionist') return false;
+        if (selectedTypeFilter === 'patient' && person.role !== 'patient') return false;
 
-  const isRoleOrSearchActive = true;
+        if (!query) return true;
+        const name = (person.staffName || '').toLowerCase();
+        const id = (person.badgeNumber || '').toLowerCase();
+        const rawId = (person.id || '').toLowerCase();
+        const dept = (person.department || '').toLowerCase();
+        const pat = patients.find((p) => p.mrn === person.badgeNumber || p.id === person.id);
+        const mrn = (pat?.mrn || '').toLowerCase();
+        const roles = getStaffModules(person).map((m) => m.name).join(' ').toLowerCase();
+
+        return (
+          name.includes(query) ||
+          id.includes(query) ||
+          rawId.includes(query) ||
+          dept.includes(query) ||
+          mrn.includes(query) ||
+          roles.includes(query)
+        );
+      })
+      .sort((a, b) => {
+        const getRank = (role: string) => {
+          if (role === 'doctor' || role === 'md') return 1;
+          if (role === 'receptionist') return 2;
+          if (role === 'patient') return 3;
+          return 4;
+        };
+        const rankA = getRank(a.role);
+        const rankB = getRank(b.role);
+        if (rankA !== rankB) return rankA - rankB;
+        return a.staffName.localeCompare(b.staffName);
+      });
+  }, [staffAccessList, selectedTypeFilter, searchTerm, patients, modules]);
+
+  useEffect(() => {
+    if (pendingNewPersonId) {
+      const idx = sortedAndFilteredPeople.findIndex(
+        (p) => p.id === pendingNewPersonId || p.badgeNumber === pendingNewPersonId
+      );
+      if (idx !== -1) {
+        const targetPage = Math.floor(idx / 10) + 1;
+        updatePage(targetPage);
+        setPendingNewPersonId(null);
+      }
+    }
+  }, [pendingNewPersonId, sortedAndFilteredPeople]);
+
+  const totalPeoplePages = Math.max(1, Math.ceil(sortedAndFilteredPeople.length / 10));
+  useEffect(() => {
+    if (!pendingNewPersonId && currentPage > totalPeoplePages) {
+      updatePage(totalPeoplePages);
+    }
+  }, [pendingNewPersonId, currentPage, totalPeoplePages]);
+
+  const paginatedPeople = sortedAndFilteredPeople.slice((currentPage - 1) * 10, currentPage * 10);
 
   // Security Ledger Filter & Search State
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState('');
@@ -1070,21 +1224,9 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
 
   // Pagination State (10 records per page)
   const [auditPage, setAuditPage] = useState(1);
-  const [sectionPages, setSectionPages] = useState<Record<string, number>>({});
-  const getSectionPage = (key: string, total: number = 0) => {
-    const page = sectionPages[key] || 1;
-    if (total > 0) {
-      const maxPage = Math.max(1, Math.ceil(total / 10));
-      return Math.min(page, maxPage);
-    }
-    return page;
-  };
-  const setSectionPage = (key: string, page: number) => setSectionPages((prev) => ({ ...prev, [key]: page }));
-
   useEffect(() => {
     setAuditPage(1);
-    setSectionPages({});
-  }, [searchTerm, selectedRoleFilter, ledgerSearchTerm, selectedActionFilter]);
+  }, [searchTerm, selectedTypeFilter, ledgerSearchTerm, selectedActionFilter]);
 
   const auditPageSize = 10;
   const paginatedAuditLog = filteredAuditLog.slice((auditPage - 1) * auditPageSize, auditPage * auditPageSize);
@@ -2013,192 +2155,160 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
               );
             })()
           ) : (
-            <>
-              {/* Clearance Governance Bar: Side-by-Side Search & Role Filter with Equal Authority */}
-              <Card className="!overflow-visible px-4 py-2.5 sm:px-5 sm:py-3">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight block">
-                      Clearance Governance
-                    </span>
+            <Card className="border border-slate-200 dark:border-slate-800 !overflow-visible">
+              {/* Card First Row: Search box and Type Select on left, one Add button on right */}
+              <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
+                  <div className="relative w-full sm:w-80">
+                    <InteractiveSearchBar
+                      value={searchTerm}
+                      onChange={(val) => {
+                        setSearchTerm(val);
+                        updatePage(1);
+                      }}
+                      suggestions={searchSuggestions}
+                      placeholder="Search by name or ID"
+                    />
                   </div>
-
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
-                    {/* Search Input with Interactive Dropdown and Autofill */}
-                    <div className="relative w-full sm:w-80">
-                      <InteractiveSearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        suggestions={searchSuggestions}
-                        placeholder="Search by name or ID"
-                      />
-                    </div>
-
-                    {/* Role Filter Dropdown with Filter icon inside */}
-                    <div className="w-full sm:w-64 shrink-0">
-                      <Select
-                        icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
-                        searchable={true}
-                        searchPlaceholder="Search staff types..."
-                        value={selectedRoleFilter}
-                        placeholder="All staff types"
-                        onChange={(e) => {
-                          const newRole = e.target.value as RoleFilterKey;
-                          setSelectedRoleFilter(newRole);
-                          setSelectedStaffId(null);
-                        }}
-                        options={[
-                          { value: '', label: 'All staff types' },
-                          { value: 'doc', label: `Doctors (${docCount})` },
-                          { value: 'receptionist', label: `Receptionists (${receptionistCount})` },
-                          { value: 'patient', label: `Patients (${patientCount})` },
-                        ]}
-                      />
-                    </div>
+                  <div className="w-full sm:w-56 shrink-0">
+                    <Select
+                      icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
+                      searchable={true}
+                      searchPlaceholder="Search types..."
+                      value={selectedTypeFilter}
+                      placeholder="All types"
+                      onChange={(e) => {
+                        setSelectedTypeFilter(e.target.value);
+                        updatePage(1);
+                      }}
+                      options={[
+                        { value: 'all', label: 'All types' },
+                        { value: 'doctor', label: 'Doctors' },
+                        { value: 'receptionist', label: 'Receptionists' },
+                        { value: 'patient', label: 'Patients' },
+                      ]}
+                    />
                   </div>
                 </div>
-              </Card>
 
-              {/* Main Role Sections Layout (Shows data first when role is chosen or search is active) */}
-              {isRoleOrSearchActive && (
-                <div className="space-y-6">
-                  {displayedSections.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">
-                      No personnel found
-                    </div>
-                  ) : (
-                    displayedSections.map((sectionMeta) => {
-                      const staffInSection = getStaffForRole(sectionMeta.role);
-                      const sectionPage = getSectionPage(sectionMeta.key, staffInSection.length);
-                      const paginatedStaff = staffInSection.slice((sectionPage - 1) * 10, sectionPage * 10);
-                      const isPatientSection = sectionMeta.key === 'patient';
+                <div className="shrink-0 flex items-center justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      resetAddForm();
+                      resetPatientForm();
+                      setAddUserStep('select_type');
+                      setIsAddModalOpen(true);
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
 
-                      return (
-                        <Card key={sectionMeta.key} className="border border-slate-200 dark:border-slate-800">
-                          <CardHeader
-                            action={
-                              <div className="flex items-center gap-2.5">
-                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                  {staffInSection.length} {staffInSection.length === 1 ? 'Person' : 'Personnel'}
-                                </span>
-                                {(sectionMeta.key === 'doc' || sectionMeta.key === 'receptionist') && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      resetAddForm();
-                                      setAddFormRole(sectionMeta.key === 'doc' ? 'doctor' : 'receptionist');
-                                      setIsAddModalOpen(true);
-                                    }}
-                                  >
-                                    Directly Add {sectionMeta.key === 'doc' ? 'Doctor' : 'Receptionist'}
-                                  </Button>
-                                )}
-                              </div>
-                            }
+              {/* Table */}
+              <CardContent className="p-0">
+                <div className="overflow-x-auto overflow-y-hidden max-w-full">
+                  <Table stackBelow="md">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead kind="short" priority={1}>Name</TableHead>
+                        <TableHead kind="short" priority={2}>Type</TableHead>
+                        <TableHead kind="short" priority={4}>Department</TableHead>
+                        <TableHead kind="short" priority={5}>ID</TableHead>
+                        <TableHead kind="short" priority={3}>Status</TableHead>
+                        <TableHead kind="text" priority={6}>Roles</TableHead>
+                        <TableHead kind="short" priority={1} isActions className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedPeople.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={7}
+                            className="text-center py-8 text-xs text-slate-500 dark:text-slate-400"
                           >
-                            <div>
-                              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                                {sectionMeta.title}
-                              </CardTitle>
-                            </div>
-                          </CardHeader>
+                            No matching people
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedPeople.map((person) => {
+                          const isPatient = person.role === 'patient';
+                          const patientData = isPatient
+                            ? patients.find((p) => p.mrn === person.badgeNumber || p.id === person.id)
+                            : null;
 
-                          <CardContent className="p-0">
-                            <div className="overflow-x-auto overflow-y-hidden max-w-full">
-                              <Table stackBelow="lg">
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead kind="short" priority={1}>Name</TableHead>
-                                    {!isPatientSection ? (
-                                      <>
-                                        <TableHead kind="short" priority={4}>Department</TableHead>
-                                        <TableHead kind="short" priority={5}>ID</TableHead>
-                                      </>
-                                    ) : (
-                                      <TableHead kind="short" priority={5}>MRN</TableHead>
-                                    )}
-                                    <TableHead kind="short" priority={2}>Status</TableHead>
-                                    <TableHead kind="text" priority={6}>Roles</TableHead>
-                                    <TableHead kind="short" priority={3} isActions className="text-right">Actions</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {paginatedStaff.map((staff) => {
-                                    const specialization =
-                                      (staff as { specialization?: string }).specialization ||
-                                      doctors.find((d) => d.name.toLowerCase() === staff.staffName.toLowerCase())
-                                        ?.specialization;
-                                    const staffMods = getStaffModules(staff);
-                                    const moduleNames = staffMods.map((m) => m.name).join(', ') || 'No roles';
+                          let secondLine: string | null = null;
+                          if (isPatient) {
+                            if (patientData && patientData.age !== undefined && patientData.gender) {
+                              secondLine = `${patientData.age} yrs, ${patientData.gender.toLowerCase()}`;
+                            } else {
+                              secondLine = 'Patient';
+                            }
+                          } else {
+                            secondLine = person.staffTitle || null;
+                          }
 
-                                    return (
-                                      <TableRow key={staff.id}>
-                                        <TableCell label="Name" isPrimary kind="short" priority={1}>
-                                          <div className="font-bold text-slate-900 dark:text-slate-100">
-                                            {staff.staffName}
-                                          </div>
-                                          {!isPatientSection && (
-                                            <div className="text-xs text-slate-500 dark:text-slate-400">
-                                              {staff.staffTitle}
-                                            </div>
-                                          )}
-                                        </TableCell>
-                                        {!isPatientSection && (
-                                          <TableCell label="Department" kind="short" priority={4}>
-                                            <div className="text-slate-700 dark:text-slate-300">
-                                              {staff.department}
-                                            </div>
-                                            {specialization && specialization.trim().toLowerCase() !== staff.department?.trim().toLowerCase() && (
-                                              <div className="text-xs text-slate-500 dark:text-slate-400">
-                                                {specialization}
-                                              </div>
-                                            )}
-                                          </TableCell>
-                                        )}
-                                        <TableCell label={isPatientSection ? 'MRN' : 'ID'} kind="short" priority={5} className="text-slate-700 dark:text-slate-300">
-                                          <TableTruncate>{staff.badgeNumber}</TableTruncate>
-                                        </TableCell>
-                                        <TableCell label="Status" kind="short" priority={2} className="text-slate-700 dark:text-slate-300">
-                                          {staff.status === 'revoked' ? 'Revoked' : 'Active'}
-                                        </TableCell>
-                                        <TableCell label="Roles" kind="text" priority={6} className="text-slate-700 dark:text-slate-300">
-                                          {moduleNames}
-                                        </TableCell>
-                                        <TableCell label="Actions" isActions fullWidthOnStack kind="short" priority={3} className="text-right">
-                                          <RowActions
-                                            actions={[
-                                              {
-                                                label: 'Manage Access',
-                                                onClick: (e) => togglePersonSelection(staff.id, e?.currentTarget as HTMLElement),
-                                                ariaLabel: `Manage access for ${staff.staffName}`,
-                                              },
-                                            ]}
-                                            subject={staff.staffName}
-                                          />
-                                        </TableCell>
-                                      </TableRow>
-                                    );
-                                  })}
-                                </TableBody>
-                              </Table>
-                            </div>
-                            {staffInSection.length > 10 && (
-                              <Pagination
-                                currentPage={sectionPage}
-                                totalItems={staffInSection.length}
-                                pageSize={10}
-                                onPageChange={(p) => setSectionPage(sectionMeta.key, p)}
-                              />
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })
-                  )}
+                          const displayName =
+                            person.role === 'doctor'
+                              ? formatDoctorName(person.staffName)
+                              : person.staffName;
+
+                          return (
+                            <TableRow key={person.id}>
+                              <TableCell label="Name" isPrimary kind="short" priority={1}>
+                                <div className="font-bold text-slate-900 dark:text-slate-100">
+                                  {displayName}
+                                </div>
+                                {secondLine && (
+                                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                                    {secondLine}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell label="Type" kind="short" priority={2} className="text-slate-700 dark:text-slate-300">
+                                {person.role === 'doctor' ? 'Doctor' : person.role === 'receptionist' ? 'Receptionist' : 'Patient'}
+                              </TableCell>
+                              <TableCell label="Department" kind="short" priority={4} className="text-slate-700 dark:text-slate-300">
+                                {isPatient ? '—' : person.department || '—'}
+                              </TableCell>
+                              <TableCell label="ID" kind="short" priority={5} className="text-slate-700 dark:text-slate-300">
+                                <TableTruncate>{person.badgeNumber || person.id}</TableTruncate>
+                              </TableCell>
+                              <TableCell label="Status" kind="short" priority={3} className="text-slate-700 dark:text-slate-300">
+                                {person.status === 'revoked' ? 'Revoked' : 'Active'}
+                              </TableCell>
+                              <TableCell label="Roles" kind="text" priority={6} className="text-slate-700 dark:text-slate-300">
+                                {isPatient ? '—' : (getStaffModules(person).map((m) => m.name).join(', ') || 'No roles')}
+                              </TableCell>
+                              <TableCell label="Actions" isActions fullWidthOnStack kind="short" priority={1} className="text-right">
+                                <button
+                                  type="button"
+                                  onClick={(e) => togglePersonSelection(person.id, e.currentTarget)}
+                                  className="inline-flex items-center justify-center font-medium bg-transparent border-none shadow-none p-0 min-h-[44px] text-xs cursor-pointer select-none whitespace-nowrap text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 focus-visible:outline-2 focus-visible:outline-teal-600 focus-visible:outline-offset-[-2px]"
+                                  aria-label={`Manage access for ${person.staffName}`}
+                                >
+                                  Manage Access
+                                </button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-              )}
-            </>
+
+                <Pagination
+                  currentPage={currentPage}
+                  totalItems={sortedAndFilteredPeople.length}
+                  pageSize={10}
+                  onPageChange={updatePage}
+                  showItemRange
+                />
+              </CardContent>
+            </Card>
           )}
         </div>
       )}
@@ -2629,121 +2739,308 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
         </p>
       </Modal>
 
-      {/* Directly Add Staff Member Modal */}
+      {/* Add User Modal (Step 1: Type Selection, Step 2: Chosen Form) */}
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title="Directly Provision Staff Member into Role"
-        description="Directly register and authorize a new physician or receptionist into the clinic access directory."
-        maxWidth="xl"
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setAddUserStep('select_type');
+        }}
+        title={
+          addUserStep === 'select_type'
+            ? 'Add Person'
+            : addUserStep === 'doctor'
+            ? 'Directly Add Doctor'
+            : addUserStep === 'receptionist'
+            ? 'Directly Add Receptionist'
+            : 'Register New Patient'
+        }
+        description={
+          addUserStep === 'select_type'
+            ? 'Select the category of person to provision or register.'
+            : addUserStep === 'doctor'
+            ? 'Directly register and authorize a new physician into the clinic access directory.'
+            : addUserStep === 'receptionist'
+            ? 'Directly register and authorize a new receptionist into the clinic access directory.'
+            : undefined
+        }
+        maxWidth={addUserStep === 'select_type' ? 'lg' : 'xl'}
         overflowVisible={true}
         footer={
-          <>
+          addUserStep === 'select_type' ? (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsAddModalOpen(false)}
+              onClick={() => {
+                setIsAddModalOpen(false);
+                setAddUserStep('select_type');
+              }}
             >
               Cancel
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleDirectAddSubmit}
-            >
-              Provision & Grant Clearance
-            </Button>
-          </>
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAddUserStep('select_type')}
+              >
+                Back
+              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    setAddUserStep('select_type');
+                  }}
+                >
+                  Cancel
+                </Button>
+                {addUserStep === 'patient' ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleSubmitPatientRegistration()}
+                  >
+                    Register Patient
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleDirectAddSubmit}
+                  >
+                    Provision & Grant Clearance
+                  </Button>
+                )}
+              </div>
+            </div>
+          )
         }
       >
-        <form onSubmit={handleDirectAddSubmit} className="space-y-4" noValidate>
-          {addFormError && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 rounded-lg border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-xs text-rose-800 dark:text-rose-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-              <span>{addFormError}</span>
-            </div>
-          )}
-
-          <div className="space-y-1">
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
-              Target Role <span className="text-rose-500">*</span>
-            </label>
-            <Select
-              size="lg"
-              searchable={true}
-              searchPlaceholder="Search target role..."
-              value={addFormRole}
-              onChange={(e) => setAddFormRole(e.target.value as 'doctor' | 'receptionist')}
-              options={[
-                { value: 'doctor', label: 'Doctor / Consulting Physician' },
-                { value: 'receptionist', label: 'Receptionist / Front Desk Workstation' },
-              ]}
-            />
+        {addUserStep === 'select_type' && (
+          <div className="py-2">
+            {!canAddStaff && !canAddPatient ? (
+              <div className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                You do not have permission to provision staff or register patients.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {canAddStaff && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetAddForm();
+                      setAddFormRole('doctor');
+                      setAddUserStep('doctor');
+                    }}
+                    className="flex flex-col items-center justify-center p-6 border-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-teal-50/30 dark:hover:bg-teal-950/20 transition-all font-semibold text-base min-h-[120px]"
+                  >
+                    <span className="text-base font-bold">Doctor</span>
+                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400 mt-1">Directly Add Doctor</span>
+                  </button>
+                )}
+                {canAddStaff && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetAddForm();
+                      setAddFormRole('receptionist');
+                      setAddUserStep('receptionist');
+                    }}
+                    className="flex flex-col items-center justify-center p-6 border-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-teal-50/30 dark:hover:bg-teal-950/20 transition-all font-semibold text-base min-h-[120px]"
+                  >
+                    <span className="text-base font-bold">Receptionist</span>
+                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400 mt-1">Directly Add Receptionist</span>
+                  </button>
+                )}
+                {canAddPatient && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetPatientForm();
+                      setAddUserStep('patient');
+                    }}
+                    className="flex flex-col items-center justify-center p-6 border-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-teal-50/30 dark:hover:bg-teal-950/20 transition-all font-semibold text-base min-h-[120px]"
+                  >
+                    <span className="text-base font-bold">Patient</span>
+                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400 mt-1">Register Patient</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
+        )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              label="Full Name"
-              placeholder={addFormRole === 'doctor' ? 'e.g. Dr. Julian Bashir' : 'e.g. Sarah Jenkins'}
-              value={addFormName}
-              onChange={(e) => {
-                setAddFormName(e.target.value);
-                if (addFormError) setAddFormError('');
-              }}
-              error={!addFormName.trim() && addFormError ? 'Full name is required' : undefined}
-            />
-            <Input
-              label="Professional Title"
-              placeholder={addFormRole === 'doctor' ? 'e.g. Staff Consulting Physician' : 'e.g. Front Desk Workstation Coordinator'}
-              value={addFormTitle}
-              onChange={(e) => setAddFormTitle(e.target.value)}
-            />
-          </div>
+        {(addUserStep === 'doctor' || addUserStep === 'receptionist') && (
+          <form onSubmit={handleDirectAddSubmit} className="space-y-4" noValidate>
+            {addFormError && (
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/60 rounded-lg border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-xs text-rose-800 dark:text-rose-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                <span>{addFormError}</span>
+              </div>
+            )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              label="Department"
-              placeholder={addFormRole === 'doctor' ? 'e.g. Cardiology & Triage' : 'e.g. Front Desk & Admissions'}
-              value={addFormDepartment}
-              onChange={(e) => {
-                setAddFormDepartment(e.target.value);
-                if (addFormError) setAddFormError('');
-              }}
-              error={!addFormDepartment.trim() && addFormError ? 'Department is required' : undefined}
-            />
-            <Input
-              label="Badge / Staff ID Number"
-              placeholder={addFormRole === 'doctor' ? 'e.g. DOC-105' : 'e.g. REC-304'}
-              value={addFormBadge}
-              onChange={(e) => setAddFormBadge(e.target.value)}
-            />
-          </div>
-
-          {addFormRole === 'doctor' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
-                label="Clinical Specialization"
-                placeholder="e.g. Internal Medicine"
-                value={addFormSpecialization}
-                onChange={(e) => setAddFormSpecialization(e.target.value)}
+                label="Full Name"
+                placeholder={addUserStep === 'doctor' ? 'e.g. Dr. Julian Bashir' : 'e.g. Sarah Jenkins'}
+                value={addFormName}
+                onChange={(e) => {
+                  setAddFormName(e.target.value);
+                  if (addFormError) setAddFormError('');
+                }}
+                error={!addFormName.trim() && addFormError ? 'Full name is required' : undefined}
               />
               <Input
-                label={`Consultation Fee (${CURRENCY_SYMBOL})`}
-                type="number"
-                placeholder="120"
-                value={addFormFee}
-                onChange={(e) => setAddFormFee(e.target.value)}
+                label="Professional Title"
+                placeholder={addUserStep === 'doctor' ? 'e.g. Staff Consulting Physician' : 'e.g. Front Desk Workstation Coordinator'}
+                value={addFormTitle}
+                onChange={(e) => setAddFormTitle(e.target.value)}
               />
             </div>
-          )}
 
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
-            <span className="text-slate-600 dark:text-slate-300">
-              This account will be instantly initialized with active clearance status and standard workstation permissions.
-            </span>
-          </div>
-        </form>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Department"
+                placeholder={addUserStep === 'doctor' ? 'e.g. Cardiology & Triage' : 'e.g. Front Desk & Admissions'}
+                value={addFormDepartment}
+                onChange={(e) => {
+                  setAddFormDepartment(e.target.value);
+                  if (addFormError) setAddFormError('');
+                }}
+                error={!addFormDepartment.trim() && addFormError ? 'Department is required' : undefined}
+              />
+              <Input
+                label="Badge / Staff ID Number"
+                placeholder={addUserStep === 'doctor' ? 'e.g. DOC-105' : 'e.g. REC-304'}
+                value={addFormBadge}
+                onChange={(e) => setAddFormBadge(e.target.value)}
+                error={isBadgeDuplicate ? 'Badge ID already in use' : undefined}
+              />
+            </div>
+
+            {addUserStep === 'doctor' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <Input
+                  label="Clinical Specialization"
+                  placeholder="e.g. Internal Medicine"
+                  value={addFormSpecialization}
+                  onChange={(e) => setAddFormSpecialization(e.target.value)}
+                />
+                <Input
+                  label={`Consultation Fee (${CURRENCY_SYMBOL})`}
+                  type="number"
+                  placeholder="120"
+                  value={addFormFee}
+                  onChange={(e) => setAddFormFee(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+              <span className="text-slate-600 dark:text-slate-300">
+                This account will be instantly initialized with active clearance status and standard workstation permissions.
+              </span>
+            </div>
+          </form>
+        )}
+
+        {addUserStep === 'patient' && (
+          <form onSubmit={handleSubmitPatientRegistration} className="space-y-4">
+            {regError && (
+              <div className="p-2.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-rose-700 dark:text-rose-300">
+                {regError}
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">First Name</label>
+                <Input
+                  value={regFirstName}
+                  onChange={(e) => setRegFirstName(e.target.value)}
+                  placeholder="First name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Last Name</label>
+                <Input
+                  value={regLastName}
+                  onChange={(e) => setRegLastName(e.target.value)}
+                  placeholder="Last name"
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Date of Birth</label>
+                <DatePicker value={regDob} onChange={setRegDob} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Phone</label>
+                <Input
+                  value={regPhone}
+                  onChange={(e) => setRegPhone(e.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Sex</label>
+                <Select
+                  value={regGender}
+                  onChange={(e) => setRegGender(e.target.value as 'female' | 'male' | 'other')}
+                  options={[
+                    { value: 'female', label: 'Female' },
+                    { value: 'male', label: 'Male' },
+                    { value: 'other', label: 'Other' },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                <Input
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  placeholder="patient@example.com"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Residential Address</label>
+              <Input
+                value={regAddress}
+                onChange={(e) => setRegAddress(e.target.value)}
+                placeholder="Address"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Emergency Contact Name</label>
+                <Input
+                  value={regEmergName}
+                  onChange={(e) => setRegEmergName(e.target.value)}
+                  placeholder="Contact person"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Emergency Contact Phone</label>
+                <Input
+                  value={regEmergPhone}
+                  onChange={(e) => setRegEmergPhone(e.target.value)}
+                  placeholder="Contact phone"
+                />
+              </div>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* Confirm Provision Dialog */}

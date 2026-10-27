@@ -7,6 +7,7 @@ export interface PaginationProps {
   pageSize?: number;
   onPageChange: (page: number) => void;
   className?: string;
+  showItemRange?: boolean;
 }
 
 export const Pagination: React.FC<PaginationProps> = ({
@@ -15,6 +16,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   pageSize = 10,
   onPageChange,
   className = '',
+  showItemRange = false,
 }) => {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
@@ -23,47 +25,63 @@ export const Pagination: React.FC<PaginationProps> = ({
     return null;
   }
 
-  // Generate page numbers to display
-  const getPageNumbers = () => {
+  // Generate page items to display (first, last, current with ... if overflowing)
+  const getPageItems = (): (number | string)[] => {
     if (totalPages <= 5) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-    if (currentPage <= 3) {
-      return [1, 2, 3, 4, 5];
+    const items: (number | string)[] = [];
+    items.push(1);
+    if (currentPage > 2) {
+      items.push('...');
     }
-    if (currentPage >= totalPages - 2) {
-      return [
-        totalPages - 4,
-        totalPages - 3,
-        totalPages - 2,
-        totalPages - 1,
-        totalPages,
-      ];
+    if (currentPage !== 1 && currentPage !== totalPages) {
+      items.push(currentPage);
     }
-    return [
-      currentPage - 2,
-      currentPage - 1,
-      currentPage,
-      currentPage + 1,
-      currentPage + 2,
-    ];
+    if (currentPage < totalPages - 1) {
+      items.push('...');
+    }
+    items.push(totalPages);
+    return items;
   };
 
-  const pages = getPageNumbers();
+  const pages = getPageItems();
+
+  const start = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, totalItems);
 
   return (
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-600 dark:text-slate-400 select-none ${className}`}
     >
       <div className="text-xs text-slate-600 dark:text-slate-400">
-        Page{' '}
-        <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
-          {currentPage}
-        </span>{' '}
-        of{' '}
-        <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
-          {totalPages}
-        </span>
+        {showItemRange ? (
+          <>
+            Showing{' '}
+            <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
+              {start}
+            </span>{' '}
+            to{' '}
+            <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
+              {end}
+            </span>{' '}
+            of{' '}
+            <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
+              {totalItems}
+            </span>
+          </>
+        ) : (
+          <>
+            Page{' '}
+            <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
+              {currentPage}
+            </span>{' '}
+            of{' '}
+            <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
+              {totalPages}
+            </span>
+          </>
+        )}
       </div>
 
       {totalPages > 1 && (
@@ -81,12 +99,23 @@ export const Pagination: React.FC<PaginationProps> = ({
             aria-label="Previous Page"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Prev</span>
+            <span className="hidden sm:inline">Previous</span>
           </button>
 
-          {/* Numbered Page Buttons */}
+          {/* Numbered Page Buttons with ... */}
           <div className="flex items-center gap-1">
-            {pages.map((p) => {
+            {pages.map((p, idx) => {
+              if (typeof p === 'string') {
+                return (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="min-w-[28px] h-7 px-1 text-xs text-slate-400 dark:text-slate-500 flex items-center justify-center select-none"
+                    aria-hidden="true"
+                  >
+                    ...
+                  </span>
+                );
+              }
               const isActive = p === currentPage;
               return (
                 <button
@@ -129,4 +158,3 @@ export const Pagination: React.FC<PaginationProps> = ({
 };
 
 export default Pagination;
-
