@@ -41,7 +41,7 @@ const SEED_ACCOUNT_HASHES = {
 const today = new Date().toISOString().split('T')[0];
 const now = new Date().toISOString();
 
-// 1. Staff: 1 Doctor + 1 Receptionist + 3 Patient Staff Records
+// 1. Staff: 1 Doctor + 1 Receptionist + 3 Outpatient Directory Entries
 const staff = [
   {
     id: 'doc-1',
@@ -325,21 +325,16 @@ const visits = [
     doctorName: 'Dr. Marcus Vance',
     date: today,
     time: '09:15',
+    reason: 'Blood pressure routine monitoring and medication refill',
     chiefComplaint: 'Blood pressure routine monitoring and medication refill',
     vitals: {
-      bloodPressure: '128/82',
-      heartRate: 74,
-      temperature: 98.4,
-      respiratoryRate: 16,
-      oxygenSaturation: 98,
-      weight: 68
+      systolicBp: 128,
+      diastolicBp: 82,
+      heartRateBpm: 74,
+      oxygenSaturationPct: 98,
+      temperatureCelsius: 36.8
     },
-    soap: {
-      subjective: 'Patient reports feeling well. Adhering to daily antihypertensive therapy.',
-      objective: 'BP 128/82 mmHg, HR 74 bpm. Chest clear, heart sounds normal.',
-      assessment: 'Primary essential hypertension, well controlled.',
-      plan: 'Continue current therapy. Prescribed 30-day refill. Repeat visit in 3 months.'
-    },
+    notes: 'Primary essential hypertension, well controlled. Continue current therapy. Prescribed 30-day refill.',
     status: 'completed'
   }
 ];
@@ -480,7 +475,82 @@ const attendance = [
   }
 ];
 
-// 12. Security Ledger
+// 12. Leave Requests
+const leave_requests = [
+  {
+    id: 'leave-1',
+    staffId: 'rec-1',
+    staffName: 'Priya Sharma',
+    type: 'Casual',
+    fromDate: '2026-11-05',
+    toDate: '2026-11-06',
+    reason: 'Family event and personal commitment',
+    status: 'pending',
+    requestedAt: now,
+    decidedBy: null,
+    decidedAt: null,
+    decisionNote: null
+  }
+];
+
+// 13. Shifts
+const shifts = [
+  {
+    id: 'shift-1',
+    staffId: 'doc-1',
+    staffName: 'Dr. Marcus Vance',
+    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+    start: '08:30',
+    end: '17:00',
+    graceMinutes: 15
+  },
+  {
+    id: 'shift-2',
+    staffId: 'rec-1',
+    staffName: 'Priya Sharma',
+    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    start: '08:00',
+    end: '16:30',
+    graceMinutes: 15
+  }
+];
+
+// 14. Approvals (Pending staff clearance request)
+const approvals = [
+  {
+    id: 'pend-doc-1',
+    role: 'doctor',
+    staffName: 'Dr. Clara Oswald',
+    staffTitle: 'Staff Consulting Physician',
+    department: 'Pediatric & Family Medicine',
+    badgeNumber: 'DOC-104',
+    specialization: 'Pediatrics',
+    consultationFee: 11000,
+    requestedAt: now,
+    notes: 'Board certified pediatrician seeking clinical workstation access clearance.'
+  }
+];
+
+// 15. Claim Requests (Patient portal account linkage)
+const claim_requests = [
+  {
+    id: 'claim-1',
+    accountId: 'acc-patient-2',
+    accountEmail: 'j.miller@example.com',
+    accountPhone: '+1 (555) 876-5432',
+    accountName: 'James Miller',
+    dob: '1972-09-20',
+    existingPatientId: 'pat-2',
+    existingMrn: 'MRN-84292',
+    requestedAt: now,
+    status: 'pending',
+    decisionNote: 'Patient portal registration self-claim for medical records access.',
+    decidedBy: null,
+    decidedAt: null
+  }
+];
+
+// 16. Security Ledger
 const ledger = [
   {
     id: `audit-${Date.now()}-1`,
@@ -511,7 +581,7 @@ const ledger = [
   }
 ];
 
-// 13. Notifications
+// 17. Notifications
 const notifications = [
   {
     id: 'notif-1',
@@ -538,30 +608,30 @@ const notifications = [
 // Execute minimal seeding
 async function seedMinimal() {
   console.log('====================================================');
-  console.log('Seeding Minimal Dataset into Supabase...');
+  console.log('Seeding Minimal Dataset into ALL Supabase Tables...');
   console.log('URL:', url);
   console.log('Target: 1 Doctor, 1 Receptionist, 3 Patients');
   console.log('====================================================');
 
   const tablesToSeed = [
+    { table: 'accounts', items: accounts },
     { table: 'staff', items: staff },
     { table: 'patients', items: patients },
-    { table: 'accounts', items: accounts },
+    { table: 'patient_assignments', items: patient_assignments },
     { table: 'appointments', items: appointments },
     { table: 'visits', items: visits },
     { table: 'prescriptions', items: prescriptions },
     { table: 'invoices', items: invoices },
     { table: 'payments', items: payments },
-    { table: 'formulary', items: formulary },
-    { table: 'roles', items: roles },
-    { table: 'patient_assignments', items: patient_assignments },
     { table: 'attendance', items: attendance },
+    { table: 'leave_requests', items: leave_requests },
+    { table: 'shifts', items: shifts },
+    { table: 'roles', items: roles },
+    { table: 'approvals', items: approvals },
+    { table: 'claim_requests', items: claim_requests },
     { table: 'ledger', items: ledger },
     { table: 'notifications', items: notifications },
-    { table: 'approvals', items: [] },
-    { table: 'claim_requests', items: [] },
-    { table: 'leave_requests', items: [] },
-    { table: 'shifts', items: [] }
+    { table: 'formulary', items: formulary }
   ];
 
   for (const { table, items } of tablesToSeed) {
@@ -585,13 +655,10 @@ async function seedMinimal() {
       } else {
         console.log(`✓ Table '${table}': ${items.length} records inserted.`);
       }
-    } else {
-      console.log(`✓ Table '${table}': cleared (0 records).`);
     }
   }
 
-  console.log('\nMinimal seed completed successfully!');
+  console.log('\nAll tables seeded with minimal connected data successfully!');
 }
 
 seedMinimal().catch(console.error);
-
