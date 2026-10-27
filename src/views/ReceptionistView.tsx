@@ -1343,8 +1343,9 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
   ];
 
   return (
-    <div className="space-y-6">
+    <>
       <h1 className="sr-only">Front Desk and Patient Reception Workstation</h1>
+      <div className="space-y-[var(--card-gap)]">
       {/* Notification Banner */}
       {notification && (
         <div role="status" aria-live="polite" className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100">
@@ -2638,5 +2639,6 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
         </Modal>
       )}
     </div>
+    </>
   );
 };

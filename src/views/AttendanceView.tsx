@@ -459,7 +459,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ activeTab }) => 
   ).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[var(--card-gap)]">
       {/* Action Notification */}
       {actionMessage && (
         <div role="status" aria-live="polite"

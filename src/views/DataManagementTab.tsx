@@ -250,7 +250,7 @@ export const DataManagementTab: React.FC<DataManagementTabProps> = ({ currentUse
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[var(--card-gap)]">
       {/* Notification Banner */}
       {notification && (
         <div className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100">

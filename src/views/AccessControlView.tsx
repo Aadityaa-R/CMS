@@ -1264,7 +1264,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
   }, [staffAccessList]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[var(--card-gap)]">
       {/* Real-time Directive Notification Banner */}
       {feedbackNotification && (
         <div

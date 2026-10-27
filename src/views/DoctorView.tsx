@@ -1432,8 +1432,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   }, [doctorAppointments, patients]);
 
   return (
-    <div className="space-y-6">
+    <>
       <h1 className="sr-only">Consultation Desk</h1>
+      <div className="space-y-[var(--card-gap)]">
       {/* Sub-Workstation Navigation Tabs */}
       <Tabs
         ariaLabel="Consultation Tabs"
@@ -3203,5 +3204,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
       )}
       
     </div>
+    </>
   );
 };

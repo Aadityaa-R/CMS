@@ -346,11 +346,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
   };
 
   return (
-    <div className="space-y-[var(--card-gap)]">
+    <>
       {/* Polite Live Region */}
       <div role="status" aria-live="polite" className="sr-only">
         {liveMessage}
       </div>
+      <div className="space-y-[var(--card-gap)]">
 
       {/* Page Header */}
       <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
@@ -735,5 +736,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onDirtyCha
         </p>
       </Modal>
     </div>
+    </>
   );
 };

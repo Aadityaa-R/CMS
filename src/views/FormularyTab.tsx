@@ -230,7 +230,7 @@ export const FormularyTab: React.FC<FormularyTabProps> = ({ currentUser }) => {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-[var(--card-gap)] animate-fadeIn">
       {/* Real-time Feedback Notification */}
       {notification && (
         <div className="p-3.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between gap-3">

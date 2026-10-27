@@ -966,7 +966,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
 
   const chartsCards = (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--card-gap)]">
       {(userIsAdmin || hasConsult) && (
         <PatientsAndVisitsChart
           buckets={metrics1.patientsAndVisits}
@@ -1242,13 +1242,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     </div>
   );
 
+  const hasTabs =
+    dashboardLayout === 'standard_with_front_desk' ||
+    (dashboardLayout === 'standard' && qualifiesForDailySummary);
+  const hasDateRange = activeTab === 'overview' && !isPatient;
+
   return (
-    <div className="space-y-[var(--card-gap)]">
+    <>
       <h1 id="dashboard-heading" tabIndex={-1} className="sr-only">
         Dashboard
       </h1>
-      {/* Controls: Navigation Tabs & Date Range */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between no-print">
+      <div className="space-y-[var(--card-gap)]">
+        {/* Controls: Navigation Tabs & Date Range */}
+        {(hasTabs || hasDateRange) && (
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between no-print">
         {dashboardLayout === 'standard_with_front_desk' ? (
           <Tabs
             ariaLabel="Dashboard Tabs"
@@ -1279,7 +1286,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         ) : <div />}
 
         {/* Date Range Selector (Overview tab only) */}
-        {activeTab === 'overview' && !isPatient && (
+        {hasDateRange && (
           <div className="w-full sm:w-48 shrink-0">
             <Select
               value={dateRange}
@@ -1291,7 +1298,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             />
           </div>
         )}
-      </div>
+          </div>
+        )}
 
       {/* ============================================================== */}
       {/* TAB: FRONT DESK LAYOUT                                         */}
@@ -1493,7 +1501,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* TAB 1: OVERVIEW                                                */}
       {/* ============================================================== */}
       {activeTab === 'overview' && (
-        <div className="space-y-6">
+        <div className="space-y-[var(--card-gap)]">
           {/* Summary Figures: Individual Card blocks in responsive grid */}
           {metrics1.summaryFigures.length === 0 ? (
             <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6">
@@ -1502,7 +1510,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-[var(--card-gap)]">
               {metrics1.summaryFigures.map((fig) => (
                 <KpiCard
                   key={fig.label}
@@ -1988,5 +1996,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       )}
 
     </div>
+    </>
   );
 };
