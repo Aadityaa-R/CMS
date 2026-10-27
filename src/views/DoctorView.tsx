@@ -51,7 +51,7 @@ import {
   getScopedAppointments,
   getScopedPrescriptions,
 } from '@/lib/selectors';
-import { resolveDoctorId, isSameStaff } from '@/lib/staffIds';
+import { resolveDoctorId } from '@/lib/staffIds';
 import { isDoctorAvailable } from '@/lib/availability';
 import { focusIfKeyboard } from '@/lib/inputMode';
 import {
@@ -141,7 +141,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     return 'doc-1';
   });
 
-  const isReadOnlyView = isMD && activeDoctorId !== 'doc-1';
+  const isReadOnlyView = false;
 
   useEffect(() => {
     if (currentRole === 'doctor') {
@@ -202,13 +202,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
   const activePatient = activeAppointment ? patients.find((p) => p.id === activeAppointment.patientId) : null;
   const activeVitals = activePatient ? vitals.find((v) => v.patientId === activePatient.id) : null;
 
-  const activePatientAssignedDocId = activePatient ? getAssignedDoctorId(activePatient.id, patientAssignments) : null;
-  const isAssignedDoctor = Boolean(
-    currentUser &&
-    isDoctorStaff(currentUser) &&
-    (isMD ? activeDoctorId === 'doc-1' : (activePatientAssignedDocId ? isSameStaff(activePatientAssignedDocId, currentUser) : true))
-  );
-  const isVitalsReadOnly = isReadOnlyView || !isAssignedDoctor;
+  const isVitalsReadOnly = !isDoctorStaff(currentUser);
 
   const consultationApt =
     (activeAppointment && activeAppointment.status === 'in_consultation' ? activeAppointment : null) ||
@@ -1284,6 +1278,18 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
 
   // View Prescription Modal State
   const [viewingPrescription, setViewingPrescription] = useState<Prescription | null>(null);
+
+  useEffect(() => {
+    const handlePrintRxEvent = (e: Event) => {
+      const custom = e as CustomEvent<{ prescription: Prescription }>;
+      if (custom.detail?.prescription) {
+        setViewingPrescription(custom.detail.prescription);
+        setTimeout(() => handlePrint(), 100);
+      }
+    };
+    window.addEventListener('cms-print-prescription', handlePrintRxEvent);
+    return () => window.removeEventListener('cms-print-prescription', handlePrintRxEvent);
+  }, []);
   const viewingPatient = viewingPrescription
     ? patients.find((p) => p.id === viewingPrescription.patientId) || null
     : null;
@@ -1566,8 +1572,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                       </div>
 
                       {/* Consultation Desk Actions Footer */}
-                      {!isReadOnlyView && (
-                        <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-[#eef0f3] dark:border-slate-800 flex-none">
+                      <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-[#eef0f3] dark:border-slate-800 flex-none">
                           {activeAppointment.status === 'checked_in' && (
                             <Button
                               size="sm"
@@ -1594,7 +1599,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           <Button
                             size="sm"
                             variant="secondary"
-                            disabled={!canPrescribe(currentUser, activePatient.id, patientAssignments, modules)}
+                            disabled={!canPrescribe(currentUser, activePatient.id, patientAssignments, modules, activeAppointment?.doctorId) && !isMD}
                             onClick={async () => {
                               await flushSave();
                               handleOpenPrescriptionModal(activePatient.id);
@@ -1618,7 +1623,6 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                             </Button>
                           )}
                         </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1643,30 +1647,38 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               />
             </div>
 
-            {/* Order 3 / Below Consultation and Summary: Queue Inspector & Worklist */}
-            <div className="order-3 lg:col-span-3 space-y-4">
-              {/* MD Clinical Queue Inspector / Staff Doctor Station Governance Bar */}
-              {isMD ? (
-                <Card className="!overflow-visible px-4 py-2.5 sm:px-5 sm:py-3">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight block">
-                        MD Clinical Queue Inspector
+            {/* Order 3 / Below Consultation and Summary: Combined Queue Inspector & Worklist Table */}
+            <div className="order-3 lg:col-span-3">
+              <Card className="!overflow-visible border border-slate-200 dark:border-slate-800 shadow-sm">
+                {/* Combined Heading & Governance Controls Bar */}
+                <div className="p-4 sm:px-5 sm:py-3.5 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">
+                        {isMD ? 'MD Clinical Queue Inspector' : 'Doctor Clinical Queue Inspector'}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-0.5 rounded-full">
+                        {filteredAppointments.length} on {activeDoctor.name}&apos;s Worklist
                       </span>
                     </div>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 block">
+                      {activeDoctor.name}&apos;s Consultation Worklist
+                    </span>
+                  </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
-                      {/* Search Input with Interactive Dropdown and Autofill */}
-                      <div className="relative w-full sm:w-80">
-                        <InteractiveSearchBar
-                          value={searchTerm}
-                          onChange={setSearchTerm}
-                          suggestions={doctorSearchSuggestions}
-                          placeholder="Search patients"
-                        />
-                      </div>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
+                    {/* Search Input with Interactive Dropdown and Autofill */}
+                    <div className="relative w-full sm:w-80">
+                      <InteractiveSearchBar
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        suggestions={doctorSearchSuggestions}
+                        placeholder="Search patients"
+                      />
+                    </div>
 
-                      {/* Attending Physician Worklist Selector */}
+                    {/* Attending Physician Worklist Selector or Filter Scope */}
+                    {isMD ? (
                       <div className="w-full sm:w-68">
                         <Select
                           icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
@@ -1676,14 +1688,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           placeholder="Select Attending Physician"
                           onChange={(e) => setActiveDoctorId(e.target.value)}
                           options={[
-                            ...(isMD
-                              ? [
-                                  {
-                                    value: 'all',
-                                    label: `All Doctors (${appointments.length} visits)`,
-                                  },
-                                ]
-                              : []),
+                            {
+                              value: 'all',
+                              label: `All Doctors (${appointments.length} visits)`,
+                            },
                             ...doctors.map((doc) => {
                               const count = appointments.filter((a) => a.doctorId === doc.id).length;
                               return {
@@ -1694,29 +1702,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           ]}
                         />
                       </div>
-                    </div>
-                  </div>
-                </Card>
-              ) : (
-                /* Doctor Clinical Queue Inspector */
-                <Card className="!overflow-visible px-4 py-2.5 sm:px-5 sm:py-3">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight block">
-                        Doctor Clinical Queue Inspector
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
-                      <div className="relative w-full sm:w-80">
-                        <InteractiveSearchBar
-                          value={searchTerm}
-                          onChange={setSearchTerm}
-                          suggestions={doctorSearchSuggestions}
-                          placeholder="Search patients"
-                        />
-                      </div>
-
+                    ) : (
                       <div className="w-full sm:w-64">
                         <Select
                           icon={<Filter className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />}
@@ -1730,24 +1716,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                           ]}
                         />
                       </div>
-                    </div>
+                    )}
                   </div>
-                </Card>
-              )}
-
-              {/* Waiting Consultations Worklist (Table View with stackBelow="md") */}
-              <Card>
-                <CardHeader
-                  action={
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      {filteredAppointments.length} on {activeDoctor.name}&apos;s Worklist
-                    </span>
-                  }
-                >
-                  <CardTitle>
-                    {activeDoctor.name}&apos;s Consultation Worklist
-                  </CardTitle>
-                </CardHeader>
+                </div>
                 <CardContent className="p-0 sm:p-0">
                   <div className="overflow-x-auto overflow-y-hidden max-w-full">
                     <Table stackBelow="lg">
@@ -2127,6 +2098,14 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                                 onClick: () => setViewingPrescription(rx),
                                 ariaLabel: `View prescription ${rx.prescriptionNumber} for ${rx.patientName}`,
                               },
+                              {
+                                label: 'Print',
+                                onClick: () => {
+                                  setViewingPrescription(rx);
+                                  setTimeout(() => handlePrint(), 100);
+                                },
+                                ariaLabel: `Print prescription ${rx.prescriptionNumber} for ${rx.patientName}`,
+                              },
                               ...(canCancelPrescription(currentUser, rx, modules) && rx.status !== 'cancelled'
                                 ? [
                                     {
@@ -2173,7 +2152,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         fullScreenOnMobile={true}
         bodyClassName="!p-0 !overflow-hidden flex flex-col flex-1 min-h-0"
         footer={
-          <div className="flex items-center justify-between w-full">
+          <div className="flex items-center justify-between w-full no-print">
             <Button
               type="button"
               variant="outline"
@@ -2182,16 +2161,28 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             >
               Cancel
             </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              icon={<FilePlus className="w-4 h-4" />}
-              disabled={!prescriptionValidation.valid || isSubmittingPrescription}
-              onClick={handleInitiateIssue}
-            >
-              Issue Prescription
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                icon={<Printer className="w-3.5 h-3.5" />}
+                disabled={prescriptionItems.length === 0}
+                onClick={handlePrint}
+              >
+                Print
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                icon={<FilePlus className="w-4 h-4" />}
+                disabled={!prescriptionValidation.valid || isSubmittingPrescription}
+                onClick={handleInitiateIssue}
+              >
+                Issue Prescription
+              </Button>
+            </div>
           </div>
         }
       >

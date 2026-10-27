@@ -30,7 +30,7 @@ export const Tabs: React.FC<TabsProps> = ({
 
   // Auto-scroll selected tab into view when activeTab changes
   useEffect(() => {
-    if (activeTabRef.current) {
+    if (activeTabRef.current && typeof activeTabRef.current.scrollIntoView === 'function') {
       activeTabRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',

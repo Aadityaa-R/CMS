@@ -775,20 +775,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     chartBucket1,
   ]);
 
-  // Front Desk Summary line text from existing selectors
-  const frontDeskSummaryText = useMemo(() => {
-    const fd = metrics1.frontDeskToday;
-    const waiting = fd?.waiting ?? 0;
-    const inConsultation = fd?.inConsultation ?? 0;
-    const bookedToday = fd?.bookedToday ?? 0;
-    const checkedInToday = fd?.checkedInToday ?? 0;
-    let text = `${waiting} waiting, ${inConsultation} in consultation, ${bookedToday} booked today, ${checkedInToday} checked in`;
-    if (hasPaymentRec && fd?.outstandingNow) {
-      text += `, Outstanding: ${fd.outstandingNow}`;
-    }
-    return text;
-  }, [metrics1.frontDeskToday, hasPaymentRec]);
-
   // Front Desk Waiting now patients (checked-in not yet in consultation, ordered by token)
   const waitingNowPatients = useMemo(() => {
     return appointments
@@ -1312,35 +1298,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* ============================================================== */}
       {activeTab === 'front_desk' && (
         <div className="space-y-4">
-          {/* Summary line and actions row on top */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              <span id="front-desk-summary-line">{frontDeskSummaryText}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {canUserCheckIn && (
-                <Button size="sm" variant="primary" onClick={() => setIsWalkInOpen(true)}>
-                  Walk-in Check-In
-                </Button>
-              )}
-              {canUserRegister && (
-                <Button size="sm" variant="outline" onClick={() => setIsRegisterOpen(true)}>
-                  Register Patient
-                </Button>
-              )}
-              {canUserBook && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setBookPrefill({});
-                    setIsBookOpen(true);
-                  }}
-                >
-                  Book Appointment
-                </Button>
-              )}
-            </div>
+          {/* Actions row on top */}
+          <div className="flex items-center justify-end gap-2">
+            {canUserCheckIn && (
+              <Button size="sm" variant="primary" onClick={() => setIsWalkInOpen(true)}>
+                Walk-in Check-In
+              </Button>
+            )}
+            {canUserRegister && (
+              <Button size="sm" variant="outline" onClick={() => setIsRegisterOpen(true)}>
+                Register Patient
+              </Button>
+            )}
+            {canUserBook && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setBookPrefill({});
+                  setIsBookOpen(true);
+                }}
+              >
+                Book Appointment
+              </Button>
+            )}
           </div>
 
           {/* Main Calendar Card + 20rem Right Column from 80rem up (xl) */}

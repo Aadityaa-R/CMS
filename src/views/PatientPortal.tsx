@@ -48,7 +48,6 @@ import {
 } from '@/components/ui/Table';
 import { RowActions, RowActionItem } from '@/components/ui/RowActions';
 import { DetailList, DetailItem, DetailGrid } from '@/components/ui/DetailList';
-import { Tabs } from '@/components/ui/Tabs';
 import { DictationButton } from '@/components/ui/DictationButton';
 import { formatDate, formatTime } from '@/lib/time';
 import { Printer } from 'lucide-react';
@@ -613,10 +612,11 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <>
       <h1 id="portal-heading" tabIndex={-1} className="sr-only">
         My Health Portal
       </h1>
+      <div className="space-y-6 pb-12">
       {notice && (
         <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between gap-3">
           <span>{notice}</span>
@@ -631,22 +631,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       )}
 
 
-
-      {/* Navigation Tabs */}
-      <Tabs
-        ariaLabel="Portal Tabs"
-        tabs={[
-          { id: 'appointments', label: 'Appointments' },
-          { id: 'records', label: 'Records' },
-          { id: 'prescriptions', label: 'Prescriptions' },
-          { id: 'invoices', label: 'Invoices' },
-        ]}
-        activeTab={activeTab}
-        onChange={(id) => {
-          setActiveTab(id as PortalTab);
-          document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-        }}
-      />
 
       {/* TAB 1: APPOINTMENTS */}
       {activeTab === 'appointments' && (
@@ -800,12 +784,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           </Card>
 
           {/* Past Appointments Table */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 w-fit max-w-full min-w-[40rem]">
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 w-full">
             <CardHeader>
               <CardTitle>Past Appointments</CardTitle>
             </CardHeader>
             <div className="p-3 sm:p-0">
-              <Table stackBelow="lg">
+              <Table stackBelow="lg" shrinkToFit={false}>
                 <TableHeader>
                   <TableRow>
                     <TableHead kind="short" priority={1}>Date</TableHead>
@@ -909,7 +893,30 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                     label="Current Medications"
                     value={(() => {
                       const activeMeds = activeMedications(patient.id, scopedPrescriptions, new Date());
-                      if (activeMeds.length > 0) return activeMeds.join(', ');
+                      const latestRx = scopedPrescriptions
+                        .filter((r) => r.patientId === patient.id && r.status !== 'cancelled')
+                        .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+                      if (activeMeds.length > 0) {
+                        return (
+                          <div className="flex items-center justify-between gap-2 w-full">
+                            <span>{activeMeds.join(', ')}</span>
+                            {latestRx && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setViewingPrescription(latestRx);
+                                  setTimeout(() => handlePrint(), 100);
+                                }}
+                                className="inline-flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400 hover:underline font-semibold cursor-pointer shrink-0 no-print"
+                                title="Print active prescription"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                                <span>Print Rx</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
                       return 'None recorded';
                     })()}
                   />
@@ -965,12 +972,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           </DetailGrid>
 
           {/* Card: Visit History - NO notes or comments */}
-          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 w-fit max-w-full min-w-[40rem]">
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 w-full">
             <CardHeader>
               <CardTitle>Visit History</CardTitle>
             </CardHeader>
             <div className="p-3 sm:p-0">
-              <Table stackBelow="lg">
+              <Table stackBelow="lg" shrinkToFit={false}>
                 <TableHeader>
                   <TableRow>
                     <TableHead kind="short" priority={1}>Date</TableHead>
@@ -1023,6 +1030,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
       {activeTab === 'prescriptions' && (
         <div className="space-y-6">
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <CardHeader>
+              <CardTitle>Prescriptions</CardTitle>
+            </CardHeader>
             <div className="p-3 sm:p-0">
               <Table stackBelow="lg">
                 <TableHeader>
@@ -1071,6 +1081,14 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
                                   label: 'View',
                                   onClick: () => setViewingPrescription(rx),
                                   ariaLabel: `View prescription ${rx.prescriptionNumber}`,
+                                },
+                                {
+                                  label: 'Print',
+                                  onClick: () => {
+                                    setViewingPrescription(rx);
+                                    setTimeout(() => handlePrint(), 100);
+                                  },
+                                  ariaLabel: `Print prescription ${rx.prescriptionNumber}`,
                                 },
                               ]}
                               subject={rx.prescriptionNumber}
@@ -1886,5 +1904,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
         </Modal>
       )}
     </div>
+    </>
   );
 };

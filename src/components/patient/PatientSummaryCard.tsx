@@ -7,6 +7,7 @@ import { DetailList, DetailItem } from '@/components/ui/DetailList';
 import { formatDate } from '@/lib/time';
 import { formatDoctorName } from '@/lib/doctorNames';
 import { activeMedications } from '@/lib/prescribing';
+import { Printer } from 'lucide-react';
 
 export interface PatientSummaryCardProps {
   summaryPatient: Patient | null;
@@ -206,7 +207,31 @@ export const PatientSummaryCard = React.memo<PatientSummaryCardProps>(({
                     label="Current Medications"
                     value={(() => {
                       const activeMeds = activeMedications(summaryPatient.id, prescriptions, new Date());
-                      if (activeMeds.length > 0) return activeMeds.join(', ');
+                      const latestRx = prescriptions
+                        .filter((r) => r.patientId === summaryPatient.id && r.status !== 'cancelled')
+                        .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+                      if (activeMeds.length > 0) {
+                        return (
+                          <div className="flex items-center justify-between gap-2 w-full">
+                            <span>{activeMeds.join(', ')}</span>
+                            {latestRx && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  window.dispatchEvent(
+                                    new CustomEvent('cms-print-prescription', { detail: { prescription: latestRx } })
+                                  );
+                                }}
+                                className="inline-flex items-center gap-1 text-[0.6875rem] text-teal-600 dark:text-teal-400 hover:underline font-semibold cursor-pointer shrink-0 no-print"
+                                title="Print prescription"
+                              >
+                                <Printer className="w-3 h-3" />
+                                <span>Print</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
                       return 'None recorded';
                     })()}
                   />

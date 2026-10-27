@@ -1424,7 +1424,7 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return { success: false, error: 'Authentication required to issue prescriptions.' };
     }
 
-    if (!canPrescribe(actor, data.patientId, patientAssignments, modules)) {
+    if (!canPrescribe(actor, data.patientId, patientAssignments, modules, data.doctorId)) {
       return {
         success: false,
         error: 'Only the assigned physician with Prescription Authoring and EMR Records Access can issue prescriptions.',

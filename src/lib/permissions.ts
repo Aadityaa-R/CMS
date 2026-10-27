@@ -567,15 +567,22 @@ export function canPrescribe(
   user: User | null | undefined,
   patientId: string,
   assignments: PatientAssignment[],
-  modules: AccessModule[] = INITIAL_MODULES
+  modules: AccessModule[] = INITIAL_MODULES,
+  attendingDoctorId?: string | null
 ): boolean {
   if (!user) return false;
   if (!isDoctorStaff(user)) return false;
   if (!hasCapability(user, 'prescriptionAuthoring', modules)) return false;
   if (!hasCapability(user, 'emrRecordsAccess', modules)) return false;
 
+  // Managing Directors and clinic administrators can prescribe for any patient
+  if (isAdmin(user, modules) || user.role === 'md') return true;
+
+  // Attending physician conducting the visit can prescribe
+  if (attendingDoctorId && isSameStaff(attendingDoctorId, user)) return true;
+
   const assignedDocId = getAssignedDoctorId(patientId, assignments);
-  if (!assignedDocId) return false;
+  if (!assignedDocId) return true;
 
   return isSameStaff(assignedDocId, user);
 }
