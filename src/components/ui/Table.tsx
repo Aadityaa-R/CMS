@@ -487,7 +487,7 @@ export const TableCell: React.FC<TableCellProps> = ({
 
   const wrappedContent =
     effectiveKind === 'text' && typeof cellContent === 'string' ? (
-      <div className="line-clamp-2 max-w-xl">{cellContent}</div>
+      <div className="line-clamp-2 max-w-xl leading-normal py-0.5">{cellContent}</div>
     ) : (
       cellContent
     );
@@ -497,7 +497,7 @@ export const TableCell: React.FC<TableCellProps> = ({
     const desktopDisplay = stackBelow === 'sm' ? 'sm:block' : stackBelow === 'lg' ? 'lg:block' : 'md:block';
     return (
       <td
-        className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${kindClass} ${hideClass} ${stackCellClass} ${className}`}
+        className={`px-0 sm:px-4 py-1 sm:py-3 align-middle leading-normal ${kindClass} ${hideClass} ${stackCellClass} ${className}`}
         {...props}
       >
         <div className={`font-bold text-fs-body text-slate-900 dark:text-slate-100 ${desktopDisplay}`}>
@@ -533,7 +533,7 @@ export const TableCell: React.FC<TableCellProps> = ({
 
     return (
       <td
-        className={`px-0 sm:px-4 py-1 sm:py-3 align-middle ${kindClass} ${hideClass} ${stackCellClass} ${className}`}
+        className={`px-0 sm:px-4 py-1 sm:py-3 align-middle leading-normal ${kindClass} ${hideClass} ${stackCellClass} ${className}`}
         {...props}
       >
         <div className={`flex items-start sm:items-center gap-2 sm:gap-3 text-left ${desktopDisplay}`}>
@@ -542,7 +542,7 @@ export const TableCell: React.FC<TableCellProps> = ({
           >
             {label}
           </span>
-          <div className={`text-fs-body text-slate-800 dark:text-slate-200 text-left flex-1 ${effectiveKind === 'text' ? 'min-w-0 line-clamp-2 break-words max-w-xl' : 'break-words'}`}>
+          <div className={`text-fs-body text-slate-800 dark:text-slate-200 text-left flex-1 leading-normal ${effectiveKind === 'text' ? 'min-w-0 break-words max-w-xl' : 'break-words'}`}>
             {wrappedContent}
           </div>
         </div>
@@ -552,7 +552,7 @@ export const TableCell: React.FC<TableCellProps> = ({
 
   return (
     <td
-      className={`px-0 sm:px-4 py-1 sm:py-3 align-middle text-fs-body ${kindClass} ${hideClass} ${stackCellClass} ${className}`}
+      className={`px-0 sm:px-4 py-1 sm:py-3 align-middle text-fs-body leading-normal ${kindClass} ${hideClass} ${stackCellClass} ${className}`}
       {...props}
     >
       {wrappedContent}
