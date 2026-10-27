@@ -17,9 +17,13 @@
     "scan:emojis": "tsx scripts/scan-emojis.ts",
     "scan:commits": "tsx scripts/scan-commits.ts",
     "verify": "npm run build && npm run typecheck && npm run test:all-zones && npm run scan:emojis && npm run scan:commits && npm run scan:colors",
-    "scan:colors": "tsx scripts/scan-colors.ts"
+    "scan:colors": "tsx scripts/scan-colors.ts",
+    "db:check": "node scripts/check-supabase.js",
+    "db:seed": "tsx scripts/seed-supabase.ts",
+    "db:seed:minimal": "node scripts/seed-minimal.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "lucide-react": "^1.16.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

@@ -14,6 +14,8 @@ import {
   ClaimRequest,
 } from '../types/storage';
 import { BrowserRepository, MemoryRepository, Repository } from './repository';
+import { SupabaseRepository } from './supabaseRepository';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { hashPassword } from '../lib/auth';
 import { normalizeActor } from '../lib/billing';
 import { migrateConsultationFee } from '../lib/money';
@@ -46,6 +48,8 @@ export function getRepository<T extends { id: string }>(collection: CollectionNa
     const settings = getStorageSettings();
     if (settings.mode === 'memory') {
       repositories[collection] = new MemoryRepository<T>();
+    } else if (isSupabaseConfigured) {
+      repositories[collection] = new SupabaseRepository<T>(collection);
     } else {
       repositories[collection] = new BrowserRepository<T>(collection);
     }
@@ -65,7 +69,7 @@ export function getStorageSettings(): StorageSettings {
     const raw = window.localStorage.getItem(STORAGE_SETTINGS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && (parsed.mode === 'browser' || parsed.mode === 'memory')) {
+      if (parsed && (parsed.mode === 'browser' || parsed.mode === 'memory' || parsed.mode === 'supabase')) {
         return {
           ...parsed,
           schemaVersion: typeof parsed.schemaVersion === 'number' ? parsed.schemaVersion : 1,
@@ -98,7 +102,7 @@ export function setStorageSettings(settings: Partial<StorageSettings>): void {
   }
 }
 
-export function switchStorageMode(newMode: 'browser' | 'memory'): void {
+export function switchStorageMode(newMode: 'browser' | 'memory' | 'supabase'): void {
   const current = getStorageSettings();
   if (current.mode === newMode) return;
   setStorageSettings({ mode: newMode });
@@ -620,7 +624,7 @@ export function hasUndoSnapshot(): boolean {
 }
 
 export async function getStorageStats(): Promise<{
-  mode: 'browser' | 'memory';
+  mode: 'browser' | 'memory' | 'supabase';
   lastSaved: string;
   totalBytes: number;
   totalSizeFormatted: string;

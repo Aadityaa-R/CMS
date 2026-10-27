@@ -52,7 +52,7 @@ export interface ClaimRequest {
 }
 
 export interface StorageSettings {
-  mode: 'browser' | 'memory';
+  mode: 'browser' | 'memory' | 'supabase';
   schemaVersion: number;
   lastSaved: string;
 }
