@@ -820,7 +820,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           cur.form = 'Tablet';
           cur.route = 'Oral';
           cur.dose = {
-            amount: cur.dose?.amount && cur.dose.amount > 0 ? cur.dose.amount : 1,
+            amount: cur.dose?.amount && cur.dose.amount > 0 ? cur.dose.amount : 0,
             unit: 'tablet',
           };
           cur.refills = 0;
@@ -833,7 +833,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             cur.form = med.form;
             cur.route = med.defaultRoute || 'Oral';
             cur.dose = {
-              amount: cur.dose?.amount && cur.dose.amount > 0 ? cur.dose.amount : 1,
+              amount: cur.dose?.amount && cur.dose.amount > 0 ? cur.dose.amount : 0,
               unit: med.form.toLowerCase(),
             };
             cur.refills = 0;
@@ -959,26 +959,10 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     showNotification(`e-Prescription #${result.prescription.prescriptionNumber} saved and issued successfully.`);
   };
 
-  const handlePrintDraft = () => {
-    if (prescriptionItems.length === 0) {
-      setPrescriptionError('Add at least one medicine item to print prescription.');
-      return;
-    }
-    const targetPatient = prescPatient || (prescPatientId ? patients.find((p) => p.id === prescPatientId) : null);
-    const draftRx: Prescription = {
-      id: 'draft-rx',
-      prescriptionNumber: `RX-DRAFT-${new Date().getFullYear()}`,
-      patientId: targetPatient ? targetPatient.id : 'unknown',
-      patientName: targetPatient ? `${targetPatient.firstName} ${targetPatient.lastName}` : 'Demo Patient',
-      doctorId: activeDoctor.id,
-      doctorName: activeDoctor.name,
-      date: formatLocalDate(),
-      diagnosis: effectiveDiagnosis || 'Clinical Assessment',
-      items: prescriptionItems,
-      status: 'active',
-    };
-    setViewingPrescription(draftRx);
-    setTimeout(() => handlePrint(), 120);
+  const handlePrintIssuedRx = () => {
+    if (!lastIssuedRx) return;
+    setViewingPrescription(lastIssuedRx);
+    setTimeout(() => handlePrint(), 100);
   };
 
   const handleInitiateIssue = (e: React.FormEvent) => {
@@ -1032,18 +1016,51 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
     showNotification(`e-Prescription #${result.prescription.prescriptionNumber} issued.`);
   };
 
+  const hasUnsavedRxChanges = () => {
+    if (formHasEdits) return true;
+    if (!openedWithSpecificPatient && prescPatientId) return true;
+    if (diagnosisCustom.trim()) return true;
+    if (diagnosisSelect && diagnosisSelect !== 'Essential Hypertension (Stage 1)' && diagnosisSelect !== '') return true;
+    if (prescriptionItems.length > 1) return true;
+    return prescriptionItems.some(
+      (item) =>
+        Boolean(
+          (item.medicineId && item.medicineId.trim()) ||
+          (item.customName && item.customName.trim()) ||
+          (item.dose?.amount && item.dose.amount > 0) ||
+          (item.instructions && item.instructions.trim()) ||
+          (item.frequency && item.frequency.trim()) ||
+          (item.duration && item.duration.trim())
+        )
+    );
+  };
+
   const handleClosePrescribeModal = () => {
-    if (formHasEdits) {
+    if (isSubmittingPrescription) return;
+    if (hasUnsavedRxChanges()) {
       setIsDiscardConfirmOpen(true);
     } else {
       setIsPrescriptionModalOpen(false);
+      setFormHasEdits(false);
     }
+  };
+
+  const handleBackdropClickRxModal = () => {
+    if (isSubmittingPrescription) return;
+    if (hasUnsavedRxChanges()) {
+      return;
+    }
+    handleClosePrescribeModal();
   };
 
   const handleConfirmDiscard = () => {
     setIsDiscardConfirmOpen(false);
     setIsPrescriptionModalOpen(false);
     setFormHasEdits(false);
+    setPrescriptionItems([createEmptyPrescriptionItem()]);
+    setPrescPatientId('');
+    setDiagnosisCustom('');
+    setPrescriptionError('');
   };
 
   const handleOpenCancelModal = (rx: Prescription) => {
@@ -2229,35 +2246,12 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         isOpen={isPrescriptionModalOpen}
         onClose={handleClosePrescribeModal}
         title="Issue Medical Prescription (e-Rx)"
+        closeAriaLabel="Close prescription form"
+        isCloseDisabled={isSubmittingPrescription}
+        onBackdropClick={handleBackdropClickRxModal}
         maxWidth="2xl"
         fullScreenOnMobile={true}
         bodyClassName="!p-0 !overflow-hidden flex flex-col flex-1 min-h-0"
-        headerActions={
-          <div className="flex items-center gap-2 mr-2 no-print">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              icon={<Printer className="w-3.5 h-3.5" />}
-              disabled={prescriptionItems.length === 0}
-              onClick={handlePrintDraft}
-              title="Print prescription slip"
-            >
-              Print
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              icon={<Save className="w-4 h-4" />}
-              disabled={!prescriptionValidation.valid || isSubmittingPrescription}
-              onClick={handleSavePrescription}
-              title="Save prescription"
-            >
-              Save Prescription
-            </Button>
-          </div>
-        }
         footer={
           <div className="flex items-center justify-between w-full no-print">
             <Button
@@ -2269,16 +2263,17 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               Cancel
             </Button>
             <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                icon={<Printer className="w-3.5 h-3.5" />}
-                disabled={prescriptionItems.length === 0}
-                onClick={handlePrintDraft}
-              >
-                Print
-              </Button>
+              {lastIssuedRx && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  icon={<Printer className="w-3.5 h-3.5" />}
+                  onClick={handlePrintIssuedRx}
+                >
+                  Print
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="primary"
@@ -2287,7 +2282,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
                 disabled={!prescriptionValidation.valid || isSubmittingPrescription}
                 onClick={handleSavePrescription}
               >
-                Save Prescription
+                Issue Prescription
               </Button>
             </div>
           </div>
@@ -2310,17 +2305,18 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              icon={<Printer className="w-3 h-3" />}
-              disabled={prescriptionItems.length === 0}
-              onClick={handlePrintDraft}
-              title="Print prescription slip"
-            >
-              Print
-            </Button>
+            {lastIssuedRx && (
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                icon={<Printer className="w-3 h-3" />}
+                onClick={handlePrintIssuedRx}
+                title="Print prescription slip"
+              >
+                Print
+              </Button>
+            )}
             <Button
               type="button"
               variant="primary"
@@ -2328,9 +2324,9 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
               icon={<Save className="w-3 h-3" />}
               disabled={!prescriptionValidation.valid || isSubmittingPrescription}
               onClick={handleSavePrescription}
-              title="Save prescription"
+              title="Issue prescription"
             >
-              Save Prescription
+              Issue Prescription
             </Button>
           </div>
         </div>
@@ -2684,6 +2680,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         onClose={() => setIsConfirmIssueOpen(false)}
         title="Confirm Electronic Prescription"
         maxWidth="lg"
+        hideCloseButton={true}
         footer={
           <div className="flex items-center justify-between w-full">
             <Button
@@ -2796,6 +2793,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
         title="Discard this prescription?"
         description="Unsaved prescription changes will be lost."
         maxWidth="sm"
+        hideCloseButton={true}
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
             <Button
@@ -2890,6 +2888,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
           onClose={() => setIsCancelModalOpen(false)}
           title={`Cancel Prescription ${cancellingRx.prescriptionNumber}?`}
           maxWidth="sm"
+          hideCloseButton={true}
           footer={
             <div className="flex items-center justify-end gap-2 w-full">
               <Button

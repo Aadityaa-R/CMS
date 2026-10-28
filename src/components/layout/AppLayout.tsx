@@ -417,6 +417,7 @@ export const AppLayout: React.FC = () => {
             title="Discard changes?"
             description="You have unsaved changes to your contact details. Are you sure you want to discard them?"
             maxWidth="sm"
+            hideCloseButton={true}
             footer={
               <div className="flex items-center justify-end gap-3 w-full">
                 <Button

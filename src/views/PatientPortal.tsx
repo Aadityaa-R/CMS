@@ -1478,6 +1478,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
           onClose={() => setCancelTarget(null)}
           title="Cancel Appointment"
           maxWidth="sm"
+          hideCloseButton={true}
           footer={
             <div className="flex items-center justify-end space-x-2 w-full">
               <Button

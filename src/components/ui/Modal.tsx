@@ -15,6 +15,10 @@ export interface ModalProps {
   overflowVisible?: boolean;
   bodyClassName?: string;
   headerActions?: React.ReactNode;
+  hideCloseButton?: boolean;
+  closeAriaLabel?: string;
+  isCloseDisabled?: boolean;
+  onBackdropClick?: () => void;
 }
 
 let modalScrollLockCount = 0;
@@ -54,11 +58,19 @@ export const Modal: React.FC<ModalProps> = ({
   overflowVisible = false,
   bodyClassName = '',
   headerActions,
+  hideCloseButton = false,
+  closeAriaLabel,
+  isCloseDisabled = false,
+  onBackdropClick,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const isCloseDisabledRef = useRef(isCloseDisabled);
+  isCloseDisabledRef.current = isCloseDisabled;
+  const onBackdropClickRef = useRef(onBackdropClick);
+  onBackdropClickRef.current = onBackdropClick;
 
   useEffect(() => {
     if (isOpen) {
@@ -85,6 +97,7 @@ export const Modal: React.FC<ModalProps> = ({
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           e.stopPropagation();
+          if (isCloseDisabledRef.current) return;
           onCloseRef.current();
           return;
         }
@@ -156,7 +169,14 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm modal-overlay modal-backdrop"
-        onClick={() => onCloseRef.current()}
+        onClick={() => {
+          if (isCloseDisabledRef.current) return;
+          if (onBackdropClickRef.current) {
+            onBackdropClickRef.current();
+          } else {
+            onCloseRef.current();
+          }
+        }}
       />
 
       {/* Modal Dialog Content */}
@@ -181,14 +201,17 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
           <div className="flex items-center gap-2">
             {headerActions}
-            <button
-              type="button"
-              onClick={() => onCloseRef.current()}
-              aria-label="Close dialog"
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-0 no-print"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {!hideCloseButton && (
+              <button
+                type="button"
+                disabled={isCloseDisabled}
+                onClick={() => onCloseRef.current()}
+                aria-label={closeAriaLabel || 'Close dialog'}
+                className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 dark:focus-visible:outline-teal-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer no-print shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 
