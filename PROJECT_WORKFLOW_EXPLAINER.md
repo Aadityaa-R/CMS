@@ -196,3 +196,4 @@ Use this structured script when demonstrating the platform to your manager:
 - **Test Suite Quality Gate**: 100% TypeScript strict verification across all modules.
 - **Enterprise Design**: Uniform typography (`--fs-body`, `--page-pad`), dark/light theme support, and zero horizontal overflow.
 - **Regulatory Readiness**: Strict separation of concerns, immutable audit trail, and clinical safety guardrails.
+
