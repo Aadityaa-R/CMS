@@ -28,7 +28,7 @@ export const CardHeader: React.FC<{
 }> = ({ children, className = '', action }) => {
   return (
     <div
-      style={{ padding: 'var(--card-pad)', paddingBottom: '0.5rem' }}
+      style={{ padding: 'var(--card-pad)' }}
       className={`flex items-center justify-between ${className}`}
     >
       <div>{children}</div>

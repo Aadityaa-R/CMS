@@ -111,11 +111,11 @@ export const Tabs: React.FC<TabsProps> = ({
             } ${
               isSmall
                 ? isFirst
-                  ? 'text-[0.9375rem] min-h-[2rem] py-1.5 pr-2.5'
-                  : 'text-[0.9375rem] min-h-[2rem] py-1.5 px-2.5'
+                  ? 'text-[0.9375rem] py-2 pr-2.5'
+                  : 'text-[0.9375rem] py-2 px-2.5'
                 : isFirst
-                ? 'text-[1.0625rem] min-h-[44px] py-[0.75rem] pr-[1.125rem]'
-                : 'text-[1.0625rem] min-h-[44px] py-[0.75rem] px-[1.125rem]'
+                ? 'text-[1.0625rem] py-2 pr-[1.125rem]'
+                : 'text-[1.0625rem] py-2 px-[1.125rem]'
             } ${
               isSelected
                 ? 'font-bold text-[var(--text)] after:content-[""] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[0.1875rem] after:bg-teal-600 dark:after:bg-teal-400 after:rounded-full'

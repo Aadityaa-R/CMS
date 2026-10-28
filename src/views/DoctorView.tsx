@@ -1732,7 +1732,7 @@ export const DoctorView: React.FC<DoctorViewProps> = ({ activeTab = 'overview' }
             <div className="order-3 lg:col-span-3">
               <Card className="!overflow-visible border border-slate-200 dark:border-slate-800 shadow-sm">
                 {/* Combined Heading & Governance Controls Bar */}
-                <div className="p-4 sm:px-5 sm:py-3.5 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div className="border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3" style={{ padding: 'var(--card-pad)' }}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">

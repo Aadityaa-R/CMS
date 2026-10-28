@@ -1672,7 +1672,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           ) : (
             /* Roles Directory Table View */
             <Card className="border border-slate-200 dark:border-slate-800 w-full !overflow-visible">
-              <div className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800" style={{ padding: 'var(--card-pad)' }}>
                 {/* Search box and roles filter on the left */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
                   <div className="relative w-full sm:w-80">
@@ -2157,7 +2157,7 @@ export const AccessControlView: React.FC<AccessControlViewProps> = ({ activeTab 
           ) : (
             <Card className="border border-slate-200 dark:border-slate-800 !overflow-visible">
               {/* Card First Row: Search box and Type Select on left, one Add button on right */}
-              <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ padding: 'var(--card-pad)' }}>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
                   <div className="relative w-full sm:w-80">
                     <InteractiveSearchBar
