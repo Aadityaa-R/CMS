@@ -147,8 +147,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate, act
         style={{
           paddingLeft: 'var(--page-pad)',
           paddingRight: 'var(--page-pad)',
-          scrollbarGutter: 'stable',
-          overflowY: 'hidden',
         }}
       >
         {/* Brand / Clinic Title */}
