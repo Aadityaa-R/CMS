@@ -1255,50 +1255,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       <div className="space-y-[var(--card-gap)]">
         {/* Controls: Navigation Tabs & Date Range */}
         {(hasTabs || hasDateRange) && (
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between no-print">
-        {dashboardLayout === 'standard_with_front_desk' ? (
           <Tabs
             ariaLabel="Dashboard Tabs"
-            tabs={[
-              { id: 'front_desk', label: 'Front Desk' },
-              { id: 'overview', label: 'Overview' },
-              ...(qualifiesForDailySummary ? [{ id: 'daily_summary', label: 'Daily Summary' }] : []),
-            ]}
+            tabs={
+              dashboardLayout === 'standard_with_front_desk'
+                ? [
+                    { id: 'front_desk', label: 'Front Desk' },
+                    { id: 'overview', label: 'Overview' },
+                    ...(qualifiesForDailySummary ? [{ id: 'daily_summary', label: 'Daily Summary' }] : []),
+                  ]
+                : dashboardLayout === 'standard' && qualifiesForDailySummary
+                ? [
+                    { id: 'overview', label: 'Overview' },
+                    { id: 'daily_summary', label: 'Daily Summary' },
+                  ]
+                : [{ id: 'overview', label: 'Overview' }]
+            }
             activeTab={activeTab}
             onChange={(id) => {
               setActiveTab(id as 'front_desk' | 'overview' | 'daily_summary');
               document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
             }}
+            controls={
+              hasDateRange ? (
+                <div className="w-auto shrink-0">
+                  <Select
+                    value={dateRange}
+                    options={DATE_RANGE_OPTIONS}
+                    onChange={(e) => {
+                      setDateRange(e.target.value as DateRangePreset);
+                      setAppointmentsPage(1);
+                    }}
+                    size="compact"
+                  />
+                </div>
+              ) : null
+            }
           />
-        ) : dashboardLayout === 'standard' && qualifiesForDailySummary ? (
-          <Tabs
-            ariaLabel="Dashboard Tabs"
-            tabs={[
-              { id: 'overview', label: 'Overview' },
-              { id: 'daily_summary', label: 'Daily Summary' },
-            ]}
-            activeTab={activeTab}
-            onChange={(id) => {
-              setActiveTab(id as 'front_desk' | 'overview' | 'daily_summary');
-              document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-            }}
-          />
-        ) : <div />}
-
-        {/* Date Range Selector (Overview tab only) */}
-        {hasDateRange && (
-          <div className="w-full sm:w-48 shrink-0">
-            <Select
-              value={dateRange}
-              options={DATE_RANGE_OPTIONS}
-              onChange={(e) => {
-                setDateRange(e.target.value as DateRangePreset);
-                setAppointmentsPage(1);
-              }}
-            />
-          </div>
-        )}
-          </div>
         )}
 
       {/* ============================================================== */}

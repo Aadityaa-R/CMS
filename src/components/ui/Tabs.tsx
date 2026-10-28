@@ -15,6 +15,7 @@ export interface TabsProps {
   ariaLabel?: string;
   className?: string;
   size?: 'default' | 'sm';
+  controls?: React.ReactNode;
 }
 
 export const Tabs: React.FC<TabsProps> = ({
@@ -24,6 +25,7 @@ export const Tabs: React.FC<TabsProps> = ({
   ariaLabel = 'Navigation Tabs',
   className = '',
   size = 'default',
+  controls,
 }) => {
   const activeTabRef = useRef<HTMLButtonElement | null>(null);
   const tablistRef = useRef<HTMLDivElement | null>(null);
@@ -78,57 +80,65 @@ export const Tabs: React.FC<TabsProps> = ({
 
   return (
     <div
-      ref={tablistRef}
-      role="tablist"
-      aria-label={ariaLabel}
-      onKeyDown={handleKeyDown}
-      className={`flex items-center gap-[0.25rem] border-b border-slate-200 dark:border-slate-800 overflow-x-auto overflow-y-hidden scrollbar-none no-scrollbar [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-nowrap shrink-0 ${className}`}
+      className={`tab-row flex items-end justify-between border-b border-slate-200 dark:border-slate-800 w-full shrink-0 ${className}`}
     >
-      {tabs.map((tab, idx) => {
-        const isSelected = activeTab === tab.id;
-        const isFirst = idx === 0;
-        return (
-          <button
-            key={tab.id}
-            ref={isSelected ? activeTabRef : null}
-            type="button"
-            role="tab"
-            data-tab-id={tab.id}
-            id={`tab-${tab.id}`}
-            aria-controls={`tabpanel-${tab.id}`}
-            aria-selected={isSelected}
-            aria-current={isSelected ? 'page' : undefined}
-            tabIndex={isSelected ? 0 : -1}
-            disabled={tab.disabled}
-            onClick={() => {
-              if (!tab.disabled) {
-                onChange(tab.id);
-              }
-            }}
-            style={isFirst ? { paddingInlineStart: 0 } : undefined}
-            className={`relative inline-flex items-center whitespace-nowrap cursor-pointer transition-colors shrink-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 dark:focus-visible:outline-teal-400 focus-visible:-outline-offset-2 ${
-              isFirst ? 'justify-start text-left pl-0 [padding-inline-start:0]' : 'justify-center'
-            } ${
-              isSmall
-                ? isFirst
-                  ? 'text-[0.9375rem] py-2 pr-2.5'
-                  : 'text-[0.9375rem] py-2 px-2.5'
-                : isFirst
-                ? 'text-[1.0625rem] py-2 pr-[1.125rem]'
-                : 'text-[1.0625rem] py-2 px-[1.125rem]'
-            } ${
-              isSelected
-                ? 'font-bold text-[var(--text)] after:content-[""] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[0.1875rem] after:bg-teal-600 dark:after:bg-teal-400 after:rounded-full'
-                : 'font-medium text-[var(--text-muted)] hover:text-[var(--text)]'
-            } ${tab.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-          >
-            {tab.label}
-            {tab.count !== undefined ? ` (${tab.count})` : null}
-            {tab.badge ? <span className="ml-1.5">{tab.badge}</span> : null}
-          </button>
-        );
-      })}
+      <div
+        ref={tablistRef}
+        role="tablist"
+        aria-label={ariaLabel}
+        onKeyDown={handleKeyDown}
+        className="flex items-end gap-[0.25rem] overflow-x-auto overflow-y-hidden scrollbar-none no-scrollbar [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-nowrap shrink-0"
+      >
+        {tabs.map((tab, idx) => {
+          const isSelected = activeTab === tab.id;
+          const isFirst = idx === 0;
+          return (
+            <button
+              key={tab.id}
+              ref={isSelected ? activeTabRef : null}
+              type="button"
+              role="tab"
+              data-tab-id={tab.id}
+              id={`tab-${tab.id}`}
+              aria-controls={`tabpanel-${tab.id}`}
+              aria-selected={isSelected}
+              aria-current={isSelected ? 'page' : undefined}
+              tabIndex={isSelected ? 0 : -1}
+              disabled={tab.disabled}
+              onClick={() => {
+                if (!tab.disabled) {
+                  onChange(tab.id);
+                }
+              }}
+              style={isFirst ? { paddingInlineStart: 0 } : undefined}
+              className={`relative inline-flex items-center whitespace-nowrap cursor-pointer transition-colors shrink-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 dark:focus-visible:outline-teal-400 focus-visible:-outline-offset-2 ${
+                isFirst ? 'justify-start text-left pl-0 [padding-inline-start:0]' : 'justify-center'
+              } pt-0 pb-[0.625rem] leading-[1.3] ${
+                isSmall
+                  ? isFirst
+                    ? 'text-[0.9375rem] pr-2.5'
+                    : 'text-[0.9375rem] px-2.5'
+                  : isFirst
+                  ? 'text-[1.0625rem] pr-[1.125rem]'
+                  : 'text-[1.0625rem] px-[1.125rem]'
+              } ${
+                isSelected
+                  ? 'font-bold text-[var(--text)] after:content-[""] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[0.1875rem] after:bg-teal-600 dark:after:bg-teal-400 after:rounded-full'
+                  : 'font-medium text-[var(--text-muted)] hover:text-[var(--text)]'
+              } ${tab.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              {tab.label}
+              {tab.count !== undefined ? ` (${tab.count})` : null}
+              {tab.badge ? <span className="ml-1.5">{tab.badge}</span> : null}
+            </button>
+          );
+        })}
+      </div>
+      {controls && (
+        <div className="tab-row-controls flex items-center shrink-0 self-center my-auto">
+          {controls}
+        </div>
+      )}
     </div>
   );
 };
-

@@ -2,7 +2,7 @@ import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'soft';
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: 'compact' | 'xs' | 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   icon?: React.ReactNode;
 }
@@ -21,6 +21,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
     'inline-flex items-center justify-center font-medium outline-none focus:outline-none focus-visible:outline-2 focus-visible:outline-teal-600 focus-visible:outline-offset-[-2px] disabled:opacity-50 disabled:pointer-events-none rounded-lg cursor-pointer select-none';
 
   const sizeClasses = {
+    compact: 'text-[0.875rem] px-3 py-0 h-8 !min-h-0 leading-none gap-1.5',
     xs: 'text-[0.6875rem] px-2 py-1 gap-1 min-h-[44px]',
     sm: 'text-xs px-2.5 py-1.5 gap-1.5 min-h-[44px]',
     md: 'text-sm px-4 py-2 gap-2 min-h-[44px]',

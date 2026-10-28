@@ -23,7 +23,7 @@ export interface SelectProps {
   icon?: React.ReactNode;
   searchable?: boolean;
   searchPlaceholder?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'compact';
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -127,19 +127,22 @@ export const Select: React.FC<SelectProps> = ({
     }
   }, [highlightedIndex, isOpen]);
 
-  const triggerSizeClasses = {
+  const triggerSizeClasses: Record<'sm' | 'md' | 'lg' | 'compact', string> = {
+    compact: 'h-8 py-0 text-[0.875rem] font-normal rounded-lg min-h-0',
     sm: 'py-1.5 text-fs-body rounded-xl min-h-[36px]',
     md: 'py-2 text-fs-body font-medium rounded-xl min-h-[38px]',
     lg: 'py-2.5 sm:py-3 text-fs-body font-medium rounded-xl min-h-[44px]',
   };
 
-  const triggerPaddingClasses = {
+  const triggerPaddingClasses: Record<'sm' | 'md' | 'lg' | 'compact', string> = {
+    compact: icon ? 'pl-8 pr-7' : 'px-2.5 pr-7',
     sm: icon ? 'pl-8 pr-8' : 'px-3 pr-8',
     md: icon ? 'pl-9 pr-9' : 'px-3.5 pr-9',
     lg: icon ? 'pl-11 pr-10' : 'px-4 pr-10',
   };
 
-  const optionItemSizeClasses = {
+  const optionItemSizeClasses: Record<'sm' | 'md' | 'lg' | 'compact', string> = {
+    compact: 'px-2.5 py-1 text-[0.875rem]',
     sm: 'px-2.5 py-1.5 text-fs-body',
     md: 'px-3 py-2 text-fs-body',
     lg: 'px-4 py-2.5 text-fs-body',

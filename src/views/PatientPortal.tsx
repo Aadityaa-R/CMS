@@ -1,3 +1,4 @@
+import { Tabs } from '@/components/ui/Tabs';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { focusIfKeyboard } from '@/lib/inputMode';
 import { useClinic } from '@/context/ClinicContext';
@@ -618,6 +619,20 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ activeTab: initial
         My Health Portal
       </h1>
       <div className="space-y-[var(--card-gap)]">
+      <Tabs
+        ariaLabel="Patient Portal Tabs"
+        tabs={[
+          { id: 'appointments', label: 'Appointments' },
+          { id: 'records', label: 'Records' },
+          { id: 'prescriptions', label: 'Prescriptions' },
+          { id: 'invoices', label: 'Invoices' },
+        ]}
+        activeTab={activeTab}
+        onChange={(id) => {
+          setActiveTab(id as PortalTab);
+          document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+      />
       {notice && (
         <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between gap-3">
           <span>{notice}</span>

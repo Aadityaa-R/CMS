@@ -396,7 +396,7 @@ export const AppLayout: React.FC = () => {
                 paddingLeft: 'var(--page-pad)',
                 paddingRight: 'var(--page-pad)',
                 paddingBottom: 'var(--page-pad)',
-                paddingTop: 'calc(var(--page-pad) - var(--tab-top-space, 0.5625rem))',
+                paddingTop: 'calc(var(--page-pad) - var(--tab-top-space, -1px))',
                 scrollbarGutter: 'stable',
               }}
             >

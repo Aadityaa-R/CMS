@@ -42,7 +42,7 @@
   --fs-label: 0.8125rem;
   --fs-th: 0.75rem;
   --fs-axis: 0.6875rem;
-  --tab-top-space: 0.5625rem;
+  --tab-top-space: -1px;
 }
 
 @media (min-width: 640px) {
@@ -83,7 +83,7 @@ html[data-display-size='standard'] {
   --fs-label: 0.8125rem;
   --fs-th: 0.75rem;
   --fs-axis: 0.6875rem;
-  --tab-top-space: 0.5625rem;
+  --tab-top-space: -1px;
 }
 
 html[data-display-size='large'] {
@@ -95,7 +95,7 @@ html[data-display-size='large'] {
   --fs-label: 0.8125rem;
   --fs-th: 0.75rem;
   --fs-axis: 0.6875rem;
-  --tab-top-space: 0.5625rem;
+  --tab-top-space: -1px;
 }
 
 .text-fs-kpi {

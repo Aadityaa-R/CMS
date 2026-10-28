@@ -1354,60 +1354,60 @@ export const ReceptionistView: React.FC<ReceptionistViewProps> = ({ activeTab = 
       )}
 
       {/* Navigation Tabs and Quick Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <Tabs
-          ariaLabel="Reception Tabs"
-          tabs={[
-            { id: 'lounge', label: 'Waiting Lounge' },
-            { id: 'appointments', label: 'Appointments' },
-            { id: 'calendar', label: 'Calendar' },
-            { id: 'patients', label: 'Patient Directory' },
-            { id: 'registry', label: 'Intake Registry' },
-          ]}
-          activeTab={selectedTab}
-          onChange={(id) => {
-            setSelectedTab(id);
-            try {
-              const url = new URL(window.location.href);
-              if (id === 'calendar') {
-                url.searchParams.set('tab', 'calendar');
-              } else {
-                url.searchParams.set('tab', 'receptionist');
-                url.searchParams.set('subtab', id);
-              }
-              window.history.replaceState(null, '', url.toString());
-            } catch {}
-            document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
-          }}
-        />
-        {!isMD && (
-          <div className="flex items-center gap-2.5 shrink-0">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setRegError('');
-                setIsRegisterOpen(true);
-              }}
-            >
-              Register patient
-            </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              onClick={() => {
-                setWalkInMode('existing');
-                setWalkInPatientId(patients[0]?.id || '');
-                setWalkInReason('');
-                setWalkInError('');
-                setIsWalkInOpen(true);
-              }}
-            >
-              Walk-in check-in
-            </Button>
-          </div>
-        )}
-      </div>
+      <Tabs
+        ariaLabel="Reception Tabs"
+        tabs={[
+          { id: 'lounge', label: 'Waiting Lounge' },
+          { id: 'appointments', label: 'Appointments' },
+          { id: 'calendar', label: 'Calendar' },
+          { id: 'patients', label: 'Patient Directory' },
+          { id: 'registry', label: 'Intake Registry' },
+        ]}
+        activeTab={selectedTab}
+        onChange={(id) => {
+          setSelectedTab(id);
+          try {
+            const url = new URL(window.location.href);
+            if (id === 'calendar') {
+              url.searchParams.set('tab', 'calendar');
+            } else {
+              url.searchParams.set('tab', 'receptionist');
+              url.searchParams.set('subtab', id);
+            }
+            window.history.replaceState(null, '', url.toString());
+          } catch {}
+          document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+        }}
+        controls={
+          !isMD ? (
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="compact"
+                variant="outline"
+                onClick={() => {
+                  setRegError('');
+                  setIsRegisterOpen(true);
+                }}
+              >
+                Register patient
+              </Button>
+              <Button
+                size="compact"
+                variant="primary"
+                onClick={() => {
+                  setWalkInMode('existing');
+                  setWalkInPatientId(patients[0]?.id || '');
+                  setWalkInReason('');
+                  setWalkInError('');
+                  setIsWalkInOpen(true);
+                }}
+              >
+                Walk-in check-in
+              </Button>
+            </div>
+          ) : null
+        }
+      />
 
       {/* Interactive Search Bar across views */}
       <div className="max-w-md">
